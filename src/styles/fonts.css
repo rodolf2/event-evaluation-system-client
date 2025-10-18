@@ -1,0 +1,25 @@
+@layer base {
+  @font-face {
+    font-family: "Tolkien";
+    src: url("/fonts/Tolkien.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Middleearth";
+    src: url("/fonts/Middleearth-ao6m.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+}
+
+.font-tolkien {
+  font-family: "Tolkien", serif !important;
+}
+
+.font-middleearth {
+  font-family: "Middleearth", serif !important;
+}
