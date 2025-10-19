@@ -18,7 +18,7 @@ import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
 import Profile from "./pages/Profile";
 import AuthCallback from "./pages/AuthCallback";
-import { useAuth } from "./contexts/AuthContext";
+import { useAuth } from "./contexts/useAuth";
 
 function App() {
   const { user, token } = useAuth();
@@ -29,7 +29,7 @@ function App() {
 
     switch (user.role) {
       case "psas":
-        return "/psas";
+        return "/psas/home";
       case "club-officer":
         return "/club-officer";
       case "participant":
@@ -65,10 +65,14 @@ function App() {
 
         {/* PSAS routes */}
         <Route
-          path="/psas"
+          path="/psas/home"
           element={
             isAuthorized("psas") ? <Home /> : <Navigate to={getHomeRoute()} />
           }
+        />
+        <Route
+          path="/psas"
+          element={<Navigate to="/psas/home" />}
         />
         <Route
           path="/psas/evaluations"

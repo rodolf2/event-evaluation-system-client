@@ -1,19 +1,32 @@
 import { Bell, ChevronDown, Menu } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
-import { useState } from "react";
+import { useAuth } from "../../contexts/useAuth";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import ProfileIcon from "../../assets/icons/profile-icon.svg?react";
 import LogoutIcon from "../../assets/icons/logout-icon.svg?react";
 
 const Header = ({ onMenuClick }) => {
-  const { user, removeToken } = useAuth();
+  const { user, removeToken, refreshUserData } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const location = useLocation();
+  
+  // Refresh user data periodically to ensure profile is up to date
+  useEffect(() => {
+    // Initial refresh
+    refreshUserData();
+    
+    // Set up interval to refresh user data every 30 seconds
+    const refreshInterval = setInterval(() => {
+      refreshUserData();
+    }, 30000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [refreshUserData]);
 
   const getPageTitle = () => {
     const path = location.pathname;
     if (path === "/profile") return "My Account";
-    if (path === "/psas") return "Home";
+    if (path === "/psas/home") return "Home";
     if (path.includes("/evaluations")) return "Evaluations";
     if (path.includes("/certificates")) return "Certificates";
     if (path === "/psas/analytics") return "Event Analytics";
@@ -22,7 +35,7 @@ const Header = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="flex items-center justify-between bg-white shadow-sm p-4 rounded-lg relative z-20">
+    <header className="flex items-center justify-between bg-white shadow-sm p-4 rounded-lg relative z-20 hover:shadow-lg">
       {/* Hamburger + Title */}
       <div className="flex items-center gap-3">
         <button
@@ -45,7 +58,7 @@ const Header = ({ onMenuClick }) => {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             <img
-              src={user?.avatar || "/src/assets/users/user1.jpg"}
+              src={user?.profilePicture || "/src/assets/users/user1.jpg"}
               alt="User"
               className="w-8 h-8 rounded-full object-cover"
             />

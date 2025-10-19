@@ -9,9 +9,12 @@ const CalendarWidget = ({ openModal, reminders = [] }) => {
   const daysInMonth = month.daysInMonth();
   const startDay = month.startOf("month").day();
 
+  // Ensure reminders is always an array
+  const safeReminders = Array.isArray(reminders) ? reminders : [];
+
   // Helper function to check if a date has reminders
   const hasReminder = (date) => {
-    return reminders.some(
+    return safeReminders.some(
       (reminder) =>
         dayjs(reminder.date).format("YYYY-MM-DD") === date.format("YYYY-MM-DD")
     );

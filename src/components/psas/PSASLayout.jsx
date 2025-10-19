@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { useUI } from "../../contexts/UIContext";
+import ProfileSection from "./ProfileSection";
+import { useUI } from "../../contexts/useUI";
+import { useAuth } from "../../contexts/useAuth";
 
 function PSASLayout({ children, isModalOpen }) {
   const { isSidebarOpen, toggleSidebar } = useUI();
+  const { user } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
+  const location = useLocation();
+  const showProfileSection = location.pathname === "/psas/home";
 
   // Prevent scrolling when modal is open
   useEffect(() => {
@@ -40,7 +46,8 @@ function PSASLayout({ children, isModalOpen }) {
         }`}
       >
         <Header sidebarOpen={isSidebarOpen} onMenuClick={toggleSidebar} />
-        {children}
+        {user && showProfileSection && <ProfileSection />}
+        <div className={showProfileSection ? "mt-6" : ""}>{children}</div>
       </main>
     </div>
   );

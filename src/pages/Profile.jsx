@@ -1,4 +1,4 @@
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
 
 function Profile() {

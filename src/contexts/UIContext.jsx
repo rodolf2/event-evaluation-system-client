@@ -1,6 +1,5 @@
-import { createContext, useState, useContext } from 'react';
-
-const UIContext = createContext();
+import { useState } from 'react';
+import { UIContext } from './UIContextDefinition';
 
 export const UIProvider = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false); // Default to closed
@@ -15,5 +14,3 @@ export const UIProvider = ({ children }) => {
     </UIContext.Provider>
   );
 };
-
-export const useUI = () => useContext(UIContext);

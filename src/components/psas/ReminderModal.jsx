@@ -22,13 +22,13 @@ const ReminderModal = ({
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       // Restore body scroll when modal closes
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen, onClose]);
 
@@ -44,13 +44,22 @@ const ReminderModal = ({
 
   if (!isOpen) return null;
 
-  // Calculate modal position
+  // Calculate modal position based on screen size
   const modalStyle = position
-    ? {
-        position: "fixed",
-        right: `${window.innerWidth - position.x + 20}px`, // Position to the left of the click position
-        top: `${position.y}px`,
-      }
+    ? window.innerWidth >= 768
+      ? {
+          position: "fixed",
+          right: `${window.innerWidth - position.x + 20}px`,
+          top: `${Math.min(
+            Math.max(position.y, 60),
+            window.innerHeight - 400
+          )}px`,
+        }
+      : {
+          position: "fixed",
+          top: "50%",
+          transform: "translateY(-50%)",
+        }
     : {};
 
   return (
@@ -59,13 +68,23 @@ const ReminderModal = ({
       <div className="fixed inset-0 backdrop-blur-[2px] bg-white/5 z-40 modal-overlay" />
 
       {/* Modal */}
-      <div ref={modalRef} style={modalStyle} className="fixed z-50 w-[360px]">
+      <div
+        ref={modalRef}
+        style={modalStyle}
+        className="fixed z-50 w-[90vw] md:w-[360px] mx-auto left-0 right-0 md:left-auto md:right-auto md:mx-0"
+      >
         {/* Modal Content */}
         <div className="relative bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Arrow - Pointing right and outside container */}
-          {/* <div className="absolute right-[-12px] top-3 w-4 h-4 bg-white transform rotate-45 border-t border-r border-gray-200 shadow-[3px_-3px_4px_rgba(0,0,0,0.1)] z-10" /> */}
-          <div className="bg-[#1F3463] text-white p-4">
+          <div className="absolute right-[-8px] top-4 w-4 h-4 bg-white transform rotate-45 border-t border-r border-gray-200 shadow-[2px_-2px_3px_rgba(0,0,0,0.05)] z-10 hidden md:block" />
+          <div className="bg-[#1F3463] text-white p-4 flex justify-between items-center">
             <h2 className="text-xl font-semibold">Set Reminder</h2>
+            <button
+              onClick={onClose}
+              className="md:hidden text-white hover:text-gray-200"
+            >
+              ✕
+            </button>
           </div>
           <form onSubmit={handleSubmit} className="p-4">
             <div className="mb-3">

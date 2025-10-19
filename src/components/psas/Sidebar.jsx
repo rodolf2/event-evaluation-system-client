@@ -7,7 +7,7 @@ import EvaluationsIcon from "../../assets/icons/evaluations-icon.svg";
 import CertificateIcon from "../../assets/icons/certificate-icon.svg";
 
 const MENU_ITEMS = [
-  { icon: HomeIcon, label: "Home", path: "/psas" },
+  { icon: HomeIcon, label: "Home", path: "/psas/home" },
   { icon: EvaluationsIcon, label: "Evaluations", path: "/psas/evaluations" },
   { icon: CertificateIcon, label: "Certificate", path: "/psas/certificates" },
   { icon: AnalyticsIcon, label: "Event Analytics", path: "/psas/analytics" },
@@ -63,7 +63,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             label={item.label}
             isOpen={isOpen}
             isActive={
-              item.path === "/psas"
+              item.path === "/psas/home"
                 ? currentPath === item.path
                 : currentPath.startsWith(item.path)
             }
