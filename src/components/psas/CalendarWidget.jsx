@@ -3,7 +3,7 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const CalendarWidget = ({ openModal, reminders = [] }) => {
+const CalendarWidget = ({ openModal, reminders = [], onDateSelect }) => {
   const [month, setMonth] = useState(dayjs());
 
   const daysInMonth = month.daysInMonth();
@@ -54,13 +54,17 @@ const CalendarWidget = ({ openModal, reminders = [] }) => {
           const isToday = date.isSame(dayjs(), "day");
 
           const handleDayClick = (e) => {
-            const calendarRect = e.currentTarget
-              .closest(".bg-white")
-              .getBoundingClientRect();
-            openModal(date, {
-              x: calendarRect.left, // Position relative to calendar left edge
-              y: calendarRect.top + 50, // Position below the month header
-            });
+            if (onDateSelect) {
+              onDateSelect(date);
+            } else {
+              const calendarRect = e.currentTarget
+                .closest(".bg-white")
+                .getBoundingClientRect();
+              openModal(date, {
+                x: calendarRect.left, // Position relative to calendar left edge
+                y: calendarRect.top + 50, // Position below the month header
+              });
+            }
           };
 
           const hasReminderForDay = hasReminder(date);
@@ -95,3 +99,4 @@ const CalendarWidget = ({ openModal, reminders = [] }) => {
 };
 
 export default CalendarWidget;
+
