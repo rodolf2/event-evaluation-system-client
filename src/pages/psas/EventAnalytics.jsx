@@ -10,6 +10,9 @@ import {
   LinearScale,
   BarElement,
 } from "chart.js";
+import totalAttendeesIcon from "../../assets/icons/total_event_attendess-icon.svg";
+import totalResponseIcon from "../../assets/icons/total_response-icon.svg";
+import remainingNonResponseIcon from "../../assets/icons/remaining_non_responses-icon.svg";
 
 ChartJS.register(
   ArcElement,
@@ -177,18 +180,51 @@ const EventAnalytics = () => {
 
         {/* Top Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-blue-700 text-white p-4 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold">Total Event Attendees</h2>
+          <div
+            className=" text-white p-4 rounded-lg shadow-md relative"
+            style={{ background: "linear-gradient(180deg, #002474, #324BA3)" }}
+          >
+            <div className="absolute top-4 left-4">
+              <img
+                src={totalAttendeesIcon}
+                alt="Total Event Attendees"
+                className="w-6 h-6 opacity-80"
+              />
+            </div>
+            <h2 className="text-lg font-semibold pl-10">
+              Total Event Attendees
+            </h2>
             <p className="text-4xl font-bold mt-1">{totalAttendees}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-gray-600">
+          <div className="bg-white p-4 rounded-lg shadow-md relative">
+            <div className="absolute top-4 left-4">
+              <img
+                src={totalResponseIcon}
+                alt="Total Responses"
+                className="w-6 h-6"
+              />
+            </div>
+            <h2 className="text-lg font-semibold text-[#002474] pl-10">
               Total Responses
             </h2>
-            <p className="text-4xl font-bold text-gray-800 mt-1">{totalResponses}</p>
+            <p className="text-4xl font-bold text-[#002474] mt-1">
+              {totalResponses}
+            </p>
           </div>
-          <div className="bg-blue-700 text-white p-4 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold">Remaining Non-Responses</h2>
+          <div
+            className=" text-white p-4 rounded-lg shadow-md relative"
+            style={{ background: "linear-gradient(180deg, #002474, #324BA3)" }}
+          >
+            <div className="absolute top-4 left-4">
+              <img
+                src={remainingNonResponseIcon}
+                alt="Remaining Non-Responses"
+                className="w-6 h-6 opacity-80"
+              />
+            </div>
+            <h2 className="text-lg font-semibold pl-10">
+              Remaining Non-Responses
+            </h2>
             <p className="text-4xl font-bold mt-1">{remainingNonResponses}</p>
           </div>
         </div>
@@ -197,7 +233,9 @@ const EventAnalytics = () => {
         <div className="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Response Rate */}
           <div className="bg-white p-4 rounded-lg shadow-md flex flex-col justify-center items-center text-center">
-            <h3 className="text-xl font-semibold w-full text-left">Response Rate</h3>
+            <h3 className="text-xl font-semibold w-full text-left">
+              Response Rate
+            </h3>
             <div className="relative h-40 w-full max-w-[300px] flex justify-center items-center my-4">
               <Doughnut data={responseRateData} options={responseRateOptions} />
               <div className="absolute text-center">
@@ -205,18 +243,24 @@ const EventAnalytics = () => {
               </div>
             </div>
             <p className="text-sm text-gray-500 px-2">
-              The accepted percentage of collected responses is up to 50% and above.
+              The accepted percentage of collected responses is up to 50% and
+              above.
             </p>
           </div>
 
           {/* Response Breakdown */}
           <div className="bg-white p-4 rounded-lg shadow-md flex flex-col">
-            <h3 className="text-xl font-semibold text-left">Response Breakdown</h3>
+            <h3 className="text-xl font-semibold text-left">
+              Response Breakdown
+            </h3>
             <div className="flex-grow flex items-center justify-center">
               <div className="w-1/2 h-full py-4">
                 <Doughnut
                   data={responseBreakdownData}
-                  options={{...responseBreakdownOptions, maintainAspectRatio: false}}
+                  options={{
+                    ...responseBreakdownOptions,
+                    maintainAspectRatio: false,
+                  }}
                 />
               </div>
               <div className="w-1/2 pl-4">
@@ -247,7 +291,10 @@ const EventAnalytics = () => {
             <div className="flex-grow relative">
               <Bar
                 data={responseOverviewData}
-                options={{...responseOverviewOptions, maintainAspectRatio: false}}
+                options={{
+                  ...responseOverviewOptions,
+                  maintainAspectRatio: false,
+                }}
               />
             </div>
           </div>

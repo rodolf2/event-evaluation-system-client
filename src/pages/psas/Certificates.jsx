@@ -1,187 +1,519 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import PSASLayout from "../../components/psas/PSASLayout";
-import { Plus, Search, Upload, Type, Square, Circle, Star, Triangle, Bold, Italic, Underline, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Upload,
+  Square,
+  Circle,
+  Star,
+  Triangle,
+  Bold,
+  Italic,
+  Underline,
+  Trash2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Copy,
+  ChevronUp,
+  ChevronDown,
+  AlignHorizontalJustifyStart,
+  AlignHorizontalJustifyCenter,
+  AlignHorizontalJustifyEnd,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+} from "lucide-react";
 
-const placeholderCert = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='%236b7280' dominant-baseline='middle' text-anchor='middle'%3ECertificate%3C/text%3E%3C/svg%3E";
+const BASE_WIDTH = 800;
+const BASE_HEIGHT = 600;
 
-const CertificateEditor = ({ onBack }) => {
+const CertificateEditor = ({ onBack, initialData }) => {
   const canvasRef = useRef(null);
+  const canvasContainerRef = useRef(null);
   const fabricCanvas = useRef(null);
   const fabricRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const bgInputRef = useRef(null);
+
   const [activeObject, setActiveObject] = useState(null);
+  const [, setForceUpdate] = useState(0);
+
+  const historyRef = useRef([]);
+  const redoRef = useRef([]);
+
+  const pushHistory = useCallback(() => {
+    try {
+      const canvas = fabricCanvas.current;
+      if (!canvas) return;
+      const json = JSON.stringify(canvas.toJSON(["selectable"]));
+      const last = historyRef.current[historyRef.current.length - 1];
+      if (json !== last) {
+        historyRef.current.push(json);
+        if (historyRef.current.length > 60) historyRef.current.shift();
+        redoRef.current = [];
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
+    let resizeObserver;
+    let mounted = true;
+
     const initFabric = async () => {
-      const fabricModule = await import('fabric');
-      const fabric = fabricModule.default;
+      const fabricModule = await import("fabric");
+      const fabric = fabricModule.default || fabricModule;
+      
+      if (!mounted || !fabric) return;
+      
       fabricRef.current = fabric;
 
-      const canvas = new fabric.Canvas(canvasRef.current, {
-        width: 800,
-        height: 600,
-        backgroundColor: '#fff',
+      const canvasEl = canvasRef.current;
+      const canvas = new fabric.Canvas(canvasEl, {
+        width: BASE_WIDTH,
+        height: BASE_HEIGHT,
+        backgroundColor: "#fff",
+        selection: true,
+        preserveObjectStacking: true,
       });
       fabricCanvas.current = canvas;
 
+      if (initialData) {
+        canvas.loadFromJSON(initialData, () => {
+          canvas.renderAll();
+          pushHistory(); 
+        });
+      } else {
+        historyRef.current = [];
+        pushHistory();
+      }
+
+      const updateSelection = () => {
+        setActiveObject(canvas.getActiveObject());
+        setForceUpdate((f) => f + 1);
+      };
+
       canvas.on({
-        'selection:created': (e) => setActiveObject(e.selected[0]),
-        'selection:updated': (e) => setActiveObject(e.selected[0]),
-        'selection:cleared': () => setActiveObject(null),
+        "object:modified": updateSelection,
+        "object:added": updateSelection,
+        "object:removed": updateSelection,
+        "selection:created": updateSelection,
+        "selection:updated": updateSelection,
+        "selection:cleared": updateSelection,
       });
+
+      canvas.on("object:selected", (e) => {
+        e.target.set({
+          borderColor: "#2563EB",
+          cornerColor: "#2563EB",
+          cornerStyle: "circle",
+          transparentCorners: false,
+        });
+      });
+
+      canvas.on("object:moving", (e) => {
+        const obj = e.target;
+        if (!obj) return;
+        const snap = 8;
+        const objCenterX = obj.left + obj.getScaledWidth() / 2;
+        const canvasCenterX = canvas.getWidth() / 2;
+        if (Math.abs(objCenterX - canvasCenterX) < snap) {
+          obj.left = canvasCenterX - obj.getScaledWidth() / 2;
+        }
+        const objCenterY = obj.top + obj.getScaledHeight() / 2;
+        const canvasCenterY = canvas.getHeight() / 2;
+        if (Math.abs(objCenterY - canvasCenterY) < snap) {
+          obj.top = canvasCenterY - obj.getScaledHeight() / 2;
+        }
+      });
+
+      const container = canvasContainerRef.current;
+      const resizeCanvasToContainer = () => {
+        if (!container || !canvas) return;
+        const containerWidth = container.clientWidth - 64; // Account for p-8 padding
+        const containerHeight = container.clientHeight - 64; // Account for p-8 padding
+        const scaleX = containerWidth / BASE_WIDTH;
+        const scaleY = containerHeight / BASE_HEIGHT;
+        const scale = Math.max(0.2, Math.min(scaleX, scaleY));
+        canvas.setDimensions({ width: BASE_WIDTH * scale, height: BASE_HEIGHT * scale });
+        canvas.setZoom(scale);
+        canvas.renderAll();
+      };
+
+      resizeCanvasToContainer();
+      resizeObserver = new ResizeObserver(resizeCanvasToContainer);
+      if(container) resizeObserver.observe(container);
+
+      const handleKey = (e) => {
+        if (!canvas) return;
+        const active = canvas.getActiveObject();
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.key === "Delete" || e.key === "Backspace") {
+          if (active) {
+            canvas.remove(active);
+            canvas.discardActiveObject();
+          }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          undo();
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) {
+          e.preventDefault();
+          redo();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+          e.preventDefault();
+          cloneObject();
+        }
+      };
+      window.addEventListener("keydown", handleKey);
+
+      return () => {
+        window.removeEventListener("keydown", handleKey);
+        if (resizeObserver && container) resizeObserver.unobserve(container);
+        if (canvas) canvas.dispose();
+      };
     };
-    initFabric();
+
+    let cleanupFn;
+    initFabric().then(cleanup => {
+        if(mounted) cleanupFn = cleanup;
+    });
 
     return () => {
-      if (fabricCanvas.current) {
-        fabricCanvas.current.dispose();
-      }
+      mounted = false;
+      if (cleanupFn) cleanupFn();
     };
-  }, []);
+  }, [pushHistory, initialData]);
 
-  const updateProperty = (prop, value) => {
-    const obj = fabricCanvas.current.getActiveObject();
-    if (obj) {
-      obj.set(prop, value);
-      fabricCanvas.current.renderAll();
-      setActiveObject(fabricCanvas.current.getActiveObject()); // Force re-render of panel
-    }
+  const addObjectToCanvas = (object) => {
+    const canvas = fabricCanvas.current;
+    if (!canvas) return;
+    canvas.add(object);
+    canvas.setActiveObject(object);
   };
 
   const addText = (isHeadline) => {
     const fabric = fabricRef.current;
+    if (!fabric || !fabricCanvas.current) return;
+    const text = new fabric.Textbox(
+      isHeadline ? "Click to edit headline" : "Click to edit body text",
+      {
+        left: 100,
+        top: 100,
+        fontSize: isHeadline ? 48 : 24,
+        fill: "#000",
+        fontFamily: "Inter, Arial",
+        width: isHeadline ? 400 : 300,
+        editable: true,
+      }
+    );
+    addObjectToCanvas(text);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (f) => {
+      const fabric = fabricRef.current;
+      if (!fabric) return;
+      fabric.Image.fromURL(f.target.result, (img) => {
+          img.scaleToWidth(300);
+          fabricCanvas.current.centerObject(img);
+          addObjectToCanvas(img);
+        }, { crossOrigin: "anonymous" }
+      );
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const addImageFromUrl = () => {
+    const url = prompt("Enter image URL (must allow cross-origin)");
+    if (!url) return;
+    const fabric = fabricRef.current;
     if (!fabric) return;
-    const text = new fabric.Textbox(isHeadline ? 'Headline' : 'Body Text', {
-      left: 100,
-      top: 100,
-      fontSize: isHeadline ? 48 : 24,
-      fill: '#000',
-    });
-    fabricCanvas.current.add(text);
-    fabricCanvas.current.setActiveObject(text);
+    fabric.Image.fromURL(url, (img) => {
+        img.scaleToWidth(300);
+        fabricCanvas.current.centerObject(img);
+        addObjectToCanvas(img);
+      }, { crossOrigin: "anonymous" }
+    );
   };
 
   const addShape = (type) => {
     const fabric = fabricRef.current;
-    if (!fabric) return;
+    if (!fabric || !fabricCanvas.current) return;
     let shape;
-    const options = { left: 150, top: 150, width: 100, height: 100, fill: '#ccc' };
+    const options = { left: 150, top: 150, width: 120, height: 120, fill: "#cccccc" };
     switch (type) {
-      case 'rect': shape = new fabric.Rect(options); break;
-      case 'circle': shape = new fabric.Circle({ ...options, radius: 50 }); break;
-      case 'star': shape = new fabric.Polygon([{x: 50, y: 0}, {x: 61, y: 35}, {x: 98, y: 35}, {x: 68, y: 57}, {x: 79, y: 91}, {x: 50, y: 70}, {x: 21, y: 91}, {x: 32, y: 57}, {x: 2, y: 35}, {x: 39, y: 35}], { ...options }); break;
-      case 'triangle': shape = new fabric.Triangle(options); break;
+      case "rect": shape = new fabric.Rect(options); break;
+      case "circle": shape = new fabric.Circle({ ...options, radius: 60 }); break;
+      case "star": {
+        const points = [ { x: 50, y: 0 }, { x: 61, y: 35 }, { x: 98, y: 35 }, { x: 68, y: 57 }, { x: 79, y: 91 }, { x: 50, y: 70 }, { x: 21, y: 91 }, { x: 32, y: 57 }, { x: 2, y: 35 }, { x: 39, y: 35 }];
+        shape = new fabric.Polygon(points, { ...options });
+        break;
+      }
+      case "triangle": shape = new fabric.Triangle(options); break;
       default: return;
     }
-    fabricCanvas.current.add(shape);
-    fabricCanvas.current.setActiveObject(shape);
+    addObjectToCanvas(shape);
   };
 
   const clearCanvas = () => {
-    if (fabricCanvas.current) {
-      fabricCanvas.current.clear();
-      fabricCanvas.current.backgroundColor = '#fff';
-      fabricCanvas.current.renderAll();
+    const canvas = fabricCanvas.current;
+    if (!canvas) return;
+    canvas.clear();
+    canvas.setBackgroundColor("#fff", canvas.renderAll.bind(canvas));
+  };
+
+  const cloneObject = () => {
+    const canvas = fabricCanvas.current;
+    const obj = canvas?.getActiveObject();
+    if (!obj) return;
+    obj.clone((cloned) => {
+      cloned.set({ left: obj.left + 12, top: obj.top + 12 });
+      canvas.add(cloned);
+      canvas.setActiveObject(cloned);
+    });
+  };
+
+  const bringForward = () => fabricCanvas.current?.bringForward(fabricCanvas.current.getActiveObject());
+  const sendBackward = () => fabricCanvas.current?.sendBackwards(fabricCanvas.current.getActiveObject());
+  const deleteObject = () => fabricCanvas.current?.remove(fabricCanvas.current.getActiveObject());
+
+  const alignObject = (edge) => {
+    const canvas = fabricCanvas.current;
+    const obj = canvas?.getActiveObject();
+    if (!obj) return;
+    switch (edge) {
+      case "left": obj.set("left", 0); break;
+      case "h-center": obj.set("left", (canvas.width / canvas.getZoom() - obj.getScaledWidth()) / 2); break;
+      case "right": obj.set("left", canvas.width / canvas.getZoom() - obj.getScaledWidth()); break;
+      case "top": obj.set("top", 0); break;
+      case "v-center": obj.set("top", (canvas.height / canvas.getZoom() - obj.getScaledHeight()) / 2); break;
+      case "bottom": obj.set("top", canvas.height / canvas.getZoom() - obj.getScaledHeight()); break;
+      default: break;
+    }
+    canvas.requestRenderAll();
+  };
+
+  const updateProperty = (prop, value) => {
+    const obj = fabricCanvas.current?.getActiveObject();
+    if (obj) {
+      obj.set(prop, value);
+      fabricCanvas.current.requestRenderAll();
+      setForceUpdate(f => f + 1);
     }
   };
 
-  const PropertiesPanel = () => {
-    if (!activeObject) {
-      return <div className="text-center text-gray-500">Select an object to edit</div>;
-    }
+  const undo = () => {
+    const canvas = fabricCanvas.current;
+    if (!canvas || historyRef.current.length <= 1) return;
+    const current = historyRef.current.pop();
+    redoRef.current.push(current);
+    const prev = historyRef.current[historyRef.current.length - 1];
+    if (prev) canvas.loadFromJSON(prev, () => canvas.renderAll());
+  };
 
-    const isText = activeObject.type === 'textbox';
+  const redo = () => {
+    const canvas = fabricCanvas.current;
+    if (!canvas || !redoRef.current.length) return;
+    const next = redoRef.current.pop();
+    historyRef.current.push(next);
+    canvas.loadFromJSON(next, () => canvas.renderAll());
+  };
+
+  const downloadPNG = () => {
+    const canvas = fabricCanvas.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL({ format: "png", quality: 1, multiplier: 1 / canvas.getZoom() });
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = "certificate.png";
+    link.click();
+  };
+
+  const downloadTemplateJson = () => {
+    const canvas = fabricCanvas.current;
+    if (!canvas) return;
+
+    const name = prompt("Enter a filename for the template (e.g., 'formal-award'):");
+    if (!name) return;
+
+    const json = JSON.stringify(canvas.toJSON(), null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${name}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    alert(`Template data for "${name}.json" has been downloaded.`);
+  };
+
+  const handleBackgroundUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (f) => {
+      const fabric = fabricRef.current;
+      if (!fabric || !fabricCanvas.current) return;
+      fabric.Image.fromURL(f.target.result, (img) => {
+          fabricCanvas.current.setBackgroundImage(img, fabricCanvas.current.renderAll.bind(fabricCanvas.current), {
+            scaleX: fabricCanvas.current.width / img.width,
+            scaleY: fabricCanvas.current.height / img.height,
+          });
+        }, { crossOrigin: "anonymous" }
+      );
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const PropertiesPanel = () => {
+    const isObjectSelected = !!activeObject;
+    const isText = isObjectSelected && ["textbox", "i-text"].includes(activeObject.type);
+    const isShape = isObjectSelected && ["rect", "circle", "triangle", "polygon"].includes(activeObject.type);
+    const isImage = isObjectSelected && activeObject.type === "image";
+
+    const getProp = (prop, fallback) => activeObject?.get(prop) ?? fallback;
 
     return (
-      <div className="space-y-4">
-        {isText && (
-            <div className="mb-4">
-                <h4 className="font-semibold text-gray-700 mb-2">Text</h4>
-                <div className="flex gap-2 mb-2">
-                    <select value={activeObject.get('fontFamily')} onChange={(e) => updateProperty('fontFamily', e.target.value)} className="flex-1 p-2 border rounded-md"> <option>Inter</option> <option>Arial</option> </select>
-                    <select value={activeObject.get('fontSize')} onChange={(e) => updateProperty('fontSize', parseInt(e.target.value, 10))} className="w-20 p-2 border rounded-md"> <option>24</option> <option>36</option> <option>48</option> </select>
-                </div>
-                <div className="grid grid-cols-4 gap-1">
-                    <button onClick={() => updateProperty('fontWeight', activeObject.get('fontWeight') === 'bold' ? 'normal' : 'bold')} className={`p-2 border rounded-md ${activeObject.get('fontWeight') === 'bold' ? 'bg-gray-200' : ''}`}><Bold size={16}/></button>
-                    <button onClick={() => updateProperty('fontStyle', activeObject.get('fontStyle') === 'italic' ? 'normal' : 'italic')} className={`p-2 border rounded-md ${activeObject.get('fontStyle') === 'italic' ? 'bg-gray-200' : ''}`}><Italic size={16}/></button>
-                    <button onClick={() => updateProperty('underline', !activeObject.get('underline'))} className={`p-2 border rounded-md ${activeObject.get('underline') ? 'bg-gray-200' : ''}`}><Underline size={16}/></button>
-                    <input type="color" value={activeObject.get('fill')} onChange={(e) => updateProperty('fill', e.target.value)} className="w-full h-10 p-1 border-gray-300 rounded-md cursor-pointer"/>
-                </div>
-            </div>
-        )}
+      <div className="space-y-6">
+        <div>
+          <h4 className="font-semibold text-gray-700 mb-2">Position</h4>
+          <div className="grid grid-cols-6 gap-1">
+            <button disabled={!isObjectSelected} onClick={() => alignObject("left")} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><AlignHorizontalJustifyStart size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={() => alignObject("h-center")} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><AlignHorizontalJustifyCenter size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={() => alignObject("right")} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><AlignHorizontalJustifyEnd size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={() => alignObject("top")} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><AlignVerticalJustifyStart size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={() => alignObject("v-center")} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><AlignVerticalJustifyCenter size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={() => alignObject("bottom")} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><AlignVerticalJustifyEnd size={16} /></button>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-gray-700 mb-2">Layer</h4>
+          <div className="grid grid-cols-4 gap-1">
+            <button disabled={!isObjectSelected} onClick={cloneObject} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400" title="Duplicate (Ctrl/Cmd+D)"><Copy size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={bringForward} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><ChevronUp size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={sendBackward} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><ChevronDown size={16} /></button>
+            <button disabled={!isObjectSelected} onClick={deleteObject} className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"><Trash2 size={16} /></button>
+          </div>
+        </div>
+
+        <div>
+          <h4 className={`font-semibold mb-2 ${!isText && isObjectSelected ? "text-gray-400" : "text-gray-700"}`}>Text</h4>
+          <div className="flex gap-2 mb-2">
+            <select disabled={!isText} value={getProp("fontFamily", "Inter")} onChange={(e) => updateProperty("fontFamily", e.target.value)} className="flex-1 p-2 border rounded-md text-sm disabled:bg-gray-100 disabled:cursor-not-allowed">
+              <option>Inter</option> <option>Arial</option> <option>Times New Roman</option> <option>Courier New</option>
+            </select>
+            <input disabled={!isText} type="number" value={getProp("fontSize", 24)} onChange={(e) => updateProperty("fontSize", parseInt(e.target.value, 10) || 1)} className="w-20 p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed" />
+          </div>
+          <div className="grid grid-cols-4 gap-1 mb-2">
+            <button disabled={!isText} onClick={() => updateProperty("fontWeight", getProp("fontWeight", "normal") === "bold" ? "normal" : "bold")} className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${getProp("fontWeight", "normal") === "bold" ? "bg-gray-200" : ""}`}><Bold size={16} /></button>
+            <button disabled={!isText} onClick={() => updateProperty("fontStyle", getProp("fontStyle", "normal") === "italic" ? "normal" : "italic")} className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${getProp("fontStyle", "normal") === "italic" ? "bg-gray-200" : ""}`}><Italic size={16} /></button>
+            <button disabled={!isText} onClick={() => updateProperty("underline", !getProp("underline", false))} className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${getProp("underline", false) ? "bg-gray-200" : ""}`}><Underline size={16} /></button>
+            <input disabled={!isText} type="color" value={getProp("fill", "#000000")} onChange={(e) => updateProperty("fill", e.target.value)} className="w-full h-full p-1 border-gray-300 rounded-md cursor-pointer disabled:cursor-not-allowed" />
+          </div>
+          <div className="grid grid-cols-3 gap-1">
+            <button disabled={!isText} onClick={() => updateProperty("textAlign", "left")} className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${getProp("textAlign", "left") === "left" ? "bg-gray-200" : ""}`}><AlignLeft size={16} /></button>
+            <button disabled={!isText} onClick={() => updateProperty("textAlign", "center")} className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${getProp("textAlign", "center") === "center" ? "bg-gray-200" : ""}`}><AlignCenter size={16} /></button>
+            <button disabled={!isText} onClick={() => updateProperty("textAlign", "right")} className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${getProp("textAlign", "right") === "right" ? "bg-gray-200" : ""}`}><AlignRight size={16} /></button>
+          </div>
+        </div>
+
+        <div>
+          <h4 className={`font-semibold mb-2 ${!isShape && !isImage && isObjectSelected ? "text-gray-400" : "text-gray-700"}`}>Color</h4>
+          <input disabled={!isShape && !isImage} type="color" value={getProp("fill", "#cccccc")} onChange={(e) => updateProperty("fill", e.target.value)} className="w-full h-10 p-1 border-gray-300 rounded-md cursor-pointer disabled:cursor-not-allowed" />
+        </div>
+
+        <div>
+          <h4 className="font-semibold mb-2">Quick Actions</h4>
+          <div className="flex gap-2"><button onClick={undo} className="flex-1 px-3 py-2 border rounded-md hover:bg-gray-100">Undo</button><button onClick={redo} className="flex-1 px-3 py-2 border rounded-md hover:bg-gray-100">Redo</button></div>
+          <div className="flex gap-2 mt-2"><button onClick={downloadPNG} className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Download PNG</button><button onClick={downloadTemplateJson} className="px-3 py-2 border rounded-md hover:bg-gray-100">Download JSON</button></div>
+        </div>
       </div>
     );
-  }
+  };
 
   return (
-    <div className="bg-gray-200 p-4 font-sans">
-      <div className="flex justify-between items-center mb-2 text-sm text-gray-600">
-        <button onClick={onBack} className="font-bold text-lg"> &larr; </button>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4 min-h-[600px]">
-        {/* Left Sidebar */}
-        <div className="w-full md:w-1/4 bg-white p-4 rounded-lg shadow-sm">
-          <h3 className="font-bold text-lg mb-4">Elements</h3>
-          <div className="mb-6">
-            <h4 className="font-semibold text-gray-700 mb-2">Text</h4>
-            <button onClick={() => addText(true)} className="text-left text-2xl font-bold w-full p-2 hover:bg-gray-100 rounded-md">Headline</button>
-            <button onClick={() => addText(false)} className="text-left text-base w-full p-2 hover:bg-gray-100 rounded-md">Body Text</button>
-          </div>
-          <div className="mb-6">
-            <h4 className="font-semibold text-gray-700 mb-2">Images</h4>
-            <div className="flex gap-2">
-                <button className="flex-1 flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100"><Upload size={16} /> Upload</button>
-                <button className="flex-1 flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100">From URL</button>
-            </div>
-          </div>
+    <div className="bg-gray-100 p-4 font-sans h-full min-h-screen">
+      <div className="flex flex-row h-full bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="w-72 p-4 border-r overflow-y-auto flex flex-col gap-6">
           <div>
-            <h4 className="font-semibold text-gray-700 mb-2">Shapes</h4>
-            <div className="flex gap-2">
-              <button onClick={() => addShape('rect')} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Square className="text-gray-600" /></button>
-              <button onClick={() => addShape('circle')} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Circle className="text-gray-600" /></button>
-              <button onClick={() => addShape('star')} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Star className="text-gray-600" /></button>
-              <button onClick={() => addShape('triangle')} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Triangle className="text-gray-600" /></button>
+            <h3 className="font-bold text-lg mb-4">Elements</h3>
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-700 mb-2">Text</h4>
+              <button onClick={() => addText(true)} className="text-left text-2xl font-bold w-full p-2 hover:bg-gray-100 rounded-md">Headline</button>
+              <button onClick={() => addText(false)} className="text-left text-base w-full p-2 hover:bg-gray-100 rounded-md">Body Text</button>
+            </div>
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-700 mb-2">Images</h4>
+              <div className="flex gap-2">
+                <button onClick={() => fileInputRef.current.click()} className="flex-1 flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100"><Upload size={16} /> Upload</button>
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
+                <button onClick={addImageFromUrl} className="flex-1 flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 text-sm">From URL</button>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => bgInputRef.current.click()} className="flex-1 flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100">Set Background</button>
+                <input type="file" ref={bgInputRef} onChange={handleBackgroundUpload} accept="image/*" className="hidden" />
+                <button onClick={() => { fabricCanvas.current?.setBackgroundImage(null, fabricCanvas.current.renderAll.bind(fabricCanvas.current)); }} className="flex-1 flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 text-sm">Clear BG</button>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-700 mb-2">Shapes</h4>
+              <div className="flex gap-2">
+                <button onClick={() => addShape("rect")} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Square className="text-gray-600" /></button>
+                <button onClick={() => addShape("circle")} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Circle className="text-gray-600" /></button>
+                <button onClick={() => addShape("star")} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Star className="text-gray-600" /></button>
+                <button onClick={() => addShape("triangle")} className="p-4 bg-gray-200 hover:bg-gray-300 rounded-md"><Triangle className="text-gray-600" /></button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Center Canvas */}
-        <div className="w-full md:w-1/2 flex justify-center items-center bg-gray-300 rounded-lg p-4">
+        <div className="grow flex justify-center items-center bg-gray-200 p-8" ref={canvasContainerRef}>
           <div className="bg-white shadow-lg">
             <canvas ref={canvasRef} />
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-full md:w-1/4 bg-white p-4 rounded-lg shadow-sm relative">
-            <PropertiesPanel />
-            <div className="absolute bottom-4 right-4 left-4">
-                 <button onClick={clearCanvas} className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100">Clear Canvas</button>
-            </div>
+        <div className="w-80 p-4 border-l overflow-y-auto relative bg-white">
+          <PropertiesPanel />
+          <div className="absolute bottom-4 right-4 left-4">
+            <button onClick={clearCanvas} className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100">Clear Canvas</button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const Certificates = () => {
-  const [view, setView] = useState("gallery"); // gallery or editor
+import { templates } from "../../templates";
 
-  const templates = [
-    { name: "Foundation Week Celebration", imgSrc: placeholderCert },
-    { name: "Child Protection Seminar", imgSrc: placeholderCert },
-    { name: "Basic Education Intramurals", imgSrc: placeholderCert },
-    { name: "Graduation Day 2025", imgSrc: placeholderCert },
-    { name: "Certificate of Achievement", imgSrc: placeholderCert },
-    { name: "Certificate of Participation", imgSrc: placeholderCert },
-    { name: "Certificate of Excellence", imgSrc: placeholderCert },
-    { name: "Certificate of Completion", imgSrc: placeholderCert },
-  ];
+const Certificates = () => {
+  const [view, setView] = useState("gallery");
+  const [initialData, setInitialData] = useState(null);
+
+  const handleTemplateSelect = (template) => {
+    setInitialData(template.data);
+    setView("editor");
+  };
 
   if (view === "editor") {
     return (
       <PSASLayout>
-        <CertificateEditor onBack={() => setView("gallery")} />
+        <CertificateEditor onBack={() => setView("gallery")} initialData={initialData} />
       </PSASLayout>
     );
   }
@@ -191,7 +523,7 @@ const Certificates = () => {
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Create a certificate</h2>
-          <div onClick={() => setView("editor")} className="rounded-lg p-4 cursor-pointer hover:shadow-xl transition-shadow" style={{ background: 'linear-gradient(180deg, #002474, #324BA3)' }}>
+          <div onClick={() => { setInitialData(null); setView("editor"); }} className="rounded-lg p-4 cursor-pointer hover:shadow-xl transition-shadow" style={{ background: "linear-gradient(180deg, #002474, #324BA3)" }}>
             <div className="bg-white rounded-md p-16 flex items-center justify-center">
               <Plus size={56} className="text-blue-700" />
             </div>
@@ -200,34 +532,14 @@ const Certificates = () => {
         </div>
 
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">Choose a template</h2>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search" 
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-48"
-                />
-              </div>
-              <div className="relative">
-                <select className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg appearance-none">
-                  <option>Event</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                   <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.516 7.548c.436-.446 1.043-.481 1.576 0L10 10.405l2.908-2.857c.533-.481 1.141-.446 1.574 0 .436.445.408 1.197 0 1.615l-3.717 3.717a1.023 1.023 0 01-1.459 0l-3.717-3.717c-.408-.418-.436-1.17 0-1.615z"/></svg>
-                </div>
-              </div>
-            </div>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Templates</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {templates.map((template, index) => (
-              <div key={index} onClick={() => setView("editor")} className="bg-white rounded-lg p-4 shadow-sm hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="bg-gray-200 rounded-md mb-4 overflow-hidden">
-                  <img src={template.imgSrc} alt={template.name} className="w-full h-auto object-cover" />
+            {templates.map((template) => (
+              <div key={template.id} onClick={() => handleTemplateSelect(template)} className="cursor-pointer group">
+                <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow aspect-4/3 flex items-center justify-center overflow-hidden">
+                  <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
                 </div>
-                <p className="text-center text-gray-700 font-medium">{template.name}</p>
+                <p className="text-center text-gray-700 font-semibold mt-2">{template.name}</p>
               </div>
             ))}
           </div>
