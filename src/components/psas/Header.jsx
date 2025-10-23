@@ -1,25 +1,18 @@
 import { Bell, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import ProfileIcon from "../../assets/icons/profile-icon.svg?react";
-import LogoutIcon from "../../assets/icons/logout-icon.svg?react";
 
-const Header = ({ onMenuClick }) => {
-  const { user, removeToken, refreshUserData } = useAuth();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+const Header = ({ onMenuClick, onProfileClick }) => {
+  const { user, refreshUserData } = useAuth();
   const location = useLocation();
+  const profileRef = useRef(null);
   
-  // Refresh user data periodically to ensure profile is up to date
   useEffect(() => {
-    // Initial refresh
     refreshUserData();
-    
-    // Set up interval to refresh user data every 30 seconds
     const refreshInterval = setInterval(() => {
       refreshUserData();
     }, 30000);
-    
     return () => clearInterval(refreshInterval);
   }, [refreshUserData]);
 
@@ -32,6 +25,13 @@ const Header = ({ onMenuClick }) => {
     if (path === "/psas/analytics") return "Event Analytics";
     if (path.includes("/reports")) return "Reports";
     return "Home";
+  };
+
+  const handleProfileClick = () => {
+    if (profileRef.current) {
+      const rect = profileRef.current.getBoundingClientRect();
+      onProfileClick(rect);
+    }
   };
 
   return (
@@ -51,11 +51,14 @@ const Header = ({ onMenuClick }) => {
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
-        <Bell className="w-5 h-5 text-gray-600" />
+        <Link to="/psas/notifications">
+          <Bell className="w-5 h-5 text-gray-600" />
+        </Link>
         <div className="relative">
           <div
+            ref={profileRef}
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            onClick={handleProfileClick}
           >
             <img
               src={user?.profilePicture || "/src/assets/users/user1.jpg"}
@@ -67,24 +70,6 @@ const Header = ({ onMenuClick }) => {
             </span>
             <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
           </div>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
-              <Link
-                to="/profile"
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                <ProfileIcon className="w-5 h-5" />
-                <span>Profile</span>
-              </Link>
-              <button
-                onClick={removeToken}
-                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                <LogoutIcon className="w-5 h-5" />
-                <span>Log Out</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </header>

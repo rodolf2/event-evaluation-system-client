@@ -26,7 +26,7 @@ function ProfileSection() {
     for (let i = 0; i < email.length; i++) {
       const char = email.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
+      hash &= hash;
     }
     return Math.abs(hash).toString(16);
   };

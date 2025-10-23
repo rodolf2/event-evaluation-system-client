@@ -11,6 +11,7 @@ import Evaluations from "./pages/psas/Evaluations";
 import Certificates from "./pages/psas/Certificates";
 import EventAnalytics from "./pages/psas/EventAnalytics";
 import Reports from "./pages/psas/Reports";
+import Notifications from "./pages/psas/Notifications";
 import ClubOfficerDashboard from "./pages/club-officers/Dashboard";
 import ParticipantDashboard from "./pages/participants/Dashboard";
 import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
@@ -56,7 +57,7 @@ function App() {
         {/* Public routes */}
         <Route
           path="/login"
-          element={!token ? <LoginPage /> : <Navigate to={getHomeRoute()} />}
+          element={token ? <Navigate to={getHomeRoute()} /> : <LoginPage />}
         />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
@@ -70,10 +71,7 @@ function App() {
             isAuthorized("psas") ? <Home /> : <Navigate to={getHomeRoute()} />
           }
         />
-        <Route
-          path="/psas"
-          element={<Navigate to="/psas/home" />}
-        />
+        <Route path="/psas" element={<Navigate to="/psas/home" />} />
         <Route
           path="/psas/evaluations"
           element={
@@ -109,6 +107,16 @@ function App() {
           element={
             isAuthorized("psas") ? (
               <Reports />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/notifications"
+          element={
+            isAuthorized("psas") ? (
+              <Notifications />
             ) : (
               <Navigate to={getHomeRoute()} />
             )

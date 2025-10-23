@@ -5,15 +5,17 @@ import CalendarWidget from "../../components/psas/CalendarWidget";
 import RecentActivity from "../../components/psas/RecentActivity";
 import Reminders from "../../components/psas/Reminders";
 import ReminderModal from "../../components/psas/ReminderModal";
+import ProfileSection from "../../components/psas/ProfileSection";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
 function Home() {
-  const [reminders, setReminders] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [modalPosition, setModalPosition] = useState(null);
-  const { token, isLoading } = useAuth();
+   const [reminders, setReminders] = useState([]);
+   const [isModalOpen, setIsModalOpen] = useState(false);
+   const [selectedDate, setSelectedDate] = useState(dayjs());
+   const [modalPosition, setModalPosition] = useState(null);
+   const [pageLoading, setPageLoading] = useState(true);
+   const { token, isLoading } = useAuth();
 
   useEffect(() => {
     const fetchReminders = async () => {
@@ -33,6 +35,13 @@ function Home() {
     if (token) {
       fetchReminders();
     }
+
+    // Simulate page loading delay for consistent user experience
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [token]);
 
   const fetchReminders = async () => {
@@ -104,10 +113,10 @@ function Home() {
   };
 
   return (
-    <PSASLayout isModalOpen={isModalOpen}>
-      {isLoading ? (
+    <PSASLayout isModalOpen={isModalOpen} pageLoading={pageLoading}>
+      {isLoading || pageLoading ? (
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1F3463]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       ) : (
         <>

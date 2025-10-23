@@ -42,7 +42,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <img
           src="/src/assets/logo/LOGO.png"
           alt="Logo"
-          className="w-12 h-12 rounded-full flex-shrink-0"
+          className="w-12 h-12 rounded-full shrink-0"
         />
         {isOpen && (
           <div className="flex flex-col ">
@@ -95,10 +95,10 @@ const SidebarItem = ({ src, label, isOpen, isActive, onClick }) => (
         isActive
           ? "bg-white text-[#1F3463] rounded-lg mx-4"
           : "text-white hover:bg-white/5 rounded-lg mx-4"
-      } ${!isOpen ? "justify-center px-2" : ""}`}
+      } ${isOpen ? "" : "justify-center px-2"}`}
     >
       {/* Icon */}
-      <div className={`relative ${!isOpen ? "mx-auto" : ""}`}>
+      <div className={`relative ${isOpen ? "" : "mx-auto"}`}>
         <img
           src={src}
           alt={label}
