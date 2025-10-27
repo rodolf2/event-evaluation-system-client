@@ -312,18 +312,25 @@ const FormCreationInterface = ({ onBack }) => {
 
   // Handle form publishing
   const handlePublish = async () => {
+    console.log("Starting form publish process");
+    console.log("User data:", { user: user?._id, token: token ? "present" : "missing" });
+
     // Flatten questions from sections and main questions
     const allQuestions = [
       ...questions,
       ...sections.flatMap((s) => s.questions || []),
     ];
 
+    console.log("All questions count:", allQuestions.length);
+
     if (allQuestions.length === 0) {
+      console.log("No questions found, showing error");
       toast.error("Please add at least one question");
       return;
     }
 
     const backendQuestions = mapQuestionsToBackend(allQuestions);
+    console.log("Mapped backend questions:", backendQuestions);
 
     const formData = {
       title: formTitle,
@@ -334,8 +341,11 @@ const FormCreationInterface = ({ onBack }) => {
       uploadedLinks: uploadedLinks,
     };
 
+    console.log("Form data to send:", formData);
+
     setIsPublishing(true);
     try {
+      console.log("Creating blank form...");
       // First create the blank form
       const createResponse = await fetch("/api/forms/blank", {
         method: "POST",
@@ -346,9 +356,14 @@ const FormCreationInterface = ({ onBack }) => {
         body: JSON.stringify(formData),
       });
 
+      console.log("Create blank form response status:", createResponse.status);
       const createData = await createResponse.json();
+      console.log("Create blank form response data:", createData);
 
       if (createData.success && createData.data && createData.data.form) {
+        console.log("Blank form created successfully, form ID:", createData.data.form._id);
+        console.log("Publishing form...");
+
         // Then publish the form to generate shareable link
         const publishResponse = await fetch(
           `/api/forms/${createData.data.form._id}/publish`,
@@ -364,12 +379,16 @@ const FormCreationInterface = ({ onBack }) => {
           }
         );
 
+        console.log("Publish form response status:", publishResponse.status);
         const publishData = await publishResponse.json();
+        console.log("Publish form response data:", publishData);
 
         if (publishData.success) {
+          console.log("Form published successfully");
           toast.success("Form published successfully!");
           // Show the shareable link to the user
           if (publishData.data && publishData.data.shareableLink) {
+            console.log("Shareable link:", publishData.data.shareableLink);
             toast.success(`Shareable link: ${publishData.data.shareableLink}`);
           }
 
@@ -385,11 +404,13 @@ const FormCreationInterface = ({ onBack }) => {
 
           navigate("/psas/evaluations");
         } else {
+          console.log("Error publishing form:", publishData.message);
           toast.error(
             `Error publishing form: ${publishData.message || "Unknown error"}`
           );
         }
       } else {
+        console.log("Error creating blank form:", createData.message);
         toast.error(
           `Error creating form: ${createData.message || "Unknown error"}`
         );
@@ -493,7 +514,6 @@ const FormCreationInterface = ({ onBack }) => {
 
               <input
                 type="text"
-                defaultValue="Untitled Form"
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 className="text-3xl sm:text-5xl font-bold w-full border-none outline-none mb-4"

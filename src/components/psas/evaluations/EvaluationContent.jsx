@@ -118,20 +118,15 @@ const RecentEvaluationCard = ({ form }) => {
     <div className="rounded-lg shadow-md">
       <div className="bg-white p-6 rounded-t-lg">
         <div className="text-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-800 text-center truncate" title={form.title}>
-            {form.title}
-          </h2>
-          <p className="text-gray-500 text-center truncate" title={form.description}>
-            {form.description || "No description"}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-800">{form.title}</h2>
+          <p className="text-gray-500">{form.description}</p>
         </div>
         <div className="flex justify-between items-center mb-4">
           <input
             type="text"
             placeholder="Write a description..."
-            value={form.description || ""}
-            readOnly
-            className="w-full pr-6 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+            className="w-full pr-6 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled
           />
         </div>
         <div>
@@ -140,6 +135,7 @@ const RecentEvaluationCard = ({ form }) => {
               type="radio"
               name={`option-${form.id}`}
               className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              disabled
             />
             <label className="ml-3 text-gray-700">Option 1</label>
           </div>
@@ -148,6 +144,7 @@ const RecentEvaluationCard = ({ form }) => {
               type="radio"
               name={`option-${form.id}`}
               className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              disabled
             />
             <label className="ml-3 text-gray-700">Option 2</label>
           </div>
@@ -156,6 +153,7 @@ const RecentEvaluationCard = ({ form }) => {
               type="radio"
               name={`option-${form.id}`}
               className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              disabled
             />
             <label className="ml-3 text-gray-700">Option 3</label>
           </div>
@@ -167,9 +165,7 @@ const RecentEvaluationCard = ({ form }) => {
           background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
         }}
       >
-        <h3 className="text-xl font-bold text-white truncate" title={form.title}>
-          {form.title}
-        </h3>
+        <h3 className="text-xl font-bold text-white">{form.title}</h3>
       </div>
     </div>
   );
