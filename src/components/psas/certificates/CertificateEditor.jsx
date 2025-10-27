@@ -27,7 +27,7 @@ import {
 const BASE_WIDTH = 800;
 const BASE_HEIGHT = 600;
 
-const CertificateEditor = ({ onBack, initialData }) => {
+const CertificateEditor = ({ initialData }) => {
   const canvasRef = useRef(null);
   const canvasContainerRef = useRef(null);
   const fabricCanvas = useRef(null);

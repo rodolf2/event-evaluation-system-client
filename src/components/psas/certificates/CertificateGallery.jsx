@@ -2,7 +2,7 @@ import { Plus, Search, Filter } from "lucide-react";
 import { useState } from "react";
 import { templates } from "../../../templates";
 
-const CertificateGallery = ({ onTemplateSelect, onBlankCanvas }) => {
+const CertificateGallery = ({ onTemplateSelect, onBlankCanvas, isFromEvaluation = false }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
 
@@ -21,7 +21,9 @@ const CertificateGallery = ({ onTemplateSelect, onBlankCanvas }) => {
   return (
     <div className="p-6 bg-gray-50 max-h-screen">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Create a certificate</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          {isFromEvaluation ? "Choose a Certificate Template" : "Create a certificate"}
+        </h2>
         <div onClick={onBlankCanvas} className="rounded-lg p-4 cursor-pointer hover:shadow-xl transition-shadow h-[330px]" style={{ background: "linear-gradient(180deg, #002474, #324BA3)" }}>
           <div className="bg-white rounded-md p-16 flex items-center justify-center h-[80%]">
             <Plus size={56} className="text-blue-700" />

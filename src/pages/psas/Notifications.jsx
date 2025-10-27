@@ -55,7 +55,7 @@ const NotificationItem = ({ notification, isSelected, onSelect }) => {
 };
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications] = useState(mockNotifications);
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);

@@ -13,14 +13,25 @@ function AuthCallback() {
 
     if (token) {
       saveToken(token);
-      // We'll let the root route handle the redirection based on role
-      navigate("/");
+      // Add a small delay to ensure token is saved before redirecting
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
     } else {
       navigate("/login");
     }
   }, [location, navigate, saveToken]);
 
-  return <div>Loading...</div>;
+  return <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '18px',
+    fontFamily: 'Arial, sans-serif'
+  }}>
+    Processing authentication...
+  </div>;
 }
 
 export default AuthCallback;

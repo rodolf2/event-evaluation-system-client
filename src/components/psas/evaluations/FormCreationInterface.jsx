@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Calendar,
@@ -9,24 +10,149 @@ import {
   MoreVertical,
   Star,
   ChevronsDownUp,
+  Upload,
+  Link as LinkIcon,
+  FileText,
+  X,
 } from "lucide-react";
-import { templates } from "../../../templates";
 import Question from "./Question";
 import Section from "./Section";
 import ImportCSVModal from "./ImportCSVModal";
+import { useAuth } from "../../../contexts/useAuth";
+import toast from "react-hot-toast";
 
 const FormCreationInterface = ({ onBack }) => {
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [sections, setSections] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
+  // Event date range state (for future use)
+  // const eventStartDate = null;
+  // const eventEndDate = null;
   const [isFabOpen, setIsFabOpen] = useState(false);
-  const [isCertificateLinked, setIsCertificateLinked] = useState(false);
-  const [showCertificateModal, setShowCertificateModal] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  // Certificate linking state (for future use)
+  // const isCertificateLinked = false;
   const [showImportModal, setShowImportModal] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [formTitle, setFormTitle] = useState("Untitled Form");
+  const [formDescription, setFormDescription] = useState("Form Description");
+  // Loading state (for future use)
+  // const isLoading = false;
+
+  // Upload functionality states
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadedLinks, setUploadedLinks] = useState([]);
 
   const makeId = () => Date.now() + Math.floor(Math.random() * 1000);
+
+  // Check for uploaded form data on component mount
+  useEffect(() => {
+    const fetchUploadedForm = async () => {
+      const uploadedFormId = sessionStorage.getItem("uploadedFormId");
+
+      if (uploadedFormId && token) {
+        // Loading state disabled
+        try {
+          const response = await fetch(`/api/forms/${uploadedFormId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              const form = data.data;
+
+              // Set form title and description
+              setFormTitle(form.title || "Untitled Form");
+              setFormDescription(form.description || "Form Description");
+
+              // Use clientQuestions if available, otherwise map from questions
+              if (form.clientQuestions && form.clientQuestions.length > 0) {
+                setQuestions(
+                  form.clientQuestions.map((q) => ({
+                    ...q,
+                    id: makeId(),
+                  }))
+                );
+              } else if (form.questions && form.questions.length > 0) {
+                // Map backend question format to client format
+                setQuestions(
+                  form.questions.map((q) => {
+                    // Convert backend question type to client format
+                    let clientType = "Paragraph";
+                    switch (q.type) {
+                      case "multiple_choice":
+                        clientType = "Multiple Choices";
+                        break;
+                      case "short_answer":
+                        clientType = "Short Answer";
+                        break;
+                      case "paragraph":
+                        clientType = "Paragraph";
+                        break;
+                      case "scale":
+                        clientType = "Scale";
+                        break;
+                      case "date":
+                        clientType = "Date";
+                        break;
+                      case "time":
+                        clientType = "Time";
+                        break;
+                      case "file_upload":
+                        clientType = "File Upload";
+                        break;
+                      default:
+                        clientType = "Paragraph";
+                    }
+
+                    return {
+                      id: makeId(),
+                      title: q.title || "Untitled Question",
+                      type: clientType,
+                      required: q.required || false,
+                      options: q.options || [],
+                      ratingScale: q.high || 5,
+                      likertStart: q.low || 1,
+                      likertStartLabel: q.lowLabel || "Poor",
+                      likertEndLabel: q.highLabel || "Excellent",
+                      emojiStyle: "Default",
+                    };
+                  })
+                );
+              }
+
+              // Set uploaded files and links
+              if (form.uploadedFiles && form.uploadedFiles.length > 0) {
+                setUploadedFiles(form.uploadedFiles);
+              }
+
+              if (form.uploadedLinks && form.uploadedLinks.length > 0) {
+                setUploadedLinks(form.uploadedLinks);
+              }
+
+              toast.success("Form loaded successfully!");
+            }
+          } else {
+            toast.error("Failed to load the uploaded form");
+          }
+        } catch (error) {
+          console.error("Error loading form:", error);
+          toast.error("An error occurred while loading the form");
+        } finally {
+          // Loading state disabled
+          // Clear the uploaded form ID from session storage
+          sessionStorage.removeItem("uploadedFormId");
+        }
+      }
+    };
+
+    fetchUploadedForm();
+  }, [token]);
 
   const addQuestion = (sectionId = null) => {
     const newQuestion = {
@@ -120,6 +246,162 @@ const FormCreationInterface = ({ onBack }) => {
     setSections((prev) => prev.filter((s) => s.id !== id));
   };
 
+  // Upload functionality
+  const handleLinkUpload = async (links) => {
+    try {
+      // For now, just add to local state since we don't have a form ID yet
+      const newLinks = links.map((link) => ({
+        url: link.url,
+        title: link.title || "",
+        description: link.description || "",
+        uploadedAt: new Date(),
+      }));
+
+      setUploadedLinks((prev) => [...prev, ...newLinks]);
+    } catch (error) {
+      console.error("Error handling links:", error);
+    }
+  };
+
+  const removeUploadedFile = (index) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Map client question format to backend format
+  const mapQuestionsToBackend = (clientQuestions) => {
+    return clientQuestions.map((q) => {
+      let type = "short_answer";
+      switch (q.type) {
+        case "Multiple Choices":
+          type = "multiple_choice";
+          break;
+        case "Short Answer":
+          type = "short_answer";
+          break;
+        case "Paragraph":
+          type = "paragraph";
+          break;
+        case "Scale":
+          type = "scale";
+          break;
+        case "Date":
+          type = "date";
+          break;
+        case "Time":
+          type = "time";
+          break;
+        case "File Upload":
+          type = "file_upload";
+          break;
+        default:
+          type = "short_answer";
+      }
+
+      return {
+        title: q.title || "Untitled Question",
+        type: type,
+        required: q.required || false,
+        options: q.options || [],
+        low: q.likertStart || 1,
+        high: q.ratingScale || 5,
+        lowLabel: q.likertStartLabel || "Poor",
+        highLabel: q.likertEndLabel || "Excellent",
+      };
+    });
+  };
+
+  // Handle form publishing
+  const handlePublish = async () => {
+    // Flatten questions from sections and main questions
+    const allQuestions = [
+      ...questions,
+      ...sections.flatMap((s) => s.questions || []),
+    ];
+
+    if (allQuestions.length === 0) {
+      toast.error("Please add at least one question");
+      return;
+    }
+
+    const backendQuestions = mapQuestionsToBackend(allQuestions);
+
+    const formData = {
+      title: formTitle,
+      description: formDescription,
+      questions: backendQuestions,
+      createdBy: user?._id,
+      uploadedFiles: uploadedFiles,
+      uploadedLinks: uploadedLinks,
+    };
+
+    setIsPublishing(true);
+    try {
+      // First create the blank form
+      const createResponse = await fetch("/api/forms/blank", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const createData = await createResponse.json();
+
+      if (createData.success && createData.data && createData.data.form) {
+        // Then publish the form to generate shareable link
+        const publishResponse = await fetch(
+          `/api/forms/${createData.data.form._id}/publish`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              questions: backendQuestions,
+            }),
+          }
+        );
+
+        const publishData = await publishResponse.json();
+
+        if (publishData.success) {
+          toast.success("Form published successfully!");
+          // Show the shareable link to the user
+          if (publishData.data && publishData.data.shareableLink) {
+            toast.success(`Shareable link: ${publishData.data.shareableLink}`);
+          }
+
+          // Clear the form inputs after successful publishing
+          setFormTitle("Untitled Form");
+          setFormDescription("Form Description");
+          setQuestions([]);
+          setSections([]);
+          setUploadedFiles([]);
+          setUploadedLinks([]);
+          setSelectedDate("");
+          // Event dates will be cleared when implemented
+
+          navigate("/psas/evaluations");
+        } else {
+          toast.error(
+            `Error publishing form: ${publishData.message || "Unknown error"}`
+          );
+        }
+      } else {
+        toast.error(
+          `Error creating form: ${createData.message || "Unknown error"}`
+        );
+      }
+    } catch (error) {
+      console.error("Error publishing form:", error);
+      toast.error(`Failed to publish form: ${error.message}`);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen">
       <div className="p-4 md:p-6">
@@ -131,21 +413,23 @@ const FormCreationInterface = ({ onBack }) => {
             >
               <Plus size={24} className="rotate-45" />
             </button>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
-              {!selectedDate && (
-                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
-                  Pick a date
-                </span>
-              )}
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className={`pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full sm:w-48 ${
-                  selectedDate ? "text-gray-800" : "text-transparent"
-                }`}
-              />
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+                {!selectedDate && (
+                  <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
+                    Pick a date
+                  </span>
+                )}
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className={`pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full sm:w-48 ${
+                    selectedDate ? "text-gray-800" : "text-transparent"
+                  }`}
+                />
+              </div>
             </div>
           </div>
 
@@ -162,9 +446,19 @@ const FormCreationInterface = ({ onBack }) => {
             >
               <UserPlus className="w-5 h-5" />
             </button>
-            <button className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition">
-              Publish
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing}
+                className={`px-6 py-2 font-semibold rounded-md transition ${
+                  isPublishing
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+              >
+                {isPublishing ? "Publishing..." : "Publish"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -200,10 +494,14 @@ const FormCreationInterface = ({ onBack }) => {
               <input
                 type="text"
                 defaultValue="Untitled Form"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
                 className="text-3xl sm:text-5xl font-bold w-full border-none outline-none mb-4"
               />
               <textarea
                 placeholder="Add a description"
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
                 className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none"
                 rows={1}
               />
@@ -279,14 +577,10 @@ const FormCreationInterface = ({ onBack }) => {
 
         <div className="flex justify-center py-8 bg-gray-100">
           <button
-            onClick={() => setShowCertificateModal(true)}
-            className={`px-8 py-3 rounded-lg font-semibold text-white transition-colors ${
-              isCertificateLinked
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-500 hover:bg-gray-600"
-            }`}
+            onClick={() => navigate("/psas/certificates?from=evaluation")}
+            className="px-8 py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
           >
-            {isCertificateLinked ? "Certificate Linked" : "Link Certificate"}
+            Link Certificate
           </button>
         </div>
 
@@ -326,58 +620,107 @@ const FormCreationInterface = ({ onBack }) => {
           </button>
         </div>
 
-        {showCertificateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-4xl z-60">
-              <h2 className="text-2xl font-bold mb-4">
-                Choose a Certificate Template
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[70vh] overflow-y-auto">
-                {templates.map((template) => (
-                  <div
-                    key={template.id}
-                    className="relative border rounded-lg p-4 text-center hover:shadow-lg hover:border-blue-500 cursor-pointer group"
-                  >
-                    <div className="bg-gray-200 h-32 flex items-center justify-center rounded-md overflow-hidden">
-                      <img
-                        src={template.thumbnail}
-                        alt={template.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <p className="text-gray-700 font-semibold mt-2">
-                      {template.name}
-                    </p>
-                    <div className="absolute inset-0 bg-[#5F6368] bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+        {/* Upload Modal - Removed since functionality moved to ImportCSVModal */}
+
+        {/* Display uploaded files and links */}
+        {(uploadedFiles.length > 0 || uploadedLinks.length > 0) && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4">
+              Uploaded Files & Links
+            </h3>
+
+            {uploadedFiles.length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-700 mb-2">Files</h4>
+                <div className="space-y-2">
+                  {uploadedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText size={20} className="text-gray-500" />
+                        <div>
+                          <p className="font-medium">
+                            {file.originalName || file.filename || "File"}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {file.size
+                              ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
+                              : "Unknown size"}
+                          </p>
+                        </div>
+                      </div>
                       <button
-                        onClick={() => {
-                          setSelectedTemplateId(template.id);
-                          setIsCertificateLinked(true);
-                          setShowCertificateModal(false);
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        onClick={() => removeUploadedFile(index)}
+                        className="p-1 text-red-500 hover:bg-red-100 rounded"
                       >
-                        Select
+                        <X size={16} />
                       </button>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => setShowCertificateModal(false)}
-                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
+            )}
+
+            {uploadedLinks.length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-700 mb-2">Links</h4>
+                <div className="space-y-2">
+                  {uploadedLinks.map((link, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <LinkIcon size={20} className="text-gray-500" />
+                        <div>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-blue-600 hover:underline"
+                          >
+                            {link.title || link.url}
+                          </a>
+                          {link.description && (
+                            <p className="text-sm text-gray-500">
+                              {link.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setUploadedLinks((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                        }}
+                        className="p-1 text-red-500 hover:bg-red-100 rounded"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
         <ImportCSVModal
           isOpen={showImportModal}
           onClose={() => setShowImportModal(false)}
+          onFileUpload={(url) => {
+            handleLinkUpload([
+              {
+                url,
+                title: "CSV File",
+                description: "CSV file for attendee import",
+              },
+            ]);
+            setShowImportModal(false);
+          }}
         />
       </div>
     </div>

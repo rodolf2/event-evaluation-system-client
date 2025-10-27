@@ -12,7 +12,7 @@ const EvaluationContent = ({
   setSortBy,
   evaluationForms,
   onCreateNew,
-  onImport
+  onShowUploadModal
 }) => {
   return (
     <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
@@ -42,7 +42,7 @@ const EvaluationContent = ({
 
               <div
                 className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10"
-                onClick={onImport}
+                onClick={onShowUploadModal}
               >
                 <div className="w-24 h-24 sm:w-30 sm:h-32 flex items-center justify-center mx-auto mb-4">
                   <img
@@ -102,49 +102,74 @@ const EvaluationContent = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {evaluationForms.map((form) => (
-              <div
-                key={form.id}
-                className="bg-white rounded-xl shadow-lg p-3 sm:p-4 cursor-pointer duration-300 min-h-[200px] sm:min-h-[180px]"
-                style={{
-                  background:
-                    "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-                }}
-              >
-                <div className="flex items-start justify-between mb-3 sm:mb-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-sm sm:text-base">
-                      F
-                    </span>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs sm:text-sm font-semibold ${
-                      form.status === "Published"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {form.status}
-                  </span>
-                </div>
-
-                <h3 className="font-bold text-gray-800 mb-2 text-sm sm:text-base truncate">
-                  {form.title}
-                </h3>
-                <p className="text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-2">
-                  {form.description}
-                </p>
-                <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500">
-                  <span className="font-medium">
-                    {form.responses} responses
-                  </span>
-                  <span>{new Date(form.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
+              <RecentEvaluationCard key={form.id} form={form} />
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const RecentEvaluationCard = ({ form }) => {
+  return (
+    <div className="rounded-lg shadow-md">
+      <div className="bg-white p-6 rounded-t-lg">
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 text-center truncate" title={form.title}>
+            {form.title}
+          </h2>
+          <p className="text-gray-500 text-center truncate" title={form.description}>
+            {form.description || "No description"}
+          </p>
+        </div>
+        <div className="flex justify-between items-center mb-4">
+          <input
+            type="text"
+            placeholder="Write a description..."
+            value={form.description || ""}
+            readOnly
+            className="w-full pr-6 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+          />
+        </div>
+        <div>
+          <div className="flex items-center mb-4">
+            <input
+              type="radio"
+              name={`option-${form.id}`}
+              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+            />
+            <label className="ml-3 text-gray-700">Option 1</label>
+          </div>
+          <div className="flex items-center mb-4">
+            <input
+              type="radio"
+              name={`option-${form.id}`}
+              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+            />
+            <label className="ml-3 text-gray-700">Option 2</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="radio"
+              name={`option-${form.id}`}
+              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+            />
+            <label className="ml-3 text-gray-700">Option 3</label>
+          </div>
+        </div>
+      </div>
+      <div
+        className="p-6 rounded-b-lg"
+        style={{
+          background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+        }}
+      >
+        <h3 className="text-xl font-bold text-white truncate" title={form.title}>
+          {form.title}
+        </h3>
       </div>
     </div>
   );

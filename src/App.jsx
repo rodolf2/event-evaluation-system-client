@@ -1,3 +1,4 @@
+import { Toaster } from "react-hot-toast";
 import {
   BrowserRouter as Router,
   Routes,
@@ -53,6 +54,7 @@ function App() {
 
   return (
     <Router>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         {/* Public routes */}
         <Route

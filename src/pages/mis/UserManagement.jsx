@@ -16,7 +16,7 @@ function UserManagement() {
   const fetchUsers = useCallback(async () => {
     if (!token) return;
     try {
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch('/api/users', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -24,7 +24,6 @@ function UserManagement() {
       const data = await response.json();
       if (data.success) {
         setUsers(data.data.users);
-        setFilteredUsers(data.data.users);
       } else {
         setMessage(`Error: ${data.message}`);
       }
@@ -53,7 +52,7 @@ function UserManagement() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,7 +90,7 @@ function UserManagement() {
 
   const handleUpdateUser = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${editingUserId}`, {
+      const response = await fetch(`/api/users/${editingUserId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

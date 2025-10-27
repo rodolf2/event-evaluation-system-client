@@ -20,7 +20,7 @@ function Home() {
   useEffect(() => {
     const fetchReminders = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/reminders", {
+        const response = await fetch("/api/reminders", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -46,7 +46,7 @@ function Home() {
 
   const fetchReminders = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/reminders", {
+      const response = await fetch("/api/reminders", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -60,7 +60,7 @@ function Home() {
 
   const addReminder = async (reminder) => {
     try {
-      const response = await fetch("http://localhost:5000/api/reminders", {
+      const response = await fetch("/api/reminders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,7 +85,7 @@ function Home() {
   const deleteReminder = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/reminders/${id}`,
+        `/api/reminders/${id}`,
         {
           method: "DELETE",
           headers: {

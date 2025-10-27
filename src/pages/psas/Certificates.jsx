@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import PSASLayout from "../../components/psas/PSASLayout";
 import CertificateEditor from "../../components/psas/certificates/CertificateEditor";
 import CertificateGallery from "../../components/psas/certificates/CertificateGallery";
 
 const Certificates = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [view, setView] = useState("gallery");
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isFromEvaluation = searchParams.get("from") === "evaluation";
 
   useEffect(() => {
     // Simulate loading delay for consistent user experience
@@ -16,8 +20,13 @@ const Certificates = () => {
   }, []);
 
   const handleTemplateSelect = (template) => {
-    setInitialData(template.data);
-    setView("editor");
+    if (isFromEvaluation) {
+      // Navigate back to evaluation with selected template
+      navigate("/psas/evaluations?template=" + template.id);
+    } else {
+      setInitialData(template.data);
+      setView("editor");
+    }
   };
 
   const handleBlankCanvas = () => {
@@ -46,7 +55,7 @@ const Certificates = () => {
 
   return (
     <PSASLayout>
-      <CertificateGallery onTemplateSelect={handleTemplateSelect} onBlankCanvas={handleBlankCanvas} />
+      <CertificateGallery onTemplateSelect={handleTemplateSelect} onBlankCanvas={handleBlankCanvas} isFromEvaluation={isFromEvaluation} />
     </PSASLayout>
   );
 };

@@ -1,6 +1,6 @@
-import { UploadCloud, FileCheck2 } from "lucide-react";
+import { UploadCloud, FileCheck2, Link as LinkIcon } from "lucide-react";
 
-const ImportCSVModal = ({ isOpen, onClose }) => {
+const ImportCSVModal = ({ isOpen, onClose, onFileUpload }) => {
   if (!isOpen) return null;
 
   return (
@@ -21,15 +21,29 @@ const ImportCSVModal = ({ isOpen, onClose }) => {
           <span className="grow border-t border-gray-300"></span>
         </div>
 
-        {/* File URL Input */}
-        <input
-          type="text"
-          placeholder="Add file URL"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6"
-        />
+        {/* File URL Input - CSV and other file URLs */}
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">File URL</label>
+            <input
+              type="text"
+              placeholder="Add CSV file URL"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                  onFileUpload && onFileUpload(e.target.value.trim());
+                  e.target.value = '';
+                }
+              }}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Add URL to a CSV file for importing attendee data
+            </p>
+          </div>
+        </div>
 
-        {/* Upload Progress */}
-        <div className="bg-gray-100 rounded-lg p-4 flex items-center">
+        {/* Upload Progress - Hide for now since this is just a placeholder */}
+        {/* <div className="bg-gray-100 rounded-lg p-4 flex items-center">
             <FileCheck2 className="w-6 h-6 text-blue-600 mr-4" />
             <div className="grow">
                 <p className="font-semibold text-gray-800">Ictweekattendance.csv</p>
@@ -41,7 +55,7 @@ const ImportCSVModal = ({ isOpen, onClose }) => {
                 </div>
             </div>
             <button className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold ml-4">View</button>
-        </div>
+        </div> */}
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 mt-8">

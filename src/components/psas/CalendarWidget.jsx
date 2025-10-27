@@ -3,8 +3,10 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const CalendarWidget = ({ openModal, reminders = [], onDateSelect }) => {
+const CalendarWidget = ({ openModal, reminders = [], onDateSelect, selectedStartDate: propStartDate, selectedEndDate: propEndDate, onRangeSelect }) => {
   const [month, setMonth] = useState(dayjs());
+  const [selectedStartDate, setSelectedStartDate] = useState(propStartDate || null);
+  const [selectedEndDate, setSelectedEndDate] = useState(propEndDate || null);
 
   const daysInMonth = month.daysInMonth();
   const startDay = month.startOf("month").day();
@@ -18,6 +20,19 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect }) => {
       (reminder) =>
         dayjs(reminder.date).format("YYYY-MM-DD") === date.format("YYYY-MM-DD")
     );
+  };
+
+  // Helper function to check if date is within selected range
+  const isInRange = (date) => {
+    if (!selectedStartDate || !selectedEndDate) return false;
+    return date.isAfter(selectedStartDate.subtract(1, 'day')) &&
+           date.isBefore(selectedEndDate.add(1, 'day'));
+  };
+
+  // Helper function to check if date is start or end date
+  const isStartOrEnd = (date) => {
+    if (!selectedStartDate && !selectedEndDate) return false;
+    return date.isSame(selectedStartDate, 'day') || date.isSame(selectedEndDate, 'day');
   };
 
   const handlePrev = () => setMonth(month.subtract(1, "month"));
@@ -54,7 +69,26 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect }) => {
           const isToday = date.isSame(dayjs(), "day");
 
           const handleDayClick = (e) => {
-            if (onDateSelect) {
+            if (onRangeSelect) {
+              // Handle date range selection
+              if (!selectedStartDate) {
+                setSelectedStartDate(date);
+                onRangeSelect(date, null);
+              } else if (!selectedEndDate && date.isBefore(selectedStartDate)) {
+                // If clicking an earlier date, treat as new start date
+                setSelectedStartDate(date);
+                onRangeSelect(date, null);
+                setSelectedEndDate(null);
+              } else if (!selectedEndDate) {
+                setSelectedEndDate(date);
+                onRangeSelect(selectedStartDate, date);
+              } else {
+                // Reset and start new selection
+                setSelectedStartDate(date);
+                setSelectedEndDate(null);
+                onRangeSelect(date, null);
+              }
+            } else if (onDateSelect) {
               onDateSelect(date);
             } else {
               const calendarRect = e.currentTarget
@@ -68,6 +102,8 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect }) => {
           };
 
           const hasReminderForDay = hasReminder(date);
+          const inRange = isInRange(date);
+          const isStartOrEndDate = isStartOrEnd(date);
 
           return (
             <div
@@ -78,7 +114,11 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect }) => {
               <div
                 className={`rounded-full p-2 flex items-center justify-center
                   ${
-                    isToday
+                    isStartOrEndDate
+                      ? "bg-[#1F3463] text-white font-bold"
+                      : inRange
+                      ? "bg-[#EBF1FF] text-gray-700"
+                      : isToday
                       ? "bg-[#1F3463] text-white font-bold"
                       : hasReminderForDay
                       ? "bg-blue-100 text-[#1F3463]"
