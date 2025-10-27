@@ -99,6 +99,47 @@ const Question = memo(function Question(props) {
   
     const renderOptions = () => {
       switch (type) {
+        case "Short Answer":
+          return (
+            <div className="mt-4">
+              <input
+                type="text"
+                placeholder="Short answer text"
+                className="w-full border border-gray-200 rounded-md p-2"
+              />
+            </div>
+          );
+
+        case "Date":
+          return (
+            <div className="mt-4">
+              <input
+                type="date"
+                className="w-full border border-gray-200 rounded-md p-2"
+              />
+            </div>
+          );
+
+        case "Time":
+          return (
+            <div className="mt-4">
+              <input
+                type="time"
+                className="w-full border border-gray-200 rounded-md p-2"
+              />
+            </div>
+          );
+
+        case "File Upload":
+          return (
+            <div className="mt-4">
+              <input
+                type="file"
+                className="w-full border border-gray-200 rounded-md p-2"
+              />
+            </div>
+          );
+
         case "Numeric Ratings":
           return (
             <div className="mt-4">
@@ -334,10 +375,14 @@ const Question = memo(function Question(props) {
             }
             className="p-2 border rounded-md"
           >
-            <option>Multiple Choices</option>
-            <option>Numeric Ratings</option>
-            <option>Likert Scale</option>
-            <option>Paragraph</option>
+            <option value="Multiple Choices">Multiple Choices</option>
+            <option value="Numeric Ratings">Numeric Ratings</option>
+            <option value="Likert Scale">Likert Scale</option>
+            <option value="Paragraph">Paragraph</option>
+            <option value="Short Answer">Short Answer</option>
+            <option value="Date">Date</option>
+            <option value="Time">Time</option>
+            <option value="File Upload">File Upload</option>
           </select>
         </div>
   

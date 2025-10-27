@@ -54,13 +54,28 @@ const Evaluations = () => {
     }
   }, [token]);
 
+  // Handle editing a form
+  useEffect(() => {
+    const editParam = searchParams.get("edit");
+    if (editParam) {
+      // Store the form ID to edit and switch to create view
+      sessionStorage.setItem('editFormId', editParam);
+      setView("create");
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     if (selectedTemplate) {
       setView("create");
     }
   }, [selectedTemplate]);
 
-  const handleCreateNew = () => setView("create");
+  const handleCreateNew = () => {
+    // Clear any temporary form data to ensure we start with a blank form
+    sessionStorage.removeItem('tempFormData');
+    sessionStorage.removeItem('editFormId');
+    setView("create");
+  };
   const handleShowUploadModal = () => {
     setShowUploadModal(true);
   };
@@ -92,10 +107,11 @@ const Evaluations = () => {
 
     try {
       let response;
-      
+      let extractedData;
+
       if (selectedFile.type === 'google-form') {
-        // Handle Google Forms URL upload
-        response = await fetch("/api/forms/upload-by-url", {
+        // Extract data from Google Forms URL without creating form
+        response = await fetch("/api/forms/extract-by-url", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -103,74 +119,79 @@ const Evaluations = () => {
           },
           body: JSON.stringify({
             url: selectedFile.url,
-            createdBy: user?._id,
           }),
         });
-      } else {
-        // Handle file upload
+
+        if (response.ok) {
+          const responseData = await response.json();
+          extractedData = responseData.data;
+        }
+      } else { // 'file'
+        // For file uploads, extract data from the file
         const formData = new FormData();
         formData.append("file", selectedFile.file);
-        formData.append("createdBy", user?._id);
 
-        response = await fetch("/api/forms/upload", {
+        response = await fetch("/api/forms/extract-by-file", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token}`,
           },
           body: formData,
         });
+
+        if (response.ok) {
+          const responseData = await response.json();
+          extractedData = responseData.data;
+        }
       }
 
-      if (response.ok) {
-        const responseData = await response.json();
-        
-        if (responseData.success && responseData.data && responseData.data.form) {
-          toast.success(selectedFile.type === 'google-form' 
-            ? "Google Form imported successfully!" 
-            : "Form uploaded successfully!");
-          
-          // Fetch the latest forms to include the newly uploaded one
-          const fetchForms = async () => {
-            try {
-              const response = await fetch("/api/forms", {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
-              const data = await response.json();
-              if (data.success) {
-                const mappedForms = data.data.map(form => ({
-                  id: form._id,
-                  title: form.title || `Evaluation Form ${form._id.slice(-6)}`,
-                  description: form.description,
-                  status: form.status,
-                  createdAt: new Date(form.createdAt).toLocaleDateString(),
-                  responses: form.responseCount || 0,
-                }));
-                setEvaluationForms(mappedForms);
-              }
-            } catch (error) {
-              console.error("Error fetching forms:", error);
-            }
-          };
+      if (extractedData) {
+        toast.success(selectedFile.type === 'google-form'
+          ? "Google Form data extracted successfully!"
+          : "File data extracted successfully!");
 
-          await fetchForms();
-          
-          // Close the modal and clear selection
-          setShowUploadModal(false);
-          setSelectedFile(null);
-          
-          // Switch to create view with the uploaded form data
-          setView("create");
-          
-          // Store the uploaded form ID to be used by FormCreationInterface
-          sessionStorage.setItem('uploadedFormId', responseData.data.form._id);
-        } else {
-          toast.error("Upload succeeded but form data is incomplete");
-        }
+        // Store extracted data temporarily in sessionStorage
+        const tempData = {
+          title: extractedData.title,
+          description: extractedData.description,
+          questions: extractedData.questions || [],
+          uploadedFiles: extractedData.uploadedFiles || [],
+          uploadedLinks: extractedData.uploadedLinks || [],
+          file: selectedFile.type === 'file' ? selectedFile.file : null, // Keep the actual file for later upload
+        };
+
+        sessionStorage.setItem('tempFormData', JSON.stringify(tempData));
+
+        // Close the modal and clear selection
+        setShowUploadModal(false);
+        setSelectedFile(null);
+
+        // Switch to create view with the extracted data
+        setView("create");
+
+        // Clear any previous uploaded form ID since we're using temp data now
+        sessionStorage.removeItem('uploadedFormId');
       } else {
-        const errorData = await response.json();
-        toast.error(`${selectedFile.type === 'google-form' ? 'Import' : 'Upload'} failed: ${errorData.message}`);
+        // Handle error
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          console.error('Failed to parse error response as JSON:', jsonError);
+          errorData = { message: 'Unknown server error' };
+        }
+
+        if (selectedFile.type === 'google-form') {
+          if (response.status === 409) {
+            toast.error("This Google Form has already been imported. You can find it in your recent evaluations.");
+          } else if (response.status === 400) {
+            toast.error(errorData.message || "Invalid input. Please check your data and try again.");
+          } else {
+            toast.error(`Import failed: ${errorData.message}`);
+          }
+        } else { // 'file'
+            toast.error(`File extraction failed: ${errorData.message || 'Unknown error'}`);
+        }
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -192,7 +213,11 @@ const Evaluations = () => {
     <>
       <PSASLayout>
         {view === "create" ? (
-          <FormCreationInterface onBack={() => setView("dashboard")} />
+          <FormCreationInterface onBack={() => {
+            setView("dashboard");
+            // Clear edit form ID when going back
+            sessionStorage.removeItem('editFormId');
+          }} />
         ) : (
           <EvaluationContent
             searchTerm={searchTerm}

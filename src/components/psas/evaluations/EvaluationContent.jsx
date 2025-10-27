@@ -114,58 +114,82 @@ const EvaluationContent = ({
 };
 
 const RecentEvaluationCard = ({ form }) => {
+  const handleCardClick = () => {
+    // Navigate to the form creation interface to edit this form
+    // This will be handled by the parent component through props
+    window.location.href = `/psas/evaluations?edit=${form.id}`;
+  };
+
   return (
-    <div className="rounded-lg shadow-md">
-      <div className="bg-white p-6 rounded-t-lg">
-        <div className="text-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-800">{form.title}</h2>
-          <p className="text-gray-500">{form.description}</p>
+    <div
+      className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col"
+      onClick={handleCardClick}
+    >
+      <div className="bg-white p-6 rounded-t-lg flex-grow flex flex-col">
+        <div className="text-center mb-4 flex-shrink-0">
+          <h2 className="text-2xl font-bold text-gray-800 line-clamp-2">{form.title}</h2>
+          <p className="text-gray-500 text-sm line-clamp-2">{form.description}</p>
         </div>
-        <div className="flex justify-between items-center mb-4">
-          <input
-            type="text"
-            placeholder="Write a description..."
-            className="w-full pr-6 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled
-          />
-        </div>
-        <div>
-          <div className="flex items-center mb-4">
+
+        {/* Fixed preview section */}
+        <div className="flex-grow">
+          <div className="flex justify-between items-center mb-4">
             <input
-              type="radio"
-              name={`option-${form.id}`}
-              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              type="text"
+              placeholder="Sample question..."
+              className="w-full pr-6 py-3 text-sm border border-gray-300 rounded-lg bg-gray-50"
               disabled
+              value="Sample question preview"
             />
-            <label className="ml-3 text-gray-700">Option 1</label>
           </div>
-          <div className="flex items-center mb-4">
-            <input
-              type="radio"
-              name={`option-${form.id}`}
-              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-              disabled
-            />
-            <label className="ml-3 text-gray-700">Option 2</label>
-          </div>
-          <div className="flex items-center">
-            <input
-              type="radio"
-              name={`option-${form.id}`}
-              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-              disabled
-            />
-            <label className="ml-3 text-gray-700">Option 3</label>
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <input
+                type="radio"
+                name={`option-${form.id}`}
+                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                disabled
+              />
+              <label className="ml-3 text-gray-700 text-sm">Option 1</label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="radio"
+                name={`option-${form.id}`}
+                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                disabled
+              />
+              <label className="ml-3 text-gray-700 text-sm">Option 2</label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="radio"
+                name={`option-${form.id}`}
+                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                disabled
+              />
+              <label className="ml-3 text-gray-700 text-sm">Option 3</label>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Fixed footer */}
       <div
-        className="p-6 rounded-b-lg"
+        className="p-4 rounded-b-lg flex-shrink-0"
         style={{
           background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
         }}
       >
-        <h3 className="text-xl font-bold text-white">{form.title}</h3>
+        <h3 className="text-lg font-bold text-white line-clamp-1">{form.title}</h3>
+        <div className="mt-2 text-sm text-white/80 flex items-center justify-between">
+          <div>
+            <span>{form.responses} responses</span>
+            <span className="mx-2">•</span>
+            <span>{form.status}</span>
+          </div>
+          <span className="text-xs">{form.createdAt}</span>
+        </div>
       </div>
     </div>
   );

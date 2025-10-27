@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Search, ArrowUp, ArrowDown } from 'lucide-react';
 import PSASLayout from '../../components/psas/PSASLayout';
+import ReportModal from '../../components/psas/ReportModal';
 
-// Mock data for reports
-const mockReports = Array.from({ length: 11 }, (_, i) => ({
-  id: i + 1,
-  title: 'Sample Event Evaluation Report',
-  thumbnail: '/Certificate.png', // Using a placeholder image from the project root
-}));
+const ReportCard = ({ report, onSelect }) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
-const ReportCard = ({ report }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden group">
       <div className="relative">
@@ -19,8 +22,11 @@ const ReportCard = ({ report }) => {
           className="w-full h-40 object-cover"
         />
         <div className="absolute inset-0 bg-[#DEDFE0] bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
-            Select
+          <button
+            onClick={() => onSelect(report)}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+          >
+            View Report
           </button>
         </div>
       </div>
@@ -28,44 +34,91 @@ const ReportCard = ({ report }) => {
         <h3 className="text-gray-800 font-semibold text-center">
           {report.title}
         </h3>
+        <div className="mt-2 text-sm text-gray-600 text-center">
+          <p>{formatDate(report.eventDate)}</p>
+          <p>{report.feedbackCount} responses</p>
+        </div>
       </div>
     </div>
   );
 };
 
 const Reports = () => {
+  const [reports, setReports] = useState([]);
+  const [selectedReport, setSelectedReport] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate loading delay for consistent user experience
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    fetchReports();
   }, []);
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:5000/api/events/reports/all');
+      if (!response.ok) {
+        throw new Error('Failed to fetch reports');
+      }
+      const data = await response.json();
+      setReports(data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching reports:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSort = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
   };
 
-  const filteredReports = mockReports.filter(report =>
+  const handleSelectReport = (report) => {
+    setSelectedReport(report);
+    // Here you could navigate to a detailed report view or open a modal
+    console.log('Selected report:', report);
+  };
+
+  const filteredReports = reports.filter(report =>
     report.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const sortedReports = [...filteredReports].sort((a, b) => {
     if (sortOrder === 'asc') {
-      return a.id - b.id;
+      return new Date(a.eventDate) - new Date(b.eventDate);
     }
-    return b.id - a.id;
+    return new Date(b.eventDate) - new Date(a.eventDate);
   });
 
-  // Show loading spinner while data is being initialized
+  // Show loading spinner while data is being fetched
   if (loading) {
     return (
       <PSASLayout>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </PSASLayout>
+    );
+  }
+
+  // Show error message if there's an error
+  if (error) {
+    return (
+      <PSASLayout>
+        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+          <div className="text-red-600 text-center">
+            <p className="text-lg font-semibold">Error loading reports</p>
+            <p>{error}</p>
+            <button
+              onClick={fetchReports}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </PSASLayout>
     );
@@ -107,11 +160,19 @@ const Reports = () => {
         <div className="bg-white p-6 rounded-xl shadow-md">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {sortedReports.map(report => (
-                    <ReportCard key={report.id} report={report} />
+                    <ReportCard key={report.id} report={report} onSelect={handleSelectReport} />
                 ))}
             </div>
         </div>
       </div>
+
+      {/* Report Modal */}
+      {selectedReport && (
+        <ReportModal
+          report={selectedReport}
+          onClose={() => setSelectedReport(null)}
+        />
+      )}
     </PSASLayout>
   );
 };
