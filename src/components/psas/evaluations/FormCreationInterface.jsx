@@ -13,13 +13,11 @@ import {
   Link as LinkIcon,
   FileText,
   X,
-  Eye,
   Edit,
 } from "lucide-react";
 import Question from "./Question";
 import Section from "./Section";
 import ImportCSVModal from "./ImportCSVModal";
-import QuestionPreviewModal from "./QuestionPreviewModal";
 import { useAuth } from "../../../contexts/useAuth";
 import toast from "react-hot-toast";
 
@@ -52,14 +50,18 @@ const FormCreationInterface = ({ onBack }) => {
   const [formTitle, setFormTitle] = useState("Untitled Form");
   const [formDescription, setFormDescription] = useState("Form Description");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [extractedQuestions, setExtractedQuestions] = useState([]);
+  const [currentFormId, setCurrentFormId] = useState(null); // New state for current form ID
+
   // Loading state (for future use)
   // const isLoading = false;
+
+  // Certificate linking state
+  const [isCertificateLinked, setIsCertificateLinked] = useState(false);
 
   // Upload functionality states
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadedLinks, setUploadedLinks] = useState([]);
+  const [uploadedCSVData, setUploadedCSVData] = useState(null);
 
   const makeId = () => Date.now() + Math.floor(Math.random() * 1000);
 
@@ -68,7 +70,14 @@ const FormCreationInterface = ({ onBack }) => {
     const fetchFormData = async () => {
       const uploadedFormId = sessionStorage.getItem("uploadedFormId");
       const editFormId = sessionStorage.getItem("editFormId");
-      const tempFormData = sessionStorage.getItem("tempFormData");
+      const formId = uploadedFormId || editFormId; // Extract formId here
+
+      // Initialize isCertificateLinked based on current formId
+      if (formId && sessionStorage.getItem(`certificateLinked_${formId}`)) {
+        setIsCertificateLinked(true);
+      } else {
+        setIsCertificateLinked(false);
+      }
 
       if (tempFormData) {
         // Load from temporary extracted data
@@ -106,10 +115,8 @@ const FormCreationInterface = ({ onBack }) => {
         } finally {
           // Keep the temp data in sessionStorage until publish
         }
-      } else if (uploadedFormId || editFormId) {
-        const formId = uploadedFormId || editFormId;
-
-        if (formId && token) {
+      } else if (formId) { // Use the extracted formId
+        if (token) {
           // Loading state disabled
           try {
             const response = await fetch(`/api/forms/${formId}`, {
@@ -212,7 +219,41 @@ const FormCreationInterface = ({ onBack }) => {
     };
 
     fetchFormData();
-  }, [token]);
+
+    const handleFocus = () => {
+      const currentFormId = sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId");
+      if (currentFormId && sessionStorage.getItem(`certificateLinked_${currentFormId}`)) {
+        setIsCertificateLinked(true);
+      } else {
+        setIsCertificateLinked(false);
+      }
+    };
+ 
+    const checkCertificateLink = () => {
+      const currentFormId = sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId");
+      if (currentFormId && sessionStorage.getItem(`certificateLinked_${currentFormId}`)) {
+        setIsCertificateLinked(true);
+      } else {
+        setIsCertificateLinked(false);
+      }
+    };
+ 
+    window.addEventListener('focus', handleFocus);
+ 
+    // Also check when component becomes visible (for navigation returns)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkCertificateLink();
+      }
+    };
+ 
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+ 
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [token, currentFormId]); // Added currentFormId to dependency array
 
   const addQuestion = (sectionId = null) => {
     // Create comprehensive default choices for each question type
@@ -380,6 +421,56 @@ const FormCreationInterface = ({ onBack }) => {
       setUploadedLinks((prev) => [...prev, ...newLinks]);
     } catch (error) {
       console.error("Error handling links:", error);
+    }
+  };
+
+  // Parse CSV data
+  const parseCSV = (csvText) => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const students = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',');
+      if (values.length >= headers.length) {
+        const student = {};
+        headers.forEach((header, index) => {
+          student[header] = values[index]?.trim() || '';
+        });
+        students.push(student);
+      }
+    }
+    return students;
+  };
+
+  // Handle CSV file upload
+  const handleCSVUpload = async (url) => {
+    try {
+      const response = await fetch(url);
+      const csvText = await response.text();
+      const students = parseCSV(csvText);
+
+      if (students.length > 0) {
+        const csvData = {
+          filename: url.split('/').pop() || 'uploaded.csv',
+          students,
+          uploadedAt: new Date(),
+          url
+        };
+        setUploadedCSVData(csvData);
+
+        // Also add to uploaded links for consistency
+        handleLinkUpload([{
+          url,
+          title: "CSV File",
+          description: `CSV file with ${students.length} students`,
+        }]);
+      }
+    } catch (error) {
+      console.error("Error parsing CSV:", error);
+      toast.error("Failed to parse CSV file");
     }
   };
 
@@ -636,13 +727,6 @@ const FormCreationInterface = ({ onBack }) => {
             >
               <UserPlus className="w-5 h-5" />
             </button>
-            <button
-              className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
-              onClick={() => setShowPreviewModal(true)}
-              title="Preview extracted questions"
-            >
-              <Eye className="w-5 h-5" />
-            </button>
             <div className="flex gap-2">
               <button
                 onClick={handlePublish}
@@ -779,10 +863,14 @@ const FormCreationInterface = ({ onBack }) => {
 
         <div className="flex justify-center py-8 bg-gray-100">
           <button
-            onClick={() => navigate("/psas/certificates?from=evaluation")}
-            className="px-8 py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            onClick={() => navigate(`/psas/certificates?from=evaluation&formId=${sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId")}`)}
+            className={`px-8 py-3 rounded-lg font-semibold transition-colors
+              ${isCertificateLinked
+                ? "bg-white text-[#0C2A92] border border-[#0C2A92] hover:bg-blue-50"
+                : "bg-white text-[#5F6368] hover:bg-gray-100 border border-gray-300"}
+            `}
           >
-            Link Certificate
+            {isCertificateLinked ? "Certificate Linked" : "Link Certificate"}
           </button>
         </div>
 
@@ -976,27 +1064,12 @@ const FormCreationInterface = ({ onBack }) => {
           isOpen={showImportModal}
           onClose={() => setShowImportModal(false)}
           onFileUpload={(url) => {
-            handleLinkUpload([
-              {
-                url,
-                title: "CSV File",
-                description: "CSV file for attendee import",
-              },
-            ]);
+            handleCSVUpload(url);
             setShowImportModal(false);
           }}
+          uploadedCSVData={uploadedCSVData}
         />
 
-        <QuestionPreviewModal
-          isOpen={showPreviewModal}
-          onClose={() => setShowPreviewModal(false)}
-          questions={questions}
-          sections={sections}
-          onUpdateQuestion={updateQuestion}
-          onDuplicateQuestion={duplicateQuestion}
-          onRemoveQuestion={removeQuestion}
-          onAddQuestion={() => addQuestion()}
-        />
       </div>
     </div>
   );

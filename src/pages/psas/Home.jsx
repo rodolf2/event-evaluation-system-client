@@ -125,12 +125,12 @@ function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DashboardCard
-                  image="../../../public/thumbnails/event-analytics.png"
+                  image="../../../thumbnails/event-analytics.png"
                   title="Event Analytics"
                   buttonText="View Event Analytics"
                 />
                 <DashboardCard
-                  image="../../../public/thumbnails/event-reports.png"
+                  image="../../../thumbnails/event-reports.png"
                   title="Event Reports"
                   buttonText="View Event Reports"
                 />

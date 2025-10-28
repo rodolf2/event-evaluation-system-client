@@ -13,6 +13,7 @@ import Certificates from "./pages/psas/Certificates";
 import EventAnalytics from "./pages/psas/EventAnalytics";
 import Reports from "./pages/psas/Reports";
 import Notifications from "./pages/psas/Notifications";
+import StudentList from "./pages/psas/StudentList";
 import ClubOfficerDashboard from "./pages/club-officers/Dashboard";
 import ParticipantDashboard from "./pages/participants/Dashboard";
 import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
@@ -119,6 +120,16 @@ function App() {
           element={
             isAuthorized("psas") ? (
               <Notifications />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/students"
+          element={
+            isAuthorized("psas") ? (
+              <StudentList />
             ) : (
               <Navigate to={getHomeRoute()} />
             )
