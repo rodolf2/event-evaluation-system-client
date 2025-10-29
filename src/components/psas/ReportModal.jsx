@@ -282,21 +282,23 @@ const ReportModal = ({ report, onClose }) => {
 
                   <div className="space-y-6">
                     {/* Bar Chart for Ratings Comparison */}
-                    <div className="h-64">
+                    <div>
                       <h4 className="font-medium text-gray-900 mb-4">Average Rating Comparison</h4>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={prepareBarChartData(detailedReport.quantitativeReport)}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="year" />
-                          <YAxis domain={[0, 5]} />
-                          <Tooltip formatter={(value) => [value?.toFixed(2), 'Average Rating']} />
-                          <Legend />
-                          <Bar dataKey="rating" fill="#3B82F6" name="Average Rating" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={prepareBarChartData(detailedReport.quantitativeReport)}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="year" />
+                            <YAxis domain={[0, 5]} />
+                            <Tooltip formatter={(value) => [value?.toFixed(2), 'Average Rating']} />
+                            <Legend />
+                            <Bar dataKey="rating" fill="#3B82F6" name="Average Rating" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
 
                     {/* Detailed Statistics */}

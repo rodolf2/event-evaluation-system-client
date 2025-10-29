@@ -70,7 +70,8 @@ const FormCreationInterface = ({ onBack }) => {
     const fetchFormData = async () => {
       const uploadedFormId = sessionStorage.getItem("uploadedFormId");
       const editFormId = sessionStorage.getItem("editFormId");
-      const formId = uploadedFormId || editFormId; // Extract formId here
+      const formId = uploadedFormId || editFormId;
+      setCurrentFormId(formId);
 
       // Initialize isCertificateLinked based on current formId
       if (formId && sessionStorage.getItem(`certificateLinked_${formId}`)) {
@@ -78,6 +79,8 @@ const FormCreationInterface = ({ onBack }) => {
       } else {
         setIsCertificateLinked(false);
       }
+
+      const tempFormData = sessionStorage.getItem("tempFormData");
 
       if (tempFormData) {
         // Load from temporary extracted data
@@ -221,8 +224,9 @@ const FormCreationInterface = ({ onBack }) => {
     fetchFormData();
 
     const handleFocus = () => {
-      const currentFormId = sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId");
-      if (currentFormId && sessionStorage.getItem(`certificateLinked_${currentFormId}`)) {
+      const formId = sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId");
+      setCurrentFormId(formId);
+      if (formId && sessionStorage.getItem(`certificateLinked_${formId}`)) {
         setIsCertificateLinked(true);
       } else {
         setIsCertificateLinked(false);
@@ -230,8 +234,9 @@ const FormCreationInterface = ({ onBack }) => {
     };
  
     const checkCertificateLink = () => {
-      const currentFormId = sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId");
-      if (currentFormId && sessionStorage.getItem(`certificateLinked_${currentFormId}`)) {
+      const formId = sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId");
+      setCurrentFormId(formId);
+      if (formId && sessionStorage.getItem(`certificateLinked_${formId}`)) {
         setIsCertificateLinked(true);
       } else {
         setIsCertificateLinked(false);
@@ -256,34 +261,8 @@ const FormCreationInterface = ({ onBack }) => {
   }, [token, currentFormId]); // Added currentFormId to dependency array
 
   const addQuestion = (sectionId = null) => {
-    // Create comprehensive default choices for each question type
-    let defaultOptions = [];
-
-    switch ("Multiple Choices") { // Use the actual question type
-      case "Multiple Choices":
-        defaultOptions = ["Option 1", "Option 2", "Option 3", "Option 4"];
-        break;
-      case "Short Answer":
-        defaultOptions = [];
-        break;
-      case "Paragraph":
-        defaultOptions = [];
-        break;
-      case "Scale":
-        defaultOptions = [];
-        break;
-      case "Date":
-        defaultOptions = [];
-        break;
-      case "Time":
-        defaultOptions = [];
-        break;
-      case "File Upload":
-        defaultOptions = [];
-        break;
-      default:
-        defaultOptions = ["Option 1", "Option 2", "Option 3"];
-    }
+    // Create comprehensive default choices for a "Multiple Choices" question
+    const defaultOptions = ["Option 1", "Option 2", "Option 3", "Option 4"];
 
     const newQuestion = {
       id: makeId(),
