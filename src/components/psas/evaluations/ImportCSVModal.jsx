@@ -9,23 +9,23 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
   const [uploading, setUploading] = useState(false);
 
   const handleFileUpload = async (file) => {
-    if (!file || file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      alert('Please select a valid CSV file');
+    if (!file || (file.type !== "text/csv" && !file.name.endsWith(".csv"))) {
+      alert("Please select a valid CSV file");
       return;
     }
 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
       // First upload the file to get a URL
-      const uploadResponse = await fetch('/api/upload/csv', {
-        method: 'POST',
+      const uploadResponse = await fetch("/api/upload/csv", {
+        method: "POST",
         body: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
 
       if (uploadResponse.ok) {
@@ -34,14 +34,14 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
           // Now call the onFileUpload with the URL
           onFileUpload(uploadData.url);
         } else {
-          alert('Failed to upload file');
+          alert("Failed to upload file");
         }
       } else {
-        alert('Failed to upload file');
+        alert("Failed to upload file");
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('Error uploading file');
+      console.error("Upload error:", error);
+      alert("Error uploading file");
     } finally {
       setUploading(false);
     }
@@ -52,7 +52,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
     <div className="fixed inset-0 bg-[#F1F0F0]/75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-8 w-full max-w-lg z-60">
         <h2 className="text-2xl font-bold mb-6">Import CSV</h2>
-        
+
         {/* Drag and Drop Area */}
         <div
           className={`border-2 border-dashed rounded-lg p-10 text-center mb-4 cursor-pointer transition-colors ${
@@ -71,7 +71,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
             e.preventDefault();
             setIsDragOver(false);
 
-            const files = e.dataTransfer.files;
+            const { files } = e.dataTransfer;
             if (files.length > 0) {
               await handleFileUpload(files[0]);
             }
@@ -91,7 +91,9 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
           />
           <UploadCloud className="w-12 h-12 mx-auto text-gray-400" />
           <p className="mt-4 text-gray-600">
-            {uploading ? "Uploading..." : "Click to select or drag and drop CSV file"}
+            {uploading
+              ? "Uploading..."
+              : "Click to select or drag and drop CSV file"}
           </p>
           <p className="text-sm text-gray-500">Only CSV files are supported</p>
         </div>
@@ -105,15 +107,17 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
         {/* File URL Input - CSV and other file URLs */}
         <div className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">File URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              File URL
+            </label>
             <input
               type="text"
               placeholder="Add CSV file URL"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.target.value.trim()) {
+                if (e.key === "Enter" && e.target.value.trim()) {
                   onFileUpload && onFileUpload(e.target.value.trim());
-                  e.target.value = '';
+                  e.target.value = "";
                 }
               }}
             />
@@ -128,14 +132,21 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
           <div className="bg-gray-100 rounded-lg p-4 flex items-center mb-4">
             <FileCheck2 className="w-6 h-6 text-blue-600 mr-4" />
             <div className="grow">
-              <p className="font-semibold text-gray-800">{uploadedCSVData.filename}</p>
-              <p className="text-sm text-gray-600">{uploadedCSVData.students.length} students imported</p>
+              <p className="font-semibold text-gray-800">
+                {uploadedCSVData.filename}
+              </p>
+              <p className="text-sm text-gray-600">
+                {uploadedCSVData.students.length} students imported
+              </p>
             </div>
             <button
               onClick={() => {
                 // Store CSV data in sessionStorage for the student list page
-                sessionStorage.setItem('csvData', JSON.stringify(uploadedCSVData));
-                navigate('/psas/students');
+                sessionStorage.setItem(
+                  "csvData",
+                  JSON.stringify(uploadedCSVData)
+                );
+                navigate("/psas/students");
               }}
               className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold ml-4 hover:bg-blue-200 transition"
             >

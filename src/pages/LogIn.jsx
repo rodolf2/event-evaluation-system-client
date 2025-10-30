@@ -37,28 +37,28 @@ function LoginPage() {
 
       {/* Right Panel */}
       <div className="w-full lg:w-1/2 bg-white p-4 sm:p-6 lg:p-8">
-        <div className="relative w-full h-64 sm:h-80 md:h-[80vh] lg:h-[90vh] rounded-lg overflow-hidden flex items-center justify-center">
+        <div className="relative w-full h-full min-h-[50vh] lg:min-h-0 rounded-2xl overflow-hidden flex items-center justify-center">
           {/* Background Image */}
           <img
-            src="src/assets/background-image/test-bg.jpg"
+            src="src/assets/background-image/LV2.jpg"
             alt="La Verdad Christian College Background"
             className="w-full h-full object-cover"
           />
 
           {/* Blue Overlay */}
-          <div className="absolute inset-0 bg-blue-500 bg-opacity-40 mix-blend-multiply"></div>
+          <div className="absolute inset-0 bg-blue-950 opacity-80"></div>
 
           {/* Text Content */}
-          <div className="absolute inset-0 z-20 flex flex-col justify-center items-center text-center p-4 sm:p-6">
+          <div className="absolute inset-0 z-10 flex flex-col justify-center items-center text-center p-6">
             <div className="max-w-md">
-              <h2 className="text-lg sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 text-white drop-shadow-lg leading-tight">
-                EVALUATION SYSTEM FOR SCHOOL AND PROGRAM EVENTS
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-extrabold mb-4 text-white uppercase tracking-wider">
+                Evaluation System for School and Program Events
               </h2>
-              <p className="text-xs sm:text-sm md:text-base mb-4 sm:mb-6 text-white drop-shadow-md">
+              <p className="text-xs sm:text-sm md:text-base lg:text-base mb-8 text-white/90">
                 An Intuitive and Engaging Event Evaluation System for La Verdad
-                Christian College - Apalit, Pampanga
+                Christian College – Apalit, Pampanga
               </p>
-              <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium py-2 px-5 sm:px-6 rounded-md shadow-lg transition">
+              <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
                 Go to Guest Mode
               </button>
             </div>

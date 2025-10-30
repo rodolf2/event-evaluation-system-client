@@ -1,6 +1,21 @@
 @import "tailwindcss";
 /* @import "tailwindcss/preflight"; */
 @tailwind utilities;
+
+/* Custom Fonts */
+@font-face {
+  font-family: 'Middleearth';
+  src: url('/fonts/Middleearth-ao6m.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Tolkien';
+  src: url('/fonts/Tolkien.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 /* Hide native calendar icon in Webkit browsers */
 .hide-native-calendar-icon::-webkit-calendar-picker-indicator {
     display: none;

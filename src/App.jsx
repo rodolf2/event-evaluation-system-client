@@ -16,6 +16,9 @@ import Notifications from "./pages/psas/Notifications";
 import StudentList from "./pages/psas/StudentList";
 import ClubOfficerDashboard from "./pages/club-officers/Dashboard";
 import ParticipantDashboard from "./pages/participants/Dashboard";
+import ParticipantEvaluations from "./pages/participants/Evaluations";
+import ParticipantCertificates from "./pages/participants/Certificates";
+import ParticipantBadges from "./pages/participants/Badges";
 import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
@@ -34,11 +37,11 @@ function App() {
       case "psas":
         return "/psas/home";
       case "club-officer":
-        return "/club-officer";
+        return "/club-officer/home";
       case "participant":
-        return "/participant";
+        return "/participant/home"; // Always redirect to full path
       case "school-admin":
-        return "/school-admin";
+        return "/school-admin/home";
       case "mis":
         return "/mis";
       default:
@@ -138,7 +141,7 @@ function App() {
 
         {/* Club Officer routes */}
         <Route
-          path="/club-officer"
+          path="/club-officer/home"
           element={
             isAuthorized("club-officer") ? (
               <ClubOfficerDashboard />
@@ -147,10 +150,14 @@ function App() {
             )
           }
         />
+        <Route
+          path="/club-officer"
+          element={<Navigate to="/club-officer/home" />}
+        />
 
         {/* Participant routes */}
         <Route
-          path="/participant"
+          path="/participant/home"
           element={
             isAuthorized("participant") ? (
               <ParticipantDashboard />
@@ -159,10 +166,44 @@ function App() {
             )
           }
         />
+        <Route
+          path="/participant"
+          element={<Navigate to="/participant/home" />}
+        />
+        <Route
+          path="/participant/evaluations"
+          element={
+            isAuthorized("participant") ? (
+              <ParticipantEvaluations />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/participant/certificates"
+          element={
+            isAuthorized("participant") ? (
+              <ParticipantCertificates />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/participant/badges"
+          element={
+            isAuthorized("participant") ? (
+              <ParticipantBadges />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
 
         {/* School Admin routes */}
         <Route
-          path="/school-admin"
+          path="/school-admin/home"
           element={
             isAuthorized("school-admin") ? (
               <SchoolAdminDashboard />
@@ -170,6 +211,10 @@ function App() {
               <Navigate to={getHomeRoute()} />
             )
           }
+        />
+        <Route
+          path="/school-admin"
+          element={<Navigate to="/school-admin/home" />}
         />
 
         {/* MIS routes */}

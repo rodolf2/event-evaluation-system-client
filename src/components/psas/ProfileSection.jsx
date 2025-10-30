@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../../contexts/useAuth";
+import { Link } from "react-router-dom";
+import { ChevronRight } from 'lucide-react';
 
 function ProfileSection() {
   const { user, refreshUserData } = useAuth();

@@ -1,7 +1,15 @@
-import { Camera } from "lucide-react";
+import { Camera, ChevronRight } from "lucide-react";
 import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+
+// Import badge images
+import BronzeBadge from "../assets/badges/BRONZE.png";
+import SilverBadge from "../assets/badges/SILVER.png";
+import GoldBadge from "../assets/badges/GOLD.png";
+import TitaniumBadge from "../assets/badges/TITANIUM.png";
+import PlatinumBadge from "../assets/badges/PLATINUM.png";
 
 // A simple toggle switch component
 const ToggleSwitch = ({ label, enabled, setEnabled }) => (
@@ -37,9 +45,11 @@ function Profile() {
     );
   }
 
+  const badgesLink = user.role === 'psas' ? '/psas/badges' : '/participant/badges';
+
   return (
     <PSASLayout>
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-full">
+      <div className="bg-gray-50 min-h-full">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column */}
           <div className="lg:col-span-1 space-y-8">
@@ -50,7 +60,7 @@ function Profile() {
 
             {/* Profile Details Card */}
             <div className="bg-white rounded-xl shadow-md p-6 text-center">
-              <div className="relative w-40 h-40 mx-auto mb-4">
+              <div className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto mb-4">
                 <img
                   src={user.profilePicture || "/src/assets/users/user1.jpg"}
                   alt="Profile"
@@ -60,7 +70,7 @@ function Profile() {
                   <Camera className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">{user.name}</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900">{user.name}</h3>
               <p className="text-gray-500 mt-1">Prefect of Student Affairs and Services</p>
               <p className="text-gray-500">Department Head</p>
             </div>
@@ -97,7 +107,7 @@ function Profile() {
                   Edit
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-sm">
                 <div>
                   <label className="block text-gray-500 font-medium">Email Address</label>
                   <p className="text-gray-800 font-semibold mt-1">{user.email}</p>
@@ -152,6 +162,24 @@ function Profile() {
                     className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Evaluations Badges Card */}
+            <div className="bg-white rounded-xl shadow-md px-8 py-12">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Evaluations Badges</h2>
+                <Link to={badgesLink} className="flex items-center text-blue-600 hover:underline font-semibold">
+                  View My Badges <ChevronRight className="w-5 h-5 ml-1" />
+                </Link>
+              </div>
+              <div className="flex flex-wrap justify-center gap-6">
+                {/* Acquired badges */}
+                <img src={BronzeBadge} alt="Bronze Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                <img src={SilverBadge} alt="Silver Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                <img src={GoldBadge} alt="Gold Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                <img src={TitaniumBadge} alt="Titanium Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                <img src={PlatinumBadge} alt="Platinum Badge" className="w-16 h-16 md:w-20 md:h-20" />
               </div>
             </div>
           </div>

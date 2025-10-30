@@ -14,6 +14,7 @@ function AuthCallback() {
     if (token) {
       saveToken(token);
       // Add a small delay to ensure token is saved before redirecting
+      // Navigate to root which will use getHomeRoute() logic
       setTimeout(() => {
         navigate("/");
       }, 100);

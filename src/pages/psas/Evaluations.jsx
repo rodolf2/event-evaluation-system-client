@@ -13,7 +13,7 @@ const Evaluations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [evaluationForms, setEvaluationForms] = useState([]);
   const selectedTemplate = searchParams.get("template");
@@ -80,99 +80,57 @@ const Evaluations = () => {
     setShowUploadModal(true);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile({ file, type: 'file' });
-    }
-  };
-
   const handleUrlChange = (e) => {
-    const url = e.target.value;
-    if (url) {
-      setSelectedFile({ url, type: 'google-form' });
-    }
+    setGoogleFormsUrl(e.target.value);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      toast.error("Please select a file or enter a Google Forms URL.");
+    if (!googleFormsUrl) {
+      toast.error("Please enter a Google Forms URL.");
       return;
     }
 
     if (!token) {
-      toast.error("You must be logged in to upload forms.");
+      toast.error("You must be logged in to import forms.");
       return;
     }
 
     try {
-      let response;
-      let extractedData;
+      const response = await fetch("/api/forms/extract-by-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          url: googleFormsUrl,
+        }),
+      });
 
-      if (selectedFile.type === 'google-form') {
-        // Extract data from Google Forms URL without creating form
-        response = await fetch("/api/forms/extract-by-url", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            url: selectedFile.url,
-          }),
-        });
+      if (response.ok) {
+        const responseData = await response.json();
+        const extractedData = responseData.data;
 
-        if (response.ok) {
-          const responseData = await response.json();
-          extractedData = responseData.data;
-        }
-      } else { // 'file'
-        // For file uploads, extract data from the file
-        const formData = new FormData();
-        formData.append("file", selectedFile.file);
+        toast.success("Google Form data extracted successfully!");
 
-        response = await fetch("/api/forms/extract-by-file", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (response.ok) {
-          const responseData = await response.json();
-          extractedData = responseData.data;
-        }
-      }
-
-      if (extractedData) {
-        toast.success(selectedFile.type === 'google-form'
-          ? "Google Form data extracted successfully!"
-          : "File data extracted successfully!");
-
-        // Store extracted data temporarily in sessionStorage
         const tempData = {
           title: extractedData.title,
           description: extractedData.description,
           questions: extractedData.questions || [],
           uploadedFiles: extractedData.uploadedFiles || [],
           uploadedLinks: extractedData.uploadedLinks || [],
-          file: selectedFile.type === 'file' ? selectedFile.file : null, // Keep the actual file for later upload
+          file: null, // No file to keep
         };
 
         sessionStorage.setItem('tempFormData', JSON.stringify(tempData));
 
-        // Close the modal and clear selection
         setShowUploadModal(false);
-        setSelectedFile(null);
+        setGoogleFormsUrl(""); // Clear the URL input
 
-        // Switch to create view with the extracted data
         setView("create");
 
-        // Clear any previous uploaded form ID since we're using temp data now
         sessionStorage.removeItem('uploadedFormId');
       } else {
-        // Handle error
         let errorData;
         try {
           errorData = await response.json();
@@ -181,20 +139,16 @@ const Evaluations = () => {
           errorData = { message: 'Unknown server error' };
         }
 
-        if (selectedFile.type === 'google-form') {
-          if (response.status === 409) {
-            toast.error("This Google Form has already been imported. You can find it in your recent evaluations.");
-          } else if (response.status === 400) {
-            toast.error(errorData.message || "Invalid input. Please check your data and try again.");
-          } else {
-            toast.error(`Import failed: ${errorData.message}`);
-          }
-        } else { // 'file'
-            toast.error(`File extraction failed: ${errorData.message || 'Unknown error'}`);
+        if (response.status === 409) {
+          toast.error("This Google Form has already been imported. You can find it in your recent evaluations.");
+        } else if (response.status === 400) {
+          toast.error(errorData.message || "Invalid input. Please check your data and try again.");
+        } else {
+          toast.error(`Import failed: ${errorData.message}`);
         }
       }
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Import error:", error);
       toast.error(`An error occurred: ${error.message}`);
     }
   };
@@ -234,36 +188,16 @@ const Evaluations = () => {
           <div className="fixed inset-0 bg-[#F4F4F5]/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-8 w-full max-w-lg z-60">
               <h3 className="text-xl font-bold text-gray-800 mb-6">
-                Upload Form
+                Import Google Form
               </h3>
-
-              {/* File Upload Section */}
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-700 mb-3">Upload File</h4>
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  accept=".pdf,.docx,.csv,.xlsx,.txt,.doc"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  Supported formats: PDF, DOCX, CSV, XLSX, TXT
-                </p>
-              </div>
-
-              <div className="relative flex items-center my-6">
-                <span className="grow border-t border-gray-300"></span>
-                <span className="px-4 text-gray-500 bg-white">or</span>
-                <span className="grow border-t border-gray-300"></span>
-              </div>
 
               {/* Google Forms URL Section */}
               <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-700 mb-3">Import Google Form</h4>
                 <input
                   type="url"
                   placeholder="https://docs.google.com/forms/d/.../viewform"
                   onChange={handleUrlChange}
+                  value={googleFormsUrl} // Bind value to state
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -275,7 +209,7 @@ const Evaluations = () => {
                 <button
                   onClick={() => {
                     setShowUploadModal(false);
-                    setSelectedFile(null);
+                    setGoogleFormsUrl(""); // Clear the URL input on cancel
                   }}
                   className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
                 >
@@ -285,7 +219,7 @@ const Evaluations = () => {
                   onClick={handleUpload}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                 >
-                  Upload
+                  Import Form
                 </button>
               </div>
             </div>

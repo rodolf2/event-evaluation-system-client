@@ -58,15 +58,21 @@ const Reports = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/events/reports/all');
+      console.log('Fetching reports from API...');
+      const response = await fetch('http://localhost:5000/api/events/reports/all', {
+        credentials: 'include'
+      });
+      console.log('Response status:', response.status);
       if (!response.ok) {
-        throw new Error('Failed to fetch reports');
+        console.log('Response not ok, status:', response.status);
+        throw new Error(`Failed to fetch reports: ${response.status}`);
       }
       const data = await response.json();
+      console.log('Fetched reports data:', data);
       setReports(data);
     } catch (err) {
-      setError(err.message);
       console.error('Error fetching reports:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
