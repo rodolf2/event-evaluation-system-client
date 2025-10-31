@@ -8,7 +8,7 @@ import { useAuth } from "../../contexts/useAuth";
 
 const Evaluations = () => {
   const [searchParams] = useSearchParams();
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [view, setView] = useState("dashboard");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");

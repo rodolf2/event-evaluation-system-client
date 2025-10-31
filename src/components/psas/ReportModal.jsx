@@ -7,13 +7,7 @@ const ReportModal = ({ report, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (report) {
-      fetchDetailedReport();
-    }
-  }, [report]);
-
-  const fetchDetailedReport = async () => {
+  const fetchDetailedReport = useCallback(async () => {
     if (!report) return;
 
     try {
@@ -31,7 +25,13 @@ const ReportModal = ({ report, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [report]);
+
+  useEffect(() => {
+    if (report) {
+      fetchDetailedReport();
+    }
+  }, [report, fetchDetailedReport]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

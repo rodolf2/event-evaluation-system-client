@@ -19,6 +19,7 @@ import ParticipantDashboard from "./pages/participants/Dashboard";
 import ParticipantEvaluations from "./pages/participants/Evaluations";
 import ParticipantCertificates from "./pages/participants/Certificates";
 import ParticipantBadges from "./pages/participants/Badges";
+import ParticipantNotifications from "./pages/participants/Notifications";
 import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
@@ -195,6 +196,16 @@ function App() {
           element={
             isAuthorized("participant") ? (
               <ParticipantBadges />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/participant/notifications"
+          element={
+            isAuthorized("participant") ? (
+              <ParticipantNotifications />
             ) : (
               <Navigate to={getHomeRoute()} />
             )

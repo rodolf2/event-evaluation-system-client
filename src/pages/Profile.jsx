@@ -4,7 +4,7 @@ import PSASLayout from "../components/psas/PSASLayout";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-// Import badge images
+// Import badge images (only for participants and club officers)
 import BronzeBadge from "../assets/badges/BRONZE.png";
 import SilverBadge from "../assets/badges/SILVER.png";
 import GoldBadge from "../assets/badges/GOLD.png";
@@ -45,7 +45,7 @@ function Profile() {
     );
   }
 
-  const badgesLink = user.role === 'psas' ? '/psas/badges' : '/participant/badges';
+  const badgesLink = (user.role === 'participant' || user.role === 'club-officer') ? '/participant/badges' : null;
 
   return (
     <PSASLayout>
@@ -165,23 +165,25 @@ function Profile() {
               </div>
             </div>
 
-            {/* Evaluations Badges Card */}
-            <div className="bg-white rounded-xl shadow-md px-8 py-12">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Evaluations Badges</h2>
-                <Link to={badgesLink} className="flex items-center text-blue-600 hover:underline font-semibold">
-                  View My Badges <ChevronRight className="w-5 h-5 ml-1" />
-                </Link>
+            {/* Evaluations Badges Card - Only show for participants and club officers */}
+            {(user.role === 'participant' || user.role === 'club-officer') && (
+              <div className="bg-white rounded-xl shadow-md px-8 py-12">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">Evaluations Badges</h2>
+                  <Link to={badgesLink} className="flex items-center text-blue-600 hover:underline font-semibold">
+                    View My Badges <ChevronRight className="w-5 h-5 ml-1" />
+                  </Link>
+                </div>
+                <div className="flex flex-wrap justify-center gap-6">
+                  {/* Acquired badges */}
+                  <img src={BronzeBadge} alt="Bronze Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                  <img src={SilverBadge} alt="Silver Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                  <img src={GoldBadge} alt="Gold Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                  <img src={TitaniumBadge} alt="Titanium Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                  <img src={PlatinumBadge} alt="Platinum Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                </div>
               </div>
-              <div className="flex flex-wrap justify-center gap-6">
-                {/* Acquired badges */}
-                <img src={BronzeBadge} alt="Bronze Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                <img src={SilverBadge} alt="Silver Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                <img src={GoldBadge} alt="Gold Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                <img src={TitaniumBadge} alt="Titanium Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                <img src={PlatinumBadge} alt="Platinum Badge" className="w-16 h-16 md:w-20 md:h-20" />
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

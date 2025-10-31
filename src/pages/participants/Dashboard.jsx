@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import DashboardCard from "../../components/participants/DashboardCard";
 import CalendarWidget from "../../components/participants/CalendarWidget";
@@ -17,34 +17,8 @@ function ParticipantDashboard() {
    const [pageLoading, setPageLoading] = useState(true);
    const { token, isLoading } = useAuth();
 
-  useEffect(() => {
-    const fetchReminders = async () => {
-      try {
-        const response = await fetch("/api/reminders", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        setReminders(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error fetching reminders:", error);
-      }
-    };
-
-    if (token) {
-      fetchReminders();
-    }
-
-    // Simulate page loading delay for consistent user experience
-    const timer = setTimeout(() => {
-      setPageLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [token]);
-
-  const fetchReminders = async () => {
+  const fetchReminders = useCallback(async () => {
+    if (!token) return; // Ensure token exists before fetching
     try {
       const response = await fetch("/api/reminders", {
         headers: {
@@ -56,7 +30,18 @@ function ParticipantDashboard() {
     } catch (error) {
       console.error("Error fetching reminders:", error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    fetchReminders();
+
+    // Simulate page loading delay for consistent user experience
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [fetchReminders]);
 
   const addReminder = async (reminder) => {
     try {

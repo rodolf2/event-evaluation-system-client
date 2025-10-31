@@ -16,9 +16,6 @@ const QuestionPreviewModal = ({
   onClose,
   questions,
   sections,
-  onUpdateQuestion,
-  onDuplicateQuestion,
-  onRemoveQuestion,
   onAddQuestion,
 }) => {
   const [editingQuestions, setEditingQuestions] = useState([]);

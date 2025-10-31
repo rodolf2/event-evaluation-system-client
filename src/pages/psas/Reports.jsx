@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback} from 'react';
 import { Search, ArrowUp, ArrowDown } from 'lucide-react';
 import PSASLayout from '../../components/psas/PSASLayout';
 import ReportModal from '../../components/psas/ReportModal';
+import { useAuth } from '../../contexts/useAuth';
 
 const ReportCard = ({ report, onSelect }) => {
   const formatDate = (dateString) => {
@@ -50,25 +51,21 @@ const Reports = () => {
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { token } = useAuth();
 
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Fetching reports from API...');
-      const response = await fetch('http://localhost:5000/api/events/reports/all', {
-        credentials: 'include'
+      const response = await fetch('/api/events/reports/all', {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      console.log('Response status:', response.status);
       if (!response.ok) {
-        console.log('Response not ok, status:', response.status);
         throw new Error(`Failed to fetch reports: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Fetched reports data:', data);
       setReports(data);
     } catch (err) {
       console.error('Error fetching reports:', err);
@@ -76,7 +73,11 @@ const Reports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
 
   const handleSort = () => {
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import DashboardCard from "../../components/psas/DashboardCard";
 import CalendarWidget from "../../components/psas/CalendarWidget";
@@ -17,34 +17,8 @@ function Home() {
    const [pageLoading, setPageLoading] = useState(true);
    const { token, isLoading } = useAuth();
 
-  useEffect(() => {
-    const fetchReminders = async () => {
-      try {
-        const response = await fetch("/api/reminders", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        setReminders(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error fetching reminders:", error);
-      }
-    };
-
-    if (token) {
-      fetchReminders();
-    }
-
-    // Simulate page loading delay for consistent user experience
-    const timer = setTimeout(() => {
-      setPageLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [token]);
-
-  const fetchReminders = async () => {
+  const fetchReminders = useCallback(async () => {
+    if (!token) return; // Ensure token exists before fetching
     try {
       const response = await fetch("/api/reminders", {
         headers: {
@@ -56,9 +30,20 @@ function Home() {
     } catch (error) {
       console.error("Error fetching reminders:", error);
     }
-  };
+  }, [token]);
 
-  const addReminder = async (reminder) => {
+  useEffect(() => {
+    fetchReminders();
+
+    // Simulate page loading delay for consistent user experience
+    const timer = setTimeout(() => {
+      setPageLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [fetchReminders]);
+
+  const addReminder = useCallback(async (reminder) => {
     try {
       const response = await fetch("/api/reminders", {
         method: "POST",
@@ -80,9 +65,9 @@ function Home() {
     } catch (error) {
       console.error("Error adding reminder:", error);
     }
-  };
+  }, [token, fetchReminders]);
 
-  const deleteReminder = async (id) => {
+  const deleteReminder = useCallback(async (id) => {
     try {
       const response = await fetch(
         `/api/reminders/${id}`,
@@ -99,7 +84,7 @@ function Home() {
     } catch (error) {
       console.error("Error deleting reminder:", error);
     }
-  };
+  }, [token, fetchReminders]);
 
   const openModal = (date, position) => {
     setSelectedDate(date);
