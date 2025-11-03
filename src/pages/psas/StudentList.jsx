@@ -1,14 +1,21 @@
-import { useState, useMemo, useEffect } from "react";
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Download,
-} from "lucide-react";
-import PSASLayout from "../../components/psas/PSASLayout";
+  import { useState, useMemo, useEffect } from "react";
+  import { useNavigate, useLocation } from "react-router-dom";
+  import {
+    Search,
+    ChevronLeft,
+    ChevronRight,
+    Filter,
+    Download,
+    ArrowLeft,
+    Plus,
+  } from "lucide-react";
+  import PSASLayout from "../../components/psas/PSASLayout";
+  import ImportCSVModal from "../../components/psas/evaluations/ImportCSVModal";
+  import { FormSessionManager } from "../../utils/formSessionManager";
 
 const StudentItem = ({ student, isSelected, onSelect }) => {
+  const studentName = student.name || student['full name'] || student['student name'] || "N/A";
+
   return (
     <div
       className="grid items-center p-3 border-t border-gray-200 hover:bg-gray-100 transition-colors
@@ -23,7 +30,7 @@ const StudentItem = ({ student, isSelected, onSelect }) => {
       {/* Mobile View: Stacked details */}
       <div className="md:hidden flex flex-col">
         <span className="font-medium text-gray-800">
-          {student.name || "N/A"}
+          {studentName}
         </span>
         <span className="text-gray-600 break-all">
           Email: {student.email || "N/A"}
@@ -40,7 +47,7 @@ const StudentItem = ({ student, isSelected, onSelect }) => {
       {/* Desktop View: Grid columns */}
       <div className="hidden md:block">
         <span className="font-medium text-gray-800">
-          {student.name || "N/A"}
+          {studentName}
         </span>
       </div>
       <div className="hidden md:block">
@@ -62,6 +69,8 @@ const StudentItem = ({ student, isSelected, onSelect }) => {
 };
 
 const StudentList = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [students, setStudents] = useState([]);
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,29 +81,98 @@ const StudentList = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
+  const [showImportModal, setShowImportModal] = useState(false);
+
+  // Handle CSV upload
+  const handleCSVUpload = () => {
+    setShowImportModal(false);
+    // Reload the component to fetch the new CSV data
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  };
+
+  // Persist student selection state
+  useEffect(() => {
+    localStorage.setItem("studentSelection", JSON.stringify(selected));
+  }, [selected]);
+
+  // Restore student selection state
+  useEffect(() => {
+    const savedSelection = localStorage.getItem("studentSelection");
+    if (savedSelection) {
+      try {
+        const parsedSelection = JSON.parse(savedSelection);
+        setSelected(parsedSelection);
+      } catch (error) {
+        console.error("Error restoring student selection:", error);
+      }
+    }
+  }, []);
+
+  const handleBackClick = () => {
+    // Get form ID from URL parameters or localStorage
+    const urlParams = new URLSearchParams(location.search);
+    const formIdFromUrl = urlParams.get('formId');
+    const formId = formIdFromUrl || localStorage.getItem("uploadedFormId") || localStorage.getItem("editFormId");
+    const isNewForm = urlParams.get('newForm') === 'true';
+    
+    if (formId) {
+      // Navigate to form creation interface with edit parameter
+      navigate(`/psas/evaluations?edit=${formId}`);
+    } else if (isNewForm) {
+      // Navigate to form creation interface for new form
+      navigate("/psas/evaluations?view=create");
+    } else {
+      // Fallback to form creation interface without edit parameter
+      navigate("/psas/evaluations");
+    }
+  };
 
   useEffect(() => {
-    const csvData = sessionStorage.getItem("csvData");
+    // Load CSV data using FormSessionManager for robust persistence
+    const csvData = FormSessionManager.loadCSVData();
+    
     if (csvData) {
-      try {
-        const parsedData = JSON.parse(csvData);
-        // Add IDs to students for selection
-        const studentsWithIds = parsedData.students.map((student, index) => ({
+      // Add IDs to students for selection
+      if (csvData.students && Array.isArray(csvData.students)) {
+        const studentsWithIds = csvData.students.map((student, index) => ({
           ...student,
           id: index + 1,
         }));
         setStudents(studentsWithIds);
-      } catch (error) {
-        console.error("Error parsing CSV data:", error);
+      } else {
+        console.error("No students array found in CSV data");
+      }
+    } else {
+      // Fallback to legacy localStorage
+      const legacyCSVData = localStorage.getItem("csvData");
+      if (legacyCSVData) {
+        try {
+          const parsedLegacy = JSON.parse(legacyCSVData);
+          
+          if (parsedLegacy.students && Array.isArray(parsedLegacy.students)) {
+            const studentsWithIds = parsedLegacy.students.map((student, index) => ({
+              ...student,
+              id: index + 1,
+            }));
+            setStudents(studentsWithIds);
+          }
+        } catch (error) {
+          console.error("Error parsing legacy CSV data:", error);
+        }
       }
     }
     setLoading(false);
   }, []);
 
   const handleSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    setSelected((prev) => {
+      const newSelection = prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id];
+      return newSelection;
+    });
   };
 
   const handleSelectAll = (e) => {
@@ -120,6 +198,8 @@ const StudentList = () => {
         !programFilter || student.program === programFilter;
       const matchesYear = !yearFilter || student.year === yearFilter;
 
+      // Always show all students - filtering is only for search/department/program/year
+      // Selection is handled by checkboxes but doesn't hide students from view
       return (
         matchesSearch && matchesDepartment && matchesProgram && matchesYear
       );
@@ -136,50 +216,49 @@ const StudentList = () => {
   const isAllSelected =
     selected.length > 0 && selected.length === paginatedStudents.length;
 
-  const handleDoneClick = async () => {
-    const formId = sessionStorage.getItem("uploadedFormId") || sessionStorage.getItem("editFormId");
-    if (!formId) {
-      alert("Error: Form ID not found in session storage. Cannot generate certificates.");
+  const handleDoneClick = () => {
+    // Get form ID from URL parameters and set it as current form
+    const urlParams = new URLSearchParams(location.search);
+    const formIdFromUrl = urlParams.get('formId');
+    
+    if (!formIdFromUrl) {
+      console.error("❌ StudentList - No form ID found in URL parameters.");
+      alert("Error: Form ID not found. Cannot assign students to form. Please start from the form creation page.");
       return;
     }
 
+    // Ensure this form ID is the current form in FormSessionManager
+    // Don't overwrite if it's already the current form
+    const currentFormId = FormSessionManager.getCurrentFormId();
+    if (currentFormId !== formIdFromUrl) {
+      FormSessionManager.initializeFormSession(formIdFromUrl);
+      
+      // Force reload CSV data for this new form data to ensure persistence
+      FormSessionManager.loadCSVData();
+    }
+
     if (selected.length === 0) {
-      alert("Please select at least one student to generate certificates.");
+      alert("Please select at least one student to receive the form.");
       return;
     }
 
     try {
-      // Assuming selected contains student IDs which are now userIds
-      const participantIds = selected;
-
-      const response = await fetch('/api/certificates/generate-bulk', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          // Add authorization token if required
-          // 'Authorization': `Bearer ${yourAuthToken}`,
-        },
-        body: JSON.stringify({
-          eventId: formId, // Using formId as eventId for certificate generation
-          participantIds: participantIds,
-          certificateType: 'participation', // Default type, can be made dynamic
-          sendEmail: false // Can be made dynamic
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert(`Successfully generated ${result.data.filter(r => r.success).length} certificates.`);
-        // Optionally, clear selected students or navigate away
-        setSelected([]);
-      } else {
-        alert(`Failed to generate certificates: ${result.message || result.error}`);
-      }
+      // Get the selected students data
+      const selectedStudents = students.filter(student => selected.includes(student.id));
+      
+      // Save student assignments using FormSessionManager for robust persistence
+      FormSessionManager.saveStudentAssignments(selectedStudents);
+      
+      // Clear selected students state
+      setSelected([]);
+      
+      // Navigate back to the form creation interface with recipients count AND form ID
+      const navigationUrl = `/psas/evaluations?recipients=${selected.length}&formId=${formIdFromUrl}`;
+        
+      navigate(navigationUrl);
     } catch (error) {
-      console.error("Error generating bulk certificates:", error);
-      alert("An error occurred while generating certificates.");
+      console.error("Error assigning students to form:", error);
+      alert("An error occurred while assigning students to the form.");
     }
   };
 
@@ -206,6 +285,13 @@ const StudentList = () => {
         {/* Top Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <button
+              onClick={handleBackClick}
+              className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -224,11 +310,13 @@ const StudentList = () => {
               Filters
             </button>
           </div>
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 rounded-full hover:bg-gray-200"><Download className="w-5 h-5" /></button>
-                                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" onClick={handleDoneClick}>Done</button>
-                                </div>
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 rounded-full hover:bg-gray-200"><Download className="w-5 h-5" /></button>
+                                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" onClick={handleDoneClick}>
+                                  {selected.length > 0 ? `Assign ${selected.length} Students` : 'Assign to Form'}
+                                </button>
                               </div>
+                            </div>
         {/* Filters */}
         {showFilters && (
           <div className="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row gap-4">
@@ -341,7 +429,18 @@ const StudentList = () => {
             ) : (
               <div className="p-8 text-center text-gray-500">
                 {students.length === 0
-                  ? "No students data found. Please upload a CSV first."
+                  ? (
+                    <div className="flex flex-col items-center gap-4">
+                      <div>No students data found.</div>
+                      <button
+                        onClick={() => setShowImportModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Import CSV File
+                      </button>
+                    </div>
+                  )
                   : "No students match your search criteria."}
               </div>
             )}
@@ -424,6 +523,14 @@ const StudentList = () => {
           </div>
         </div>
       </div>
+      
+      {/* Import CSV Modal */}
+      <ImportCSVModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onFileUpload={handleCSVUpload}
+        uploadedCSVData={null}
+      />
     </PSASLayout>
   );
 };

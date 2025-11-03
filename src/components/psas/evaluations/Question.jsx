@@ -45,20 +45,10 @@ const Question = memo(function Question(props) {
       duplicateQuestion,
       removeQuestion,
     } = props;
-  
+   
     const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState(false);
     const styleDropdownRef = useRef(null);
-    const [currentStartLabel, setCurrentStartLabel] = useState(
-      likertStartLabel || ""
-    );
-    const [currentEndLabel, setCurrentEndLabel] = useState(likertEndLabel || "");
-  
-    useEffect(
-      () => setCurrentStartLabel(likertStartLabel || ""),
-      [likertStartLabel]
-    );
-    useEffect(() => setCurrentEndLabel(likertEndLabel || ""), [likertEndLabel]);
-  
+   
     useEffect(() => {
       const handleClickOutside = (event) => {
         if (
@@ -71,7 +61,7 @@ const Question = memo(function Question(props) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-  
+   
     const addOption = () =>
       updateQuestion(id, (q) => ({
         ...q,
@@ -80,19 +70,35 @@ const Question = memo(function Question(props) {
           `Option ${((q.options || []).length || 0) + 1}`,
         ],
       }));
-  
+
+    const updateOption = (index, value) => {
+      updateQuestion(id, (q) => {
+        const newOptions = q.options.map((option, i) => (i === index ? value : option));
+        return {
+          ...q,
+          options: newOptions,
+        };
+      });
+    };
+   
+    const removeOption = (index) =>
+      updateQuestion(id, (q) => ({
+        ...q,
+        options: q.options.filter((_, i) => i !== index),
+      }));
+   
     const getNumbersToShow = (scale) => {
       if (scale === 3) return [1, 2, 3];
       if (scale === 4) return [1, 2, 3, 4];
       return [1, 2, 3, 4, 5];
     };
-  
+   
     const getIconIndices = (scale) => {
       if (scale === 3) return [0, 2, 4];
       if (scale === 4) return [0, 1, 3, 4];
       return [0, 1, 2, 3, 4];
     };
-  
+   
     const numbersToShow = getNumbersToShow(ratingScale || 5);
     const iconIndices = getIconIndices(ratingScale || 5);
     const emojiList = emojiStylesMap[emojiStyle] || emojiStylesMap.Default;
@@ -230,16 +236,30 @@ const Question = memo(function Question(props) {
                     type="radio"
                     name={`question-${id}`}
                     className="mr-3 h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    disabled
                   />
                   <input
                     type="text"
-                    defaultValue={opt}
+                    value={opt}
+                    onChange={(e) => {
+                      updateOption(index, e.target.value);
+                    }}
                     className="grow p-2 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none"
                   />
+                  <button
+                    onClick={() => removeOption(index)}
+                    className="ml-2 text-red-600 hover:text-red-800"
+                    disabled={options.length <= 2}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               ))}
-              <button onClick={addOption} className="text-blue-600 mt-2 text-sm">
-                Add option
+              <button
+                onClick={addOption}
+                className="text-blue-600 mt-2 text-sm hover:text-blue-800"
+              >
+                + Add option
               </button>
             </div>
           );
@@ -288,50 +308,28 @@ const Question = memo(function Question(props) {
                   <span className="w-6 text-right">{likertStart}</span>
                   <input
                     type="text"
-                    value={currentStartLabel}
-                    onChange={(e) => setCurrentStartLabel(e.target.value)}
-                    onBlur={() =>
+                    value={likertStartLabel || ""}
+                    onChange={(e) =>
                       updateQuestion(id, (q) => ({
                         ...q,
-                        likertStartLabel: currentStartLabel,
+                        likertStartLabel: e.target.value,
                       }))
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        updateQuestion(id, (q) => ({
-                          ...q,
-                          likertStartLabel: currentStartLabel,
-                        }));
-                        e.target.blur();
-                      }
-                    }}
                     className="grow p-2 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none"
                   />
                 </div>
-  
+   
                 <div className="flex items-center gap-2">
                   <span className="w-6 text-right">{likertEnd}</span>
                   <input
                     type="text"
-                    value={currentEndLabel}
-                    onChange={(e) => setCurrentEndLabel(e.target.value)}
-                    onBlur={() =>
+                    value={likertEndLabel || ""}
+                    onChange={(e) =>
                       updateQuestion(id, (q) => ({
                         ...q,
-                        likertEndLabel: currentEndLabel,
+                        likertEndLabel: e.target.value,
                       }))
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        updateQuestion(id, (q) => ({
-                          ...q,
-                          likertEndLabel: currentEndLabel,
-                        }));
-                        e.target.blur();
-                      }
-                    }}
                     className="grow p-2 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none"
                   />
                 </div>
@@ -360,7 +358,13 @@ const Question = memo(function Question(props) {
           <div className="flex-1">
             <input
               type="text"
-              defaultValue={title || "Untitled Question"}
+              value={title || ""}
+              onChange={(e) =>
+                updateQuestion(id, (q) => ({
+                  ...q,
+                  title: e.target.value,
+                }))
+              }
               className="w-full text-lg font-medium border-none outline-none mb-2"
             />
             <div className="text-sm text-gray-500">
@@ -370,16 +374,43 @@ const Question = memo(function Question(props) {
   
           <select
             value={type}
-            onChange={(e) =>
-              updateQuestion(id, (q) => ({ ...q, type: e.target.value }))
-            }
+            onChange={(e) => {
+              const newType = e.target.value;
+              updateQuestion(id, (q) => {
+                const updatedQuestion = {
+                  ...q,
+                  type: newType,
+                };
+                
+                // Reset type-specific properties when changing types
+                if (newType === "Multiple Choices") {
+                  updatedQuestion.options = q.options && q.options.length > 0 ? q.options : ["Option 1", "Option 2"];
+                } else {
+                  updatedQuestion.options = [];
+                }
+                
+                if (newType === "Numeric Ratings") {
+                  updatedQuestion.ratingScale = q.ratingScale || 5;
+                  updatedQuestion.emojiStyle = q.emojiStyle || "Default";
+                }
+                
+                if (newType === "Likert Scale") {
+                  updatedQuestion.likertStart = q.likertStart || 1;
+                  updatedQuestion.likertEnd = q.likertEnd || 5;
+                  updatedQuestion.likertStartLabel = q.likertStartLabel || "Poor";
+                  updatedQuestion.likertEndLabel = q.likertEndLabel || "Excellent";
+                }
+                
+                return updatedQuestion;
+              });
+            }}
             className="p-2 border rounded-md"
           >
             <option value="Multiple Choices">Multiple Choices</option>
             <option value="Numeric Ratings">Numeric Ratings</option>
             <option value="Likert Scale">Likert Scale</option>
-            <option value="Paragraph">Paragraph</option>
             <option value="Short Answer">Short Answer</option>
+            <option value="Paragraph">Paragraph</option>
             <option value="Date">Date</option>
             <option value="Time">Time</option>
             <option value="File Upload">File Upload</option>

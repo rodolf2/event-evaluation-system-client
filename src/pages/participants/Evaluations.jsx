@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import { Search, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/useAuth';
+import FormViewer from '../../components/participants/evaluations/FormViewer';
 
 const Evaluations = () => {
+  const navigate = useNavigate();
   const [evaluations, setEvaluations] = useState([]);
   const [filteredEvaluations, setFilteredEvaluations] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedForm, setSelectedForm] = useState(null);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -123,7 +127,7 @@ const Evaluations = () => {
                 <div
                   key={evaluation.id || index}
                   className="bg-[linear-gradient(-0.15deg,_#324BA3_38%,_#002474_100%)] rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                  onClick={() => window.open(evaluation.shareableLink, '_blank')}
+                  onClick={() => setSelectedForm(evaluation._id)}
                 >
                   <div className="bg-white rounded-r-lg ml-3 p-8 flex items-center h-full">
                       <div className="grow">
@@ -142,6 +146,7 @@ const Evaluations = () => {
             </div>
           )}
         </div>
+        {selectedForm && <FormViewer formId={selectedForm} onClose={() => setSelectedForm(null)} />}
       </div>
     </ParticipantLayout>
   );

@@ -35,6 +35,10 @@ const Evaluations = () => {
             status: form.status,
             createdAt: new Date(form.createdAt).toLocaleDateString(),
             responses: form.responseCount || 0,
+            questions: form.questions || [],
+            sections: form.sections || [],
+            uploadedFiles: form.uploadedFiles || [],
+            uploadedLinks: form.uploadedLinks || [],
           }));
           setEvaluationForms(mappedForms);
         }
@@ -59,7 +63,24 @@ const Evaluations = () => {
     const editParam = searchParams.get("edit");
     if (editParam) {
       // Store the form ID to edit and switch to create view
-      sessionStorage.setItem('editFormId', editParam);
+      localStorage.setItem('editFormId', editParam);
+      setView("create");
+    }
+  }, [searchParams]);
+
+  // Handle recipients parameter from student assignment
+  useEffect(() => {
+    const recipients = searchParams.get("recipients");
+    const formId = searchParams.get("formId");
+    
+    if (recipients) {
+      
+      // If formId is provided, ensure it matches the edit form ID
+      if (formId) {
+        localStorage.setItem('editFormId', formId);
+      }
+      
+      // Switch to create view to show the form with assigned students
       setView("create");
     }
   }, [searchParams]);
@@ -70,10 +91,18 @@ const Evaluations = () => {
     }
   }, [selectedTemplate]);
 
+  // Handle view parameter for navigation from other pages
+  useEffect(() => {
+    const viewParam = searchParams.get("view");
+    if (viewParam === "create") {
+      setView("create");
+    }
+  }, [searchParams]);
+
   const handleCreateNew = () => {
     // Clear any temporary form data to ensure we start with a blank form
-    sessionStorage.removeItem('tempFormData');
-    sessionStorage.removeItem('editFormId');
+    localStorage.removeItem('tempFormData');
+    localStorage.removeItem('editFormId');
     setView("create");
   };
   const handleShowUploadModal = () => {
@@ -122,14 +151,14 @@ const Evaluations = () => {
           file: null, // No file to keep
         };
 
-        sessionStorage.setItem('tempFormData', JSON.stringify(tempData));
+        localStorage.setItem('tempFormData', JSON.stringify(tempData));
 
         setShowUploadModal(false);
         setGoogleFormsUrl(""); // Clear the URL input
 
         setView("create");
 
-        sessionStorage.removeItem('uploadedFormId');
+        localStorage.removeItem('uploadedFormId');
       } else {
         let errorData;
         try {
@@ -170,7 +199,7 @@ const Evaluations = () => {
           <FormCreationInterface onBack={() => {
             setView("dashboard");
             // Clear edit form ID when going back
-            sessionStorage.removeItem('editFormId');
+            localStorage.removeItem('editFormId');
           }} />
         ) : (
           <EvaluationContent

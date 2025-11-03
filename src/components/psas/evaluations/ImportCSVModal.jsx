@@ -1,59 +1,238 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { UploadCloud, FileCheck2, Link as LinkIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { FormSessionManager } from "../../../utils/formSessionManager";
 
 const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // Queue for files and links to be imported
+  const [fileQueue, setFileQueue] = useState([]);
+  const [linkQueue, setLinkQueue] = useState([]);
+  
+  const [linkValue, setLinkValue] = useState('');
+  const [uploadedData, setUploadedData] = useState(null);
+  
+  // Store parsed student data for each upload
+  const [uploadResults, setUploadResults] = useState([]);
 
-  const handleFileUpload = async (file) => {
+  // Initialize uploadedData from props when modal opens
+  useEffect(() => {
+    if (uploadedCSVData && !uploadedData) {
+      setUploadedData(uploadedCSVData);
+    }
+  }, [uploadedCSVData]);
+
+  // isOpen state changes
+  useEffect(() => {
+    if (uploadedCSVData && !uploadedData) {
+      setUploadedData(uploadedCSVData);
+    }
+  }, [uploadedCSVData]);
+
+  const handleFileSelect = (file) => {
     if (!file || (file.type !== "text/csv" && !file.name.endsWith(".csv"))) {
       alert("Please select a valid CSV file");
       return;
     }
+    
+    // Add file to queue instead of uploading immediately
+    const fileItem = {
+      file: file,
+      id: Date.now() + Math.random(),
+      name: file.name,
+      size: file.size,
+      selected: false
+    };
+    
+    setFileQueue(prev => [...prev, fileItem]);
+  };
+
+  const handleFileCheckboxChange = (fileId, checked) => {
+    setFileQueue(prev => prev.map(item => 
+      item.id === fileId ? { ...item, selected: checked } : item
+    ));
+  };
+
+  const removeFileFromQueue = (fileId) => {
+    setFileQueue(prev => prev.filter(item => item.id !== fileId));
+  };
+
+  const handleAddLink = () => {
+    if (linkValue.trim()) {
+      const linkItem = {
+        id: Date.now() + Math.random(),
+        url: linkValue.trim(),
+        filename: linkValue.trim().split('/').pop() || 'CSV File',
+        selected: false
+      };
+      
+      setLinkQueue(prev => [...prev, linkItem]);
+      setLinkValue('');
+    }
+  };
+
+  const handleLinkCheckboxChange = (linkId, checked) => {
+    setLinkQueue(prev => prev.map(item => 
+      item.id === linkId ? { ...item, selected: checked } : item
+    ));
+  };
+
+  const removeLinkFromQueue = (linkId) => {
+    setLinkQueue(prev => prev.filter(item => item.id !== linkId));
+  };
+
+  const handleImport = async () => {
+    const selectedFiles = fileQueue.filter(item => item.selected);
+    const selectedLinks = linkQueue.filter(item => item.selected);
+    
+    if (selectedFiles.length === 0 && selectedLinks.length === 0) {
+      alert("Please select at least one file or link to import");
+      return;
+    }
 
     setUploading(true);
+    let successCount = 0;
+    
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Process selected files
+      for (const fileItem of selectedFiles) {
+        try {
+          const formData = new FormData();
+          formData.append("file", fileItem.file);
 
-      // First upload the file to get a URL
-      const uploadResponse = await fetch("/api/upload/csv", {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+          const uploadResponse = await fetch("/api/upload/csv", {
+            method: "POST",
+            body: formData,
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          });
 
-      if (uploadResponse.ok) {
-        const uploadData = await uploadResponse.json();
-        if (uploadData.success && uploadData.url) {
-          // Now call the onFileUpload with the URL
-          onFileUpload(uploadData.url);
-        } else {
-          alert("Failed to upload file");
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            if (uploadData.success && uploadData.url) {
+              // Ensure student data is included
+              const students = uploadData.students || [];
+              
+              const uploadResult = {
+                url: uploadData.url,
+                filename: fileItem.name,
+                students: students,
+                uploadedAt: new Date().toISOString()
+              };
+              
+              setUploadedData(uploadResult);
+              // Pass the complete upload result (not just URL) to FormCreationInterface
+              onFileUpload(uploadResult);
+              successCount++;
+            }
+          }
+        } catch (error) {
+          console.error("Error uploading file:", fileItem.name, error);
         }
-      } else {
-        alert("Failed to upload file");
       }
+
+      // Process selected links
+      for (const linkItem of selectedLinks) {
+        // For links, we need to parse the CSV data ourselves
+        try {
+          // Use CORS proxy for external URLs or handle CORS issues
+          let fetchUrl = linkItem.url;
+
+          // If it's an external URL that's likely to have CORS issues, show a helpful message
+          if (linkItem.url.includes('1drv.ms') || linkItem.url.includes('onedrive') ||
+              linkItem.url.includes('drive.google.com') || linkItem.url.includes('dropbox.com')) {
+            alert(`Cannot directly access ${linkItem.url.split('/')[2]} due to CORS policy. Please download the CSV file and upload it directly instead of using a share link.`);
+            continue;
+          }
+
+          // For Google Sheets, check if it's publicly accessible
+          if (linkItem.url.includes('docs.google.com/spreadsheets') && !linkItem.url.includes('usp=sharing')) {
+            alert('Google Sheets links must be set to "Anyone with the link can view" (public sharing) to work. Please update the sharing settings and try again.');
+            continue;
+          }
+
+          // Try alternative approaches for common cases
+          if (linkItem.url.includes('docs.google.com/spreadsheets')) {
+            // For Google Sheets, try to export as CSV
+            fetchUrl = linkItem.url.replace('/edit?usp=sharing', '/export?format=csv&usp=sharing')
+                                   .replace('/edit', '/export?format=csv');
+          }
+
+          const response = await fetch(fetchUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const csvText = await response.text();
+          const students = parseCSV(csvText);
+          
+          const linkResult = {
+            url: linkItem.url,
+            filename: linkItem.filename,
+            students: students,
+            uploadedAt: new Date().toISOString()
+          };
+          
+          setUploadedData(linkResult);
+          // Pass the complete link result (not just URL) to FormCreationInterface
+          onFileUpload(linkResult);
+          successCount++;
+        } catch (error) {
+          console.error("Error importing link:", linkItem.url, error);
+        }
+      }
+
+      if (successCount > 0) {
+        // Clear queues after successful import
+        setFileQueue([]);
+        setLinkQueue([]);
+      } else {
+        alert("Failed to import any files");
+      }
+      
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("Error uploading file");
+      console.error("Import error:", error);
+      alert("Error importing files");
     } finally {
       setUploading(false);
     }
   };
-  if (!isOpen) return null;
+
+  // Parse CSV data function
+  const parseCSV = (csvText) => {
+    const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const students = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',');
+      if (values.length >= headers.length) {
+        const student = {};
+        headers.forEach((header, index) => {
+          student[header] = values[index]?.trim() || '';
+        });
+        students.push(student);
+      }
+    }
+    return students;
+  };
+
+  // Check if modal should be open
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-[#F1F0F0]/75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-8 w-full max-w-lg z-60">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" style={{ zIndex: 9999 }}>
+      <div className="bg-white rounded-lg p-8 w-full max-w-lg relative">
         <h2 className="text-2xl font-bold mb-6">Import CSV</h2>
 
-        {/* Drag and Drop Area */}
         <div
           className={`border-2 border-dashed rounded-lg p-10 text-center mb-4 cursor-pointer transition-colors ${
             isDragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"
@@ -73,7 +252,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
 
             const { files } = e.dataTransfer;
             if (files.length > 0) {
-              await handleFileUpload(files[0]);
+              handleFileSelect(files[0]);
             }
           }}
         >
@@ -85,7 +264,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
             onChange={async (e) => {
               const file = e.target.files[0];
               if (file) {
-                await handleFileUpload(file);
+                handleFileSelect(file);
               }
             }}
           />
@@ -104,49 +283,108 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
           <span className="grow border-t border-gray-300"></span>
         </div>
 
-        {/* File URL Input - CSV and other file URLs */}
+        {/* Link Input with Add Button */}
         <div className="space-y-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               File URL
             </label>
-            <input
-              type="text"
-              placeholder="Add CSV file URL"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && e.target.value.trim()) {
-                  onFileUpload && onFileUpload(e.target.value.trim());
-                  e.target.value = "";
-                }
-              }}
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Add CSV file URL"
+                value={linkValue}
+                onChange={(e) => setLinkValue(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && linkValue.trim()) {
+                    handleAddLink();
+                  }
+                }}
+              />
+              <button
+                onClick={handleAddLink}
+                disabled={!linkValue.trim()}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+              >
+                Add Link
+              </button>
+            </div>
             <p className="text-xs text-gray-500 mt-1">
-              Add URL to a CSV file for importing attendee data
+              Add URL to a CSV file for importing attendee data. Note: OneDrive, Google Drive, and Dropbox share links are not supported due to CORS restrictions. Google Sheets must be set to "Anyone with the link can view".
             </p>
           </div>
         </div>
 
+        {/* Queued Files Display */}
+        {fileQueue.map((fileItem) => (
+          <div key={fileItem.id} className="bg-gray-100 rounded-lg p-4 flex items-center mb-4">
+            <input
+              type="checkbox"
+              checked={fileItem.selected}
+              onChange={(e) => handleFileCheckboxChange(fileItem.id, e.target.checked)}
+              className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mr-4"
+            />
+            <div className="grow">
+              <p className="font-semibold text-gray-800">
+                {fileItem.name}
+              </p>
+              <p className="text-sm text-gray-600">
+                {Math.round(fileItem.size / 1024)} KB
+              </p>
+            </div>
+            <button onClick={() => removeFileFromQueue(fileItem.id)} className="p-1 text-red-500 hover:bg-red-100 rounded">
+              <X size={16} />
+            </button>
+          </div>
+        ))}
+
+        {/* Queued Links Display */}
+        {linkQueue.map((linkItem) => (
+          <div key={linkItem.id} className="bg-gray-100 rounded-lg p-4 flex items-center mb-4">
+            <input
+              type="checkbox"
+              checked={linkItem.selected}
+              onChange={(e) => handleLinkCheckboxChange(linkItem.id, e.target.checked)}
+              className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mr-4"
+            />
+            <div className="grow">
+              <p className="font-semibold text-gray-800">
+                {linkItem.filename}
+              </p>
+              <p className="text-sm text-gray-600 truncate">
+                {linkItem.url}
+              </p>
+            </div>
+            <button onClick={() => removeLinkFromQueue(linkItem.id)} className="p-1 text-red-500 hover:bg-red-100 rounded">
+              <X size={16} />
+            </button>
+          </div>
+        ))}
+
         {/* Uploaded CSV Display */}
-        {uploadedCSVData && (
+        {uploadedData && (
           <div className="bg-gray-100 rounded-lg p-4 flex items-center mb-4">
             <FileCheck2 className="w-6 h-6 text-blue-600 mr-4" />
             <div className="grow">
               <p className="font-semibold text-gray-800">
-                {uploadedCSVData.filename}
+                {uploadedData.filename}
               </p>
               <p className="text-sm text-gray-600">
-                {uploadedCSVData.students.length} students imported
+                {uploadedData.students?.length || 0} students imported
               </p>
             </div>
             <button
               onClick={() => {
-                // Store CSV data in sessionStorage for the student list page
-                sessionStorage.setItem(
-                  "csvData",
-                  JSON.stringify(uploadedCSVData)
-                );
-                navigate("/psas/students");
+                // Store CSV data using FormSessionManager for robust persistence
+                FormSessionManager.saveCSVData(uploadedData);
+                
+                // Get current form ID using FormSessionManager
+                const currentFormId = FormSessionManager.getCurrentFormId();
+                
+                const navigationUrl = `/psas/students?formId=${currentFormId}`;
+                
+                navigate(navigationUrl);
               }}
               className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold ml-4 hover:bg-blue-200 transition"
             >
@@ -155,25 +393,22 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
           </div>
         )}
 
-        {/* Action Buttons */}
-        {!uploadedCSVData && (
-          <div className="flex justify-end gap-4 mt-8">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
-              disabled={uploading}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-            >
-              {uploading ? "Uploading..." : "Import"}
-            </button>
-          </div>
-        )}
+        <div className="flex justify-end gap-4 mt-8">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+            disabled={uploading}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleImport}
+            disabled={uploading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {uploading ? "Importing..." : "Import"}
+          </button>
+        </div>
       </div>
     </div>
   );

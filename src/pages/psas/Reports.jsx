@@ -86,7 +86,6 @@ const Reports = () => {
   const handleSelectReport = (report) => {
     setSelectedReport(report);
     // Here you could navigate to a detailed report view or open a modal
-    console.log('Selected report:', report);
   };
 
   const filteredReports = reports.filter(report =>
