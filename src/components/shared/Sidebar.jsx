@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const Sidebar = ({ isOpen, onClose, config = {} }) => {
+const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen, onClose, config = {} }) => {
             ? "top-0 left-0 w-full h-full lg:w-64 lg:h-[95vh]"
             : "top-0 -left-full lg:left-5 w-full lg:w-24 h-full lg:h-[95vh]"
         }
-        bg-[#1F3463] text-white flex flex-col items-center py-6 lg:rounded-[15px]`}
+        bg-[#1F3463] text-white flex flex-col items-center py-6 lg:rounded-[15px] ${className}`}
     >
       {/* Mobile Close Button */}
       <button

@@ -193,6 +193,7 @@ const EventAnalytics = () => {
           responseRateOptions={responseRateOptions}
           responseBreakdownOptions={responseBreakdownOptions}
           responseOverviewOptions={responseOverviewOptions}
+          responseBreakdown={responseBreakdown}
         />
       </div>
     </PSASLayout>

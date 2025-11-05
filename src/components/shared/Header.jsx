@@ -3,7 +3,7 @@ import { useAuth } from "../../contexts/useAuth";
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-const Header = ({ onMenuClick, onProfileClick, config = {} }) => {
+const Header = ({ onMenuClick, onProfileClick, config = {}, className = "" }) => {
   const { user, refreshUserData } = useAuth();
   const location = useLocation();
   const profileRef = useRef(null);
@@ -41,7 +41,7 @@ const Header = ({ onMenuClick, onProfileClick, config = {} }) => {
   const notificationLink = config.notificationPath ? `/psas/notifications` : `/participant/notifications`;
 
   return (
-    <header className="sticky top-0 flex items-center justify-between bg-white shadow-sm p-4 rounded-lg z-20 hover:shadow-lg">
+    <header className={`sticky top-0 flex items-center justify-between bg-white shadow-sm p-4 rounded-lg z-20 hover:shadow-lg ${className}`}>
       {/* Hamburger + Title */}
       <div className="flex items-center gap-3">
         <button

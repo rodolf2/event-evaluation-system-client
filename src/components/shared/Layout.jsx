@@ -52,6 +52,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
         isOpen={isSidebarOpen}
         onClose={toggleSidebar}
         config={sidebarConfig}
+        className="print:hidden"
       />
 
       {isProfileModalOpen && (
@@ -71,6 +72,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
           onMenuClick={toggleSidebar}
           onProfileClick={handleProfileClick}
           config={headerConfig}
+          className="print:hidden"
         />
         {user && showProfileSection && showProfileSectionOnPath && !pageLoading && <ProfileSection />}
         <div className={showProfileSection && showProfileSectionOnPath ? "mt-6" : ""}>{children}</div>

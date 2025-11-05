@@ -20,12 +20,20 @@ import ParticipantEvaluations from "./pages/participants/Evaluations";
 import ParticipantCertificates from "./pages/participants/Certificates";
 import ParticipantBadges from "./pages/participants/Badges";
 import ParticipantNotifications from "./pages/participants/Notifications";
+import EvaluationStart from "./pages/participants/EvaluationStart";
+import EvaluationForm from "./pages/participants/EvaluationForm";
 import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
 import Profile from "./pages/Profile";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./contexts/useAuth";
+import QuantitativeRatings from "./pages/reports/QuantitativeRatings";
+import QualitativeComments from "./pages/reports/QualitativeComments";
+import PositiveComments from "./pages/reports/PositiveComments";
+import NegativeComments from "./pages/reports/NegativeComments";
+import NeutralComments from "./pages/reports/NeutralComments";
+import CompleteReport from "./pages/reports/CompleteReport";
 
 function App() {
   const { user, token } = useAuth();
@@ -120,6 +128,66 @@ function App() {
           }
         />
         <Route
+          path="/psas/reports/:eventId"
+          element={
+            isAuthorized("psas") ? (
+              <CompleteReport />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/reports/quantitative-ratings/:eventId"
+          element={
+            isAuthorized("psas") ? (
+              <QuantitativeRatings />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/reports/qualitative-comments/:eventId"
+          element={
+            isAuthorized("psas") ? (
+              <QualitativeComments />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/reports/positive-comments/:eventId"
+          element={
+            isAuthorized("psas") ? (
+              <PositiveComments />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/reports/negative-comments/:eventId"
+          element={
+            isAuthorized("psas") ? (
+              <NegativeComments />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/reports/neutral-comments/:eventId"
+          element={
+            isAuthorized("psas") ? (
+              <NeutralComments />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
           path="/psas/notifications"
           element={
             isAuthorized("psas") ? (
@@ -206,6 +274,26 @@ function App() {
           element={
             isAuthorized("participant") ? (
               <ParticipantNotifications />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/evaluations/start/:formId"
+          element={
+            isAuthorized("participant") ? (
+              <EvaluationStart />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/evaluations/form/:formId"
+          element={
+            isAuthorized("participant") ? (
+              <EvaluationForm />
             ) : (
               <Navigate to={getHomeRoute()} />
             )

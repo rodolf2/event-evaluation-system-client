@@ -1,8 +1,13 @@
-import { useState, useEffect, useCallback} from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, ArrowUp, ArrowDown } from 'lucide-react';
 import PSASLayout from '../../components/psas/PSASLayout';
-import ReportModal from '../../components/psas/ReportModal';
 import { useAuth } from '../../contexts/useAuth';
+import QuantitativeRatings from '../reports/QuantitativeRatings';
+import QualitativeComments from '../reports/QualitativeComments';
+import PositiveComments from '../reports/PositiveComments';
+import NegativeComments from '../reports/NegativeComments';
+import NeutralComments from '../reports/NeutralComments';
+import CompleteReport from '../reports/CompleteReport';
 
 const ReportCard = ({ report, onSelect }) => {
   const formatDate = (dateString) => {
@@ -46,12 +51,14 @@ const ReportCard = ({ report, onSelect }) => {
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
-  const [selectedReport, setSelectedReport] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [sortOrder, setSortOrder] = useState('desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
+
+  const [view, setView] = useState('list'); // 'list', 'dashboard', 'quantitative', ...
+  const [selectedReport, setSelectedReport] = useState(null);
 
   const fetchReports = useCallback(async () => {
     try {
@@ -85,8 +92,13 @@ const Reports = () => {
 
   const handleSelectReport = (report) => {
     setSelectedReport(report);
-    // Here you could navigate to a detailed report view or open a modal
+    setView('dashboard');
   };
+
+  const handleBackToList = () => {
+    setView('list');
+    setSelectedReport(null);
+  }
 
   const filteredReports = reports.filter(report =>
     report.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -99,7 +111,6 @@ const Reports = () => {
     return new Date(b.eventDate) - new Date(a.eventDate);
   });
 
-  // Show loading spinner while data is being fetched
   if (loading) {
     return (
       <PSASLayout>
@@ -110,7 +121,6 @@ const Reports = () => {
     );
   }
 
-  // Show error message if there's an error
   if (error) {
     return (
       <PSASLayout>
@@ -132,52 +142,65 @@ const Reports = () => {
 
   return (
     <PSASLayout>
-      <div className="p-8 bg-gray-100 min-h-full">
-        {/* Search and Sort Bar */}
-        <div className="flex items-center mb-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="relative">
-              <button
-                onClick={handleSort}
-                className="flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition"
-              >
-                {sortOrder === 'asc' ? (
-                  <ArrowUp className="w-5 h-5 text-gray-600 mr-2" />
-                ) : (
-                  <ArrowDown className="w-5 h-5 text-gray-600 mr-2" />
-                )}
-                <span>Sort</span>
-              </button>
+      {view === 'list' && (
+        <div className="p-8 bg-gray-100 min-h-full">
+          {/* Search and Sort Bar */}
+          <div className="flex items-center mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="relative">
+                <button
+                  onClick={handleSort}
+                  className="flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition"
+                >
+                  {sortOrder === 'asc' ? (
+                    <ArrowUp className="w-5 h-5 text-gray-600 mr-2" />
+                  ) : (
+                    <ArrowDown className="w-5 h-5 text-gray-600 mr-2" />
+                  )}
+                  <span>Sort</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Reports Grid */}
-        <div className="bg-white p-6 rounded-xl shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {sortedReports.map(report => (
-                    <ReportCard key={report.id} report={report} onSelect={handleSelectReport} />
-                ))}
-            </div>
+          {/* Reports Grid */}
+          <div className="bg-white p-6 rounded-xl shadow-md">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {sortedReports.map(report => (
+                      <ReportCard key={report.id} report={report} onSelect={handleSelectReport} />
+                  ))}
+              </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Report Modal */}
-      {selectedReport && (
-        <ReportModal
-          report={selectedReport}
-          onClose={() => setSelectedReport(null)}
-        />
+      {view === 'dashboard' && selectedReport && (
+        <CompleteReport report={selectedReport} onBack={handleBackToList} />
+      )}
+      {view === 'quantitative' && selectedReport && (
+        <QuantitativeRatings report={selectedReport} onBack={() => setView('dashboard')} />
+      )}
+      {view === 'qualitative' && selectedReport && (
+        <QualitativeComments report={selectedReport} onBack={() => setView('dashboard')} />
+      )}
+      {view === 'positive' && selectedReport && (
+        <PositiveComments report={selectedReport} onBack={() => setView('dashboard')} />
+      )}
+      {view === 'negative' && selectedReport && (
+        <NegativeComments report={selectedReport} onBack={() => setView('dashboard')} />
+      )}
+      {view === 'neutral' && selectedReport && (
+        <NeutralComments report={selectedReport} onBack={() => setView('dashboard')} />
       )}
     </PSASLayout>
   );

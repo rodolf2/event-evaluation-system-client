@@ -128,8 +128,12 @@ const FormCreationInterface = ({ onBack }) => {
     const recipients = urlParams.get('recipients');
     const edit = urlParams.get('edit');
 
-    // Initialize session with formId from URL or create a new one
-    const formId = FormSessionManager.initializeFormSession(formIdFromUrl);
+    // Check if we're editing an existing form (from localStorage or URL)
+    const editFormId = localStorage.getItem('editFormId');
+    const sessionFormId = formIdFromUrl || editFormId;
+
+    // Initialize session with formId from URL, editFormId, or create a new one
+    const formId = FormSessionManager.initializeFormSession(sessionFormId);
     setCurrentFormId(formId);
 
     // Restore the state for the initialized session
@@ -154,7 +158,16 @@ const FormCreationInterface = ({ onBack }) => {
       if (certificateLinked === 'true') {
         setIsCertificateLinked(true);
         localStorage.removeItem(`certificateLinked_${formId}`);
+
+        // Update the saved form data to reflect the certificate linked status
+        const currentData = FormSessionManager.loadFormData();
+        if (currentData) {
+          currentData.isCertificateLinked = true;
+          FormSessionManager.saveFormData(currentData);
+        }
       }
+      // Clear the editFormId since we've successfully loaded the form
+      localStorage.removeItem('editFormId');
     }
 
     return () => clearTimeout(restoreTimeout);
@@ -472,6 +485,9 @@ const FormCreationInterface = ({ onBack }) => {
 
     const backendQuestions = mapQuestionsToBackend(allQuestions);
 
+    // Get selected students from FormSessionManager
+    const selectedStudents = FormSessionManager.loadStudentAssignments();
+
     // Check if this is from temporary extracted data
     const tempFormData = localStorage.getItem("tempFormData");
     let formData;
@@ -489,6 +505,7 @@ const FormCreationInterface = ({ onBack }) => {
         uploadedLinks: uploadedLinks,
         eventStartDate: eventStartDate,
         eventEndDate: eventEndDate,
+        selectedStudents: selectedStudents, // Include selected students
       };
 
       // If there was a file in the temporary data, we need to upload it now
@@ -533,6 +550,7 @@ const FormCreationInterface = ({ onBack }) => {
         uploadedLinks: uploadedLinks,
         eventStartDate: eventStartDate,
         eventEndDate: eventEndDate,
+        selectedStudents: selectedStudents, // Include selected students
       };
     }
 

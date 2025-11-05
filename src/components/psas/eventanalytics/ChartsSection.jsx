@@ -8,7 +8,8 @@ const ChartsSection = ({
   responseOverviewData,
   responseRateOptions,
   responseBreakdownOptions,
-  responseOverviewOptions
+  responseOverviewOptions,
+  responseBreakdown
 }) => {
   return (
     <div className="grow grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -45,15 +46,15 @@ const ChartsSection = ({
             <ul className="text-base">
               <li className="flex items-center mb-2">
                 <span className="w-3 h-3 bg-blue-900 rounded-full mr-3"></span>
-                Positive
+                Positive {responseBreakdown.positive.count} ({responseBreakdown.positive.percentage}%)
               </li>
               <li className="flex items-center mb-2">
                 <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
-                Neutral
+                Neutral {responseBreakdown.neutral.count} ({responseBreakdown.neutral.percentage}%)
               </li>
               <li className="flex items-center">
                 <span className="w-3 h-3 bg-blue-300 rounded-full mr-3"></span>
-                Negative
+                Negative {responseBreakdown.negative.count} ({responseBreakdown.negative.percentage}%)
               </li>
             </ul>
           </div>
