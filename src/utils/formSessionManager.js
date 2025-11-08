@@ -46,7 +46,7 @@ export class FormSessionManager {
     return false;
   }
 
-  // Save complete form data
+  // Save complete form data with quota management
   static saveFormData(formData) {
     const formId = this.getCurrentFormId();
     if (!formId) return false;
@@ -55,10 +55,37 @@ export class FormSessionManager {
     localData.data = { ...localData.data, ...formData };
     localData.lastActivity = new Date().toISOString();
     
-    this.saveFormSession(formId, localData);
-    
-    // Also update legacy storage for compatibility
-    localStorage.setItem('formCreationState', JSON.stringify(formData));
+    try {
+      this.saveFormSession(formId, localData);
+      
+      // Also update legacy storage for compatibility (only for essential data)
+      const essentialData = {
+        formTitle: formData.formTitle,
+        formDescription: formData.formDescription,
+        questions: formData.questions,
+        sections: formData.sections,
+        eventStartDate: formData.eventStartDate,
+        eventEndDate: formData.eventEndDate,
+        currentFormId: formData.currentFormId,
+        isCertificateLinked: formData.isCertificateLinked
+      };
+      localStorage.setItem('formCreationState', JSON.stringify(essentialData));
+      
+    } catch (error) {
+      if (error.name === 'QuotaExceededError' || error.code === 22) {
+        console.warn('⚠️ FormSessionManager - localStorage quota exceeded, cleaning up old data');
+        this.cleanupOldFormSessions();
+        // Retry save after cleanup
+        try {
+          this.saveFormSession(formId, localData);
+        } catch (retryError) {
+          console.error('🔧 FormSessionManager - Failed to save after cleanup:', retryError);
+          return false;
+        }
+      } else {
+        throw error;
+      }
+    }
     
     return true;
   }
@@ -190,9 +217,75 @@ export class FormSessionManager {
     return null;
   }
 
+  // Cleanup old form sessions when quota is exceeded
+  static cleanupOldFormSessions() {
+    const formSessions = this.getAllSessionForms();
+    
+    if (formSessions.length <= 2) {
+      // Don't cleanup if we only have current and one other session
+      return false;
+    }
+    
+    // Sort by last activity (oldest first)
+    const sortedSessions = formSessions
+      .filter(session => session.formId !== this.getCurrentFormId()) // Don't delete current form
+      .sort((a, b) => new Date(a.lastActivity) - new Date(b.lastActivity));
+    
+    // Remove oldest 25% of sessions to free up space
+    const sessionsToRemove = Math.ceil(sortedSessions.length * 0.25);
+    const sessionsDeleted = sortedSessions.slice(0, sessionsToRemove);
+    
+    sessionsDeleted.forEach(session => {
+      localStorage.removeItem(`formSession_${session.formId}`);
+      // Also clean up related data
+      localStorage.removeItem(`formRecipients_${session.formId}`);
+    });
+    
+    console.log(`🧹 FormSessionManager - Cleaned up ${sessionsDeleted.length} old form sessions`);
+    return true;
+  }
+
+  // Get current localStorage usage estimate
+  static getStorageUsage() {
+    let totalSize = 0;
+    for (let key in localStorage) {
+      if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
+        totalSize += localStorage[key].length + key.length;
+      }
+    }
+    return {
+      usedBytes: totalSize,
+      usedKB: Math.round(totalSize / 1024 * 100) / 100,
+      usedMB: Math.round(totalSize / (1024 * 1024) * 100) / 100
+    };
+  }
+
   // Save form local storage data
   static saveFormSession(formId, localData) {
-    localStorage.setItem(`formSession_${formId}`, JSON.stringify(localData));
+    try {
+      localStorage.setItem(`formSession_${formId}`, JSON.stringify(localData));
+    } catch (error) {
+      if (error.name === 'QuotaExceededError' || error.code === 22) {
+        console.error('🔧 FormSessionManager - Critical quota exceeded, attempting emergency cleanup');
+        
+        // Aggressive cleanup - remove all but current form
+        const allKeys = Object.keys(localStorage);
+        const formSessionKeys = allKeys.filter(key => key.startsWith('formSession_'));
+        const currentFormId = this.getCurrentFormId();
+        
+        // Remove all form sessions except current
+        formSessionKeys.forEach(key => {
+          if (!key.includes(currentFormId)) {
+            localStorage.removeItem(key);
+          }
+        });
+        
+        // Try again
+        localStorage.setItem(`formSession_${formId}`, JSON.stringify(localData));
+      } else {
+        throw error;
+      }
+    }
   }
 
   // Clear all form data (use with caution)

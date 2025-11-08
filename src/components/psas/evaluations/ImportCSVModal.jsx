@@ -15,9 +15,6 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
   
   const [linkValue, setLinkValue] = useState('');
   const [uploadedData, setUploadedData] = useState(null);
-  
-  // Store parsed student data for each upload
-  const [uploadResults, setUploadResults] = useState([]);
 
   // Initialize uploadedData from props when modal opens
   useEffect(() => {
@@ -379,8 +376,17 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
                 // Store CSV data using FormSessionManager for robust persistence
                 FormSessionManager.saveCSVData(uploadedData);
                 
-                // Get current form ID using FormSessionManager
-                const currentFormId = FormSessionManager.getCurrentFormId();
+                // Get current form ID using FormSessionManager, or create a temporary one
+                // This ensures the "View" action works even when CSV is imported first
+                // before any form questions are created
+                let currentFormId = FormSessionManager.getCurrentFormId();
+                
+                if (!currentFormId) {
+                  // Create a temporary form ID for CSV import workflow
+                  // This allows students to be assigned to forms even when
+                  // questions haven't been created yet
+                  currentFormId = FormSessionManager.initializeFormSession();
+                }
                 
                 const navigationUrl = `/psas/students?formId=${currentFormId}`;
                 

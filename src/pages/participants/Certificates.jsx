@@ -16,7 +16,7 @@ const Certificates = () => {
       try {
         if (!user || !user._id) return;
 
-        const response = await fetch(`/api/certificates/user/${user._id}`, {
+        const response = await fetch(`/api/certificates/my`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

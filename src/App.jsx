@@ -21,7 +21,7 @@ import ParticipantCertificates from "./pages/participants/Certificates";
 import ParticipantBadges from "./pages/participants/Badges";
 import ParticipantNotifications from "./pages/participants/Notifications";
 import EvaluationStart from "./pages/participants/EvaluationStart";
-import EvaluationForm from "./pages/participants/EvaluationForm";
+import EvaluationForm from "./pages/evaluation/EvaluationForm";
 import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
@@ -34,6 +34,8 @@ import PositiveComments from "./pages/reports/PositiveComments";
 import NegativeComments from "./pages/reports/NegativeComments";
 import NeutralComments from "./pages/reports/NeutralComments";
 import CompleteReport from "./pages/reports/CompleteReport";
+
+// Sample form data removed - now fetched dynamically by EvaluationForm component
 
 function App() {
   const { user, token } = useAuth();

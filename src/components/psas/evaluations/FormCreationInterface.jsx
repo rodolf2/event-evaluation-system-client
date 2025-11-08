@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Plus,
@@ -13,7 +13,6 @@ import {
   Link as LinkIcon,
   FileText,
   X,
-  Edit,
 } from "lucide-react";
 import Question from "./Question";
 import Section from "./Section";
@@ -65,6 +64,14 @@ const FormCreationInterface = ({ onBack }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [currentFormId, setCurrentFormId] = useState(null); // New state for current form ID
 
+  // Active selection state (for Google Forms-like targeting of actions)
+  // null / "main" means Section 1 (the top-level block)
+  const [activeSectionId, setActiveSectionId] = useState("main");
+  const [activeQuestionId, setActiveQuestionId] = useState(null);
+
+  // Refs for tracking scroll alignment if needed later
+  const formCanvasRef = useRef(null);
+
   // Loading state (for future use)
   // const isLoading = false;
 
@@ -80,7 +87,67 @@ const FormCreationInterface = ({ onBack }) => {
   // Load assigned students using FormSessionManager
   const assignedStudents = FormSessionManager.loadStudentAssignments();
 
-  // Persist form state using FormSessionManager
+  /**
+   * ATOMIC STATE MANAGEMENT SYSTEM
+   *
+   * This system ensures that CSV import, student assignment, and form editing
+   * work seamlessly together without conflicts. Previously, these operations
+   * would overwrite each other's data due to:
+   * 1. Race conditions between multiple useEffect hooks
+   * 2. Separate localStorage management for different data types
+   * 3. Debounce timer conflicts
+   *
+   * The solution: All form data updates are now coordinated through this
+   * single updateFormState function, ensuring atomic persistence.
+   *
+   * CSV IMPORT WORKFLOW:
+   * 1. CSV data is imported through ImportCSVModal component
+   * 2. When "View" is clicked, students list page opens with formId
+   * 3. If no formId exists (CSV imported first), a temporary one is created
+   * 4. All form data (questions, sections, CSV) persists through navigation
+   *
+   * STUDENT ASSIGNMENT WORKFLOW:
+   * 1. Navigate to student assignment after CSV import
+   * 2. Students are selected and saved via FormSessionManager
+   * 3. Return to form creation with all data preserved
+   * 4. Both questions and student assignments remain intact
+   */
+  const updateFormState = useCallback((updates) => {
+    setFormTitle(prev => updates.formTitle !== undefined ? updates.formTitle : prev);
+    setFormDescription(prev => updates.formDescription !== undefined ? updates.formDescription : prev);
+    setQuestions(prev => updates.questions !== undefined ? updates.questions : prev);
+    setSections(prev => updates.sections !== undefined ? updates.sections : prev);
+    setUploadedFiles(prev => updates.uploadedFiles !== undefined ? updates.uploadedFiles : prev);
+    setUploadedLinks(prev => updates.uploadedLinks !== undefined ? updates.uploadedLinks : prev);
+    setUploadedCSVData(prev => updates.uploadedCSVData !== undefined ? updates.uploadedCSVData : prev);
+    setEventStartDate(prev => updates.eventStartDate !== undefined ? updates.eventStartDate : prev);
+    setEventEndDate(prev => updates.eventEndDate !== undefined ? updates.eventEndDate : prev);
+    setCurrentFormId(prev => updates.currentFormId !== undefined ? updates.currentFormId : prev);
+    setIsCertificateLinked(prev => updates.isCertificateLinked !== undefined ? updates.isCertificateLinked : prev);
+    
+    // Persist all form data atomically to prevent conflicts
+    const currentState = {
+      formTitle: updates.formTitle !== undefined ? updates.formTitle : formTitle,
+      formDescription: updates.formDescription !== undefined ? updates.formDescription : formDescription,
+      questions: updates.questions !== undefined ? updates.questions : questions,
+      sections: updates.sections !== undefined ? updates.sections : sections,
+      uploadedFiles: updates.uploadedFiles !== undefined ? updates.uploadedFiles : uploadedFiles,
+      uploadedLinks: updates.uploadedLinks !== undefined ? updates.uploadedLinks : uploadedLinks,
+      uploadedCSVData: updates.uploadedCSVData !== undefined ? updates.uploadedCSVData : uploadedCSVData,
+      eventStartDate: updates.eventStartDate !== undefined ? updates.eventStartDate : eventStartDate,
+      eventEndDate: updates.eventEndDate !== undefined ? updates.eventEndDate : eventEndDate,
+      currentFormId: updates.currentFormId !== undefined ? updates.currentFormId : currentFormId,
+      isCertificateLinked: updates.isCertificateLinked !== undefined ? updates.isCertificateLinked : isCertificateLinked,
+    };
+    FormSessionManager.saveFormData(currentState);
+    
+    // Separate CSV data persistence for StudentList compatibility
+    if (updates.uploadedCSVData !== undefined) {
+      FormSessionManager.saveCSVData(updates.uploadedCSVData);
+    }
+  }, [formTitle, formDescription, questions, sections, uploadedFiles, uploadedLinks, uploadedCSVData, eventStartDate, eventEndDate, currentFormId, isCertificateLinked]);
+
+  // Persist form state using FormSessionManager (legacy function for backward compatibility)
   const persistFormState = useCallback(() => {
     const currentState = {
       formTitle,
@@ -93,58 +160,256 @@ const FormCreationInterface = ({ onBack }) => {
       eventStartDate,
       eventEndDate,
       currentFormId,
-      isCertificateLinked, // <-- Persist certificate linked status
+      isCertificateLinked,
     };
     FormSessionManager.saveFormData(currentState);
   }, [formTitle, formDescription, questions, sections, uploadedFiles, uploadedLinks, uploadedCSVData, eventStartDate, eventEndDate, currentFormId, isCertificateLinked]);
 
-  // Restore form state using FormSessionManager
+  // Enhanced restore form state with CSV data
   const restoreFormState = useCallback(() => {
     const loadedData = FormSessionManager.loadFormData();
-    if (loadedData) {
-      setFormTitle(loadedData.formTitle || "Untitled Form");
-      setFormDescription(loadedData.formDescription || "Form Description");
-      setQuestions(loadedData.questions || []);
-      setSections(loadedData.sections || []);
-      setUploadedFiles(loadedData.uploadedFiles || []);
-      setUploadedLinks(loadedData.uploadedLinks || []);
-      setUploadedCSVData(loadedData.uploadedCSVData || null);
-      setEventStartDate(loadedData.eventStartDate || "");
-      setEventEndDate(loadedData.eventEndDate || "");
-      setCurrentFormId(loadedData.currentFormId || FormSessionManager.getCurrentFormId());
-      setIsCertificateLinked(loadedData.isCertificateLinked || false); // <-- Restore certificate linked status
+    const csvData = FormSessionManager.loadCSVData();
+    
+    if (loadedData || csvData) {
+      updateFormState({
+        formTitle: loadedData?.formTitle || "Untitled Form",
+        formDescription: loadedData?.formDescription || "Form Description",
+        questions: loadedData?.questions || [],
+        sections: loadedData?.sections || [],
+        uploadedFiles: loadedData?.uploadedFiles || [],
+        uploadedLinks: loadedData?.uploadedLinks || [],
+        uploadedCSVData: csvData || loadedData?.uploadedCSVData || null,
+        eventStartDate: loadedData?.eventStartDate || "",
+        eventEndDate: loadedData?.eventEndDate || "",
+        currentFormId: loadedData?.currentFormId || FormSessionManager.getCurrentFormId(),
+        isCertificateLinked: loadedData?.isCertificateLinked || false,
+      });
       setHasUnsavedChanges(false);
     }
-  }, []);
+  }, [updateFormState]);
 
   // Check for recipients parameter from student list navigation
   const [hasShownRecipientsToast, setHasShownRecipientsToast] = useState(false);
 
   // Combined effect for initialization and handling navigation
   useEffect(() => {
+    // Only proceed if we have required dependencies
+    if (!location || !location.search) return;
+    
     const urlParams = new URLSearchParams(location.search);
     const formIdFromUrl = urlParams.get('formId');
-
     const recipients = urlParams.get('recipients');
     const edit = urlParams.get('edit');
 
-    // Check if we're editing an existing form (from localStorage or URL)
-    const editFormId = localStorage.getItem('editFormId');
-    const sessionFormId = formIdFromUrl || editFormId;
+    // Determine the active form id from URL or existing session
+    const urlFormId = edit || formIdFromUrl;
+    const existingSessionFormId = FormSessionManager.getCurrentFormId();
+    const effectiveFormId = urlFormId || existingSessionFormId;
 
-    // Initialize session with formId from URL, editFormId, or create a new one
-    const formId = FormSessionManager.initializeFormSession(sessionFormId);
-    setCurrentFormId(formId);
+    // If we have an effective form id and token, try to load it as an edit checkpoint
+    if (effectiveFormId && token) {
+      const isLikelyValidId =
+        typeof effectiveFormId === "string" && effectiveFormId.trim().length > 0;
 
-    // Restore the state for the initialized session
-    const restoreTimeout = setTimeout(restoreFormState, 50);
+      if (isLikelyValidId) {
+        const fetchFormData = async () => {
+          try {
+            const response = await fetch(`/api/forms/${effectiveFormId}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
 
-    // Handle return from student assignment page
-    if (recipients && !hasShownRecipientsToast) {
-      const csvData = FormSessionManager.loadCSVData();
-      if (csvData) {
-        setUploadedCSVData(csvData);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.data) {
+                const formData = data.data;
+
+                const mappedFormData = {
+                  formTitle: formData.title || "Untitled Form",
+                  formDescription: formData.description || "Form Description",
+                  questions: formData.questions
+                    ? formData.questions.map((q) => {
+                        let clientType = "Short Answer";
+                        let clientOptions = [];
+                        let ratingScale = 5;
+                        let emojiStyle = "Default";
+                        let likertStart = 1;
+                        let likertEnd = 5;
+                        let likertStartLabel = "Poor";
+                        let likertEndLabel = "Excellent";
+
+                        switch (q.type) {
+                          case "multiple_choice":
+                            clientType = "Multiple Choices";
+                            clientOptions = q.options || [];
+                            break;
+                          case "short_answer":
+                            clientType = "Short Answer";
+                            break;
+                          case "paragraph":
+                            clientType = "Paragraph";
+                            break;
+                          case "scale":
+                            if (q.lowLabel || q.highLabel) {
+                              clientType = "Likert Scale";
+                              likertStart = q.low || 1;
+                              likertEnd = q.high || 5;
+                              likertStartLabel = q.lowLabel || "Poor";
+                              likertEndLabel = q.highLabel || "Excellent";
+                            } else {
+                              clientType = "Numeric Ratings";
+                              ratingScale = q.high || 5;
+                              emojiStyle = "Default";
+                            }
+                            break;
+                          case "date":
+                            clientType = "Date";
+                            break;
+                          case "time":
+                            clientType = "Time";
+                            break;
+                          case "file_upload":
+                            clientType = "File Upload";
+                            break;
+                          default:
+                            clientType = "Short Answer";
+                        }
+
+                        return {
+                          id: makeId(),
+                          type: clientType,
+                          title: q.title || "",
+                          options: clientOptions,
+                          ratingScale,
+                          emojiStyle,
+                          required: q.required || false,
+                          likertStart,
+                          likertEnd,
+                          likertStartLabel,
+                          likertEndLabel,
+                        };
+                      })
+                    : [],
+                  sections: formData.sections || [],
+                  uploadedFiles: formData.uploadedFiles || [],
+                  uploadedLinks: formData.uploadedLinks || [],
+                  eventStartDate: formData.eventStartDate
+                    ? new Date(formData.eventStartDate)
+                        .toISOString()
+                        .split("T")[0]
+                    : "",
+                  eventEndDate: formData.eventEndDate
+                    ? new Date(formData.eventEndDate)
+                        .toISOString()
+                        .split("T")[0]
+                    : "",
+                  currentFormId: effectiveFormId,
+                  isCertificateLinked: false,
+                };
+
+                // Apply mapped data
+                setFormTitle(mappedFormData.formTitle);
+                setFormDescription(mappedFormData.formDescription);
+                setQuestions(mappedFormData.questions);
+                setSections(mappedFormData.sections);
+                setUploadedFiles(mappedFormData.uploadedFiles);
+                setUploadedLinks(mappedFormData.uploadedLinks);
+                setEventStartDate(mappedFormData.eventStartDate);
+                setEventEndDate(mappedFormData.eventEndDate);
+                setCurrentFormId(mappedFormData.currentFormId);
+                setHasUnsavedChanges(false);
+
+                // Optional certificate check (non-blocking)
+                try {
+                  const certificateResponse = await fetch(
+                    `/api/certificates/form/${effectiveFormId}`,
+                    {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    }
+                  );
+
+                  if (certificateResponse.ok) {
+                    const certificateData =
+                      await certificateResponse.json();
+                    if (
+                      certificateData.success &&
+                      certificateData.data &&
+                      certificateData.data.length > 0
+                    ) {
+                      setIsCertificateLinked(true);
+                      mappedFormData.isCertificateLinked = true;
+                    }
+                  }
+                } catch {
+                  // ignore certificate check failures
+                }
+
+                // Persist as checkpoint
+                FormSessionManager.saveFormData(mappedFormData);
+                localStorage.setItem("editFormId", effectiveFormId);
+                // Ensure session uses this id
+                FormSessionManager.initializeFormSession(effectiveFormId);
+              }
+            } else if (response.status === 404) {
+              // If server doesn't recognize it, fall back to local session/state
+              localStorage.removeItem("editFormId");
+              const fallbackId =
+                existingSessionFormId ||
+                FormSessionManager.initializeFormSession(null);
+              setCurrentFormId(fallbackId);
+              const restoreTimeout = setTimeout(restoreFormState, 50);
+              return () => clearTimeout(restoreTimeout);
+            } else {
+              toast.error("Failed to load form data for editing");
+            }
+          } catch {
+            // On fetch error, restore any existing session instead of looping
+            const restoreTimeout = setTimeout(restoreFormState, 50);
+            return () => clearTimeout(restoreTimeout);
+          }
+        };
+
+        fetchFormData();
+      } else {
+        // If effectiveFormId isn't valid, restore any existing session
+        const restoreTimeout = setTimeout(restoreFormState, 50);
+        return () => clearTimeout(restoreTimeout);
       }
+    } else {
+      // No effective id: initialize or restore a local session
+      const sessionFormId =
+        existingSessionFormId ||
+        FormSessionManager.initializeFormSession(null);
+      setCurrentFormId(sessionFormId);
+      const restoreTimeout = setTimeout(restoreFormState, 50);
+      return () => clearTimeout(restoreTimeout);
+    }
+
+    // Handle return from student assignment page - preserve ALL form data
+    if (recipients && !hasShownRecipientsToast) {
+      // Load both form data and CSV data to ensure complete restoration
+      const formData = FormSessionManager.loadFormData();
+      const csvData = FormSessionManager.loadCSVData();
+      
+      // Update all form state atomically to prevent data loss
+      updateFormState({
+        formTitle: formData?.formTitle || "Untitled Form",
+        formDescription: formData?.formDescription || "Form Description",
+        questions: formData?.questions || [],
+        sections: formData?.sections || [],
+        uploadedFiles: formData?.uploadedFiles || [],
+        uploadedLinks: formData?.uploadedLinks || [],
+        uploadedCSVData: csvData || formData?.uploadedCSVData || null,
+        eventStartDate: formData?.eventStartDate || "",
+        eventEndDate: formData?.eventEndDate || "",
+        currentFormId: formData?.currentFormId || FormSessionManager.getCurrentFormId(),
+        isCertificateLinked: formData?.isCertificateLinked || false,
+      });
+      
+      setHasUnsavedChanges(false);
       const toastTimeout = setTimeout(() => {
         toast.success(`${recipients} students assigned to this form`);
         setHasShownRecipientsToast(true);
@@ -153,31 +418,50 @@ const FormCreationInterface = ({ onBack }) => {
     }
 
     // Handle return from certificate linking page
-    if (edit && formId) {
-      const certificateLinked = localStorage.getItem(`certificateLinked_${formId}`);
-      if (certificateLinked === 'true') {
-        setIsCertificateLinked(true);
-        localStorage.removeItem(`certificateLinked_${formId}`);
+    if (edit) {
+      const activeFormId = FormSessionManager.getCurrentFormId();
+      if (activeFormId) {
+        const certificateLinked = localStorage.getItem(`certificateLinked_${activeFormId}`);
+        if (certificateLinked === "true") {
+          setIsCertificateLinked(true);
+          localStorage.removeItem(`certificateLinked_${activeFormId}`);
 
-        // Update the saved form data to reflect the certificate linked status
-        const currentData = FormSessionManager.loadFormData();
-        if (currentData) {
-          currentData.isCertificateLinked = true;
-          FormSessionManager.saveFormData(currentData);
+          // Update the saved form data to reflect the certificate linked status
+          const currentData = FormSessionManager.loadFormData();
+          if (currentData) {
+            currentData.isCertificateLinked = true;
+            FormSessionManager.saveFormData(currentData);
+          }
         }
       }
-      // Clear the editFormId since we've successfully loaded the form
-      localStorage.removeItem('editFormId');
+
+      // Clear the editFormId since we've successfully handled the edit context
+      localStorage.removeItem("editFormId");
     }
+  }, [location?.search, hasShownRecipientsToast, token, restoreFormState, updateFormState]);
 
-    return () => clearTimeout(restoreTimeout);
-  }, [location.search, restoreFormState, hasShownRecipientsToast]);
-
-  // Save form state whenever it changes (with debouncing)
+  // Save form state whenever it changes (with smart debouncing and quota management)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      persistFormState();
-    }, 1000); // Debounce to prevent excessive saves
+      // Check storage usage before saving
+      const storageUsage = FormSessionManager.getStorageUsage();
+      
+      // Only save comprehensive data if we have reasonable storage space
+      if (storageUsage.usedMB < 4.5) { // Leave 0.5MB buffer under 5MB limit
+        persistFormState();
+      } else {
+        console.warn('⚠️ FormCreationInterface - Storage quota warning, reducing save frequency');
+        // Save only essential data when storage is nearly full
+        const essentialState = {
+          formTitle,
+          formDescription,
+          eventStartDate,
+          eventEndDate,
+          currentFormId,
+        };
+        FormSessionManager.saveFormData(essentialState);
+      }
+    }, 2000); // Increased debounce to 2 seconds to reduce save frequency
 
     return () => clearTimeout(timeoutId);
   }, [formTitle, formDescription, questions, sections, uploadedFiles, uploadedLinks, uploadedCSVData, eventStartDate, eventEndDate, currentFormId, persistFormState]);
@@ -194,114 +478,155 @@ const FormCreationInterface = ({ onBack }) => {
 
   const makeId = () => Date.now() + Math.floor(Math.random() * 1000);
 
-  const addQuestion = (sectionId = null) => {
-    // Create a "Short Answer" question as default for better user experience
-    const newQuestion = {
-      id: makeId(),
-      type: "Short Answer",
-      title: "",
-      options: [], // Only used for Multiple Choices
-      ratingScale: 5, // Only used for Numeric Ratings
-      emojiStyle: "Default", // Only used for Numeric Ratings
-      required: false,
-      likertStart: 1, // Only used for Likert Scale
-      likertEnd: 5, // Only used for Likert Scale
-      likertStartLabel: "Poor", // Only used for Likert Scale
-      likertEndLabel: "Excellent", // Only used for Likert Scale
-    };
+  // Centralized helper to create a new default question object
+  const createDefaultQuestion = () => ({
+    id: makeId(),
+    type: "Short Answer",
+    title: "",
+    options: [],
+    ratingScale: 5,
+    emojiStyle: "Default",
+    required: false,
+    likertStart: 1,
+    likertEnd: 5,
+    likertStartLabel: "Poor",
+    likertEndLabel: "Excellent",
+  });
 
+  // Add question respecting the active section
+  const addQuestion = (targetSectionId = activeSectionId || "main") => {
+    const newQuestion = createDefaultQuestion();
 
-    if (sectionId) {
-      setSections((prev) =>
-        prev.map((s) =>
-          s.id === sectionId
-            ? { ...s, questions: [...(s.questions || []), newQuestion] }
-            : s
-        )
+    setQuestions((prevMainQuestions) => {
+      // If target is main (Section 1)
+      if (targetSectionId === "main" || targetSectionId == null) {
+        return [...prevMainQuestions, newQuestion];
+      }
+      return prevMainQuestions;
+    });
+
+    setSections((prevSections) => {
+      if (targetSectionId === "main" || targetSectionId == null) {
+        return prevSections;
+      }
+
+      return prevSections.map((section) =>
+        section.id === targetSectionId
+          ? {
+              ...section,
+              questions: [...(section.questions || []), newQuestion],
+            }
+          : section
       );
-    } else {
-      setQuestions((prev) => [...prev, newQuestion]);
-    }
+    });
+
+    setActiveQuestionId(newQuestion.id);
     setHasUnsavedChanges(true);
   };
 
+  // Add section with continuous, zero-gap numbering based on position
   const addSection = () => {
-    const newId =
-      sections.length > 0 ? Math.max(...sections.map((s) => s.id)) + 1 : 1;
-    setSections((prev) => [
-      ...prev,
-      {
-        id: newId,
+    setSections((prev) => {
+      // Create new section and append at the end (UI order defines numbering)
+      const newSection = {
+        id: Date.now(), // UI-only unique id
         title: "Untitled Section",
         description: "Add a description",
         questions: [],
-      },
-    ]);
+      };
+
+      const updated = [...prev, newSection];
+
+      // Reindex: ensure continuous 1-based sectionNumber based on order
+      const reindexed = updated.map((section, idx) => ({
+        ...section,
+        sectionNumber: idx + 1,
+      }));
+
+      return reindexed;
+    });
+
+    // Active section becomes the newly added last section; sectionNumber aligns with order
+    // We will set activeSectionId after state update using functional form above
+    // by looking at the last element index synchronously from prev is not safe,
+    // so use a small timeout tied to current state.
+    setTimeout(() => {
+      setSections((current) => {
+        if (current.length === 0) return current;
+        const last = current[current.length - 1];
+        setActiveSectionId(last.id);
+        setActiveQuestionId(null);
+        return current;
+      });
+    }, 0);
+
     setHasUnsavedChanges(true);
   };
 
+  // Explicit active setters to be used from sections/questions
+  const handleSetActiveSection = (sectionId) => {
+    setActiveSectionId(sectionId || "main");
+    setActiveQuestionId(null);
+  };
+
+  const handleSetActiveQuestion = (sectionId, questionId) => {
+    setActiveSectionId(sectionId || "main");
+    setActiveQuestionId(questionId);
+  };
+
   const updateQuestion = useCallback((questionId, updateFn) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === questionId ? updateFn(q) : q))
-    );
-    setSections((prevSections) =>
-      prevSections.map((s) => ({
-        ...s,
-        questions: (s.questions || []).map((q) =>
-          q.id === questionId ? updateFn(q) : q
-        ),
-      }))
-    );
+    setQuestions(prev => prev.map((q) => (q.id === questionId ? updateFn(q) : q)));
+    setSections(prev => prev.map((s) => ({
+      ...s,
+      questions: (s.questions || []).map((q) =>
+        q.id === questionId ? updateFn(q) : q
+      ),
+    })));
   }, []);
 
   const duplicateQuestion = useCallback((id) => {
-    setQuestions((prev) => {
-      const q = prev.find((x) => x.id === id);
-      if (q) {
-        // Create a deep copy of the question including all choices
-        const copy = {
-          ...q,
-          id: makeId(),
-          title: `${q.title} (Copy)`, // Add copy indicator to avoid confusion
-          options: [...(q.options || [])], // Deep copy of options array
-          ratingScale: q.ratingScale,
-          likertStart: q.likertStart,
-          likertEnd: q.likertEnd,
-          likertStartLabel: q.likertStartLabel,
-          likertEndLabel: q.likertEndLabel,
-          emojiStyle: q.emojiStyle,
-        };
-        return [...prev, copy];
-      }
-      return prev;
+    const mainQuestionIndex = questions.findIndex(q => q.id === id);
+    let updatedQuestions = [...questions];
+    let updatedSections = sections.map(s => ({...s, questions: [...(s.questions || [])]}));
+    
+    // Create deep copy of the question
+    const createQuestionCopy = (q) => ({
+      ...q,
+      id: makeId(),
+      title: q.title ? `${q.title} (Copy)` : 'Untitled Question (Copy)',
+      options: [...(q.options || [])],
+      ratingScale: q.ratingScale,
+      likertStart: q.likertStart,
+      likertEnd: q.likertEnd,
+      likertStartLabel: q.likertStartLabel,
+      likertEndLabel: q.likertEndLabel,
+      emojiStyle: q.emojiStyle,
     });
 
-    setSections((prevSections) =>
-      prevSections.map((s) => {
-        const newQuestions = [];
-        (s.questions || []).forEach((q) => {
-          newQuestions.push(q);
-          if (q.id === id) {
-            // Create a deep copy of the question including all choices
-            const copy = {
-              ...q,
-              id: makeId(),
-              title: `${q.title} (Copy)`, // Add copy indicator
-              options: [...(q.options || [])], // Deep copy of options array
-              ratingScale: q.ratingScale,
-              likertStart: q.likertStart,
-              likertEnd: q.likertEnd,
-              likertStartLabel: q.likertStartLabel,
-              likertEndLabel: q.likertEndLabel,
-              emojiStyle: q.emojiStyle,
-            };
-            newQuestions.push(copy);
-          }
-        });
+    if (mainQuestionIndex !== -1) {
+      // Question is in main form
+      const originalQuestion = questions[mainQuestionIndex];
+      const copy = createQuestionCopy(originalQuestion);
+      updatedQuestions.splice(mainQuestionIndex + 1, 0, copy);
+    }
+
+    // Check sections for the question
+    updatedSections = updatedSections.map(s => {
+      const sectionQuestionIndex = (s.questions || []).findIndex(q => q.id === id);
+      if (sectionQuestionIndex !== -1) {
+        const originalQuestion = s.questions[sectionQuestionIndex];
+        const copy = createQuestionCopy(originalQuestion);
+        const newQuestions = [...s.questions];
+        newQuestions.splice(sectionQuestionIndex + 1, 0, copy);
         return { ...s, questions: newQuestions };
-      })
-    );
-  }, []);
+      }
+      return s;
+    });
+
+    setQuestions(updatedQuestions);
+    setSections(updatedSections);
+    setHasUnsavedChanges(true);
+  }, [questions, sections]);
 
   const removeQuestion = (id) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
@@ -311,33 +636,36 @@ const FormCreationInterface = ({ onBack }) => {
         questions: (s.questions || []).filter((q) => q.id !== id),
       }))
     );
+
+    if (activeQuestionId === id) {
+      setActiveQuestionId(null);
+    }
     setHasUnsavedChanges(true);
   };
 
   const removeSection = (id) => {
-    setSections((prev) => prev.filter((s) => s.id !== id));
+    setSections((prev) => {
+      // Remove the target section
+      const filtered = prev.filter((s) => s.id !== id);
+
+      // Reindex remaining sections to maintain continuous 1-based numbering
+      const reindexed = filtered.map((section, idx) => ({
+        ...section,
+        sectionNumber: idx + 1,
+      }));
+
+      return reindexed;
+    });
+
+    if (activeSectionId === id) {
+      setActiveSectionId("main");
+      setActiveQuestionId(null);
+    }
     setHasUnsavedChanges(true);
   };
 
-  // Upload functionality
-  const handleLinkUpload = async (links) => {
-    try {
-      // For now, just add to local state since we don't have a form ID yet
-      const newLinks = links.map((link) => ({
-        url: link.url,
-        title: link.title || "",
-        description: link.description || "",
-        uploadedAt: new Date(),
-      }));
-
-      setUploadedLinks((prev) => [...prev, ...newLinks]);
-    } catch (error) {
-      console.error("Error handling links:", error);
-    }
-  };
-
   // Parse CSV data
-  const parseCSV = (csvText) => {
+  const parseCSV = useCallback((csvText) => {
     const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
     if (lines.length < 2) return [];
 
@@ -355,21 +683,19 @@ const FormCreationInterface = ({ onBack }) => {
       }
     }
     return students;
-  };
+  }, []);
 
   // Handle CSV file upload with FormSessionManager persistence
   const handleCSVUpload = async (csvDataOrUrl) => {
     try {
-      // Check if we received a complete CSV data object or just a URL
       let csvData;
-      
+
       if (typeof csvDataOrUrl === 'object' && csvDataOrUrl.students) {
-        // We received a complete CSV data object with students
+        // Already parsed CSV data object
         csvData = csvDataOrUrl;
       } else {
-        // We received a URL, need to fetch and parse it
+        // Treat as URL and fetch/parse CSV
         const url = csvDataOrUrl;
-        
         const response = await fetch(url);
         const csvText = await response.text();
         const students = parseCSV(csvText);
@@ -379,36 +705,28 @@ const FormCreationInterface = ({ onBack }) => {
             filename: url.split('/').pop() || 'uploaded.csv',
             students,
             uploadedAt: new Date(),
-            url
+            url,
           };
         } else {
-          console.error("🎓 FormCreationInterface - No students found in CSV data");
           toast.error("No valid student data found in CSV file");
           return;
         }
       }
-      
+
       // Validate the CSV data structure
       if (!csvData.students || !Array.isArray(csvData.students) || csvData.students.length === 0) {
         toast.error("CSV file contains no valid student data");
         return;
       }
-      
-      // Save to both local state and FormSessionManager
-      setUploadedCSVData(csvData);
+
+      // Persist CSV data centrally so StudentList and others can read it
       FormSessionManager.saveCSVData(csvData);
 
-      // Also add to uploaded links for consistency
-      handleLinkUpload([{
-        url: csvData.url || csvData.filename,
-        title: csvData.filename || "CSV File",
-        description: `CSV file with ${csvData.students.length} students`,
-      }]);
-      
+      // Reflect CSV data in local state for UI feedback
+      setUploadedCSVData(csvData);
+      setHasUnsavedChanges(true);
       toast.success(`CSV file with ${csvData.students.length} students uploaded successfully`);
-      
-    } catch (error) {
-      console.error("Error parsing CSV:", error);
+    } catch {
       toast.error("Failed to parse CSV file");
     }
   };
@@ -483,10 +801,26 @@ const FormCreationInterface = ({ onBack }) => {
       return;
     }
 
-    const backendQuestions = mapQuestionsToBackend(allQuestions);
+    // Load CSV/recipients and certificate link state
+    const selectedStudents = FormSessionManager.loadStudentAssignments() || [];
+    const hasStudents = Array.isArray(selectedStudents) && selectedStudents.length > 0;
+    const hasDates = Boolean(eventStartDate) && Boolean(eventEndDate);
+    const hasCertificate = Boolean(isCertificateLinked);
 
-    // Get selected students from FormSessionManager
-    const selectedStudents = FormSessionManager.loadStudentAssignments();
+    // Enforce required publishing conditions:
+    // - Event start and end dates must be chosen
+    // - At least one of: certificate linked OR students uploaded via CSV
+    if (!hasDates) {
+      toast.error("Please set both the event start date and end date before publishing.");
+      return;
+    }
+
+    if (!hasCertificate && !hasStudents) {
+      toast.error("Please either link a certificate or upload students via CSV before publishing.");
+      return;
+    }
+
+    const backendQuestions = mapQuestionsToBackend(allQuestions);
 
     // Check if this is from temporary extracted data
     const tempFormData = localStorage.getItem("tempFormData");
@@ -639,26 +973,26 @@ const FormCreationInterface = ({ onBack }) => {
   if (showSuccessScreen) {
     return (
       <SuccessScreen
-        formId={currentFormId} // Pass the current (server) form ID
-        onBackToEvaluations={() => {
-          // Clear all form data using the enhanced clearing logic
-          FormSessionManager.clearFormData();
-          
-          // Clear additional legacy keys
-          localStorage.removeItem("tempFormData");
-          localStorage.removeItem("uploadedFormId");
-          localStorage.removeItem("editFormId");
-          localStorage.removeItem("studentSelection");
-          
-          // Clear any certificate-related flags
-          const currentFormId = FormSessionManager.getCurrentFormId();
-          if (currentFormId) {
-            localStorage.removeItem(`certificateLinked_${currentFormId}`);
-            localStorage.removeItem(`formRecipients_${currentFormId}`);
-          }
-          
-          // Clear current form ID
-          localStorage.removeItem("currentFormId");
+       formId={currentFormId} // Pass the current (server) form ID
+       onBackToEvaluations={() => {
+         // Clear all form data using the enhanced clearing logic
+         FormSessionManager.clearFormData();
+         
+         // Clear additional legacy keys
+         localStorage.removeItem("tempFormData");
+         localStorage.removeItem("uploadedFormId");
+         localStorage.removeItem("editFormId");
+         localStorage.removeItem("studentSelection");
+         
+         // Clear any certificate-related flags
+         const currentFormId = FormSessionManager.getCurrentFormId();
+         if (currentFormId) {
+           localStorage.removeItem(`certificateLinked_${currentFormId}`);
+           localStorage.removeItem(`formRecipients_${currentFormId}`);
+         }
+         
+         // Clear current form ID
+         localStorage.removeItem("currentFormId");
           
           // Clear local component state
           setQuestions([]);
@@ -684,8 +1018,6 @@ const FormCreationInterface = ({ onBack }) => {
 
   return (
     <>
-      {/* Debug button */}
-      
       <div className="bg-gray-100 min-h-screen">
       <div className="p-4 md:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
@@ -716,19 +1048,15 @@ const FormCreationInterface = ({ onBack }) => {
             <button
               className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
               onClick={() => {
-                // Force immediate save of current form state
+                // Force immediate save of current form state using atomic updates
                 persistFormState();
-
-                // Force save CSV data if it exists to ensure persistence
-                if (uploadedCSVData) {
-                  FormSessionManager.saveCSVData(uploadedCSVData);
-                }
                 
                 // Check if CSV data exists before navigating to student assignment
                 const csvData = FormSessionManager.loadCSVData();
                 
                 // Enhanced validation with better error messages
                 if (!csvData) {
+                  toast.error("Please import a CSV file first to assign students.");
                   openImportModal();
                   return;
                 }
@@ -775,9 +1103,19 @@ const FormCreationInterface = ({ onBack }) => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-center relative">
-          <div className="w-full max-w-4xl">
-            <div className="bg-white rounded-lg shadow-sm p-6 sm:p-10 mb-6 relative min-h-[220px]">
+        <div
+           ref={formCanvasRef}
+           className="flex flex-col md:flex-row justify-center relative"
+         >
+           <div className="w-full max-w-4xl relative mt-8">
+             <div
+               className={`bg-white rounded-lg shadow-sm p-6 sm:p-10 mb-6 relative min-h-[220px] ${
+                 activeSectionId === "main"
+                   ? "ring-2 ring-blue-500/40"
+                   : "hover:ring-1 hover:ring-gray-200 transition"
+               }`}
+               onClick={() => handleSetActiveSection("main")}
+             >
               <div className="absolute top-4 right-4">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
@@ -811,7 +1149,7 @@ const FormCreationInterface = ({ onBack }) => {
                   setFormTitle(e.target.value);
                   setHasUnsavedChanges(true);
                 }}
-                className="text-3xl sm:text-5xl font-bold w-full border-none outline-none mb-2"
+                className="text-3xl sm:text-5xl font-bold w-full border-none outline-none mb-2 text-center placeholder:text-gray-400"
               />
               <textarea
                 placeholder="Add a description"
@@ -820,7 +1158,7 @@ const FormCreationInterface = ({ onBack }) => {
                   setFormDescription(e.target.value);
                   setHasUnsavedChanges(true);
                 }}
-                className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none mb-4"
+                className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-gray-400"
                 rows={1}
               />
               
@@ -858,114 +1196,215 @@ const FormCreationInterface = ({ onBack }) => {
               })()}
             </div>
 
+           {/* Desktop: Add controls beside the first (main) Section 1 card */}
+           <div className="hidden md:flex flex-col gap-2 items-center absolute top-6 -right-16">
+             {/* Add Question - targets main section */}
+             <button
+               onClick={() => addQuestion("main")}
+               className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+               title="Add question"
+             >
+               <Plus size={18} className="text-gray-700" />
+             </button>
+             {/* Add Section */}
+             <button
+               onClick={addSection}
+               className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+               title="Add new section"
+             >
+               <AlignLeft size={18} className="text-gray-700" />
+             </button>
+           </div>
+
             {questions.map((q) => (
-              <Question
+              <div
                 key={q.id}
-                {...q}
-                updateQuestion={updateQuestion}
-                duplicateQuestion={duplicateQuestion}
-                removeQuestion={removeQuestion}
-              />
-            ))}
-          </div>
-
-          <div className="mt-4 md:ml-6 md:mt-0 hidden md:flex flex-col gap-2">
-            <div className="bg-white rounded-lg shadow-sm p-2 border flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  addQuestion();
+                className="relative"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSetActiveQuestion("main", q.id);
                 }}
-                className="p-3 hover:bg-gray-200 rounded-full"
               >
-                <Plus size={20} className="text-gray-700" />
-              </button>
-              <button
-                onClick={() => addSection()}
-                className="p-3 hover:bg-gray-200 rounded-full"
-              >
-                <AlignLeft size={20} className="text-gray-700" />
-              </button>
-            </div>
-          </div>
-        </div>
+                {/* Desktop: controls beside each main-section question */}
+                <div className="hidden md:flex flex-col gap-2 items-center absolute top-6 -right-16">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addQuestion("main");
+                    }}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+                    title="Add question"
+                  >
+                    <Plus size={18} className="text-gray-700" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addSection();
+                    }}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+                    title="Add new section"
+                  >
+                    <AlignLeft size={18} className="text-gray-700" />
+                  </button>
+                </div>
 
-        {sections.map((s) => (
-          <div
-            className="flex flex-col md:flex-row justify-center relative"
-            key={s.id}
-          >
-            <div className="w-full max-w-4xl">
-              <Section {...s} onRemove={removeSection} />
-              {(s.questions || []).map((q) => (
                 <Question
-                  key={q.id}
                   {...q}
                   updateQuestion={updateQuestion}
                   duplicateQuestion={duplicateQuestion}
                   removeQuestion={removeQuestion}
+                  isActive={activeQuestionId === q.id}
                 />
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-            <div className="mt-4 md:ml-6 md:mt-14 hidden md:flex flex-col gap-2">
-              <div className="bg-white rounded-lg shadow-sm p-2 border flex flex-col gap-2">
-                <button
-                  onClick={() => addQuestion(s.id)}
-                  className="p-3 hover:bg-gray-200 rounded-full"
+        {sections.map((s, index) => {
+          // First Untitled Form is Section 1.
+          // Subsequent sections start from Section 2 based on their ordered position.
+          const sectionIndex = index + 2;
+          const isActiveSection = activeSectionId === s.id;
+
+          return (
+            <div
+              className="flex flex-col md:flex-row justify-center"
+              key={s.id}
+            >
+              <div className="w-full max-w-4xl relative">
+                <div
+                  onClick={() => handleSetActiveSection(s.id)}
+                  className={`transition ${
+                    isActiveSection
+                      ? "ring-2 ring-blue-500/40 rounded-lg"
+                      : "hover:ring-1 hover:ring-gray-200 rounded-lg"
+                  }`}
                 >
-                  <Plus size={20} className="text-gray-700" />
-                </button>
-                <button
-                  onClick={() => addSection()}
-                  className="p-3 hover:bg-gray-200 rounded-full"
-                >
-                  <AlignLeft size={20} className="text-gray-700" />
-                </button>
+                  <Section
+                    id={s.id}
+                    index={sectionIndex}
+                    title={s.title}
+                    description={s.description}
+                    onRemove={removeSection}
+                    active={isActiveSection}
+                  />
+                </div>
+
+                {/* Desktop: Add controls beside this section card (aligned like Section 1) */}
+                <div className="hidden md:flex flex-col gap-2 items-center absolute top-6 -right-16">
+                  {/* Add Question - targets this specific section */}
+                  <button
+                    onClick={() => addQuestion(s.id)}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+                    title="Add question"
+                  >
+                    <Plus size={18} className="text-gray-700" />
+                  </button>
+                  {/* Add Section - appends next section; numbering logic already continuous */}
+                  <button
+                    onClick={addSection}
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+                    title="Add new section"
+                  >
+                    <AlignLeft size={18} className="text-gray-700" />
+                  </button>
+                </div>
+
+                {(s.questions || []).map((q) => (
+                  <div
+                    key={q.id}
+                    className="relative mt-4"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetActiveQuestion(s.id, q.id);
+                    }}
+                  >
+                    {/* Desktop: controls beside each section question */}
+                    <div className="hidden md:flex flex-col gap-2 items-center absolute top-6 -right-16">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addQuestion(s.id);
+                        }}
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+                        title="Add question"
+                      >
+                        <Plus size={18} className="text-gray-700" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addSection();
+                        }}
+                        className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-100"
+                        title="Add new section"
+                      >
+                        <AlignLeft size={18} className="text-gray-700" />
+                      </button>
+                    </div>
+
+                    <Question
+                      {...q}
+                      updateQuestion={updateQuestion}
+                      duplicateQuestion={duplicateQuestion}
+                      removeQuestion={removeQuestion}
+                      isActive={activeQuestionId === q.id}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         <div className="flex flex-col items-center justify-center py-8 bg-gray-100">
           <button
-            onClick={() => navigate(`/psas/certificates?from=evaluation&formId=${currentFormId}`)}
-            disabled={!currentFormId}
+            onClick={() => {
+              // Require a persisted form id before navigating to link certificates
+              if (!currentFormId) {
+                toast.error("Please publish the form first before linking a certificate.");
+                return;
+              }
+              navigate(`/psas/certificates?from=evaluation&formId=${currentFormId}`);
+            }}
             className={`px-8 py-3 rounded-lg font-semibold transition-colors
               ${isCertificateLinked
                 ? "bg-[#0C2A92] text-white hover:bg-blue-800"
-                : "bg-white text-[#5F6368] hover:bg-gray-100 border border-gray-300"}
-              ${!currentFormId ? "cursor-not-allowed bg-gray-200 text-gray-400 border-gray-200" : ""}
-            `}
+                : "bg-white text-[#5F6368] hover:bg-gray-100 border border-gray-300"}`}
           >
             {isCertificateLinked ? "Certificate Linked" : "Link Certificate"}
           </button>
           {!currentFormId && (
             <p className="text-sm text-gray-500 mt-2 text-center max-w-xs">
-              To link a certificate, please publish the form first. You can then edit the form to add a certificate.
+              Publish the form first to generate an ID, then you can link a certificate to this evaluation.
             </p>
           )}
         </div>
 
+        {/* Mobile: bottom-fixed FAB toolbar targeting active section */}
         <div className="md:hidden fixed bottom-6 right-6 z-30">
           {isFabOpen && (
             <div className="flex flex-col items-center gap-3 mb-3">
+              <button
+                onClick={() => {
+                  addQuestion(activeSectionId || "main");
+                  setIsFabOpen(false);
+                }}
+                className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center"
+                title="Add question to active section"
+              >
+                <Plus size={24} className="text-gray-700" />
+              </button>
               <button
                 onClick={() => {
                   addSection();
                   setIsFabOpen(false);
                 }}
                 className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center"
+                title="Add new section"
               >
                 <AlignLeft size={24} className="text-gray-700" />
-              </button>
-              <button
-                onClick={() => {
-                  addQuestion();
-                  setIsFabOpen(false);
-                }}
-                className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center"
-              >
-                <Plus size={24} className="text-gray-700" />
               </button>
             </div>
           )}
@@ -981,6 +1420,7 @@ const FormCreationInterface = ({ onBack }) => {
             />
           </button>
         </div>
+
 
         {/* Event Date Range Modal */}
         {showDatePicker && (

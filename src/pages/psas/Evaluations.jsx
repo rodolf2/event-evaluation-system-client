@@ -109,6 +109,45 @@ const Evaluations = () => {
     setShowUploadModal(true);
   };
 
+  const handleDeleteForm = async (formId) => {
+    try {
+      const response = await fetch(`/api/forms/${formId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Remove the deleted form from the local state
+        setEvaluationForms(prev => prev.filter(form => form.id !== formId));
+        
+        // Clean up localStorage for the deleted form
+        if (localStorage.getItem('editFormId') === formId) {
+          localStorage.removeItem('editFormId');
+        }
+        
+        // Clean up any form session data
+        const formSessionKey = `formSession_${formId}`;
+        const formRecipientsKey = `formRecipients_${formId}`;
+        const certificateLinkedKey = `certificateLinked_${formId}`;
+        
+        localStorage.removeItem(formSessionKey);
+        localStorage.removeItem(formRecipientsKey);
+        localStorage.removeItem(certificateLinkedKey);
+        
+        toast.success('Form deleted successfully');
+      } else {
+        toast.error('Failed to delete form');
+      }
+    } catch (error) {
+      console.error('Error deleting form:', error);
+      toast.error('Failed to delete form');
+    }
+  };
+
   const handleUrlChange = (e) => {
     setGoogleFormsUrl(e.target.value);
   };
@@ -210,6 +249,7 @@ const Evaluations = () => {
             evaluationForms={evaluationForms}
             onCreateNew={handleCreateNew}
             onShowUploadModal={handleShowUploadModal}
+            onDeleteForm={handleDeleteForm}
           />
         )}
 

@@ -22,11 +22,29 @@ import S3 from "../../../assets/icons/emojis/S3.svg";
 import S4 from "../../../assets/icons/emojis/S4.svg";
 import S5 from "../../../assets/icons/emojis/S5.svg";
 
+ // Question type icons (ensure these paths match your actual files)
+ import MultipleChoice from "../../../assets/icons/forms/multiple_choice.svg";
+ import LikertScale from "../../../assets/icons/forms/likert_scale.svg";
+ import Paragraph from "../../../assets/icons/forms/paragraph.svg";
+ import NumericRatings from "../../../assets/icons/forms/numeric_rating.svg";
+
 const emojiStylesMap = {
     Default: [E1, E2, E3, E4, E5],
     Heart: [H1, H2, H3, H4, H5],
     Star: [S1, S2, S3, S4, S5],
   };
+
+ // Map question types to their corresponding icons using your imported SVGs.
+ // IMPORTANT:
+ // Only include mappings for types that have dedicated icons in the local assets.
+ const typeIconMap = {
+   "Multiple Choices": MultipleChoice,
+   "Numeric Ratings": NumericRatings,
+   "Likert Scale": LikertScale,
+   "Paragraph": Paragraph,
+   // Types without specific local icons ("Short Answer", "Date", "Time", "File Upload")
+   // will render without an icon, falling back to label-only display.
+ };
 
 const Question = memo(function Question(props) {
     const {
@@ -352,6 +370,12 @@ const Question = memo(function Question(props) {
       }
     };
   
+    const currentTypeIcon = typeIconMap[type];
+
+    // Compute background color for the type dropdown when a type is selected
+    const typeSelectBg =
+      type && type !== "" ? "bg-[#F4F4F5]" : "bg-white";
+
     return (
       <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-4">
         <div className="flex items-start justify-between gap-4 mb-4">
@@ -365,56 +389,83 @@ const Question = memo(function Question(props) {
                   title: e.target.value,
                 }))
               }
-              className="w-full text-lg font-medium border-none outline-none mb-2"
+              placeholder="Write a description ..."
+              className="w-full text-lg font-medium border border-gray-300 rounded-md px-3 py-2 mb-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder:text-gray-400"
             />
-            <div className="text-sm text-gray-500">
-              {required ? "Required" : "Optional"}
-            </div>
+            {/* Removed 'Optional' label per requirements; required toggle still functional */}
           </div>
-  
-          <select
-            value={type}
-            onChange={(e) => {
-              const newType = e.target.value;
-              updateQuestion(id, (q) => {
-                const updatedQuestion = {
-                  ...q,
-                  type: newType,
-                };
-                
-                // Reset type-specific properties when changing types
-                if (newType === "Multiple Choices") {
-                  updatedQuestion.options = q.options && q.options.length > 0 ? q.options : ["Option 1", "Option 2"];
-                } else {
-                  updatedQuestion.options = [];
+
+          {/* Custom type dropdown:
+              - Uses a native select for behavior
+              - Renders the selected icon inside the control using a background-image
+              - Changes background to #F4F4F5 when a type is selected */}
+          <div className="relative inline-block">
+            <style>
+              {`
+                .type-select {
+                  background-repeat: no-repeat;
+                  background-position: 8px center;
+                  background-size: 18px 18px;
+                  padding-left: 32px;
                 }
-                
-                if (newType === "Numeric Ratings") {
-                  updatedQuestion.ratingScale = q.ratingScale || 5;
-                  updatedQuestion.emojiStyle = q.emojiStyle || "Default";
-                }
-                
-                if (newType === "Likert Scale") {
-                  updatedQuestion.likertStart = q.likertStart || 1;
-                  updatedQuestion.likertEnd = q.likertEnd || 5;
-                  updatedQuestion.likertStartLabel = q.likertStartLabel || "Poor";
-                  updatedQuestion.likertEndLabel = q.likertEndLabel || "Excellent";
-                }
-                
-                return updatedQuestion;
-              });
-            }}
-            className="p-2 border rounded-md"
-          >
-            <option value="Multiple Choices">Multiple Choices</option>
-            <option value="Numeric Ratings">Numeric Ratings</option>
-            <option value="Likert Scale">Likert Scale</option>
-            <option value="Short Answer">Short Answer</option>
-            <option value="Paragraph">Paragraph</option>
-            <option value="Date">Date</option>
-            <option value="Time">Time</option>
-            <option value="File Upload">File Upload</option>
-          </select>
+              `}
+            </style>
+            <select
+              value={type}
+              onChange={(e) => {
+                const newType = e.target.value;
+                updateQuestion(id, (q) => {
+                  const updatedQuestion = {
+                    ...q,
+                    type: newType,
+                  };
+
+                  // Reset type-specific properties when changing types
+                  if (newType === "Multiple Choices") {
+                    updatedQuestion.options =
+                      q.options && q.options.length > 0
+                        ? q.options
+                        : ["Option 1", "Option 2"];
+                  } else {
+                    updatedQuestion.options = [];
+                  }
+
+                  if (newType === "Numeric Ratings") {
+                    updatedQuestion.ratingScale = q.ratingScale || 5;
+                    updatedQuestion.emojiStyle = q.emojiStyle || "Default";
+                  }
+
+                  if (newType === "Likert Scale") {
+                    updatedQuestion.likertStart = q.likertStart || 1;
+                    updatedQuestion.likertEnd = q.likertEnd || 5;
+                    updatedQuestion.likertStartLabel =
+                      q.likertStartLabel || "Poor";
+                    updatedQuestion.likertEndLabel =
+                      q.likertEndLabel || "Excellent";
+                  }
+
+                  return updatedQuestion;
+                });
+              }}
+              className={`type-select pr-8 py-2 border rounded-md appearance-none ${typeSelectBg}`}
+              style={{
+                backgroundImage: currentTypeIcon
+                  ? `url(${currentTypeIcon})`
+                  : "none",
+              }}
+            >
+              {/* Native select: browsers control option rendering.
+                  We keep clean labels; the selected icon is injected via background-image above. */}
+              <option value="Multiple Choices">Multiple Choices</option>
+              <option value="Numeric Ratings">Numeric Ratings</option>
+              <option value="Likert Scale">Likert Scale</option>
+              <option value="Short Answer">Short Answer</option>
+              <option value="Paragraph">Paragraph</option>
+              <option value="Date">Date</option>
+              <option value="Time">Time</option>
+              <option value="File Upload">File Upload</option>
+            </select>
+          </div>
         </div>
   
         {renderOptions()}

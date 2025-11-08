@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.1.14",
     "dayjs": "^1.11.18",
     "fabric": "^6.7.1",
+    "jspdf": "^3.0.3",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.0",

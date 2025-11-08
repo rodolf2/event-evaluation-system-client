@@ -60,7 +60,7 @@ const Certificates = () => {
   if (view === "editor") {
     return (
       <PSASLayout>
-        <CertificateEditor onBack={() => setView("gallery")} initialData={initialData} />
+        <CertificateEditor initialData={initialData} />
       </PSASLayout>
     );
   }

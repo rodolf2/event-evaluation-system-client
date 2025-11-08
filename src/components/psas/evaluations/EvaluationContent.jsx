@@ -1,6 +1,10 @@
+import React, { useState } from "react";
 import {
   Search,
   Filter,
+  MoreVertical,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import uploadIcon from "../../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
@@ -12,7 +16,8 @@ const EvaluationContent = ({
   setSortBy,
   evaluationForms,
   onCreateNew,
-  onShowUploadModal
+  onShowUploadModal,
+  onDeleteForm
 }) => {
   return (
     <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
@@ -104,7 +109,7 @@ const EvaluationContent = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {evaluationForms.map((form) => (
-              <RecentEvaluationCard key={form.id} form={form} />
+              <RecentEvaluationCard key={form.id} form={form} onDeleteForm={onDeleteForm} />
             ))}
           </div>
         </div>
@@ -113,11 +118,31 @@ const EvaluationContent = ({
   );
 };
 
-const RecentEvaluationCard = ({ form }) => {
-  const handleCardClick = () => {
+const RecentEvaluationCard = ({ form, onDeleteForm }) => {
+  const [showMenu, setShowMenu] = useState(false);
+
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking on menu items
+    if (e.target.closest('.menu-button')) {
+      return;
+    }
+    
     // Navigate to the form creation interface to edit this form
     // This will be handled by the parent component through props
     window.location.href = `/psas/evaluations?edit=${form.id}`;
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation(); // Prevent card click
+    if (window.confirm(`Are you sure you want to delete "${form.title}"?`)) {
+      onDeleteForm(form.id);
+    }
+    setShowMenu(false);
+  };
+
+  const toggleMenu = (e) => {
+    e.stopPropagation(); // Prevent card click
+    setShowMenu(!showMenu);
   };
 
   return (
@@ -126,9 +151,32 @@ const RecentEvaluationCard = ({ form }) => {
       onClick={handleCardClick}
     >
       <div className="bg-white p-6 rounded-t-lg flex-grow flex flex-col">
-        <div className="text-center mb-4 flex-shrink-0">
+        <div className="text-center mb-4 flex-shrink-0 relative">
           <h2 className="text-2xl font-bold text-gray-800 line-clamp-2">{form.title}</h2>
           <p className="text-gray-500 text-sm line-clamp-2">{form.description}</p>
+          
+          {/* Menu button */}
+          <div className="absolute top-0 right-0">
+            <button
+              onClick={toggleMenu}
+              className="menu-button p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+              title="Actions"
+            >
+              <MoreVertical size={20} />
+            </button>
+            
+            {showMenu && (
+              <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
+                <button
+                  onClick={handleDelete}
+                  className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <Trash2 size={16} />
+                  Delete Form
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Fixed preview section */}
