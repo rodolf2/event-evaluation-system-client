@@ -3,6 +3,10 @@ import { UploadCloud, FileCheck2, Link as LinkIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FormSessionManager } from "../../../utils/formSessionManager";
 
+/**
+ * ImportCSVModal - CSV import system with secure in-memory handling
+ * CRITICAL: CSV data is never persisted to localStorage
+ */
 const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -36,7 +40,6 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
       return;
     }
     
-    // Add file to queue instead of uploading immediately
     const fileItem = {
       file: file,
       id: Date.now() + Math.random(),
@@ -49,7 +52,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
   };
 
   const handleFileCheckboxChange = (fileId, checked) => {
-    setFileQueue(prev => prev.map(item => 
+    setFileQueue(prev => prev.map(item =>
       item.id === fileId ? { ...item, selected: checked } : item
     ));
   };
@@ -73,7 +76,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
   };
 
   const handleLinkCheckboxChange = (linkId, checked) => {
-    setLinkQueue(prev => prev.map(item => 
+    setLinkQueue(prev => prev.map(item =>
       item.id === linkId ? { ...item, selected: checked } : item
     ));
   };
@@ -135,27 +138,23 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
 
       // Process selected links
       for (const linkItem of selectedLinks) {
-        // For links, we need to parse the CSV data ourselves
         try {
-          // Use CORS proxy for external URLs or handle CORS issues
           let fetchUrl = linkItem.url;
 
-          // If it's an external URL that's likely to have CORS issues, show a helpful message
+          // Handle CORS issues with external URLs
           if (linkItem.url.includes('1drv.ms') || linkItem.url.includes('onedrive') ||
               linkItem.url.includes('drive.google.com') || linkItem.url.includes('dropbox.com')) {
             alert(`Cannot directly access ${linkItem.url.split('/')[2]} due to CORS policy. Please download the CSV file and upload it directly instead of using a share link.`);
             continue;
           }
 
-          // For Google Sheets, check if it's publicly accessible
           if (linkItem.url.includes('docs.google.com/spreadsheets') && !linkItem.url.includes('usp=sharing')) {
             alert('Google Sheets links must be set to "Anyone with the link can view" (public sharing) to work. Please update the sharing settings and try again.');
             continue;
           }
 
-          // Try alternative approaches for common cases
+          // Try alternative approaches for Google Sheets
           if (linkItem.url.includes('docs.google.com/spreadsheets')) {
-            // For Google Sheets, try to export as CSV
             fetchUrl = linkItem.url.replace('/edit?usp=sharing', '/export?format=csv&usp=sharing')
                                    .replace('/edit', '/export?format=csv');
           }
@@ -165,30 +164,46 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
           const csvText = await response.text();
-          const students = parseCSV(csvText);
-          
+          const { valid, errors, students } = parseCSV(csvText);
+
+          if (!valid) {
+            console.error("CSV validation failed for link:", linkItem.url, errors);
+            alert(
+              [
+                "CSV validation failed for linked file.",
+                "Ensure it has 'name' and 'email' columns, with valid, unique emails.",
+                ...errors,
+              ].join("\n- ")
+            );
+            continue;
+          }
+
           const linkResult = {
             url: linkItem.url,
             filename: linkItem.filename,
-            students: students,
-            uploadedAt: new Date().toISOString()
+            students,
+            uploadedAt: new Date().toISOString(),
           };
-          
+
           setUploadedData(linkResult);
-          // Pass the complete link result (not just URL) to FormCreationInterface
+          // Pass the validated result to FormCreationInterface
           onFileUpload(linkResult);
           successCount++;
         } catch (error) {
           console.error("Error importing link:", linkItem.url, error);
+          alert(
+            `Error importing CSV from URL: ${linkItem.url}\nDetails: ${
+              error?.message || "Unknown error"
+            }`
+          );
         }
       }
 
       if (successCount > 0) {
-        // Clear queues after successful import
         setFileQueue([]);
         setLinkQueue([]);
       } else {
-        alert("Failed to import any files");
+        alert("Failed to import any files. Please check your CSV format (required columns: name, email, unique valid emails).");
       }
       
     } catch (error) {
@@ -199,34 +214,99 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
     }
   };
 
-  // Parse CSV data function
+  // Strict CSV parsing and validation (name, email, no duplicates, valid emails)
   const parseCSV = (csvText) => {
-    const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (lines.length < 2) return [];
+    const errors = [];
+    const lines = csvText.split(/\r?\n/).filter((line) => line.trim() !== "");
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    if (lines.length < 2) {
+      errors.push("CSV must include a header row and at least one data row.");
+      return { valid: false, errors, students: [] };
+    }
+
+    const headers = lines[0]
+      .split(",")
+      .map((h) => h.trim().toLowerCase());
+
+    const requiredHeaders = ["name", "email"];
+    const missingHeaders = requiredHeaders.filter(
+      (required) => !headers.includes(required)
+    );
+    if (missingHeaders.length > 0) {
+      errors.push(
+        `Missing required column(s): ${missingHeaders.join(
+          ", "
+        )}. Expected columns: name, email.`
+      );
+      return { valid: false, errors, students: [] };
+    }
+
+    const emailIndex = headers.indexOf("email");
+    const nameIndex = headers.indexOf("name");
+    const seenEmails = new Set();
     const students = [];
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',');
-      if (values.length >= headers.length) {
-        const student = {};
-        headers.forEach((header, index) => {
-          student[header] = values[index]?.trim() || '';
-        });
-        students.push(student);
+      const raw = lines[i];
+      if (!raw.trim()) continue;
+
+      const values = raw.split(",").map((v) => v.trim());
+      if (values.length < headers.length) {
+        errors.push(
+          `Row ${i + 1}: expected ${headers.length} columns but found ${values.length}.`
+        );
+        continue;
       }
+
+      const name = values[nameIndex] || "";
+      const email = values[emailIndex] || "";
+
+      if (!name || !email) {
+        errors.push(`Row ${i + 1}: missing required name or email.`);
+        continue;
+      }
+
+      if (!emailRegex.test(email)) {
+        errors.push(`Row ${i + 1}: invalid email format (${email}).`);
+        continue;
+      }
+
+      const normalizedEmail = email.toLowerCase();
+      if (seenEmails.has(normalizedEmail)) {
+        errors.push(`Row ${i + 1}: duplicate email (${email}).`);
+        continue;
+      }
+
+      seenEmails.add(normalizedEmail);
+
+      const student = {};
+      headers.forEach((header, index) => {
+        student[header] = values[index] ?? "";
+      });
+
+      students.push(student);
     }
-    return students;
+
+    if (errors.length > 0) {
+      return { valid: false, errors, students: [] };
+    }
+
+    if (students.length === 0) {
+      errors.push("No valid recipients found in CSV.");
+      return { valid: false, errors, students: [] };
+    }
+
+    return { valid: true, errors: [], students };
   };
 
-  // Check if modal should be open
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4" style={{ zIndex: 9999 }}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-9999 p-4" style={{ zIndex: 9999 }}>
       <div className="bg-white rounded-lg p-8 w-full max-w-lg relative">
         <h2 className="text-2xl font-bold mb-6">Import CSV</h2>
 
@@ -372,30 +452,31 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
               </p>
             </div>
             <button
-              onClick={() => {
-                // Store CSV data using FormSessionManager for robust persistence
-                FormSessionManager.saveCSVData(uploadedData);
-                
-                // Get current form ID using FormSessionManager, or create a temporary one
-                // This ensures the "View" action works even when CSV is imported first
-                // before any form questions are created
-                let currentFormId = FormSessionManager.getCurrentFormId();
-                
-                if (!currentFormId) {
-                  // Create a temporary form ID for CSV import workflow
-                  // This allows students to be assigned to forms even when
-                  // questions haven't been created yet
-                  currentFormId = FormSessionManager.initializeFormSession();
-                }
-                
-                const navigationUrl = `/psas/students?formId=${currentFormId}`;
-                
-                navigate(navigationUrl);
-              }}
-              className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold ml-4 hover:bg-blue-200 transition"
-            >
-              View
-            </button>
+             onClick={async () => {
+               // Ensure we have a persistent form session so CSV remains tied to this draft
+               let currentFormId = FormSessionManager.getCurrentFormId();
+               if (!currentFormId) {
+                 currentFormId = FormSessionManager.initializeFormSession();
+               }
+
+               // Persist transient CSV payload into the current form session
+               // This is scoped to this form draft and cleared on successful publish via clearAllFormData.
+               try {
+                 FormSessionManager.saveTransientCSVData(uploadedData);
+               } catch (error) {
+                 console.warn("Could not store transient CSV data in session:", error);
+               }
+
+               // Always navigate with the specific formId so StudentList can resolve eligibility correctly
+               const navigationUrl = `/psas/students?formId=${encodeURIComponent(
+                 currentFormId
+               )}&from=evaluation`;
+               navigate(navigationUrl);
+             }}
+             className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold ml-4 hover:bg-blue-200 transition"
+           >
+             View
+           </button>
           </div>
         )}
 

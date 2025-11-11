@@ -33,8 +33,22 @@ const Certificates = () => {
 
       // Set a flag in local storage to indicate that a certificate has been linked
       localStorage.setItem(`certificateLinked_${formId}`, 'true');
-      // Navigate back to the form creation interface
-      navigate(`/psas/evaluations?edit=${formId}`);
+      
+      // CRITICAL: Ensure the form ID is properly set as the current form ID before navigation
+      FormSessionManager.ensurePersistentFormId(formId);
+      FormSessionManager.preserveFormId();
+      
+      // Navigate back to the form creation interface preserving original query parameters
+      const fromParam = searchParams.get("from");
+      const returnToParam = searchParams.get("returnTo");
+      
+      // Build the return URL with all original parameters
+      const queryParams = new URLSearchParams();
+      queryParams.set("edit", formId);
+      if (fromParam) queryParams.set("from", fromParam);
+      if (returnToParam) queryParams.set("returnTo", returnToParam);
+      
+      navigate(`/psas/create-form?${queryParams.toString()}`);
     } else {
       setInitialData(template.data);
       setView("editor");
@@ -60,7 +74,38 @@ const Certificates = () => {
   if (view === "editor") {
     return (
       <PSASLayout>
-        <CertificateEditor initialData={initialData} />
+        <CertificateEditor
+          initialData={initialData}
+          isFromEvaluation={isFromEvaluation}
+          formId={searchParams.get("formId")}
+          onDone={() => {
+            const formId = searchParams.get("formId");
+            if (isFromEvaluation && formId) {
+              // Set a flag in local storage to indicate that a certificate has been linked
+              localStorage.setItem(`certificateLinked_${formId}`, 'true');
+
+              // CRITICAL: Ensure the form ID is properly set as the current form ID before navigation
+              FormSessionManager.ensurePersistentFormId(formId);
+              FormSessionManager.preserveFormId();
+
+              // Navigate back to the form creation interface preserving original query parameters
+              const fromParam = searchParams.get("from");
+              const editParam = searchParams.get("edit");
+
+              // Build the return URL with all original parameters
+              const queryParams = new URLSearchParams();
+              queryParams.set("edit", formId);
+              if (fromParam) queryParams.set("from", fromParam);
+              if (editParam) queryParams.set("edit", editParam);
+
+              navigate(`/psas/create-form?${queryParams.toString()}`);
+            } else {
+              // For standalone certificate editing, go back to gallery
+              setView("gallery");
+              setInitialData(null);
+            }
+          }}
+        />
       </PSASLayout>
     );
   }

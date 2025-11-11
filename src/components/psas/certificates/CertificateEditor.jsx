@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useCanvasHistory } from "../../../hooks/useCanvasHistory";
 import ElementsPanel from "./ElementsPanel";
 import CanvasToolbar from "./CanvasToolbar";
@@ -25,13 +25,14 @@ import {
 import { jsPDF } from "jspdf";
 
 const CERTIFICATE_SIZES = {
-  "US Letter": { width: 1056, height: 816 }, // 11" x 8.5" at 96 DPI
-  "A4": { width: 1123, height: 794 }, // 297mm x 210mm at 96 DPI
+  // Force all sizes to landscape orientation
+  "US Letter": { width: 1056, height: 816 }, // 11" x 8.5" landscape at 96 DPI
+  A4: { width: 1123, height: 794 }, // 297mm x 210mm landscape at 96 DPI
 };
 
-const CertificateEditor = ({ initialData }) => {
+const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
   const [certificateSize, setCertificateSize] = useState("US Letter");
-  
+
   const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
   const BASE_HEIGHT = CERTIFICATE_SIZES[certificateSize].height;
   const canvasRef = useRef(null);
@@ -46,207 +47,296 @@ const CertificateEditor = ({ initialData }) => {
 
   const { pushHistory, undo, redo } = useCanvasHistory();
 
+  // Create refs for functions to prevent unnecessary re-initialization
+  const cloneObjectRef = useRef();
+
+  // Create ref to track container for cleanup
+  const containerRef = useRef(null);
+  if (canvasContainerRef.current) {
+    containerRef.current = canvasContainerRef.current;
+  }
+
   useEffect(() => {
-    let resizeObserver;
+    let resizeObserver = null;
     let mounted = true;
 
+    // Capture container at effect start
+    const container = containerRef.current;
+
     const initFabric = async () => {
-      const fabricModule = await import("fabric");
-      const fabric = fabricModule.default || fabricModule;
+      // Move calculation inside effect to properly handle dependencies
+      const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
+      const BASE_HEIGHT = CERTIFICATE_SIZES[certificateSize].height;
 
-      if (!mounted || !fabric) return;
+      try {
+        const fabricModule = await import("fabric");
+        const fabric = fabricModule.default || fabricModule;
+        if (!mounted || !fabric) return;
 
-      fabricRef.current = fabric;
+        const canvasEl = canvasRef.current;
+        if (!canvasEl) return;
 
-      const canvasEl = canvasRef.current;
-      const canvas = new fabric.Canvas(canvasEl, {
-        width: BASE_WIDTH,
-        height: BASE_HEIGHT,
-        backgroundColor: "#ffffff",
-        selection: true,
-        preserveObjectStacking: true,
-      });
-      fabricCanvas.current = canvas;
+        fabricRef.current = fabric;
 
-      /**
-       * Fit the logical certificate canvas into the visible container and center it.
-       *
-       * IMPORTANT:
-       * - We treat BASE_WIDTH/BASE_HEIGHT as the canonical certificate size.
-       * - Backgrounds/borders are expected to be designed to that size.
-       * - We DO NOT try to "fit objects" by their bounds anymore, because
-       *   templates with borders/backgrounds are already aligned to the canvas.
-       * - We only scale and center the entire canvas surface using viewportTransform.
-       */
-      const centerAndFitCanvas = () => {
-        if (!canvasContainerRef.current || !canvas) return;
+        const canvas = new fabric.Canvas(canvasEl, {
+          width: BASE_WIDTH,
+          height: BASE_HEIGHT,
+          backgroundColor: "#ffffff",
+          selection: true,
+          preserveObjectStacking: true,
+        });
+        fabricCanvas.current = canvas;
 
-        const container = canvasContainerRef.current;
-        const padding = 40; // visual margin inside container
+        const safeHasCanvas = () =>
+          mounted &&
+          canvas &&
+          !canvas.destroyed &&
+          fabricCanvas.current === canvas;
 
-        const availableWidth = Math.max(container.clientWidth - padding * 2, 100);
-        const availableHeight = Math.max(container.clientHeight - padding * 2, 100);
+        /**
+         * Fit the logical certificate canvas into the visible container and center it.
+         */
+        const centerAndFitCanvas = () => {
+          if (!safeHasCanvas()) return;
+          const container = canvasContainerRef.current;
+          if (!container) return;
 
-        const scaleX = availableWidth / BASE_WIDTH;
-        const scaleY = availableHeight / BASE_HEIGHT;
-        const scale = Math.min(scaleX, scaleY, 1); // do not upscale above 1
+          const padding = 40; // visual margin inside container
+          const availableWidth = Math.max(
+            container.clientWidth - padding * 2,
+            100
+          );
+          const availableHeight = Math.max(
+            container.clientHeight - padding * 2,
+            100
+          );
 
-        // Center the entire logical canvas inside the container
-        const offsetX = (container.clientWidth - BASE_WIDTH * scale) / 2;
-        const offsetY = (container.clientHeight - BASE_HEIGHT * scale) / 2;
+          const scaleX = availableWidth / BASE_WIDTH;
+          const scaleY = availableHeight / BASE_HEIGHT;
+          const scale = Math.min(scaleX, scaleY, 1); // do not upscale above 1
 
-        canvas.setViewportTransform([scale, 0, 0, scale, offsetX, offsetY]);
-        canvas.requestRenderAll();
-      };
+          const offsetX = (container.clientWidth - BASE_WIDTH * scale) / 2;
+          const offsetY = (container.clientHeight - BASE_HEIGHT * scale) / 2;
 
-      const handleResize = () => {
-        if (!canvasContainerRef.current || !canvas) return;
+          try {
+            if (!safeHasCanvas()) return;
+            canvas.setViewportTransform([scale, 0, 0, scale, offsetX, offsetY]);
+            canvas.requestRenderAll();
+          } catch (err) {
+            console.warn(
+              "CertificateEditor centerAndFitCanvas error (ignored):",
+              err
+            );
+          }
+        };
 
-        // Keep logical size fixed for tools/alignments
-        canvas.setWidth(BASE_WIDTH);
-        canvas.setHeight(BASE_HEIGHT);
+        const handleResize = () => {
+          if (!safeHasCanvas()) return;
+          const container = canvasContainerRef.current;
+          if (!container) return;
 
-        centerAndFitCanvas();
-      };
+          try {
+            // Keep logical size fixed for tools/alignments
+            canvas.setWidth(BASE_WIDTH);
+            canvas.setHeight(BASE_HEIGHT);
+            centerAndFitCanvas();
+          } catch (err) {
+            console.warn(
+              "CertificateEditor handleResize error (ignored):",
+              err
+            );
+          }
+        };
 
-      // Initial fit/center
-      handleResize();
-
-      // Observe container size changes (including panel toggles/layout)
-      resizeObserver = new ResizeObserver(() => {
+        // Initial fit/center
         handleResize();
-      });
-      if (canvasContainerRef.current) {
-        resizeObserver.observe(canvasContainerRef.current);
-      }
 
-      const updateSelection = () => {
-        setActiveObject(canvas.getActiveObject());
-        setForceUpdate((f) => f + 1);
-      };
+        // Observe container size changes (including panel toggles/layout)
+        if (typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(() => {
+            // Guard every callback so Fabric internals never crash the app
+            try {
+              handleResize();
+            } catch (err) {
+              console.warn(
+                "CertificateEditor ResizeObserver callback error (ignored):",
+                err
+              );
+            }
+          });
+          if (canvasContainerRef.current) {
+            resizeObserver.observe(canvasContainerRef.current);
+          }
+        }
 
-      canvas.on({
-        "object:modified": updateSelection,
-        "object:added": updateSelection,
-        "object:removed": updateSelection,
-        "selection:created": updateSelection,
-        "selection:updated": updateSelection,
-        "selection:cleared": updateSelection,
-      });
+        const updateSelection = () => {
+          setActiveObject(canvas.getActiveObject());
+          setForceUpdate((f) => f + 1);
+        };
 
-      canvas.on("object:selected", (e) => {
-        e.target.set({
-          borderColor: "#2563EB",
-          cornerColor: "#2563EB",
-          cornerStyle: "circle",
-          transparentCorners: false,
+        canvas.on({
+          "object:modified": updateSelection,
+          "object:added": updateSelection,
+          "object:removed": updateSelection,
+          "selection:created": updateSelection,
+          "selection:updated": updateSelection,
+          "selection:cleared": updateSelection,
         });
-      });
 
-      canvas.on("object:moving", (e) => {
-        const obj = e.target;
-        if (!obj) return;
-        const snap = 8;
-        const objCenterX = obj.left + obj.getScaledWidth() / 2;
-        const canvasCenterX = canvas.getWidth() / 2;
-        if (Math.abs(objCenterX - canvasCenterX) < snap) {
-          obj.left = canvasCenterX - obj.getScaledWidth() / 2;
-        }
-        const objCenterY = obj.top + obj.getScaledHeight() / 2;
-        const canvasCenterY = canvas.getHeight() / 2;
-        if (Math.abs(objCenterY - canvasCenterY) < snap) {
-          obj.top = canvasCenterY - obj.getScaledHeight() / 2;
-        }
-      });
+        canvas.on("object:selected", (e) => {
+          e.target.set({
+            borderColor: "#2563EB",
+            cornerColor: "#2563EB",
+            cornerStyle: "circle",
+            transparentCorners: false,
+          });
+        });
 
-      if (initialData) {
-        canvas.loadFromJSON(initialData, () => {
-          // Ensure all objects/backgrounds/borders are laid out on the logical canvas
-          canvas.renderAll();
-          // Center the full canvas (including any background/border) in the container
-          centerAndFitCanvas();
+        canvas.on("object:moving", (e) => {
+          const obj = e.target;
+          if (!obj) return;
+          const snap = 8;
+          const objCenterX = obj.left + obj.getScaledWidth() / 2;
+          const canvasCenterX = canvas.getWidth() / 2;
+          if (Math.abs(objCenterX - canvasCenterX) < snap) {
+            obj.left = canvasCenterX - obj.getScaledWidth() / 2;
+          }
+          const objCenterY = obj.top + obj.getScaledHeight() / 2;
+          const canvasCenterY = canvas.getHeight() / 2;
+          if (Math.abs(objCenterY - canvasCenterY) < snap) {
+            obj.top = canvasCenterY - obj.getScaledHeight() / 2;
+          }
+        });
+
+        if (initialData) {
+          canvas.loadFromJSON(initialData, () => {
+            // Ensure all objects/backgrounds/borders are laid out on the logical canvas
+            canvas.renderAll();
+            // Center the full canvas (including any background/border) in the container
+            centerAndFitCanvas();
+            pushHistory();
+          });
+        } else {
           pushHistory();
-        });
-      } else {
-        pushHistory();
-        centerAndFitCanvas();
+          centerAndFitCanvas();
+        }
+
+        const handleKey = (e) => {
+          if (!canvas) return;
+          const active = canvas.getActiveObject();
+          if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+            return;
+
+          if ((e.key === "Delete" || e.key === "Backspace") && active) {
+            canvas.remove(active);
+            canvas.discardActiveObject();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+            e.preventDefault();
+            undo();
+          }
+          if (
+            (e.ctrlKey || e.metaKey) &&
+            (e.key.toLowerCase() === "y" ||
+              (e.shiftKey && e.key.toLowerCase() === "z"))
+          ) {
+            e.preventDefault();
+            redo();
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+            e.preventDefault();
+            cloneObjectRef.current?.();
+          }
+        };
+        window.addEventListener("keydown", handleKey);
+
+        // Cleanup specific to this initFabric call
+        return () => {
+          window.removeEventListener("keydown", handleKey);
+          try {
+            if (resizeObserver && container) {
+              resizeObserver.unobserve(container);
+              resizeObserver.disconnect();
+            }
+          } catch {
+            // ignore observer cleanup errors
+          }
+          try {
+            if (safeHasCanvas()) {
+              canvas.dispose();
+            }
+          } catch {
+            // ignore dispose errors
+          }
+        };
+      } catch (err) {
+        console.error("CertificateEditor initFabric failed:", err);
       }
-
-      const handleKey = (e) => {
-        if (!canvas) return;
-        const active = canvas.getActiveObject();
-        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
-          return;
-
-        if ((e.key === "Delete" || e.key === "Backspace") && active) {
-          canvas.remove(active);
-          canvas.discardActiveObject();
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
-          e.preventDefault();
-          undo();
-        }
-        if (
-          (e.ctrlKey || e.metaKey) &&
-          (e.key.toLowerCase() === "y" ||
-            (e.shiftKey && e.key.toLowerCase() === "z"))
-        ) {
-          e.preventDefault();
-          redo();
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
-          e.preventDefault();
-          cloneObject();
-        }
-      };
-      window.addEventListener("keydown", handleKey);
-
-      return () => {
-        window.removeEventListener("keydown", handleKey);
-        if (resizeObserver && canvasContainerRef.current) {
-          resizeObserver.unobserve(canvasContainerRef.current);
-        }
-        if (canvas) {
-          canvas.dispose();
-        }
-      };
     };
 
-    let cleanupFn;
+    let cleanupFn = null;
     initFabric().then((cleanup) => {
-      if (mounted) cleanupFn = cleanup;
+      if (mounted && typeof cleanup === "function") {
+        cleanupFn = cleanup;
+      }
     });
 
     return () => {
       mounted = false;
-      if (cleanupFn) cleanupFn();
+      if (cleanupFn) {
+        try {
+          cleanupFn();
+        } catch (err) {
+          console.warn("CertificateEditor cleanup error (ignored):", err);
+        }
+      } else {
+        // Fallback cleanup if init failed early
+        try {
+          if (resizeObserver && container) {
+            resizeObserver.unobserve(container);
+            resizeObserver.disconnect();
+          }
+        } catch {
+          // ignore
+        }
+        try {
+          if (fabricCanvas.current) {
+            fabricCanvas.current.dispose();
+          }
+        } catch {
+          // ignore
+        }
+      }
     };
-  }, [pushHistory, initialData]);
+  }, [certificateSize, initialData, pushHistory, redo, undo]);
 
-  const addObjectToCanvas = (object) => {
+  const addObjectToCanvas = useCallback((object) => {
     const canvas = fabricCanvas.current;
     if (!canvas) return;
     canvas.add(object);
     canvas.setActiveObject(object);
-  };
+  }, []);
 
-  const addText = (isHeadline) => {
-    const fabric = fabricRef.current;
-    if (!fabric || !fabricCanvas.current) return;
-    const text = new fabric.Textbox(
-      isHeadline ? "Click to edit headline" : "Click to edit body text",
-      {
-        left: 100,
-        top: 100,
-        fontSize: isHeadline ? 48 : 24,
-        fill: "#000",
-        fontFamily: "Inter, Arial",
-        width: isHeadline ? 400 : 300,
-        editable: true,
-      }
-    );
-    addObjectToCanvas(text);
-  };
+  const addText = useCallback(
+    (isHeadline) => {
+      const fabric = fabricRef.current;
+      if (!fabric || !fabricCanvas.current) return;
+      const text = new fabric.Textbox(
+        isHeadline ? "Click to edit headline" : "Click to edit body text",
+        {
+          left: 100,
+          top: 100,
+          fontSize: isHeadline ? 48 : 24,
+          fill: "#000",
+          fontFamily: "Inter, Arial",
+          width: isHeadline ? 400 : 300,
+          editable: true,
+        }
+      );
+      addObjectToCanvas(text);
+    },
+    [addObjectToCanvas]
+  );
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -331,11 +421,20 @@ const CertificateEditor = ({ initialData }) => {
   const clearCanvas = () => {
     const canvas = fabricCanvas.current;
     if (!canvas) return;
+
+    // Reset all objects and background safely for Fabric v5
     canvas.clear();
-    canvas.setBackgroundColor("#fff", canvas.renderAll.bind(canvas));
+
+    // In Fabric v5, use setBackgroundColor via the options API or assign + renderAll
+    canvas.backgroundColor = "#ffffff";
+    if (typeof canvas.requestRenderAll === "function") {
+      canvas.requestRenderAll();
+    } else {
+      canvas.renderAll();
+    }
   };
 
-  const cloneObject = () => {
+  const cloneObject = useCallback(() => {
     const canvas = fabricCanvas.current;
     const obj = canvas?.getActiveObject();
     if (!obj) return;
@@ -344,16 +443,33 @@ const CertificateEditor = ({ initialData }) => {
       canvas.add(cloned);
       canvas.setActiveObject(cloned);
     });
-  };
+  }, []);
 
-  const bringForward = () =>
-    fabricCanvas.current?.bringForward(fabricCanvas.current.getActiveObject());
-  const sendBackward = () =>
-    fabricCanvas.current?.sendBackwards(fabricCanvas.current.getActiveObject());
-  const deleteObject = () =>
-    fabricCanvas.current?.remove(fabricCanvas.current.getActiveObject());
+  // Update the ref after cloneObject is defined
+  cloneObjectRef.current = cloneObject;
 
-  const alignObject = (edge) => {
+  const bringForward = useCallback(
+    () =>
+      fabricCanvas.current?.bringForward(
+        fabricCanvas.current.getActiveObject()
+      ),
+    []
+  );
+
+  const sendBackward = useCallback(
+    () =>
+      fabricCanvas.current?.sendBackwards(
+        fabricCanvas.current.getActiveObject()
+      ),
+    []
+  );
+
+  const deleteObject = useCallback(
+    () => fabricCanvas.current?.remove(fabricCanvas.current.getActiveObject()),
+    []
+  );
+
+  const alignObject = useCallback((edge) => {
     const canvas = fabricCanvas.current;
     const obj = canvas?.getActiveObject();
     if (!obj) return;
@@ -389,37 +505,35 @@ const CertificateEditor = ({ initialData }) => {
         break;
     }
     canvas.requestRenderAll();
-  };
+  }, []);
 
-  const updateProperty = (prop, value) => {
+  const updateProperty = useCallback((prop, value) => {
     const obj = fabricCanvas.current?.getActiveObject();
     if (obj) {
       obj.set(prop, value);
       fabricCanvas.current.requestRenderAll();
       setForceUpdate((f) => f + 1);
     }
-  };
-
-
+  }, []);
 
   const downloadPDF = () => {
     const canvas = fabricCanvas.current;
     if (!canvas) return;
 
     const dataUrl = canvas.toDataURL({
-      format: 'png',
+      format: "png",
       quality: 1,
       multiplier: 1,
     });
 
     const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'px',
+      orientation: "landscape",
+      unit: "px",
       format: [BASE_WIDTH, BASE_HEIGHT],
     });
 
-    doc.addImage(dataUrl, 'PNG', 0, 0, BASE_WIDTH, BASE_HEIGHT);
-    doc.save('certificate.pdf');
+    doc.addImage(dataUrl, "PNG", 0, 0, BASE_WIDTH, BASE_HEIGHT);
+    doc.save("certificate.pdf");
   };
 
   const downloadTemplateJson = () => {
@@ -499,14 +613,18 @@ const CertificateEditor = ({ initialData }) => {
     return (
       <div className="space-y-4">
         <div>
-          <h4 className="font-semibold text-gray-700 mb-2">Certificate Size</h4>
+          <h4 className="font-semibold text-gray-700 mb-2">
+            Certificate Size (Landscape Only)
+          </h4>
           <select
             value={certificateSize}
             onChange={(e) => setCertificateSize(e.target.value)}
             className="w-full p-2 border rounded-md text-sm"
           >
-            {Object.keys(CERTIFICATE_SIZES).map(size => (
-              <option key={size} value={size}>{size}</option>
+            {Object.keys(CERTIFICATE_SIZES).map((size) => (
+              <option key={size} value={size}>
+                {size} (Landscape)
+              </option>
             ))}
           </select>
         </div>
@@ -758,9 +876,12 @@ const CertificateEditor = ({ initialData }) => {
   };
 
   return (
-    <div className="bg-gray-100 font-sans h-screen">
-      <div className="flex flex-row h-screen bg-white shadow-md overflow-x-hidden">
-        <div className="w-72 p-4 flex flex-col gap-6 bg-white border-r overflow-y-auto">
+    <div
+      className="w-full max-w-full bg-transparent font-sans overflow-x-hidden overflow-y-hidden"
+      style={{ height: "calc(100vh - 80px)" }}
+    >
+      <div className="flex flex-row h-full w-full max-w-full overflow-hidden items-stretch">
+        <div className="w-64 p-3 flex flex-col gap-3 bg-white border-r shrink-0 overflow-hidden">
           <ElementsPanel
             onAddText={addText}
             onAddImage={handleImageUpload}
@@ -772,14 +893,38 @@ const CertificateEditor = ({ initialData }) => {
           />
         </div>
 
-        <div className="flex-1 flex flex-col min-h-0">
-          <CanvasToolbar />
-          <CanvasContainer canvasRef={canvasRef} containerRef={canvasContainerRef} />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="relative shrink-0">
+            <CanvasToolbar />
+          </div>
+          <div className="flex-1 overflow-hidden flex items-start justify-center">
+            <div className="w-[92%] h-[80%] max-h-[80%] bg-white">
+              <CanvasContainer
+                canvasRef={canvasRef}
+                containerRef={canvasContainerRef}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="w-80 p-4 relative bg-white border-l overflow-y-auto">
-          <PropertiesPanel />
-          <div className="absolute bottom-4 right-4 left-4">
+        <div className="w-64 p-3 flex flex-col gap-3 bg-white border-l shrink-0 overflow-hidden relative">
+          <div className="flex-1 overflow-hidden">
+            <div className="flex items-center justify-between mb-3 sticky top-0 z-30 bg-white pb-2">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Properties
+              </h3>
+              {isFromEvaluation && onDone && (
+                <button
+                  onClick={onDone}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-md"
+                >
+                  Done
+                </button>
+              )}
+            </div>
+            <PropertiesPanel />
+          </div>
+          <div className="shrink-0">
             <button
               onClick={clearCanvas}
               className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100"

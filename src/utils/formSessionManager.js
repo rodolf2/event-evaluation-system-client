@@ -1,33 +1,151 @@
 // Comprehensive localStorage management for form system
+// CRITICAL: CSV data is NEVER written to localStorage - only form metadata
 export class FormSessionManager {
   // Initialize local storage for form creation
   static initializeFormSession(formId = null) {
-    let isNewSession = false;
+    let IS_NEW_SESSION = false;
     if (!formId) {
       formId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      isNewSession = true;
+      IS_NEW_SESSION = true;
     }
-
-    // Check if a local storage for this formId already exists
-    const existingSession = localStorage.getItem(`formSession_${formId}`);
 
     // Store primary form ID
     localStorage.setItem('currentFormId', formId);
 
-    // Only create a new local data object if one doesn't exist or if it's a brand new formId
-    if (isNewSession || !existingSession) {
+    // Only create a new session if it doesn't exist or is completely new
+    const existingSession = this.getFormSession(formId);
+    if (!existingSession) {
       localStorage.setItem(`formSession_${formId}`, JSON.stringify({
         formId,
         createdAt: new Date().toISOString(),
         lastActivity: new Date().toISOString(),
-        data: {}
+        data: {
+          // Form metadata only - no CSV data
+          formTitle: "Untitled Form",
+          formDescription: "Form Description",
+          questions: [],
+          sections: [],
+          uploadedFiles: [],
+          uploadedLinks: [],
+          eventStartDate: "",
+          eventEndDate: "",
+          isCertificateLinked: false
+        }
       }));
     }
     
     return formId;
   }
 
-  // Get current form ID
+  // UNIFIED ID MANAGEMENT SYSTEM
+  // Ensures single persistent form identifier across all operations
+
+  // Ensure we have a single persistent form ID - reuse existing or create stable one
+  static ensurePersistentFormId(preferredId = null) {
+    const existingId = this.getCurrentFormId();
+    
+    // If we have an existing ID, return it (preserves continuity)
+    if (existingId) {
+      return existingId;
+    }
+    
+    // If a preferred ID is provided, use it
+    if (preferredId) {
+      localStorage.setItem('currentFormId', preferredId);
+      this.initializeFormSession(preferredId);
+      return preferredId;
+    }
+    
+    // Generate a new stable ID
+    const newId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('currentFormId', newId);
+    this.initializeFormSession(newId);
+    return newId;
+  }
+
+  // Start a completely new form creation session with clean slate
+  static startNewFormSession() {
+    // Clear all existing form data comprehensively
+    this.clearAllFormData();
+    
+    // Clear any preserved form ID
+    this.clearPreservedFormId();
+    
+    // Clear any temporary data
+    const tempKeys = [
+      'tempFormData',
+      'uploadedFormId',
+      'editFormId',
+      'studentSelection',
+      'csvData',
+      'formCreationState'
+    ];
+    tempKeys.forEach(key => localStorage.removeItem(key));
+    
+    // Remove all form session data
+    const allKeys = Object.keys(localStorage);
+    allKeys.forEach(key => {
+      if (key.startsWith('formSession_') ||
+          key.startsWith('formRecipients_') ||
+          key.startsWith('certificateLinked_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Generate new form ID for the new session
+    const newFormId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('currentFormId', newFormId);
+    this.initializeFormSession(newFormId);
+    
+    console.log('🆕 FormSessionManager - Started new form session with clean slate');
+    return newFormId;
+  }
+
+  // Preserve current form ID before navigation (for CSV upload, certificate linking, etc.)
+  static preserveFormId() {
+    const currentId = this.getCurrentFormId();
+    if (currentId) {
+      localStorage.setItem('preservedFormId', currentId);
+      localStorage.setItem('preservedFormIdTimestamp', new Date().toISOString());
+      return currentId;
+    }
+    return null;
+  }
+
+  // Restore previously preserved form ID
+  static restoreFormId() {
+    const preservedId = localStorage.getItem('preservedFormId');
+    const preservedTimestamp = localStorage.getItem('preservedFormIdTimestamp');
+    
+    if (preservedId) {
+      // Check if preserved ID is still valid (not too old - 1 hour limit)
+      if (preservedTimestamp) {
+        const preservedDate = new Date(preservedTimestamp);
+        const now = new Date();
+        const hoursDiff = (now - preservedDate) / (1000 * 60 * 60);
+        
+        if (hoursDiff > 1) {
+          // Too old, clear it
+          this.clearPreservedFormId();
+          return null;
+        }
+      }
+      
+      // Restore the preserved ID as current
+      localStorage.setItem('currentFormId', preservedId);
+      return preservedId;
+    }
+    
+    return null;
+  }
+
+  // Clear preserved form ID
+  static clearPreservedFormId() {
+    localStorage.removeItem('preservedFormId');
+    localStorage.removeItem('preservedFormIdTimestamp');
+  }
+
+  // Get current form ID with proper fallback
   static getCurrentFormId() {
     return localStorage.getItem('currentFormId');
   }
@@ -114,45 +232,73 @@ export class FormSessionManager {
     return null;
   }
 
-  // Save CSV data specifically
-  static saveCSVData(csvData) {
+  // Save transient CSV data scoped to current form draft.
+  // NOTE: To meet security and storage constraints, we store CSV-derived data only
+  // as eligible student records (no raw file blobs or unrelated payloads).
+  static saveTransientCSVData(csvData) {
     const formId = this.getCurrentFormId();
-    if (!formId) return false;
+    if (!formId || !csvData) return false;
 
-    const localData = this.getFormSession(formId) || { formId, createdAt: new Date().toISOString() };
-    localData.data.csvData = csvData;
-    localData.data.csvImportedAt = new Date().toISOString();
-    localData.lastActivity = new Date().toISOString();
-    
-    this.saveFormSession(formId, localData);
-    
-    // Also store in legacy location for StudentList compatibility
-    localStorage.setItem('csvData', JSON.stringify(csvData));
-    
+    const students = Array.isArray(csvData.students) ? csvData.students : [];
+    const lightCsv = {
+      filename: csvData.filename || null,
+      uploadedAt: csvData.uploadedAt || new Date().toISOString(),
+      // Keep only normalized eligible student fields (no large raw CSV text)
+      students: students.map((s) => ({
+        name: (s.name || s["full name"] || s["student name"] || "").trim(),
+        email: (s.email || "").trim(),
+        department: s.department || s["department"] || "",
+        program: s.program || s["program"] || "",
+        year: s.year || s["year"] || "",
+      })),
+    };
+
+    const session = this.getFormSession(formId) || {
+      formId,
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString(),
+      data: {},
+    };
+
+    session.data.transientCSVData = lightCsv;
+    session.lastActivity = new Date().toISOString();
+    this.saveFormSession(formId, session);
     return true;
   }
 
-  // Load CSV data
-  static loadCSVData() {
+  // Load transient CSV data from memory session
+  static loadTransientCSVData() {
     const formId = this.getCurrentFormId();
     if (!formId) return null;
 
-    const localData = this.getFormSession(formId);
-    if (localData && localData.data && localData.data.csvData) {
-      return localData.data.csvData;
+    const session = this.getFormSession(formId);
+    if (session && session.data && session.data.transientCSVData) {
+      return session.data.transientCSVData;
     }
 
-    // Fallback to legacy storage
-    const legacyCSV = localStorage.getItem('csvData');
-    if (legacyCSV) {
-      try {
-        const parsed = JSON.parse(legacyCSV);
-        return parsed;
-      } catch (error) {
-        console.error("🔧 FormSessionManager - Error parsing legacy CSV:", error);
-      }
-    }
+    return null;
+  }
 
+  // Clear transient CSV data
+  static clearTransientCSVData() {
+    const formId = this.getCurrentFormId();
+    if (!formId) return false;
+
+    const session = this.getFormSession(formId);
+    if (session && session.data) {
+      delete session.data.transientCSVData;
+      session.lastActivity = new Date().toISOString();
+      this.saveFormSession(formId, session);
+    }
+    return true;
+  }
+
+  // Legacy CSV methods (deprecated - now no-ops for localStorage)
+  static saveCSVData() {
+    return true;
+  }
+
+  static loadCSVData() {
     return null;
   }
 
@@ -288,16 +434,33 @@ export class FormSessionManager {
     }
   }
 
-  // Clear all form data (use with caution)
-  static clearFormData() {
+  // Comprehensive cleanup of all form-related data (called only after successful publish
+  // or when intentionally resetting all drafts).
+  static clearAllFormData() {
     const formId = this.getCurrentFormId();
+
     if (formId) {
       localStorage.removeItem(`formSession_${formId}`);
+      localStorage.removeItem(`formRecipients_${formId}`);
+      localStorage.removeItem(`certificateLinked_${formId}`);
     }
+
+    // Legacy / shared keys
     localStorage.removeItem('formCreationState');
     localStorage.removeItem('csvData');
     localStorage.removeItem('selectedStudents');
     localStorage.removeItem('currentFormId');
+    localStorage.removeItem('editFormId');
+    localStorage.removeItem('tempFormData');
+    localStorage.removeItem('uploadedFormId');
+    localStorage.removeItem('studentSelection');
+    localStorage.removeItem('preservedFormId');
+    localStorage.removeItem('preservedFormIdTimestamp');
+  }
+
+  // Legacy method name for backward compatibility
+  static clearFormData() {
+    this.clearAllFormData();
   }
 
   // Get all local forms (for debugging)
@@ -329,7 +492,7 @@ export class FormSessionManager {
     const localData = this.getFormSession(currentFormId);
     const legacyData = {
       formCreationState: localStorage.getItem('formCreationState'),
-      csvData: localStorage.getItem('csvData'),
+      // csvData export intentionally omitted to avoid persisting CSV payloads
       selectedStudents: localStorage.getItem('selectedStudents')
     };
 
@@ -353,14 +516,12 @@ export class FormSessionManager {
       this.saveFormSession(exportedData.formId, exportedData.localData);
     }
     
-    // Restore legacy data
+    // Restore legacy data (excluding any CSV content)
     if (exportedData.legacyData) {
       if (exportedData.legacyData.formCreationState) {
         localStorage.setItem('formCreationState', exportedData.legacyData.formCreationState);
       }
-      if (exportedData.legacyData.csvData) {
-        localStorage.setItem('csvData', exportedData.legacyData.csvData);
-      }
+      // CSV data is NOT restored - only non-CSV form metadata
       if (exportedData.legacyData.selectedStudents) {
         localStorage.setItem('selectedStudents', exportedData.legacyData.selectedStudents);
       }

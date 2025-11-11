@@ -50,7 +50,11 @@
       "pathStartOffset": 0,
       "pathSide": "left",
       "minWidth": 20,
-      "splitByGrapheme": false
+      "splitByGrapheme": false,
+      "selectable": true,
+      "evented": true,
+      "lockMovementX": false,
+      "lockMovementY": false
     },
     {
       "type": "textbox",

@@ -22,9 +22,13 @@ import ParticipantBadges from "./pages/participants/Badges";
 import ParticipantNotifications from "./pages/participants/Notifications";
 import EvaluationStart from "./pages/participants/EvaluationStart";
 import EvaluationForm from "./pages/evaluation/EvaluationForm";
+import SharedNotifications from "./pages/shared/Notifications";
 import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
+import ClubOfficerLayout from "./components/club-officers/ClubOfficerLayout";
+import SchoolAdminLayout from "./components/school-admins/SchoolAdminLayout";
+import MisLayout from "./components/mis/MisLayout";
 import Profile from "./pages/Profile";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./contexts/useAuth";
@@ -34,6 +38,7 @@ import PositiveComments from "./pages/reports/PositiveComments";
 import NegativeComments from "./pages/reports/NegativeComments";
 import NeutralComments from "./pages/reports/NeutralComments";
 import CompleteReport from "./pages/reports/CompleteReport";
+import FormCreationInterface from "./components/psas/evaluations/FormCreationInterface";
 
 // Sample form data removed - now fetched dynamically by EvaluationForm component
 
@@ -104,6 +109,16 @@ function App() {
           element={
             isAuthorized("psas") ? (
               <Certificates />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/create-form"
+          element={
+            isAuthorized("psas") ? (
+              <FormCreationInterface onBack={() => window.history.back()} />
             ) : (
               <Navigate to={getHomeRoute()} />
             )
@@ -215,7 +230,19 @@ function App() {
           path="/club-officer/home"
           element={
             isAuthorized("club-officer") ? (
-              <ClubOfficerDashboard />
+              <ClubOfficerLayout>
+                <ClubOfficerDashboard />
+              </ClubOfficerLayout>
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/club-officer/notifications"
+          element={
+            isAuthorized("club-officer") ? (
+              <SharedNotifications layout={ClubOfficerLayout} />
             ) : (
               <Navigate to={getHomeRoute()} />
             )
@@ -307,7 +334,19 @@ function App() {
           path="/school-admin/home"
           element={
             isAuthorized("school-admin") ? (
-              <SchoolAdminDashboard />
+              <SchoolAdminLayout>
+                <SchoolAdminDashboard />
+              </SchoolAdminLayout>
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/school-admin/notifications"
+          element={
+            isAuthorized("school-admin") ? (
+              <SharedNotifications layout={SchoolAdminLayout} />
             ) : (
               <Navigate to={getHomeRoute()} />
             )
@@ -323,7 +362,19 @@ function App() {
           path="/mis"
           element={
             isAuthorized("mis") ? (
-              <MisDashboard />
+              <MisLayout>
+                <MisDashboard />
+              </MisLayout>
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/mis/notifications"
+          element={
+            isAuthorized("mis") ? (
+              <SharedNotifications layout={MisLayout} />
             ) : (
               <Navigate to={getHomeRoute()} />
             )
@@ -333,7 +384,9 @@ function App() {
           path="/mis/user-management"
           element={
             isAuthorized("mis") ? (
-              <UserManagement />
+              <MisLayout>
+                <UserManagement />
+              </MisLayout>
             ) : (
               <Navigate to={getHomeRoute()} />
             )

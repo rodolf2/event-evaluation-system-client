@@ -1,6 +1,7 @@
 import { Camera, ChevronRight } from "lucide-react";
 import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
+import ParticipantLayout from "../components/participants/ParticipantLayout";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -45,10 +46,19 @@ function Profile() {
     );
   }
 
-  const badgesLink = (user.role === 'participant' || user.role === 'club-officer') ? '/participant/badges' : null;
+  const badgesLink =
+    user.role === "participant" || user.role === "club-officer"
+      ? "/participant/badges"
+      : null;
+
+  // Use role-specific layout so participants do NOT see the PSAS sidebar/layout.
+  const LayoutComponent =
+    user.role === "participant" || user.role === "club-officer"
+      ? ParticipantLayout
+      : PSASLayout;
 
   return (
-    <PSASLayout>
+    <LayoutComponent>
       <div className="bg-gray-50 min-h-full">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column */}
@@ -170,24 +180,34 @@ function Profile() {
               <div className="bg-white rounded-xl shadow-md px-8 py-12">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold text-gray-800">Evaluations Badges</h2>
-                  <Link to={badgesLink} className="flex items-center text-blue-600 hover:underline font-semibold">
+                  <Link
+                    to={badgesLink}
+                    className="flex items-center text-blue-600 hover:underline font-semibold"
+                  >
                     View My Badges <ChevronRight className="w-5 h-5 ml-1" />
                   </Link>
                 </div>
-                <div className="flex flex-wrap justify-center gap-6">
-                  {/* Acquired badges */}
-                  <img src={BronzeBadge} alt="Bronze Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                  <img src={SilverBadge} alt="Silver Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                  <img src={GoldBadge} alt="Gold Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                  <img src={TitaniumBadge} alt="Titanium Badge" className="w-16 h-16 md:w-20 md:h-20" />
-                  <img src={PlatinumBadge} alt="Platinum Badge" className="w-16 h-16 md:w-20 md:h-20" />
+                {/*
+                  At profile level we must NOT assume any badges are unlocked.
+                  The My Badges page computes real progress from completion-stats.
+                  Here we only:
+                  - Show a neutral empty state when there are no completions yet.
+                  - Encourage the user to complete evaluations to unlock badges.
+                */}
+                <div className="flex flex-col items-center justify-center gap-2 text-center text-gray-500">
+                  <p className="text-sm">
+                    Start completing evaluation forms to unlock your first badge.
+                  </p>
+                  <p className="text-xs">
+                    Your earned badges will appear here once unlocked.
+                  </p>
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
-    </PSASLayout>
+    </LayoutComponent>
   );
 }
 

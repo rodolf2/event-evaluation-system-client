@@ -11,7 +11,7 @@ const EvaluationForm = () => {
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [responses, setResponses] = useState({});
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -137,42 +137,62 @@ const EvaluationForm = () => {
   const {
     title = 'Loading...',
     description = 'Loading description...',
-    questions = []
+    questions = [],
+    sections = []
   } = form || {};
-  
-  const questionsPerPage = currentPage === 1 ? 1 : 2;
-  const totalPages = questions && Array.isArray(questions) && questions.length > 0
-    ? Math.ceil((questions.length - 1) / 2) + 1
-    : 1;
+
+  // Create sections array: main section + additional sections
+  const allSections = [
+    {
+      id: 'main',
+      title: 'Section 1',
+      description: '',
+      questions: questions || []
+    },
+    ...(sections || [])
+  ];
+
+  const currentSection = allSections[currentSectionIndex];
+  const totalSections = allSections.length;
 
   const handleNext = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+    if (currentSectionIndex < totalSections - 1) {
+      setCurrentSectionIndex(currentSectionIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentSectionIndex > 0) {
+      setCurrentSectionIndex(currentSectionIndex - 1);
     }
   };
 
   const getSectionTitle = () => {
-    // Section title in format "Section 1: Title" with fallback
-    return `Section ${currentPage}: ${title || 'Form'}`;
+    if (!currentSection) return 'Loading...';
+    return currentSection.title || `Section ${currentSectionIndex + 1}`;
   };
 
-  const startIndex = currentPage === 1 ? 0 : 1 + (currentPage - 2) * 2;
-  const endIndex = startIndex + questionsPerPage;
-  const currentQuestions = questions && Array.isArray(questions) ? questions.slice(startIndex, endIndex) : [];
+  const getSectionDescription = () => {
+    return currentSection?.description || '';
+  };
 
   // Render different question types
   const renderQuestion = (question, questionIndex) => {
-    if (!question || !question.text) return null;
-    const actualIndex = startIndex + questionIndex;
-    const isRequired = question.required || question.text.includes('*');
+    if (!question || !question.title) return null;
+    // Calculate global question index for responses
+    let globalIndex = questionIndex;
+    for (let i = 0; i < currentSectionIndex; i++) {
+      globalIndex += allSections[i].questions.length;
+    }
+    const isRequired = question.required || false;
 
     switch (question.type) {
-      case 'radio':
+      case 'multiple_choice':
         if (!question.options || !Array.isArray(question.options)) return null;
         return (
           <div key={questionIndex} className='mb-8'>
             <label className="block text-lg text-gray-800 mb-4">
-              {question.text}
+              {question.title}
               {isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
             <div className="flex flex-col space-y-3">
@@ -180,11 +200,11 @@ const EvaluationForm = () => {
                 <label key={i} className="flex items-center p-3 rounded-lg hover:bg-gray-100 cursor-pointer">
                   <input
                     type="radio"
-                    name={`q${actualIndex}`}
+                    name={`q${globalIndex}`}
                     value={option}
                     className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    checked={responses[actualIndex] === option}
-                    onChange={(e) => handleResponseChange(actualIndex, e.target.value)}
+                    checked={responses[globalIndex] === option}
+                    onChange={(e) => handleResponseChange(globalIndex, e.target.value)}
                   />
                   <span className='ml-3 text-gray-700'>{option}</span>
                 </label>
@@ -192,66 +212,142 @@ const EvaluationForm = () => {
             </div>
           </div>
         );
-      
-      case 'text':
+
+      case 'short_answer':
         return (
           <div key={questionIndex} className='mb-8'>
             <label className="block text-lg text-gray-800 mb-4">
-              {question.text}
+              {question.title}
+              {isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              value={responses[globalIndex] || ''}
+              onChange={(e) => handleResponseChange(globalIndex, e.target.value)}
+              placeholder="Enter your response here..."
+            />
+          </div>
+        );
+
+      case 'paragraph':
+        return (
+          <div key={questionIndex} className='mb-8'>
+            <label className="block text-lg text-gray-800 mb-4">
+              {question.title}
               {isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
             <textarea
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               rows="4"
-              value={responses[actualIndex] || ''}
-              onChange={(e) => handleResponseChange(actualIndex, e.target.value)}
+              value={responses[globalIndex] || ''}
+              onChange={(e) => handleResponseChange(globalIndex, e.target.value)}
               placeholder="Enter your response here..."
             />
           </div>
         );
-      
-      case 'number':
+
+      case 'scale': {
+        // Handle Likert Scale and Numeric Ratings
+        const min = question.low || 1;
+        const max = question.high || 5;
+        const lowLabel = question.lowLabel || '';
+        const highLabel = question.highLabel || '';
+
         return (
           <div key={questionIndex} className='mb-8'>
             <label className="block text-lg text-gray-800 mb-4">
-              {question.text}
+              {question.title}
+              {isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-gray-600">{lowLabel}</span>
+              <div className="flex space-x-4">
+                {Array.from({ length: max - min + 1 }, (_, i) => {
+                  const value = min + i;
+                  return (
+                    <label key={value} className="flex flex-col items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`q${globalIndex}`}
+                        value={value}
+                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        checked={responses[globalIndex] == value}
+                        onChange={(e) => handleResponseChange(globalIndex, parseInt(e.target.value))}
+                      />
+                      <span className="text-sm text-gray-700 mt-1">{value}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <span className="text-sm text-gray-600">{highLabel}</span>
+            </div>
+          </div>
+        );
+      }
+
+      case 'date':
+        return (
+          <div key={questionIndex} className='mb-8'>
+            <label className="block text-lg text-gray-800 mb-4">
+              {question.title}
               {isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
             <input
-              type="number"
+              type="date"
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              value={responses[actualIndex] || ''}
-              onChange={(e) => handleResponseChange(actualIndex, e.target.value)}
-              min={question.min || 0}
-              max={question.max || 10}
+              value={responses[globalIndex] || ''}
+              onChange={(e) => handleResponseChange(globalIndex, e.target.value)}
             />
           </div>
         );
-      
-      default:
-        // Default to radio button for backward compatibility
-        if (!question.options || !Array.isArray(question.options)) return null;
+
+      case 'time':
         return (
           <div key={questionIndex} className='mb-8'>
             <label className="block text-lg text-gray-800 mb-4">
-              {question.text}
+              {question.title}
               {isRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <div className="flex flex-col space-y-3">
-              {question.options.map((option, i) => (
-                <label key={i} className="flex items-center p-3 rounded-lg hover:bg-gray-100 cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`q${actualIndex}`}
-                    value={option}
-                    className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    checked={responses[actualIndex] === option}
-                    onChange={(e) => handleResponseChange(actualIndex, e.target.value)}
-                  />
-                  <span className='ml-3 text-gray-700'>{option}</span>
-                </label>
-              ))}
-            </div>
+            <input
+              type="time"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              value={responses[globalIndex] || ''}
+              onChange={(e) => handleResponseChange(globalIndex, e.target.value)}
+            />
+          </div>
+        );
+
+      case 'file_upload':
+        return (
+          <div key={questionIndex} className='mb-8'>
+            <label className="block text-lg text-gray-800 mb-4">
+              {question.title}
+              {isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <input
+              type="file"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) => handleResponseChange(globalIndex, e.target.files[0])}
+            />
+          </div>
+        );
+
+      default:
+        // Default fallback
+        return (
+          <div key={questionIndex} className='mb-8'>
+            <label className="block text-lg text-gray-800 mb-4">
+              {question.title}
+              {isRequired && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <textarea
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              rows="4"
+              value={responses[globalIndex] || ''}
+              onChange={(e) => handleResponseChange(globalIndex, e.target.value)}
+              placeholder="Enter your response here..."
+            />
           </div>
         );
     }
@@ -312,17 +408,16 @@ const EvaluationForm = () => {
   return (
     <ParticipantLayout>
       <div className="w-full max-w-4xl mx-auto p-8">
-        {/* Top White Container - Only show title/description on first page, subsequent pages show smaller header */}
-        <div className="bg-white p-8 rounded-lg shadow-md mb-6">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-800">{title || 'Loading...'}</h1>
-              <p className="text-gray-600 mt-2 mb-4">{description || 'Loading description...'}</p>
+        {/* Top White Container - Only show title/description on first section */}
+        {currentSectionIndex === 0 && (
+          <div className="bg-white p-8 rounded-lg shadow-md mb-6">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold text-gray-800">{title || 'Loading...'}</h1>
+                <p className="text-gray-600 mt-2 mb-4">{description || 'Loading description...'}</p>
+              </div>
             </div>
-          </div>
-          <hr />
-          {/* Only show red required label on first page */}
-          {currentPage === 1 && (
+            <hr />
             <div className="flex justify-between items-center mt-4">
               <p className='text-red-500 text-sm'>* Indicates required questions</p>
               {/* Clear Form Link - Google Forms style */}
@@ -333,39 +428,54 @@ const EvaluationForm = () => {
                 Clear form
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Middle Blue Container - Section Label */}
-        <div className='bg-blue-900 text-white p-4 rounded-lg mb-6'>
-          <h2 className="text-xl font-semibold">{getSectionTitle()}</h2>
-        </div>
-
-        {/* Bottom White Container - Questions */}
+        {/* Section Container - Each section has its own white container */}
         <div className="bg-white p-8 rounded-lg shadow-md mb-6">
-          {currentQuestions.map((question, index) =>
+          {/* Section Header */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">{getSectionTitle()}</h2>
+            {getSectionDescription() && (
+              <p className="text-gray-600">{getSectionDescription()}</p>
+            )}
+          </div>
+
+          {/* Section Questions */}
+          {currentSection?.questions?.map((question, index) =>
             renderQuestion(question, index)
           )}
         </div>
 
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center mt-8">
-            <div>
-                {/* Back Button - positioned in lower left corner */}
-                <button
-                onClick={handleBack}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                >
-                Back
-                </button>
+            <div className="flex space-x-3">
+                {/* Previous Section Button */}
+                {currentSectionIndex > 0 && (
+                    <button
+                    onClick={handlePrevious}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                    Previous
+                    </button>
+                )}
+                {/* Back to Start Button - only on first section */}
+                {currentSectionIndex === 0 && (
+                    <button
+                    onClick={handleBack}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                    Back
+                    </button>
+                )}
             </div>
             <div className='flex items-center space-x-4'>
-                {currentPage < totalPages ? (
+                {currentSectionIndex < totalSections - 1 ? (
                     <button
                     onClick={handleNext}
                     className="px-8 py-3 bg-blue-800 text-white rounded-lg hover:bg-blue-900 shadow-md"
                     >
-                    Next
+                    Next Section
                     </button>
                 ) : (
                     <button

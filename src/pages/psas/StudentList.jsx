@@ -83,13 +83,11 @@ const StudentList = () => {
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [showImportModal, setShowImportModal] = useState(false);
 
-  // Handle CSV upload
+  // Handle CSV upload from ImportCSVModal:
+  // For the "View" flow, ImportCSVModal already navigates here with a formId.
+  // We do not persist CSV; we only expect server-side or session-backed recipients.
   const handleCSVUpload = () => {
     setShowImportModal(false);
-    // Reload the component to fetch the new CSV data
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
   };
 
   // Persist student selection state
@@ -111,15 +109,14 @@ const StudentList = () => {
   }, []);
 
   const handleBackClick = () => {
-    // Get form ID from URL parameters or localStorage
+    // Get form ID from URL parameters
     const urlParams = new URLSearchParams(location.search);
     const formIdFromUrl = urlParams.get('formId');
-    const formId = formIdFromUrl || localStorage.getItem("uploadedFormId") || localStorage.getItem("editFormId");
     const isNewForm = urlParams.get('newForm') === 'true';
     
-    if (formId) {
+    if (formIdFromUrl) {
       // Navigate to form creation interface with edit parameter
-      navigate(`/psas/evaluations?edit=${formId}`);
+      navigate(`/psas/evaluations?edit=${formIdFromUrl}`);
     } else if (isNewForm) {
       // Navigate to form creation interface for new form
       navigate("/psas/evaluations?view=create");
@@ -130,41 +127,30 @@ const StudentList = () => {
   };
 
   useEffect(() => {
-    // Load CSV data using FormSessionManager for robust persistence
-    const csvData = FormSessionManager.loadCSVData();
-    
-    if (csvData) {
-      // Add IDs to students for selection
-      if (csvData.students && Array.isArray(csvData.students)) {
-        const studentsWithIds = csvData.students.map((student, index) => ({
-          ...student,
-          id: index + 1,
-        }));
-        setStudents(studentsWithIds);
-      } else {
-        console.error("No students array found in CSV data");
-      }
-    } else {
-      // Fallback to legacy localStorage
-      const legacyCSVData = localStorage.getItem("csvData");
-      if (legacyCSVData) {
-        try {
-          const parsedLegacy = JSON.parse(legacyCSVData);
-          
-          if (parsedLegacy.students && Array.isArray(parsedLegacy.students)) {
-            const studentsWithIds = parsedLegacy.students.map((student, index) => ({
-              ...student,
-              id: index + 1,
-            }));
-            setStudents(studentsWithIds);
-          }
-        } catch (error) {
-          console.error("Error parsing legacy CSV data:", error);
-        }
-      }
+    const urlParams = new URLSearchParams(location.search);
+    const formIdFromUrl = urlParams.get("formId");
+
+    if (!formIdFromUrl) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
-  }, []);
+
+    // Use unified ID management to ensure persistent form ID
+    FormSessionManager.ensurePersistentFormId(formIdFromUrl);
+
+    // Try to load transient CSV data from session
+    const transientCSV = FormSessionManager.loadTransientCSVData();
+    if (transientCSV && Array.isArray(transientCSV.students)) {
+      const studentsWithIds = transientCSV.students.map((student, index) => ({
+        ...student,
+        id: index + 1,
+      }));
+      setStudents(studentsWithIds);
+      setLoading(false);
+      return;
+    }
+
+  }, [location.search]);
 
   const handleSelect = (id) => {
     setSelected((prev) => {
@@ -217,24 +203,12 @@ const StudentList = () => {
     selected.length > 0 && selected.length === paginatedStudents.length;
 
   const handleDoneClick = () => {
-    // Get form ID from URL parameters and set it as current form
     const urlParams = new URLSearchParams(location.search);
     const formIdFromUrl = urlParams.get('formId');
     
     if (!formIdFromUrl) {
-      console.error("❌ StudentList - No form ID found in URL parameters.");
       alert("Error: Form ID not found. Cannot assign students to form. Please start from the form creation page.");
       return;
-    }
-
-    // Ensure this form ID is the current form in FormSessionManager
-    // Don't overwrite if it's already the current form
-    const currentFormId = FormSessionManager.getCurrentFormId();
-    if (currentFormId !== formIdFromUrl) {
-      FormSessionManager.initializeFormSession(formIdFromUrl);
-      
-      // Force reload CSV data for this new form data to ensure persistence
-      FormSessionManager.loadCSVData();
     }
 
     if (selected.length === 0) {
@@ -243,18 +217,15 @@ const StudentList = () => {
     }
 
     try {
-      // Get the selected students data
       const selectedStudents = students.filter(student => selected.includes(student.id));
-      
-      // Save student assignments using FormSessionManager for robust persistence
       FormSessionManager.saveStudentAssignments(selectedStudents);
-      
-      // Clear selected students state
       setSelected([]);
       
-      // Navigate back to the form creation interface with recipients count AND form ID
-      const navigationUrl = `/psas/evaluations?recipients=${selected.length}&formId=${formIdFromUrl}`;
-        
+      // Preserve form ID before navigation
+      FormSessionManager.preserveFormId();
+      
+      // Navigate back to form creation with recipients count
+      const navigationUrl = `/psas/evaluations?recipients=${selected.length}&formId=${formIdFromUrl}&from=studentList`;
       navigate(navigationUrl);
     } catch (error) {
       console.error("Error assigning students to form:", error);

@@ -24,76 +24,234 @@ ChartJS.register(
 const EventAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [formId, setFormId] = useState(null);
+  const [availableForms, setAvailableForms] = useState([]);
+  const [formsLoading, setFormsLoading] = useState(true);
+
+  // Fetch available forms for the current user
+  useEffect(() => {
+    const fetchAvailableForms = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await fetch('/api/forms', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch forms');
+        }
+
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Filter to only published forms (since only they have responses)
+          const publishedForms = result.data.filter(form => form.status === 'published');
+          setAvailableForms(publishedForms);
+          
+          // Auto-select first form if none is selected
+          if (!formId && publishedForms.length > 0) {
+            setFormId(publishedForms[0]._id);
+          } else if (formId) {
+            // Check if the current formId is in the published forms list
+            // If not, reset to the first published form
+            const currentFormExists = publishedForms.some(form => form._id === formId);
+            if (!currentFormExists && publishedForms.length > 0) {
+              setFormId(publishedForms[0]._id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch available forms:', error);
+        setAvailableForms([]);
+      } finally {
+        setFormsLoading(false);
+      }
+    };
+
+    fetchAvailableForms();
+  }, []);
+
+  // Get form ID from URL params only (no localStorage to avoid custom IDs)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFormId = urlParams.get('formId');
+    
+    if (urlFormId && /^[0-9a-fA-F]{24}$/.test(urlFormId)) {
+      setFormId(urlFormId);
+    }
+    // Note: We removed localStorage fallback to avoid custom form IDs
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!formId) {
+        setLoading(false);
+        return;
+      }
+
+      // Validate that the formId is a proper MongoDB ObjectId (24 hex characters)
+      if (!/^[0-9a-fA-F]{24}$/.test(formId)) {
+        console.warn('Invalid form ID format, skipping analytics fetch:', formId);
+        setAnalyticsData({
+          totalAttendees: 0,
+          totalResponses: 0,
+          responseRate: 0,
+          remainingNonResponses: 0,
+          responseBreakdown: {
+            positive: { percentage: 0, count: 0 },
+            neutral: { percentage: 0, count: 0 },
+            negative: { percentage: 0, count: 0 }
+          },
+          responseOverview: {
+            labels: [],
+            data: [],
+            dateRange: "No data available"
+          }
+        });
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        // Using mock data for development since backend is not available
-        const mockData = {
-          totalAttendees: 150,
-          totalResponses: 89,
-          responseRate: 59.3,
-          responseBreakdown: {
-            positive: { percentage: 67.4, count: 60 },
-            neutral: { percentage: 20.2, count: 18 },
-            negative: { percentage: 12.4, count: 11 }
-          },
-          responseOverview: {
-            labels: ["Jan 1", "Jan 8", "Jan 15", "Jan 22", "Jan 29", "Feb 5"],
-            data: [12, 19, 15, 25, 22, 18],
-            dateRange: "January 1 - February 5, 2024"
-          }
-        };
-
-        // Simulate API delay for realistic loading experience
-        setTimeout(() => {
-          setAnalyticsData(mockData);
-          setLoading(false);
-        }, 1000);
-
-        // If you want to test backend connection, uncomment below:
-        /*
-        const response = await fetch('/api/events/1/analytics');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
         }
-        const data = await response.json();
-        setAnalyticsData(data);
-        */
+
+        // Fetch real analytics data from the API
+        const response = await fetch(`/api/analytics/form/${formId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch analytics data');
+        }
+
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setAnalyticsData(result.data);
+        } else {
+          throw new Error('Invalid response format');
+        }
       } catch (error) {
         console.error("Failed to fetch event analytics:", error);
-        // Even if backend fails, we'll use mock data
-        const fallbackData = {
-          totalAttendees: 150,
-          totalResponses: 89,
-          responseRate: 59.3,
+        
+        // If we get a CastError, it means the formId is not a valid ObjectId
+        if (error.message && error.message.includes('Cast to ObjectId failed')) {
+          console.error('Invalid form ID format. This form may not be published yet or the ID is corrupted.');
+          // Check if we should switch to another available form
+          if (availableForms.length > 0 && formId !== availableForms[0]._id) {
+            console.log('Switching to first available published form');
+            setFormId(availableForms[0]._id);
+            return; // Let the effect run again with the new formId
+          }
+        }
+        
+        // You could show a toast notification here with the error message
+        console.error('Analytics Error:', error.message || 'Failed to load analytics data');
+        
+        // Set empty data to show "no data" state
+        setAnalyticsData({
+          totalAttendees: 0,
+          totalResponses: 0,
+          responseRate: 0,
+          remainingNonResponses: 0,
           responseBreakdown: {
-            positive: { percentage: 67.4, count: 60 },
-            neutral: { percentage: 20.2, count: 18 },
-            negative: { percentage: 12.4, count: 11 }
+            positive: { percentage: 0, count: 0 },
+            neutral: { percentage: 0, count: 0 },
+            negative: { percentage: 0, count: 0 }
           },
           responseOverview: {
-            labels: ["Jan 1", "Jan 8", "Jan 15", "Jan 22", "Jan 29", "Feb 5"],
-            data: [12, 19, 15, 25, 22, 18],
-            dateRange: "January 1 - February 5, 2024"
+            labels: [],
+            data: [],
+            dateRange: "No data available"
           }
-        };
-        setAnalyticsData(fallbackData);
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [formId, availableForms]);
 
-  // Show a loading spinner while data is being fetched
-  if (loading || !analyticsData) {
+  // Show loading state
+  if (loading || formsLoading) {
     return (
       <PSASLayout>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </PSASLayout>
+    );
+  }
+
+  // Show no forms available state
+  if (availableForms.length === 0) {
+    return (
+      <PSASLayout>
+        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">No Published Forms Available</h2>
+            <p className="text-gray-600 mb-6">You need to have at least one published form to view analytics.</p>
+            <a
+              href="/psas/evaluations"
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Create New Evaluation
+            </a>
+          </div>
+        </div>
+      </PSASLayout>
+    );
+  }
+
+  // Show no valid form selected state
+  if (!formId || !/^[0-9a-fA-F]{24}$/.test(formId)) {
+    return (
+      <PSASLayout>
+        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Invalid Form Selected</h2>
+            <p className="text-gray-600 mb-6">The selected form is not valid. Please select a published form to view analytics.</p>
+            {availableForms.length > 0 && (
+              <a
+                href="/psas/evaluations"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                Select Form
+              </a>
+            )}
+          </div>
+        </div>
+      </PSASLayout>
+    );
+  }
+
+  // Guard against null analyticsData before destructuring
+  if (!analyticsData) {
+    return (
+      <PSASLayout>
+        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Loading Analytics...</h2>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          </div>
         </div>
       </PSASLayout>
     );
@@ -174,6 +332,27 @@ const EventAnalytics = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">Event Analytics</h1>
+          
+          {/* Form Selector */}
+          {availableForms.length > 0 && (
+            <div className="flex items-center gap-4">
+              <label htmlFor="form-select" className="text-sm font-medium text-gray-700">
+                Select Form:
+              </label>
+              <select
+                id="form-select"
+                value={formId || ''}
+                onChange={(e) => setFormId(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                {availableForms.map((form) => (
+                  <option key={form._id} value={form._id}>
+                    {form.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Top Stats */}

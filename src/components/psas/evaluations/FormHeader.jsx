@@ -23,7 +23,7 @@ const FormHeader = ({ formTitle, setFormTitle, formDescription, setFormDescripti
         ) : (
           <div
             onClick={() => setIsEditingTitle(true)}
-            className="w-full text-2xl font-bold cursor-pointer hover:bg-gray-50 rounded-md px-3 py-2 min-h-[3rem] flex items-center"
+            className="w-full text-2xl font-bold cursor-pointer hover:bg-gray-50 rounded-md px-3 py-2 min-h-12 flex items-center"
           >
             {formTitle || "Click to add form title"}
           </div>
@@ -39,13 +39,13 @@ const FormHeader = ({ formTitle, setFormTitle, formDescription, setFormDescripti
             value={formDescription}
             onChange={(e) => setFormDescription(e.target.value)}
             onBlur={() => setIsEditingDesc(false)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none min-h-[4rem]"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none min-h-16"
             autoFocus
           />
         ) : (
           <div
             onClick={() => setIsEditingDesc(true)}
-            className="w-full cursor-pointer hover:bg-gray-50 rounded-md px-3 py-2 min-h-[4rem] flex items-start"
+            className="w-full cursor-pointer hover:bg-gray-50 rounded-md px-3 py-2 min-h-16 flex items-start"
           >
             {formDescription || "Click to add form description"}
           </div>

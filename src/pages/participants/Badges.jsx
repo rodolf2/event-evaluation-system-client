@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import { ChevronDown } from "lucide-react";
 
@@ -35,109 +35,117 @@ import MasterBadge from "../../assets/badges/MASTER.png";
 import GrandmasterBadge from "../../assets/badges/GRANDMASTER.png";
 
 const Badges = () => {
-  const badgeData = [
-    {
-      name: "Bronze",
-      progress: "5/5",
-      unlocked: true,
-      highlighted: true,
-      icon: BronzeBadge,
-    },
-    { name: "Silver", progress: "10/10", unlocked: true, icon: SilverBadge },
-    { name: "Gold", progress: "15/15", unlocked: true, icon: GoldBadge },
-    {
-      name: "Titanium",
-      progress: "20/20",
-      unlocked: true,
-      icon: TitaniumBadge,
-    },
-    {
-      name: "Platinum",
-      progress: "25/25",
-      unlocked: true,
-      icon: PlatinumBadge,
-    },
-    { name: "Quartz", progress: "10/30", unlocked: false, icon: QuartzBadge },
-    { name: "Onyx", progress: "15/35", unlocked: false, icon: OnyxBadge },
-    { name: "Pearl", progress: "20/40", unlocked: false, icon: PearlBadge },
-    { name: "Topaz", progress: "25/45", unlocked: false, icon: TopazBadge },
-    { name: "Garnet", progress: "30/50", unlocked: false, icon: GarnetBadge },
-    {
-      name: "Amethyst",
-      progress: "31/55",
-      unlocked: false,
-      icon: AmethystBadge,
-    },
-    { name: "Jade", progress: "38/60", unlocked: false, icon: JadeBadge },
-    {
-      name: "Obsidian",
-      progress: "35/65",
-      unlocked: false,
-      icon: ObsidianBadge,
-    },
-    { name: "Opal", progress: "39/70", unlocked: false, icon: OpalBadge },
-    {
-      name: "Sapphire",
-      progress: "31/75",
-      unlocked: false,
-      icon: SapphireBadge,
-    },
-    { name: "Emerald", progress: "31/80", unlocked: false, icon: EmeraldBadge },
-    { name: "Ruby", progress: "31/85", unlocked: false, icon: RubyBadge },
-    { name: "Diamond", progress: "31/90", unlocked: false, icon: DiamondBadge },
-    { name: "Cobalt", progress: "31/95", unlocked: false, icon: CobaltBadge },
-    { name: "Ivory", progress: "31/100", unlocked: false, icon: IvoryBadge },
-    {
-      name: "Crimson",
-      progress: "31/105",
-      unlocked: false,
-      icon: CrimsonBadge,
-    },
-    { name: "Aurora", progress: "31/110", unlocked: false, icon: AuroraBadge },
-    {
-      name: "Solaris",
-      progress: "31/115",
-      unlocked: false,
-      icon: SolarisBadge,
-    },
-    { name: "Lunar", progress: "31/125", unlocked: false, icon: LunarBadge },
-    {
-      name: "Eclipse",
-      progress: "31/125",
-      unlocked: false,
-      icon: EclipseBadge,
-    },
-    {
-      name: "Celestial",
-      progress: "31/130",
-      unlocked: false,
-      icon: CelestialBadge,
-    },
-    { name: "Mythic", progress: "31/135", unlocked: false, icon: MythicBadge },
-    {
-      name: "Legendary",
-      progress: "31/140",
-      unlocked: false,
-      icon: LegendaryBadge,
-    },
-    { name: "Master", progress: "31/145", unlocked: false, icon: MasterBadge },
-    {
-      name: "Grandmaster",
-      progress: "31/150",
-      unlocked: false,
-      icon: GrandmasterBadge,
-    },
-  ];
+  // NOTE:
+  // - All badges start locked.
+  // - Progress is driven purely from server data about completed evaluation forms.
+  // - Once a badge's target is met, it becomes unlocked and clearly displayed.
+  // - This component fetches completion counts on mount and maps them to badge states.
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("All");
+  const [badges, setBadges] = useState([]);
+
+  // Define evaluation-completion based badge tiers.
+  // Adjust thresholds to match your product spec.
+  // Base badge order; thresholds are computed (5, 10, 15, ...) based on position.
+  const baseBadgeConfig = [
+    { name: "Bronze", icon: BronzeBadge, highlighted: true },
+    { name: "Silver", icon: SilverBadge },
+    { name: "Gold", icon: GoldBadge },
+    { name: "Titanium", icon: TitaniumBadge },
+    { name: "Platinum", icon: PlatinumBadge },
+    { name: "Quartz", icon: QuartzBadge },
+    { name: "Onyx", icon: OnyxBadge },
+    { name: "Pearl", icon: PearlBadge },
+    { name: "Topaz", icon: TopazBadge },
+    { name: "Garnet", icon: GarnetBadge },
+    { name: "Amethyst", icon: AmethystBadge },
+    { name: "Jade", icon: JadeBadge },
+    { name: "Obsidian", icon: ObsidianBadge },
+    { name: "Opal", icon: OpalBadge },
+    { name: "Sapphire", icon: SapphireBadge },
+    { name: "Emerald", icon: EmeraldBadge },
+    { name: "Ruby", icon: RubyBadge },
+    { name: "Diamond", icon: DiamondBadge },
+    { name: "Cobalt", icon: CobaltBadge },
+    { name: "Ivory", icon: IvoryBadge },
+    { name: "Crimson", icon: CrimsonBadge },
+    { name: "Aurora", icon: AuroraBadge },
+    { name: "Solaris", icon: SolarisBadge },
+    { name: "Lunar", icon: LunarBadge },
+    { name: "Eclipse", icon: EclipseBadge },
+    { name: "Celestial", icon: CelestialBadge },
+    { name: "Mythic", icon: MythicBadge },
+    { name: "Legendary", icon: LegendaryBadge },
+    { name: "Master", icon: MasterBadge },
+    { name: "Grandmaster", icon: GrandmasterBadge },
+  ];
+
+  // Fetch participant's completion count from a dedicated endpoint.
+  // This assumes backend exposes:
+  //   GET /api/forms/completion-stats
+  //   -> { success: true, data: { completedCount: number } }
+  // If not yet implemented, wire it there using Form.responses/attendeeList.hasResponded.
+  const fetchCompletionCount = async () => {
+    try {
+      const response = await fetch("/api/forms/completion-stats", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load badge progress (${response.status})`);
+      }
+
+      const json = await response.json();
+      const completedCount = json?.data?.completedCount || 0;
+
+      // Map base config to runtime badge objects with progressive progress/unlock state.
+      // Badges unlock every 5 completed forms:
+      //  - Bronze: 5/5
+      //  - Silver: 10/10
+      //  - Gold: 15/15
+      //  - ...
+      const computedBadges = baseBadgeConfig.map((badge, index) => {
+        const target = (index + 1) * 5;
+        const current = Math.min(completedCount, target);
+
+        return {
+          ...badge,
+          target,
+          unlocked: current >= target,
+          progress: `${current}/${target}`,
+        };
+      });
+
+      setBadges(computedBadges);
+    } catch (err) {
+      console.error("Error fetching badge progress:", err);
+      // Fallback: keep all badges locked with zero progress and 5-step targets.
+      const lockedBadges = baseBadgeConfig.map((badge, index) => {
+        const target = (index + 1) * 5;
+        return {
+          ...badge,
+          target,
+          unlocked: false,
+          progress: `0/${target}`,
+        };
+      });
+      setBadges(lockedBadges);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchCompletionCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFilterChange = (filter) => {
     setSelectedFilter(filter);
     setIsFilterOpen(false);
   };
 
-  const filteredBadges = badgeData.filter((badge) => {
+  const filteredBadges = badges.filter((badge) => {
     if (selectedFilter === "All") return true;
     if (selectedFilter === "Acquired Badges") return badge.unlocked;
     if (selectedFilter === "Not Acquired") return !badge.unlocked;

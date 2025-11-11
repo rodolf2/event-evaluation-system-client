@@ -62,12 +62,12 @@ const EvaluationContent = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto mt-5">
               <div className="text-center">
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                  Blank Form
+                  Bank Form
                 </h3>
               </div>
               <div className="text-center">
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                  Upload Form
+                  Upload a Form
                 </h3>
               </div>
             </div>
@@ -127,9 +127,9 @@ const RecentEvaluationCard = ({ form, onDeleteForm }) => {
       return;
     }
     
-    // Navigate to the form creation interface to edit this form
-    // This will be handled by the parent component through props
-    window.location.href = `/psas/evaluations?edit=${form.id}`;
+    // Store the form ID to edit and navigate to create form view
+    localStorage.setItem('editFormId', form.id);
+    window.location.href = `/psas/evaluations?view=create&edit=${form.id}`;
   };
 
   const handleDelete = (e) => {
@@ -150,8 +150,8 @@ const RecentEvaluationCard = ({ form, onDeleteForm }) => {
       className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col"
       onClick={handleCardClick}
     >
-      <div className="bg-white p-6 rounded-t-lg flex-grow flex flex-col">
-        <div className="text-center mb-4 flex-shrink-0 relative">
+      <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
+        <div className="text-center mb-4 shrink-0 relative">
           <h2 className="text-2xl font-bold text-gray-800 line-clamp-2">{form.title}</h2>
           <p className="text-gray-500 text-sm line-clamp-2">{form.description}</p>
           
@@ -180,7 +180,7 @@ const RecentEvaluationCard = ({ form, onDeleteForm }) => {
         </div>
 
         {/* Fixed preview section */}
-        <div className="flex-grow">
+        <div className="grow">
           <div className="flex justify-between items-center mb-4">
             <input
               type="text"
@@ -224,7 +224,7 @@ const RecentEvaluationCard = ({ form, onDeleteForm }) => {
 
       {/* Fixed footer */}
       <div
-        className="p-4 rounded-b-lg flex-shrink-0"
+        className="p-4 rounded-b-lg shrink-0"
         style={{
           background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
         }}

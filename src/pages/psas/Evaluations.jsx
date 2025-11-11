@@ -103,8 +103,10 @@ const Evaluations = () => {
     // Clear any temporary form data to ensure we start with a blank form
     localStorage.removeItem('tempFormData');
     localStorage.removeItem('editFormId');
+    
     setView("create");
   };
+
   const handleShowUploadModal = () => {
     setShowUploadModal(true);
   };
@@ -233,13 +235,16 @@ const Evaluations = () => {
 
   return (
     <>
+      {/* Always keep PSAS shell (sidebar + header) via PSASLayout */}
       <PSASLayout>
         {view === "create" ? (
-          <FormCreationInterface onBack={() => {
-            setView("dashboard");
-            // Clear edit form ID when going back
-            localStorage.removeItem('editFormId');
-          }} />
+          <FormCreationInterface
+            onBack={() => {
+              setView("dashboard");
+              // Clear edit form ID when going back
+              localStorage.removeItem('editFormId');
+            }}
+          />
         ) : (
           <EvaluationContent
             searchTerm={searchTerm}

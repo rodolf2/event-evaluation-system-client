@@ -9,7 +9,15 @@ import { Trash2 } from "lucide-react";
  * - Keeps delete button in bottom-right.
  * - Supports active highlighting via `active` prop (for current FormCreationInterface logic).
  */
-const Section = ({ id, index, title, description, onRemove, active }) => {
+const Section = ({
+  id,
+  index,
+  title,
+  description,
+  onRemove,
+  active,
+  onUpdateSection,
+}) => {
   // Fallback label if index is missing; index is managed by parent.
   const sectionLabel = index ? `Section ${index}` : "Section";
 
@@ -33,15 +41,17 @@ const Section = ({ id, index, title, description, onRemove, active }) => {
         {/* Section title - aligned to match Section 1 header styling */}
         <input
           type="text"
-          defaultValue={title || `${sectionLabel} title`}
+          value={title || ""}
           placeholder={`${sectionLabel} title`}
+          onChange={(e) => onUpdateSection?.(id, "title", e.target.value)}
           className="w-full text-3xl sm:text-5xl font-bold border-none outline-none mb-2 text-center placeholder:text-gray-400"
         />
 
         {/* Section description - positioned directly under title like Section 1 */}
         <textarea
-          defaultValue={description}
+          value={description || ""}
           placeholder="Add a description"
+          onChange={(e) => onUpdateSection?.(id, "description", e.target.value)}
           className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-gray-400"
           rows={1}
         />

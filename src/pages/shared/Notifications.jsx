@@ -1,14 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Trash2,
-  Mail,
-  MailOpen,
-} from "lucide-react";
-import PSASLayout from "../../components/psas/PSASLayout";
-import { useAuth } from "../../contexts/useAuth";
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Search, ChevronLeft, ChevronRight, Trash2, Mail, MailOpen } from 'lucide-react';
+import { useAuth } from '../../contexts/useAuth';
 
 const NotificationItem = ({
   notification,
@@ -22,11 +14,11 @@ const NotificationItem = ({
     <div
       className={`flex items-center p-3 border-t border-gray-200 ${
         isSelected
-          ? "bg-[#C0C0C0]" // Selected state color
+          ? "bg-[#E1E8FD]" // Select all toggled color
           : notification.read
-            ? "bg-white"
-            : "bg-blue-50"
-      } hover:bg-gray-100 transition-colors`}
+            ? "bg-[#FAFAFA]" // Read notifications color
+            : "bg-white" // Unread notifications color
+      }`}
     >
       <input
         type="checkbox"
@@ -36,14 +28,14 @@ const NotificationItem = ({
       />
       <div className="grow">
         <span className={`font-bold ${
-          isSelected ? "text-white" : "text-gray-800"
+          isSelected ? "text-gray-800" : "text-gray-800"
         }`}>
           {notification.from} -
         </span>
         <span
           className={
             isSelected
-              ? "text-white"
+              ? "text-gray-800"
               : notification.read
                 ? "text-gray-700"
                 : "font-semibold text-gray-900"
@@ -51,7 +43,7 @@ const NotificationItem = ({
         >
           {notification.title} -{" "}
         </span>
-        <span className={isSelected ? "text-gray-200" : "text-gray-500"}>
+        <span className={isSelected ? "text-gray-600" : "text-gray-500"}>
           {notification.preview}
         </span>
       </div>
@@ -76,7 +68,7 @@ const NotificationItem = ({
         </div>
       ) : (
         <div className={`text-right font-medium w-24 ml-4 ${
-          isSelected ? "text-white" : "text-gray-600"
+          isSelected ? "text-gray-800" : "text-gray-600"
         }`}>
           {notification.date}
         </div>
@@ -85,23 +77,31 @@ const NotificationItem = ({
   );
 };
 
-const Notifications = () => {
-  const { token } = useAuth();
+const Notifications = ({ layout: LayoutComponent }) => {
+  const { token, isLoading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [selected, setSelected] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionMessage, setActionMessage] = useState("");
+  const [actionMessage, setActionMessage] = useState('');
 
   const fetchNotifications = useCallback(async () => {
     try {
+      // Skip if no token or still loading auth
+      if (!token || authLoading) {
+        console.log("[Notifications] Skipping fetch - token:", !!token, "authLoading:", authLoading);
+        setLoading(false);
+        return;
+      }
+
+      console.log("[Notifications] Fetching notifications for user...");
       setLoading(true);
-      const response = await fetch("/api/notifications", {
+      const response = await fetch('/api/notifications', {
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       console.log("[Notifications] API response status:", response.status);
@@ -111,7 +111,12 @@ const Notifications = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch notifications");
+        if (response.status === 401) {
+          console.error("[Notifications] 401 Unauthorized - user may not be logged in");
+          setNotifications([]);
+          return;
+        }
+        throw new Error('Failed to fetch notifications');
       }
 
       const result = await response.json();
@@ -122,7 +127,7 @@ const Notifications = () => {
         const transformedNotifications = result.data.map((notification) => {
           const from =
             notification.createdBy?.name ||
-            (notification.isSystemGenerated ? "System" : "System");
+            (notification.isSystemGenerated ? 'System' : 'System');
 
           return {
             id: notification._id,
@@ -131,8 +136,8 @@ const Notifications = () => {
             preview: notification.message,
             date: notification.createdAt
               ? new Date(notification.createdAt).toLocaleString()
-              : "",
-            read: !!notification.isRead,
+              : '',
+            read: !!notification.isRead
           };
         });
 
@@ -148,35 +153,40 @@ const Notifications = () => {
 
         setNotifications(transformedNotifications);
       } else {
-        throw new Error(result.message || "Failed to fetch notifications");
+        throw new Error(result.message || 'Failed to fetch notifications');
       }
     } catch (err) {
-      console.error("Error fetching notifications:", err);
+      console.error('Error fetching notifications:', err);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, authLoading]);
 
   useEffect(() => {
-    if (token) {
+    if (token !== null && !authLoading) {
       fetchNotifications();
+    } else if (!authLoading && !token) {
+      console.log("[Notifications] No token available after auth loading");
+      setLoading(false);
+      setNotifications([]);
     }
-  }, [token, fetchNotifications]);
-
+  }, [token, authLoading, fetchNotifications]);
+  
   const handleSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    setSelected(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
-
+  
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelected(filteredNotifications.map((n) => n.id));
+      setSelected(filteredNotifications.map(n => n.id));
     } else {
       setSelected([]);
     }
   };
-
+  
   const handleMarkAllAsRead = async () => {
     if (selected.length === 0) return;
     
@@ -370,33 +380,30 @@ const Notifications = () => {
       setActionLoading(false);
     }
   };
-
-  const filteredNotifications = useMemo(
-    () =>
-      notifications.filter(
-        (n) =>
-          n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          n.from.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [notifications, searchQuery]
-  );
-
-  const isAllSelected =
-    selected.length > 0 && selected.length === filteredNotifications.length;
+  
+  const filteredNotifications = useMemo(() =>
+    notifications.filter(n =>
+      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      n.from.toLowerCase().includes(searchQuery.toLowerCase())
+    ), [notifications, searchQuery]);
+  
+  const isAllSelected = selected.length > 0 && selected.length === filteredNotifications.length;
 
   // Show loading spinner while data is being initialized
   if (loading) {
+    const LayoutWrapper = LayoutComponent;
     return (
-      <PSASLayout>
+      <LayoutWrapper>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
-      </PSASLayout>
+      </LayoutWrapper>
     );
   }
 
+  const LayoutWrapper = LayoutComponent;
   return (
-    <PSASLayout>
+    <LayoutWrapper>
       <div className="p-8 bg-gray-100 min-h-full">
         {/* Action Message */}
         {actionMessage && (
@@ -423,12 +430,8 @@ const Notifications = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-gray-600">{filteredNotifications.length} of {notifications.length}</span>
-            <button className="p-2 rounded-full hover:bg-gray-200">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button className="p-2 rounded-full hover:bg-gray-200">
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            <button className="p-2 rounded-full hover:bg-gray-200"><ChevronLeft className="w-5 h-5" /></button>
+            <button className="p-2 rounded-full hover:bg-gray-200"><ChevronRight className="w-5 h-5" /></button>
           </div>
         </div>
 
@@ -442,14 +445,10 @@ const Notifications = () => {
               onChange={handleSelectAll}
               className="mr-4 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
             />
-            <h2 className="text-lg font-semibold text-gray-700">
-              Notification List
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-700">Notification List</h2>
             {selected.length > 0 && (
               <div className="flex items-center gap-4 ml-auto">
-                <span className="font-semibold text-sm text-gray-600">
-                  {selected.length} selected
-                </span>
+                <span className="font-semibold text-sm text-gray-600">{selected.length} selected</span>
                 <MailOpen
                   className={`w-5 h-5 cursor-pointer transition-colors ${
                     actionLoading
@@ -479,7 +478,7 @@ const Notifications = () => {
                 {notifications.length === 0 ? 'No notifications found' : 'No notifications match your search'}
               </div>
             ) : (
-              filteredNotifications.map((notification) => (
+              filteredNotifications.map(notification => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
@@ -494,7 +493,7 @@ const Notifications = () => {
           </div>
         </div>
       </div>
-    </PSASLayout>
+    </LayoutWrapper>
   );
 };
 

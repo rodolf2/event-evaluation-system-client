@@ -716,45 +716,68 @@ const webinarParticipationData = {
 };
 
 export const templates = [
+  // Simple, clean variants - only background and border styles differ
   {
     id: 'classic-blue',
     name: 'Classic Blue',
-    thumbnail: '/thumbnails/thumbnail_1.png',
+    thumbnail:
+      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='260' fill='%23FFFFFF'/%3E%3Crect x='14' y='14' width='372' height='232' fill='none' stroke='%230256BF' stroke-width='3'/%3E%3C/svg%3E",
     data: classicBlueData,
   },
   {
     id: 'modern-red',
     name: 'Modern Red',
+    // Soft red background, bold solid red border
     thumbnail:
-      "data:image/svg+xml,%3Csvg width='400' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='300' fill='%23DC2626'/%3E%3Ctext x='200' y='150' font-family='Arial' font-size='18' fill='white' text-anchor='middle'%3EModern Red%3C/text%3E%3C/svg%3E",
+      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E"
+      + "%3Crect width='400' height='260' fill='%23FEF2F2'/%3E"
+      + "%3Crect x='14' y='14' width='372' height='232' fill='none' stroke='%23DC2626' stroke-width='3'/%3E"
+      + "%3C/svg%3E",
     data: modernRedData,
   },
   {
     id: 'elegant-gold',
     name: 'Elegant Gold',
+    // Warm cream background, double-line gold border
     thumbnail:
-      "data:image/svg+xml,%3Csvg width='400' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='300' fill='%23D97706'/%3E%3Ctext x='200' y='150' font-family='Arial' font-size='18' fill='white' text-anchor='middle'%3EElegant Gold%3C/text%3E%3C/svg%3E",
+      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E"
+      + "%3Crect width='400' height='260' fill='%FFFBEB'/%3E"
+      + "%3Crect x='12' y='12' width='376' height='236' fill='none' stroke='%23D97706' stroke-width='2'/%3E"
+      + "%3Crect x='20' y='20' width='360' height='220' fill='none' stroke='%23FBBF24' stroke-width='1'/%3E"
+      + "%3C/svg%3E",
     data: elegantGoldData,
   },
   {
     id: 'simple-black',
     name: 'Simple Black',
+    // Light gray background, thin solid black border
     thumbnail:
-      "data:image/svg+xml,%3Csvg width='400' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='300' fill='%23000000'/%3E%3Ctext x='200' y='150' font-family='Arial' font-size='18' fill='white' text-anchor='middle'%3ESimple Black%3C/text%3E%3C/svg%3E",
+      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E"
+      + "%3Crect width='400' height='260' fill='%23F9FAFB'/%3E"
+      + "%3Crect x='18' y='18' width='364' height='224' fill='none' stroke='%23000000' stroke-width='1.5'/%3E"
+      + "%3C/svg%3E",
     data: simpleBlackData,
   },
   {
     id: 'professional-green',
     name: 'Professional Green',
+    // Mint green background, rounded green border
     thumbnail:
-      "data:image/svg+xml,%3Csvg width='400' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='300' fill='%23059669'/%3E%3Ctext x='200' y='150' font-family='Arial' font-size='16' fill='white' text-anchor='middle'%3EProfessional Green%3C/text%3E%3C/svg%3E",
+      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E"
+      + "%3Crect width='400' height='260' fill='%23ECFDF5'/%3E"
+      + "%3Crect x='16' y='16' width='368' height='228' rx='10' ry='10' fill='none' stroke='%23059669' stroke-width='2'/%3E"
+      + "%3C/svg%3E",
     data: professionalGreenData,
   },
   {
     id: 'vintage-purple',
     name: 'Vintage Purple',
+    // Soft lavender background, dashed purple border
     thumbnail:
-      "data:image/svg+xml,%3Csvg width='400' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='300' fill='%237C3AED'/%3E%3Ctext x='200' y='150' font-family='Arial' font-size='18' fill='white' text-anchor='middle'%3EVintage Purple%3C/text%3E%3C/svg%3E",
+      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E"
+      + "%3Crect width='400' height='260' fill='%23F5F3FF'/%3E"
+      + "%3Crect x='16' y='16' width='368' height='228' fill='none' stroke='%237C3AED' stroke-width='2' stroke-dasharray='5 3'/%3E"
+      + "%3C/svg%3E",
     data: vintagePurpleData,
   },
   {
