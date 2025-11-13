@@ -283,7 +283,12 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
 
       const student = {};
       headers.forEach((header, index) => {
-        student[header] = values[index] ?? "";
+        // Normalize email field for consistency
+        if (header === "email") {
+          student[header] = (values[index] ?? "").toLowerCase().trim();
+        } else {
+          student[header] = values[index] ?? "";
+        }
       });
 
       students.push(student);

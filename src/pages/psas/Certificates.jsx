@@ -38,17 +38,8 @@ const Certificates = () => {
       FormSessionManager.ensurePersistentFormId(formId);
       FormSessionManager.preserveFormId();
       
-      // Navigate back to the form creation interface preserving original query parameters
-      const fromParam = searchParams.get("from");
-      const returnToParam = searchParams.get("returnTo");
-      
-      // Build the return URL with all original parameters
-      const queryParams = new URLSearchParams();
-      queryParams.set("edit", formId);
-      if (fromParam) queryParams.set("from", fromParam);
-      if (returnToParam) queryParams.set("returnTo", returnToParam);
-      
-      navigate(`/psas/create-form?${queryParams.toString()}`);
+      // Navigate back to the evaluations page with edit parameter to maintain layout
+      navigate(`/psas/evaluations?edit=${formId}`);
     } else {
       setInitialData(template.data);
       setView("editor");
@@ -88,17 +79,8 @@ const Certificates = () => {
               FormSessionManager.ensurePersistentFormId(formId);
               FormSessionManager.preserveFormId();
 
-              // Navigate back to the form creation interface preserving original query parameters
-              const fromParam = searchParams.get("from");
-              const editParam = searchParams.get("edit");
-
-              // Build the return URL with all original parameters
-              const queryParams = new URLSearchParams();
-              queryParams.set("edit", formId);
-              if (fromParam) queryParams.set("from", fromParam);
-              if (editParam) queryParams.set("edit", editParam);
-
-              navigate(`/psas/create-form?${queryParams.toString()}`);
+              // Navigate back to the evaluations page with edit parameter to maintain layout
+              navigate(`/psas/evaluations?edit=${formId}`);
             } else {
               // For standalone certificate editing, go back to gallery
               setView("gallery");

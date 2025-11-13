@@ -90,22 +90,13 @@ const StudentList = () => {
     setShowImportModal(false);
   };
 
-  // Persist student selection state
-  useEffect(() => {
-    localStorage.setItem("studentSelection", JSON.stringify(selected));
-  }, [selected]);
 
-  // Restore student selection state
+
+  // Clear and restore student selection state - start fresh each time
   useEffect(() => {
-    const savedSelection = localStorage.getItem("studentSelection");
-    if (savedSelection) {
-      try {
-        const parsedSelection = JSON.parse(savedSelection);
-        setSelected(parsedSelection);
-      } catch (error) {
-        console.error("Error restoring student selection:", error);
-      }
-    }
+    // Clear any previous selection to start fresh
+    localStorage.removeItem("studentSelection");
+    setSelected([]);
   }, []);
 
   const handleBackClick = () => {
@@ -141,10 +132,16 @@ const StudentList = () => {
     // Try to load transient CSV data from session
     const transientCSV = FormSessionManager.loadTransientCSVData();
     if (transientCSV && Array.isArray(transientCSV.students)) {
-      const studentsWithIds = transientCSV.students.map((student, index) => ({
-        ...student,
-        id: index + 1,
-      }));
+      const studentsWithIds = transientCSV.students.map((student, index) => {
+        // Normalize email to ensure consistency with server-side processing
+        const normalizedEmail = student.email ? student.email.toLowerCase().trim() : "";
+        return {
+          ...student,
+          email: normalizedEmail, // Use normalized email
+          // Use normalized email as stable ID to ensure consistency across page reloads
+          id: normalizedEmail || `student_${index + 1}`,
+        };
+      });
       setStudents(studentsWithIds);
       setLoading(false);
       return;
@@ -217,19 +214,69 @@ const StudentList = () => {
     }
 
     try {
-      const selectedStudents = students.filter(student => selected.includes(student.id));
-      FormSessionManager.saveStudentAssignments(selectedStudents);
+      // Debug logging
+      console.log("🎯 Assigning students to form:", {
+        formIdFromUrl,
+        selectedCount: selected.length,
+        totalStudents: students.length,
+        selectedIds: selected
+      });
+
+      // Get the currently assigned formId from FormSessionManager
+      const currentFormId = FormSessionManager.getCurrentFormId();
+      console.log("📋 Current FormSessionManager formId:", currentFormId);
+
+      // Use the URL formId if currentFormId doesn't exist, otherwise ensure they're in sync
+      const finalFormId = currentFormId || formIdFromUrl;
+      
+      // Ensure FormSessionManager has the correct formId
+      FormSessionManager.ensurePersistentFormId(finalFormId);
+      
+      // Filter selected students with proper ID handling
+      const selectedStudents = students
+        .filter(student => student && student.id && selected.includes(student.id))
+        .map(student => ({
+          ...student,
+          // Ensure all required fields are present
+          id: student.id,
+          name: student.name || student['full name'] || student['student name'] || "Unknown",
+          email: student.email || "",
+          department: student.department || "",
+          program: student.program || "",
+          year: student.year || ""
+        }));
+
+      console.log("✅ Filtered selected students:", selectedStudents);
+
+      if (selectedStudents.length === 0) {
+        alert("No valid students found in selection. Please try again.");
+        return;
+      }
+
+      // Save student assignments with debug logging
+      const saveResult = FormSessionManager.saveStudentAssignments(selectedStudents);
+      console.log("💾 Save student assignments result:", saveResult);
+
+      if (!saveResult) {
+        console.error("❌ Failed to save student assignments");
+        alert("Failed to save student assignments. Please try again.");
+        return;
+      }
+
+      // Clear local selection state
       setSelected([]);
       
       // Preserve form ID before navigation
       FormSessionManager.preserveFormId();
       
       // Navigate back to form creation with recipients count
-      const navigationUrl = `/psas/evaluations?recipients=${selected.length}&formId=${formIdFromUrl}&from=studentList`;
+      const navigationUrl = `/psas/evaluations?recipients=${selectedStudents.length}&formId=${finalFormId}&from=studentList`;
+      console.log("🧭 Navigating to:", navigationUrl);
+      
       navigate(navigationUrl);
     } catch (error) {
-      console.error("Error assigning students to form:", error);
-      alert("An error occurred while assigning students to the form.");
+      console.error("🚨 Error assigning students to form:", error);
+      alert(`An error occurred while assigning students to the form: ${error.message}`);
     }
   };
 

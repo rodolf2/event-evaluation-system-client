@@ -1100,6 +1100,10 @@ const FormCreationInterface = ({ onBack }) => {
       // CSV data must remain in memory only; do NOT persist to localStorage.
       // Keep it in component state for the current session.
       setUploadedCSVData(csvData);
+
+      // Also save to FormSessionManager for cross-page access
+      FormSessionManager.saveTransientCSVData(csvData);
+
       setCSVValidationStatus({
         isValid: true,
         message: `Successfully loaded ${csvData.students.length} students`,
@@ -1401,6 +1405,12 @@ const FormCreationInterface = ({ onBack }) => {
     // Get certificate information for publishing
     // NOTE: certificate linkage is currently handled separately; no-op placeholder removed
 
+    // If no selected students but we have uploaded CSV data, use it as selected students
+    let finalSelectedStudents = selectedStudents;
+    if ((!selectedStudents || selectedStudents.length === 0) && uploadedCSVData && uploadedCSVData.students) {
+      finalSelectedStudents = uploadedCSVData.students;
+    }
+
     // Check if this is from temporary extracted data
     const tempFormData = localStorage.getItem("tempFormData");
     let formData;
@@ -1418,7 +1428,7 @@ const FormCreationInterface = ({ onBack }) => {
         uploadedLinks: uploadedLinks,
         eventStartDate: eventStartDate,
         eventEndDate: eventEndDate,
-        selectedStudents: selectedStudents, // Include selected students
+        selectedStudents: finalSelectedStudents, // Include selected students or CSV data
       };
 
       // If there was a file in the temporary data, we need to upload it now
@@ -1473,7 +1483,7 @@ const FormCreationInterface = ({ onBack }) => {
       if (!serverFormId || !/^[0-9a-fA-F]{24}$/.test(serverFormId)) {
         const createPayload = {
           ...formData,
-          selectedStudents: selectedStudents, // Include selected students for attendee list
+          selectedStudents: finalSelectedStudents, // Include selected students for attendee list
         };
         const createResponse = await fetch("/api/forms/blank", {
           method: "POST",
@@ -1532,7 +1542,7 @@ const FormCreationInterface = ({ onBack }) => {
         uploadedLinks,
         eventStartDate,
         eventEndDate,
-        selectedStudents: selectedStudents, // Include selected students for attendee list
+        selectedStudents: finalSelectedStudents, // Include selected students for attendee list
       };
 
       const publishResponse = await fetch(
