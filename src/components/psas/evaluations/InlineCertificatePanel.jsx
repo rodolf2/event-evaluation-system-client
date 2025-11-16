@@ -74,20 +74,37 @@ const InlineCertificatePanel = ({
   };
 
   const handleCertificateClick = () => {
-    // Force save form data before navigating
+    // **ROOT CAUSE FIX**: Ensure we use the correct, current formId for navigation
+    // When all 3 requirements are completed, handlePublish creates a new serverFormId
+    // We need to ensure navigation uses the current formId that matches FormCreationInterface
+    
+    // Force save form data before navigating to ensure data is preserved
     const formCreationState = localStorage.getItem('formCreationState');
     if (formCreationState) {
       const formData = JSON.parse(formCreationState);
       FormSessionManager.saveFormData(formData);
     }
 
-    // Ensure we have a stable form ID that will persist across navigation
+    // **ENHANCED**: Get the current formId with proper fallback logic
     let stableFormId = FormSessionManager.getCurrentFormId();
+    
+    // If no current formId, try to initialize or get from URL parameters
     if (!stableFormId) {
-      stableFormId = FormSessionManager.initializeFormSession();
+      // Check URL parameters for edit mode
+      const currentUrlParams = new URLSearchParams(location.search);
+      const editParam = currentUrlParams.get("edit");
+      
+      if (editParam) {
+        // Use the edit parameter as the formId
+        stableFormId = editParam;
+        FormSessionManager.ensurePersistentFormId(stableFormId);
+      } else {
+        // Initialize a new form session
+        stableFormId = FormSessionManager.initializeFormSession();
+      }
     }
 
-    // Preserve the id across navigation
+    // **ENHANCED**: Preserve the id across navigation with correct state
     FormSessionManager.ensurePersistentFormId(stableFormId);
     FormSessionManager.preserveFormId();
 
@@ -102,6 +119,15 @@ const InlineCertificatePanel = ({
     if (editParam) {
       queryParams.set("edit", editParam);
     }
+
+    // **LOGGING**: Debug the navigation parameters
+    console.log("🔗 Certificate Navigation Debug:", {
+      stableFormId,
+      fromParam,
+      editParam,
+      currentUrl: location.search,
+      queryString: queryParams.toString()
+    });
 
     navigate(`/psas/certificates?${queryParams.toString()}`);
   };

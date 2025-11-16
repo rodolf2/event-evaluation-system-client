@@ -20,6 +20,10 @@ import {
   AlignVerticalJustifyStart,
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
+  ArrowLeft,
+  Save,
+  Eye,
+  Edit3,
 } from "lucide-react";
 
 import { jsPDF } from "jspdf";
@@ -30,8 +34,18 @@ const CERTIFICATE_SIZES = {
   A4: { width: 1123, height: 794 }, // 297mm x 210mm landscape at 96 DPI
 };
 
-const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
+const CertificateEditor = ({
+  initialData,
+  selectedTemplate = null,
+  isPreviewMode = false,
+  isFromEvaluation = false,
+  formId = null,
+  onSave,
+  onBack,
+  onDone,
+}) => {
   const [certificateSize, setCertificateSize] = useState("US Letter");
+  const [showPanels, setShowPanels] = useState(true);
 
   const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
   const BASE_HEIGHT = CERTIFICATE_SIZES[certificateSize].height;
@@ -52,9 +66,6 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
 
   // Create ref to track container for cleanup
   const containerRef = useRef(null);
-  if (canvasContainerRef.current) {
-    containerRef.current = canvasContainerRef.current;
-  }
 
   useEffect(() => {
     let resizeObserver = null;
@@ -64,6 +75,13 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
     const container = containerRef.current;
 
     const initFabric = async () => {
+      // Ensure clean canvas element before initialization
+      const canvasEl = canvasRef.current;
+      if (!canvasEl) return;
+
+      // Clear any existing canvas content
+      canvasEl.innerHTML = "";
+
       // Move calculation inside effect to properly handle dependencies
       const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
       const BASE_HEIGHT = CERTIFICATE_SIZES[certificateSize].height;
@@ -73,8 +91,13 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
         const fabric = fabricModule.default || fabricModule;
         if (!mounted || !fabric) return;
 
-        const canvasEl = canvasRef.current;
         if (!canvasEl) return;
+
+        // Double-check canvas doesn't exist before creating new one
+        if (fabricCanvas.current && !fabricCanvas.current.destroyed) {
+          fabricCanvas.current.dispose();
+          fabricCanvas.current = null;
+        }
 
         fabricRef.current = fabric;
 
@@ -254,8 +277,8 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
         return () => {
           window.removeEventListener("keydown", handleKey);
           try {
-            if (resizeObserver && container) {
-              resizeObserver.unobserve(container);
+            if (resizeObserver && containerRef.current) {
+              resizeObserver.unobserve(containerRef.current);
               resizeObserver.disconnect();
             }
           } catch {
@@ -263,7 +286,8 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
           }
           try {
             if (safeHasCanvas()) {
-              canvas.dispose();
+              fabricCanvas.current.dispose();
+              fabricCanvas.current = null;
             }
           } catch {
             // ignore dispose errors
@@ -292,16 +316,17 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
       } else {
         // Fallback cleanup if init failed early
         try {
-          if (resizeObserver && container) {
-            resizeObserver.unobserve(container);
+          if (resizeObserver && containerRef.current) {
+            resizeObserver.unobserve(containerRef.current);
             resizeObserver.disconnect();
           }
         } catch {
           // ignore
         }
         try {
-          if (fabricCanvas.current) {
+          if (fabricCanvas.current && !fabricCanvas.current.destroyed) {
             fabricCanvas.current.dispose();
+            fabricCanvas.current = null;
           }
         } catch {
           // ignore
@@ -599,6 +624,29 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
     e.target.value = "";
   };
 
+  const handleSaveAndReturn = () => {
+    if (onSave) {
+      // Get current canvas state
+      const canvas = fabricCanvas.current;
+      if (canvas) {
+        const canvasData = canvas.toJSON();
+        onSave(canvasData);
+      } else {
+        onSave();
+      }
+    }
+  };
+
+  const handleBackToGallery = () => {
+    if (onBack) {
+      onBack();
+    }
+  };
+
+  const togglePanels = () => {
+    setShowPanels(!showPanels);
+  };
+
   const PropertiesPanel = () => {
     const isObjectSelected = !!activeObject;
     const isText =
@@ -612,6 +660,19 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
 
     return (
       <div className="space-y-4">
+        {/* Preview Mode Header */}
+        {isPreviewMode && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2 text-blue-800">
+              <Eye size={16} />
+              <span className="font-medium text-sm">Preview Mode</span>
+            </div>
+            <p className="text-xs text-blue-600 mt-1">
+              You can edit this template. Click "Done" to apply it.
+            </p>
+          </div>
+        )}
+
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">
             Certificate Size (Landscape Only)
@@ -631,13 +692,13 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
 
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Position</h4>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
             <button
               disabled={!isObjectSelected}
               onClick={() => alignObject("left")}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-1.5 sm:p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
             >
-              <AlignHorizontalJustifyStart size={16} />
+              <AlignHorizontalJustifyStart size={14} sm={{ size: 16 }} />
             </button>
             <button
               disabled={!isObjectSelected}
@@ -679,14 +740,14 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
 
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Layer</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
             <button
               disabled={!isObjectSelected}
               onClick={cloneObject}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-1.5 sm:p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
               title="Duplicate (Ctrl/Cmd+D)"
             >
-              <Copy size={16} />
+              <Copy size={14} className="sm:w-4 sm:h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
@@ -740,7 +801,7 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
               className="w-20 p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1 mb-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 mb-2">
             <button
               disabled={!isText}
               onClick={() =>
@@ -749,11 +810,11 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
                   getProp("fontWeight", "normal") === "bold" ? "normal" : "bold"
                 )
               }
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
+              className={`p-1.5 sm:p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
                 getProp("fontWeight", "normal") === "bold" ? "bg-gray-200" : ""
               }`}
             >
-              <Bold size={16} />
+              <Bold size={14} className="sm:w-4 sm:h-4" />
             </button>
             <button
               disabled={!isText}
@@ -794,11 +855,11 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
             <button
               disabled={!isText}
               onClick={() => updateProperty("textAlign", "left")}
-              className={`p-1 md:p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
+              className={`p-1.5 sm:p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
                 getProp("textAlign", "left") === "left" ? "bg-gray-200" : ""
               }`}
             >
-              <AlignLeft size={16} />
+              <AlignLeft size={14} className="sm:w-4 sm:h-4" />
             </button>
             <button
               disabled={!isText}
@@ -876,29 +937,85 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
   };
 
   return (
-    <div
-      className="w-full max-w-full bg-transparent font-sans overflow-x-hidden overflow-y-hidden"
-      style={{ height: "calc(100vh - 80px)" }}
-    >
-      <div className="flex flex-row h-full w-full max-w-full overflow-hidden items-stretch">
-        <div className="w-64 p-3 flex flex-col gap-3 bg-white border-r shrink-0 overflow-hidden">
-          <ElementsPanel
-            onAddText={addText}
-            onAddImage={handleImageUpload}
-            onAddImageFromUrl={addImageFromUrl}
-            onAddShape={addShape}
-            onSetBackgroundImage={handleBackgroundUpload}
-            fileInputRef={fileInputRef}
-            bgInputRef={bgInputRef}
-          />
-        </div>
-
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div className="relative shrink-0">
-            <CanvasToolbar />
+    <div className="w-full h-screen bg-transparent font-sans overflow-hidden">
+      <div className="flex flex-col lg:flex-row h-full w-full overflow-hidden">
+        {/* Left Sidebar - Elements Panel */}
+        {showPanels && (
+          <div className="w-full lg:w-60 xl:w-64 p-2 sm:p-3 flex flex-col gap-2 sm:gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 h-full lg:h-auto overflow-auto lg:overflow-hidden">
+            <ElementsPanel
+              onAddText={addText}
+              onAddImage={handleImageUpload}
+              onAddImageFromUrl={addImageFromUrl}
+              onAddShape={addShape}
+              onSetBackgroundImage={handleBackgroundUpload}
+              fileInputRef={fileInputRef}
+              bgInputRef={bgInputRef}
+            />
           </div>
-          <div className="flex-1 overflow-hidden flex items-start justify-center">
-            <div className="w-[92%] h-[80%] max-h-[80%] bg-white">
+        )}
+
+        {/* Main Canvas Area */}
+        <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-hidden lg:overflow-auto lg:min-h-0">
+          {/* Top Toolbar */}
+          <div className="relative shrink-0 bg-white border-b z-10">
+            <CanvasToolbar
+              showPanels={showPanels}
+              onTogglePanels={togglePanels}
+            />
+          </div>
+
+          {/* Action Bar - Preview Mode Controls */}
+          {isPreviewMode && (
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-blue-800">
+                    <Edit3 size={18} />
+                    <span className="font-medium">
+                      {selectedTemplate
+                        ? `Editing: ${selectedTemplate.name}`
+                        : "Editing Template"}
+                    </span>
+                  </div>
+                  {selectedTemplate?.description && (
+                    <span className="text-sm text-blue-600">
+                      {selectedTemplate.description}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleBackToGallery}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    <ArrowLeft size={16} />
+                    Back to Gallery
+                  </button>
+                  <button
+                    onClick={handleSaveAndReturn}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <Save size={16} />
+                    Done - Use This Template
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Canvas Container */}
+          <div
+            className={`flex-1 overflow-hidden flex items-center justify-center bg-gray-100 p-2 sm:p-4 lg:p-6 xl:p-8 ${
+              showPanels ? "lg:pr-2 xl:pr-4" : ""
+            }`}
+          >
+            <div
+              className={`${
+                showPanels
+                  ? "w-[96%] sm:w-[95%] lg:w-[88%] xl:w-[90%]"
+                  : "w-[98%]"
+              } max-w-full h-[65vh] sm:h-[70vh] md:h-[75vh] lg:h-[85vh] xl:h-[80vh] max-h-[85vh] bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-300`}
+            >
               <CanvasContainer
                 canvasRef={canvasRef}
                 containerRef={canvasContainerRef}
@@ -907,32 +1024,36 @@ const CertificateEditor = ({ initialData, isFromEvaluation, onDone }) => {
           </div>
         </div>
 
-        <div className="w-64 p-3 flex flex-col gap-3 bg-white border-l shrink-0 overflow-hidden relative">
-          <div className="flex-1 overflow-hidden">
-            <div className="flex items-center justify-between mb-3 sticky top-0 z-30 bg-white pb-2">
-              <h3 className="text-sm font-semibold text-gray-700">
-                Properties
-              </h3>
-              {isFromEvaluation && onDone && (
-                <button
-                  onClick={onDone}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-md"
-                >
-                  Done
-                </button>
-              )}
+        {/* Right Sidebar - Properties Panel */}
+        {showPanels && (
+          <div className="w-full lg:w-60 xl:w-64 p-2 sm:p-3 flex flex-col gap-2 sm:gap-3 bg-white border-t lg:border-l lg:border-t-0 shrink-0 h-full lg:h-auto overflow-auto lg:overflow-hidden relative">
+            <div className="flex-1 min-h-0 overflow-auto">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 sticky top-0 z-30 bg-white pb-1 sm:pb-2">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-700">
+                  Properties
+                </h3>
+                {/* Legacy Done button for evaluation flow */}
+                {isFromEvaluation && (onDone || onSave) && (
+                  <button
+                    onClick={onSave || onDone}
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-sm"
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+              <PropertiesPanel />
             </div>
-            <PropertiesPanel />
+            <div className="shrink-0 pt-2">
+              <button
+                onClick={clearCanvas}
+                className="w-full px-3 sm:px-4 py-2 bg-white border border-gray-300 text-sm text-gray-700 rounded-md hover:bg-gray-100 text-center"
+              >
+                Clear Canvas
+              </button>
+            </div>
           </div>
-          <div className="shrink-0">
-            <button
-              onClick={clearCanvas}
-              className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100"
-            >
-              Clear Canvas
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

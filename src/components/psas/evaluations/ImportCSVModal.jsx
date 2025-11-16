@@ -126,7 +126,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
               };
               
               setUploadedData(uploadResult);
-              // Pass the complete upload result (not just URL) to FormCreationInterface
+              // Pass the complete upload result to FormCreationInterface
               onFileUpload(uploadResult);
               successCount++;
             }
@@ -214,7 +214,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
     }
   };
 
-  // Strict CSV parsing and validation (name, email, no duplicates, valid emails)
+  // Robust CSV parsing function that matches server-side logic
   const parseCSV = (csvText) => {
     const errors = [];
     const lines = csvText.split(/\r?\n/).filter((line) => line.trim() !== "");
@@ -224,6 +224,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
       return { valid: false, errors, students: [] };
     }
 
+    // Parse headers with trimming
     const headers = lines[0]
       .split(",")
       .map((h) => h.trim().toLowerCase());
@@ -232,6 +233,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
     const missingHeaders = requiredHeaders.filter(
       (required) => !headers.includes(required)
     );
+    
     if (missingHeaders.length > 0) {
       errors.push(
         `Missing required column(s): ${missingHeaders.join(
@@ -252,7 +254,25 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
       const raw = lines[i];
       if (!raw.trim()) continue;
 
-      const values = raw.split(",").map((v) => v.trim());
+      // Handle quoted fields and commas in CSV more robustly
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < raw.length; j++) {
+        const char = raw[j];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim()); // Add the last value
+
       if (values.length < headers.length) {
         errors.push(
           `Row ${i + 1}: expected ${headers.length} columns but found ${values.length}.`
@@ -261,7 +281,7 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
       }
 
       const name = values[nameIndex] || "";
-      const email = values[emailIndex] || "";
+      const email = (values[emailIndex] || "").toLowerCase().trim();
 
       if (!name || !email) {
         errors.push(`Row ${i + 1}: missing required name or email.`);
@@ -283,9 +303,9 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
 
       const student = {};
       headers.forEach((header, index) => {
-        // Normalize email field for consistency
+        // Always normalize email field for consistency
         if (header === "email") {
-          student[header] = (values[index] ?? "").toLowerCase().trim();
+          student[header] = normalizedEmail;
         } else {
           student[header] = values[index] ?? "";
         }

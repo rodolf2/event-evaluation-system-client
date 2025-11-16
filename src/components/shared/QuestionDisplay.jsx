@@ -1,16 +1,17 @@
-import React from 'react';
+import React from "react";
+import DynamicRating from "./DynamicRating";
 
-const QuestionDisplay = ({ 
-  question, 
-  index, 
-  showAnswer = false, 
-  answer = null, 
-  readOnly = true 
+const QuestionDisplay = ({
+  question,
+  index,
+  showAnswer = false,
+  answer = null,
+  readOnly = true,
 }) => {
   // Convert backend question format to client format for rendering
   const convertToClientFormat = (q) => {
     let clientType = "Short Answer";
-    
+
     switch (q.type) {
       case "short_answer":
         clientType = "Short Answer";
@@ -33,12 +34,16 @@ const QuestionDisplay = ({
             likertStartLabel: q.lowLabel || "Poor",
             likertEndLabel: q.highLabel || "Excellent",
             ratingScale: q.high || 5,
-            emojiStyle: "Default"
           };
         } else {
           clientType = "Numeric Ratings";
+          return {
+            ...q,
+            type: clientType,
+            ratingScale: q.high || 5,
+            icon: q.icon || "star",
+          };
         }
-        break;
       case "date":
         clientType = "Date";
         break;
@@ -55,15 +60,13 @@ const QuestionDisplay = ({
     return {
       ...q,
       type: clientType,
-      ratingScale: q.high || 5,
-      emojiStyle: "Default"
     };
   };
 
   const clientQuestion = convertToClientFormat(question);
 
   const renderAnswer = () => {
-    if (!showAnswer || answer === null || answer === '') {
+    if (!showAnswer || answer === null || answer === "") {
       return (
         <div className="text-gray-400 italic">
           {readOnly ? "No response" : "Answer will appear here"}
@@ -73,18 +76,16 @@ const QuestionDisplay = ({
 
     switch (clientQuestion.type) {
       case "Multiple Choices":
-        return (
-          <div className="text-gray-900">
-            {answer}
-          </div>
-        );
+        return <div className="text-gray-900">{answer}</div>;
 
       case "Numeric Ratings":
       case "Likert Scale":
         return (
           <div className="flex items-center gap-2">
             <span className="text-blue-600 font-semibold">{answer}</span>
-            <span className="text-gray-500">out of {clientQuestion.high || 5}</span>
+            <span className="text-gray-500">
+              out of {clientQuestion.high || 5}
+            </span>
           </div>
         );
 
@@ -104,9 +105,7 @@ const QuestionDisplay = ({
 
       default:
         return (
-          <div className="text-gray-900 whitespace-pre-wrap">
-            {answer}
-          </div>
+          <div className="text-gray-900 whitespace-pre-wrap">{answer}</div>
         );
     }
   };
@@ -127,44 +126,22 @@ const QuestionDisplay = ({
 
       case "Numeric Ratings":
         return (
-          <div className="flex justify-center items-center text-center gap-x-2 sm:gap-x-4">
-            {[1, 2, 3, 4, 5].map((num) => (
-              <div key={num} className="flex flex-col items-center">
-                <span className="text-sm text-gray-600">{num}</span>
-                <div className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center mt-1">
-                  ⭐
-                </div>
-              </div>
-            ))}
-          </div>
+          <DynamicRating
+            type="Numeric Ratings"
+            scale={clientQuestion.ratingScale}
+            icon={clientQuestion.icon}
+          />
         );
 
-      case "Likert Scale": {
-        const range = [];
-        for (let i = clientQuestion.likertStart; i <= clientQuestion.likertEnd; i++) {
-          range.push(i);
-        }
+      case "Likert Scale":
         return (
-          <div className="space-y-4">
-            {/* Scale labels */}
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>{clientQuestion.likertStartLabel || "Low"}</span>
-              <span>{clientQuestion.likertEndLabel || "High"}</span>
-            </div>
-            {/* Scale options */}
-            <div className="flex justify-center items-center gap-2">
-              {range.map((num) => (
-                <div key={num} className="flex flex-col items-center">
-                  <span className="text-sm text-gray-600">{num}</span>
-                  <div className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center mt-1">
-                    {num}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DynamicRating
+            type="Likert Scale"
+            scale={clientQuestion.likertEnd}
+            startLabel={clientQuestion.likertStartLabel}
+            endLabel={clientQuestion.likertEndLabel}
+          />
         );
-      }
 
       case "Short Answer":
         return (
@@ -221,7 +198,7 @@ const QuestionDisplay = ({
           {clientQuestion.type}
         </span>
       </div>
-      
+
       <div className="mt-4">
         {showAnswer ? renderAnswer() : renderQuestionPreview()}
       </div>

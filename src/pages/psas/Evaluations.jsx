@@ -16,6 +16,7 @@ const Evaluations = () => {
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [evaluationForms, setEvaluationForms] = useState([]);
+  const [currentFormId, setCurrentFormId] = useState(null);
   const selectedTemplate = searchParams.get("template");
 
   useEffect(() => {
@@ -64,6 +65,7 @@ const Evaluations = () => {
     if (editParam) {
       // Store the form ID to edit and switch to create view
       localStorage.setItem('editFormId', editParam);
+      setCurrentFormId(editParam);
       setView("create");
     }
   }, [searchParams]);
@@ -72,14 +74,15 @@ const Evaluations = () => {
   useEffect(() => {
     const recipients = searchParams.get("recipients");
     const formId = searchParams.get("formId");
-    
+
     if (recipients) {
-      
+
       // If formId is provided, ensure it matches the edit form ID
       if (formId) {
         localStorage.setItem('editFormId', formId);
+        setCurrentFormId(formId); // Store for passing to FormCreationInterface
       }
-      
+
       // Switch to create view to show the form with assigned students
       setView("create");
     }
@@ -239,10 +242,12 @@ const Evaluations = () => {
       <PSASLayout>
         {view === "create" ? (
           <FormCreationInterface
+            currentFormId={currentFormId}
             onBack={() => {
               setView("dashboard");
               // Clear edit form ID when going back
               localStorage.removeItem('editFormId');
+              setCurrentFormId(null);
             }}
           />
         ) : (

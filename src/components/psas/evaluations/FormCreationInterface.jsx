@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -35,7 +34,7 @@ import toast from "react-hot-toast";
  * - Navigation maintains proper form ID context
  * - Student assignments are persisted separately from CSV
  */
-const FormCreationInterface = ({ onBack }) => {
+const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, token } = useAuth();
@@ -80,7 +79,9 @@ const FormCreationInterface = ({ onBack }) => {
 
   // Form session context
   const formCanvasRef = useRef(null);
-  const assignedStudents = FormSessionManager.loadStudentAssignments() || [];
+  const [assignedStudents, setAssignedStudents] = useState(
+    FormSessionManager.loadStudentAssignments() || []
+  );
 
   const handleBackClick = () => {
     const isEditing = localStorage.getItem("editFormId");
@@ -255,10 +256,10 @@ const FormCreationInterface = ({ onBack }) => {
     // Check if we're returning from a navigation (CSV upload, certificate linking, etc.)
     const restoredFormId = FormSessionManager.restoreFormId();
 
-    // Determine effective form id from URL edit/formId ONLY.
-    // We intentionally ignore stale local session ids here to avoid resurrecting deleted forms.
+    // Determine effective form id from URL, props, or restored id
+    // Priority: propFormId > URL params > restored id
     const urlFormId = edit || formIdFromUrl;
-    const effectiveFormId = restoredFormId || urlFormId || null;
+    const effectiveFormId = propFormId || restoredFormId || urlFormId || null;
 
     let finalFormId = null;
 
@@ -274,6 +275,14 @@ const FormCreationInterface = ({ onBack }) => {
     setCurrentFormId(
       /^[0-9a-fA-F]{24}$/.test(finalFormId) ? finalFormId : null
     );
+
+    // Update assigned students for the correct formId
+    if (finalFormId) {
+      FormSessionManager.ensurePersistentFormId(finalFormId);
+      const updatedAssignedStudents =
+        FormSessionManager.loadStudentAssignments() || [];
+      setAssignedStudents(updatedAssignedStudents);
+    }
 
     // If we have an effective form id from URL/preserved AND it looks like a real backend id,
     // try to load it from backend for editing. Never call backend for ids that no longer exist
@@ -328,6 +337,7 @@ const FormCreationInterface = ({ onBack }) => {
                           likertEnd = q.high || 5;
                           likertStartLabel = q.lowLabel || "Poor";
                           likertEndLabel = q.highLabel || "Excellent";
+                          emojiStyle = null; // Likert doesn't use icons
                         } else {
                           clientType = "Numeric Ratings";
                           ratingScale = q.high || 5;
@@ -493,6 +503,9 @@ const FormCreationInterface = ({ onBack }) => {
                 setEventEndDate(loadedData.eventEndDate || "");
                 setIsCertificateLinked(loadedData.isCertificateLinked || false);
                 setLinkedCertificateId(loadedData.linkedCertificateId || null);
+                setAssignedStudents(
+                  FormSessionManager.loadStudentAssignments() || []
+                );
               }
             }, 50);
             return () => clearTimeout(restoreTimeout);
@@ -523,6 +536,9 @@ const FormCreationInterface = ({ onBack }) => {
                 )
             );
             setLinkedCertificateId(loadedData.linkedCertificateId || null);
+            setAssignedStudents(
+              FormSessionManager.loadStudentAssignments() || []
+            );
           }
         }, 50);
         return () => clearTimeout(restoreTimeout);
@@ -544,6 +560,9 @@ const FormCreationInterface = ({ onBack }) => {
           setIsCertificateLinked(
             loadedData.isCertificateLinked ||
               checkCertificateLinkedStatus(finalFormId)
+          );
+          setAssignedStudents(
+            FormSessionManager.loadStudentAssignments() || []
           );
         }
       }, 50);
@@ -573,7 +592,13 @@ const FormCreationInterface = ({ onBack }) => {
             checkCertificateLinkedStatus(currentFormId)
         );
         setLinkedCertificateId(formData.linkedCertificateId || null);
+        setAssignedStudents(FormSessionManager.loadStudentAssignments() || []);
       }
+
+      // Update assigned students state from FormSessionManager
+      const updatedAssignedStudents =
+        FormSessionManager.loadStudentAssignments() || [];
+      setAssignedStudents(updatedAssignedStudents);
 
       // Force immediate save again after student assignment to ensure all sections are preserved
       setTimeout(() => {
@@ -621,6 +646,7 @@ const FormCreationInterface = ({ onBack }) => {
             )
         );
         setLinkedCertificateId(formData.linkedCertificateId || null);
+        setAssignedStudents(FormSessionManager.loadStudentAssignments() || []);
         setHasUnsavedChanges(false); // We've just restored from saved state
       } else {
         console.warn(
@@ -677,6 +703,7 @@ const FormCreationInterface = ({ onBack }) => {
     hasShownRecipientsToast,
     token,
     checkCertificateLinkedStatus,
+    propFormId,
   ]);
 
   /**
@@ -998,15 +1025,12 @@ const FormCreationInterface = ({ onBack }) => {
     setHasUnsavedChanges(true);
   };
 
-  // Parse CSV result coming from ImportCSVModal:
-  // ImportCSVModal already enforces:
-  // - Required headers: name, email
-  // - Strict validation (no invalid/duplicate/empty rows)
-  // Here we only accept objects that contain students[]
+  // Robust CSV parsing function that matches server-side logic
   const parseCSV = useCallback((csvText) => {
     const lines = csvText.split(/\r?\n/).filter((line) => line.trim() !== "");
     if (lines.length < 2) return [];
 
+    // Parse headers with trimming
     const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
     const nameIndex = headers.indexOf("name");
     const emailIndex = headers.indexOf("email");
@@ -1019,9 +1043,28 @@ const FormCreationInterface = ({ onBack }) => {
     for (let i = 1; i < lines.length; i++) {
       const raw = lines[i];
       if (!raw.trim()) continue;
-      const values = raw.split(",").map((v) => v.trim());
-      const name = values[nameIndex];
-      const email = values[emailIndex];
+
+      // Handle quoted fields and commas in CSV more robustly
+      const values = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let j = 0; j < raw.length; j++) {
+        const char = raw[j];
+
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === "," && !inQuotes) {
+          values.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim()); // Add the last value
+
+      const name = values[nameIndex] || "";
+      const email = (values[emailIndex] || "").toLowerCase().trim();
 
       if (!name || !email) return [];
       if (!emailRegex.test(email)) return [];
@@ -1118,13 +1161,16 @@ const FormCreationInterface = ({ onBack }) => {
     } catch (error) {
       console.error("CSV upload/parse error:", error);
       const errorMessage =
+        error.message ||
         "Failed to process CSV file. Please verify the format and try again.";
+
       setCSVValidationStatus({
         isValid: false,
         message: errorMessage,
         recordCount: 0,
       });
-      toast.error(errorMessage);
+
+      toast.error(errorMessage, { duration: 6000 });
     }
   };
 
@@ -1294,6 +1340,7 @@ const FormCreationInterface = ({ onBack }) => {
           type = "scale";
           backendQuestion.low = q.likertStart || 1;
           backendQuestion.high = q.likertEnd || 5;
+          backendQuestion.icon = null; // Likert scales don't use icons
           backendQuestion.lowLabel = q.likertStartLabel || "";
           backendQuestion.highLabel = q.likertEndLabel || "";
           break;
@@ -1301,6 +1348,7 @@ const FormCreationInterface = ({ onBack }) => {
           type = "scale";
           backendQuestion.low = 1;
           backendQuestion.high = q.ratingScale || 5;
+          backendQuestion.icon = q.emojiStyle || "star";
           // Labels are not typically used for numeric ratings, so they can be omitted or set to default
           backendQuestion.lowLabel = "";
           backendQuestion.highLabel = "";
@@ -1336,12 +1384,16 @@ const FormCreationInterface = ({ onBack }) => {
       return;
     }
 
-    // Load recipients and certificate link state
+    // Load recipients and certificate link state from FormSessionManager for consistency
     const selectedStudents = FormSessionManager.loadStudentAssignments() || [];
+    const transientCSVData = FormSessionManager.loadTransientCSVData();
     const hasCSVRecipients =
-      uploadedCSVData &&
-      uploadedCSVData.students &&
-      uploadedCSVData.students.length > 0;
+      (transientCSVData &&
+        transientCSVData.students &&
+        transientCSVData.students.length > 0) ||
+      (uploadedCSVData &&
+        uploadedCSVData.students &&
+        uploadedCSVData.students.length > 0);
     const hasStudents =
       Array.isArray(selectedStudents) && selectedStudents.length > 0;
     const hasDates = Boolean(eventStartDate) && Boolean(eventEndDate);
@@ -1405,9 +1457,21 @@ const FormCreationInterface = ({ onBack }) => {
     // Get certificate information for publishing
     // NOTE: certificate linkage is currently handled separately; no-op placeholder removed
 
-    // If no selected students but we have uploaded CSV data, use it as selected students
+    // Determine final selected students - prioritize explicitly assigned students,
+    // then fall back to CSV data (from FormSessionManager for consistency)
     let finalSelectedStudents = selectedStudents;
-    if ((!selectedStudents || selectedStudents.length === 0) && uploadedCSVData && uploadedCSVData.students) {
+    if (
+      (!selectedStudents || selectedStudents.length === 0) &&
+      transientCSVData &&
+      transientCSVData.students
+    ) {
+      finalSelectedStudents = transientCSVData.students;
+    } else if (
+      (!selectedStudents || selectedStudents.length === 0) &&
+      uploadedCSVData &&
+      uploadedCSVData.students
+    ) {
+      // Fallback to component state if FormSessionManager data is not available
       finalSelectedStudents = uploadedCSVData.students;
     }
 
@@ -1472,6 +1536,7 @@ const FormCreationInterface = ({ onBack }) => {
         uploadedLinks,
         eventStartDate,
         eventEndDate,
+        selectedStudents: finalSelectedStudents,
       };
     }
 
@@ -1511,7 +1576,18 @@ const FormCreationInterface = ({ onBack }) => {
         serverFormId = createData.data.form._id;
         setCurrentFormId(serverFormId);
         localStorage.setItem("currentFormId", serverFormId);
-        FormSessionManager.initializeFormSession(serverFormId);
+
+        // Transfer selected students from old formId to new server formId
+        const oldFormId = FormSessionManager.getCurrentFormId();
+        if (oldFormId && oldFormId !== serverFormId) {
+          const selectedStudents = FormSessionManager.loadStudentAssignments();
+          FormSessionManager.initializeFormSession(serverFormId);
+          if (selectedStudents && selectedStudents.length > 0) {
+            FormSessionManager.saveStudentAssignments(selectedStudents);
+          }
+        } else {
+          FormSessionManager.initializeFormSession(serverFormId);
+        }
       } else {
         // 2) Update existing server draft before publish
         const draftRes = await fetch(`/api/forms/${serverFormId}/draft`, {
@@ -1645,10 +1721,14 @@ const FormCreationInterface = ({ onBack }) => {
   }
 
   // Calculate validation states for components
-  const allQuestions = [...questions, ...sections.flatMap(s => s.questions || [])];
+  const allQuestions = [
+    ...questions,
+    ...sections.flatMap((s) => s.questions || []),
+  ];
   const hasQuestions = allQuestions.length > 0;
   const hasDates = Boolean(eventStartDate) && Boolean(eventEndDate);
-  const hasStudents = Array.isArray(assignedStudents) && assignedStudents.length > 0;
+  const hasStudents =
+    Array.isArray(assignedStudents) && assignedStudents.length > 0;
 
   const content = (
     <>

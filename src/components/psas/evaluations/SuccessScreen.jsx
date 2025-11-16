@@ -3,10 +3,27 @@ import { FormSessionManager } from "../../../utils/formSessionManager";
 
 const SuccessScreen = ({ onBackToEvaluations, formId }) => {
   const handleBackToEvaluations = () => {
-    // By clearing the currentFormId, we ensure that the next time the user
-    // navigates to the creation page, it starts a new blank form.
-    localStorage.removeItem("currentFormId");
+    // Comprehensive cleanup - clear all form-related data
+    FormSessionManager.clearAllFormData();
     
+    // Clear additional keys that might be left over
+    const keysToRemove = [
+      "tempFormData",
+      "uploadedFormId",
+      "editFormId",
+      "studentSelection",
+      "preservedFormId",
+      "preservedFormIdTimestamp",
+    ];
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+    // Clear any certificate-related flags
+    if (formId) {
+      localStorage.removeItem(`certificateLinked_${formId}`);
+      localStorage.removeItem(`formRecipients_${formId}`);
+    }
+
+    // Call the parent callback to navigate back
     onBackToEvaluations();
   };
 
