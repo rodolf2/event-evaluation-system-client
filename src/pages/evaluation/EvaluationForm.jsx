@@ -3,17 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import { useAuth } from "../../contexts/useAuth";
 import DynamicRatingInput from "../../components/shared/DynamicRatingInput";
+import EvaluationSuccessScreen from "../../components/participants/EvaluationSuccessScreen";
 
 const EvaluationForm = () => {
   const { formId } = useParams();
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [responses, setResponses] = useState({});
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Fetch form data
   useEffect(() => {
@@ -49,6 +51,19 @@ const EvaluationForm = () => {
       if (savedResponses) {
         setResponses(JSON.parse(savedResponses));
       }
+
+      // Also load enhanced responses if available for debugging
+      const enhancedResponses = localStorage.getItem(
+        `form_${formId}_enhanced_responses`
+      );
+      if (enhancedResponses) {
+        try {
+          const enhanced = JSON.parse(enhancedResponses);
+          console.log("Loaded enhanced responses with context:", enhanced);
+        } catch (e) {
+          console.warn("Failed to parse enhanced responses:", e);
+        }
+      }
     }
   }, [formId]);
 
@@ -68,17 +83,60 @@ const EvaluationForm = () => {
       ...prev,
       [questionIndex]: value,
     }));
+
+    // Also save enhanced response data with section context
+    // This helps with debugging and maintains full context
+    const enhancedResponse = {
+      globalIndex: questionIndex,
+      value: value,
+      timestamp: new Date().toISOString(),
+    };
+
+    localStorage.setItem(
+      `form_${formId}_enhanced_responses`,
+      JSON.stringify({
+        ...JSON.parse(
+          localStorage.getItem(`form_${formId}_enhanced_responses`) || "{}"
+        ),
+        [questionIndex]: enhancedResponse,
+      })
+    );
   };
 
   // Handle form validation
   const validateForm = () => {
     if (!form || !form.questions || !Array.isArray(form.questions))
       return false;
-    const requiredQuestions = form.questions.filter((q) => q && q.required);
-    const missingResponses = requiredQuestions.filter(
-      (q, index) => !responses[index]
-    );
-    return missingResponses.length === 0;
+
+    // Check all sections for required questions
+    let missingResponses = [];
+
+    allSections.forEach((section, sectionIndex) => {
+      (section.questions || []).forEach((question, questionIndex) => {
+        if (question && question.required) {
+          // Calculate the global index used in responses
+          let globalIndex = questionIndex;
+          for (let i = 0; i < sectionIndex; i++) {
+            globalIndex += allSections[i].questions.length;
+          }
+
+          if (!responses[globalIndex]) {
+            missingResponses.push({
+              section: section.title || `Section ${sectionIndex + 1}`,
+              question: question.title || `Question ${questionIndex + 1}`,
+              index: globalIndex,
+            });
+          }
+        }
+      });
+    });
+
+    if (missingResponses.length > 0) {
+      console.warn("Missing required responses:", missingResponses);
+      return false;
+    }
+
+    return true;
   };
 
   // Handle clear form
@@ -86,6 +144,7 @@ const EvaluationForm = () => {
     if (showClearConfirm && formId) {
       setResponses({});
       localStorage.removeItem(`form_${formId}_responses`);
+      localStorage.removeItem(`form_${formId}_enhanced_responses`);
       setShowClearConfirm(false);
     } else if (!showClearConfirm) {
       setShowClearConfirm(true);
@@ -110,15 +169,59 @@ const EvaluationForm = () => {
     }
 
     try {
-      const response = await fetch("/api/forms/submit", {
+      // Debug: Log current responses state
+      console.log("🔍 DEBUG: Current responses state:", responses);
+
+      // Transform responses to include section context for proper mapping
+      const formattedResponses = [];
+
+      console.log("🔍 DEBUG: Processing sections for submission:");
+      allSections.forEach((section, sectionIndex) => {
+        console.log(
+          `🔍 DEBUG: Processing ${section.title} (${
+            section.questions?.length || 0
+          } questions)`
+        );
+
+        (section.questions || []).forEach((question, questionIndex) => {
+          // Calculate the global index used in responses
+          let globalIndex = questionIndex;
+          for (let i = 0; i < sectionIndex; i++) {
+            globalIndex += allSections[i].questions.length;
+          }
+
+          const responseValue = responses[globalIndex];
+          console.log(
+            `🔍 DEBUG: Question "${question.title}" -> globalIndex: ${globalIndex}, value: ${responseValue}, section: ${section.title}`
+          );
+
+          if (responseValue !== undefined) {
+            const formattedResponse = {
+              questionId: question.id || `question_${globalIndex}`,
+              questionTitle: question.title || `Question ${globalIndex + 1}`,
+              answer: responseValue,
+              sectionId: section.id || "main",
+              sectionTitle: section.title || `Section ${sectionIndex + 1}`,
+            };
+
+            console.log(`🔍 DEBUG: Formatted response:`, formattedResponse);
+            formattedResponses.push(formattedResponse);
+          }
+        });
+      });
+
+      console.log("🔍 DEBUG: Final formatted responses:", formattedResponses);
+
+      const response = await fetch(`/api/forms/${formId}/submit`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          formId,
-          responses,
+          responses: formattedResponses,
+          respondentEmail: user?.email || "",
+          respondentName: user?.name || "Participant",
         }),
       });
 
@@ -126,14 +229,28 @@ const EvaluationForm = () => {
         throw new Error("Failed to submit evaluation");
       }
 
+      // Parse the response data
+      const resultData = await response.json();
+
       // Clear saved responses
       if (formId) {
         localStorage.removeItem(`form_${formId}_responses`);
+        localStorage.removeItem(`form_${formId}_enhanced_responses`);
       }
 
-      // Navigate to success page or evaluations list
-      alert("Evaluation submitted successfully!");
-      navigate("/participant/evaluations");
+      // Store certificate info for the success screen
+      const certificateInfo = {
+        certificateId: resultData.data?.certificateId,
+        downloadUrl: resultData.data?.downloadUrl,
+        formId: formId,
+        formTitle: form.title
+      };
+
+      // Store certificate info for potential session recovery
+      sessionStorage.setItem(`cert_${formId}`, JSON.stringify(certificateInfo));
+
+      // Show success screen with certificate data
+      setShowSuccess(true);
     } catch (err) {
       alert("Error submitting evaluation: " + err.message);
     }
@@ -147,16 +264,86 @@ const EvaluationForm = () => {
     sections = [],
   } = form || {};
 
-  // Create sections array: main section + additional sections
-  const allSections = [
-    {
-      id: "main",
-      title: "Section 1",
-      description: "",
-      questions: questions || [],
-    },
-    ...(sections || []),
-  ];
+  // Debug: Log form structure to identify section mapping issues
+  console.log("🔍 DEBUG: Form data structure:", {
+    title,
+    totalQuestions: questions.length,
+    totalSections: sections.length,
+    questions: questions.map((q) => ({
+      id: q._id,
+      title: q.title,
+      sectionId: q.sectionId,
+    })),
+    sections: sections.map((s) => ({
+      id: s.id,
+      title: s.title,
+      questionCount: s.questions?.length || 0,
+      questions: s.questions?.map((q) => ({
+        id: q._id,
+        title: q.title,
+        sectionId: q.sectionId,
+      })),
+    })),
+  });
+
+  // Create ordered sections array with proper section numbering
+  const sectionsData = [];
+  
+  // Always add the main section as the first section
+  sectionsData.push({
+    id: "main",
+    title: "Section 1",
+    description: "",
+    sectionNumber: 0,
+  });
+
+  // Add form sections with proper numbering
+  let sectionCounter = 1;
+  (sections || []).forEach((s) => {
+    sectionsData.push({
+      ...s,
+      id: String(s.id || `section_${sectionCounter}`).trim(),
+      sectionNumber: sectionCounter,
+    });
+    sectionCounter++;
+  });
+
+  // Sort sections by sectionNumber
+  sectionsData.sort((a, b) => (a.sectionNumber || 0) - (b.sectionNumber || 0));
+
+  // Group questions by sectionId - only include questions with actual titles
+  const groupedQuestions = {};
+  questions.forEach((q) => {
+    if (!q.title) return; // Skip invalid questions
+    const secId = String(q.sectionId || "main").trim();
+    if (!groupedQuestions[secId]) {
+      groupedQuestions[secId] = [];
+    }
+    groupedQuestions[secId].push(q);
+  });
+
+  // Create allSections with properly grouped questions
+  const allSections = sectionsData.map((section) => ({
+    ...section,
+    questions: groupedQuestions[String(section.id || "").trim()] || [],
+  }));
+
+  // Debug: Log the section grouping for debugging
+  console.log("🔍 DEBUG: Section grouping analysis:", {
+    totalQuestions: questions.length,
+    totalSections: sectionsData.length,
+    groupedQuestions: Object.keys(groupedQuestions).map(key => ({
+      sectionId: key,
+      questionCount: groupedQuestions[key].length,
+      sampleTitles: groupedQuestions[key].slice(0, 3).map(q => q.title)
+    })),
+    finalSections: allSections.map(s => ({
+      id: s.id,
+      title: s.title,
+      questionCount: s.questions.length,
+      sampleTitles: s.questions.slice(0, 3).map(q => q.title)
+    }))
+  });
 
   const currentSection = allSections[currentSectionIndex];
   const totalSections = allSections.length;
@@ -431,21 +618,43 @@ const EvaluationForm = () => {
     );
   }
 
+  // Show success screen as full page replacement
+  if (showSuccess) {
+    // Get certificate data from sessionStorage
+    let certificateData = null;
+    try {
+      const certInfo = sessionStorage.getItem(`cert_${formId}`);
+      if (certInfo) {
+        certificateData = JSON.parse(certInfo);
+      }
+    } catch (error) {
+      console.error("Error parsing certificate data:", error);
+    }
+
+    return (
+      <ParticipantLayout>
+        <EvaluationSuccessScreen
+          formId={formId}
+          certificateData={certificateData}
+          onViewCertificates={() => navigate("/participant/certificates")}
+        />
+      </ParticipantLayout>
+    );
+  }
+
   return (
     <ParticipantLayout>
       <div className="w-full max-w-4xl mx-auto p-8">
         {/* Top White Container - Only show title/description on first section */}
         {currentSectionIndex === 0 && (
           <div className="bg-white p-8 rounded-lg shadow-md mb-6">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h1 className="text-4xl font-bold text-gray-800">
-                  {title || "Loading..."}
-                </h1>
-                <p className="text-gray-600 mt-2 mb-4">
-                  {description || "Loading description..."}
-                </p>
-              </div>
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-gray-800">
+                {title || "Loading..."}
+              </h1>
+              <p className="text-gray-600 mt-2 mb-4">
+                {description || "Loading description..."}
+              </p>
             </div>
             <hr />
             <div className="flex justify-between items-center mt-4">
@@ -530,7 +739,7 @@ const EvaluationForm = () => {
 
         {/* Clear Confirmation Dialog */}
         {showClearConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full mx-4">
               <h3 className="text-lg font-semibold mb-4">Clear Form</h3>
               <p className="text-gray-600 mb-6">

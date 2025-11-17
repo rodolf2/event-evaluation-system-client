@@ -12,6 +12,23 @@ const MENU_ITEMS = [
   { icon: BadgeIcon, label: "My Badges", path: "/participant/badges" },
 ];
 
+const getIsActive = (item, currentPath) => {
+  // Special case for evaluations - also highlight on evaluation form pages
+  if (item.path.includes('/participant/evaluations') || item.label === 'My Evaluations') {
+    return currentPath === item.path ||
+           currentPath.startsWith('/evaluation/') ||
+           currentPath.startsWith('/participant/evaluations/');
+  }
+
+  // Special case for home path
+  if (item.path === "/participant/home") {
+    return currentPath === item.path;
+  }
+
+  // Default behavior - check if current path starts with the item path
+  return currentPath.startsWith(item.path);
+};
+
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,11 +77,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             src={item.icon}
             label={item.label}
             isOpen={isOpen}
-            isActive={
-              item.path === "/participant/home"
-                ? currentPath === item.path
-                : currentPath.startsWith(item.path)
-            }
+            isActive={getIsActive(item, currentPath)}
             onClick={() => {
               navigate(item.path);
               if (window.innerWidth < 1024) {

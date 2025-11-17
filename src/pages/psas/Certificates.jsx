@@ -182,7 +182,7 @@ const Certificates = () => {
   if (loading) {
     return (
       <PSASLayout>
-        <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-50 to-blue-50 min-h-[80vh] flex items-center justify-center">
+        <div className="p-4 sm:p-6 md:p-8 bg-linear-to-br from-gray-50 to-blue-50 min-h-[80vh] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
             <div className="text-center">

@@ -1,15 +1,21 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import { Search, Download, Eye } from 'lucide-react';
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
+import CertificateViewer from "../../components/participants/CertificateViewer";
 
 const Certificates = () => {
+  const { certificateId } = useParams();
+  const navigate = useNavigate();
   const { user, token } = useAuth();
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [showCertificateViewer, setShowCertificateViewer] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
 
   useEffect(() => {
     const fetchCertificates = async () => {
@@ -40,6 +46,17 @@ const Certificates = () => {
     fetchCertificates();
   }, [user, token]);
 
+  // Handle direct certificate viewing
+  useEffect(() => {
+    if (certificateId && certificates.length > 0) {
+      const certificate = certificates.find(cert => cert.certificateId === certificateId);
+      if (certificate) {
+        setSelectedCertificate(certificate);
+        setShowCertificateViewer(true);
+      }
+    }
+  }, [certificateId, certificates]);
+
   const handleDownload = async (certificateId, certificate) => {
     try {
       const response = await fetch(`/api/certificates/download/${certificateId}`, {
@@ -67,6 +84,20 @@ const Certificates = () => {
     }
   };
 
+  const handleViewCertificate = (certificate) => {
+    setSelectedCertificate(certificate);
+    setShowCertificateViewer(true);
+  };
+
+  const handleCertificateViewerDone = () => {
+    setShowCertificateViewer(false);
+    setSelectedCertificate(null);
+    // If we came from a direct link, navigate back to certificates list
+    if (certificateId) {
+      navigate('/participant/certificates');
+    }
+  };
+
   const filteredCertificates = certificates.filter(cert => {
     const matchesSearch = cert.eventId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          cert.certificateType?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -75,6 +106,19 @@ const Certificates = () => {
   });
 
   const categories = ["All", ...new Set(certificates.map(cert => cert.certificateType).filter(Boolean))];
+
+  // Show certificate viewer if requested
+  if (showCertificateViewer && selectedCertificate) {
+    return (
+      <ParticipantLayout>
+        <CertificateViewer
+          certificateId={selectedCertificate.certificateId}
+          onDownload={() => handleDownload(selectedCertificate.certificateId, selectedCertificate)}
+          onDone={handleCertificateViewerDone}
+        />
+      </ParticipantLayout>
+    );
+  }
 
   if (loading) {
     return (
@@ -134,6 +178,13 @@ const Certificates = () => {
                     Issued: {new Date(cert.issuedDate).toLocaleDateString()}
                   </p>
                   <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => handleViewCertificate(cert)}
+                      className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                    >
+                      <Eye size={14} />
+                      View
+                    </button>
                     <button
                       onClick={() => handleDownload(cert.certificateId, cert)}
                       className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"

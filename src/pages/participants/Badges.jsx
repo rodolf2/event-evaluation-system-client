@@ -44,6 +44,7 @@ const Badges = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [badges, setBadges] = useState([]);
+  const [_selectedBadge, setSelectedBadge] = useState(null);
 
   // Define evaluation-completion based badge tiers.
   // Adjust thresholds to match your product spec.
@@ -88,7 +89,16 @@ const Badges = () => {
   // If not yet implemented, wire it there using Form.responses/attendeeList.hasResponded.
   const fetchCompletionCount = async () => {
     try {
+      const token = localStorage.getItem("token");
+      const headers = new Headers();
+      if (token) {
+        headers.append("Authorization", `Bearer ${token}`);
+      }
+      headers.append("Content-Type", "application/json");
+
       const response = await fetch("/api/forms/completion-stats", {
+        method: "GET",
+        headers,
         credentials: "include",
       });
 
@@ -138,6 +148,19 @@ const Badges = () => {
   useEffect(() => {
     fetchCompletionCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refresh badge progress when component mounts (after form completion)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchCompletionCount();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   const handleFilterChange = (filter) => {
@@ -195,28 +218,39 @@ const Badges = () => {
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {filteredBadges.map((badge, index) => (
-              <div
-                key={index}
-                className={`rounded-lg p-4 text-center transition-all duration-300 ${
-                  badge.unlocked ? "bg-white shadow-sm" : "bg-[#B7B7B8]"
-                } ${
-                  badge.highlighted && selectedFilter === "All"
-                    ? "border-2 border-blue-500 shadow-lg"
-                    : ""
-                }`}
-              >
-                <img
-                  src={badge.icon}
-                  alt={badge.name}
-                  className={`w-20 h-20 mx-auto mb-3 ${
-                    badge.unlocked ? "" : "filter grayscale"
+            {filteredBadges.map((badge, index) => {
+              const handleBadgeClick = () => {
+                if (badge.unlocked) {
+                  setSelectedBadge(badge);
+                }
+              };
+
+              return (
+                <div
+                  key={index}
+                  onClick={handleBadgeClick}
+                  className={`rounded-lg p-4 text-center transition-all duration-300 cursor-pointer select-none ${
+                    badge.unlocked
+                      ? "bg-white shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
+                      : "bg-[#B7B7B8] cursor-not-allowed"
+                  } ${
+                    badge.highlighted && selectedFilter === "All"
+                      ? "border-2 border-blue-500 shadow-lg"
+                      : ""
                   }`}
-                />
-                <h3 className="font-semibold text-gray-800">{badge.name}</h3>
-                <p className="text-sm text-gray-500">{badge.progress}</p>
-              </div>
-            ))}
+                >
+                  <img
+                    src={badge.icon}
+                    alt={badge.name}
+                    className={`w-20 h-20 mx-auto mb-3 transition-transform duration-200 ${
+                      badge.unlocked ? "" : "filter grayscale"
+                    } ${badge.unlocked ? "hover:rotate-12" : ""}`}
+                  />
+                  <h3 className="font-semibold text-gray-800">{badge.name}</h3>
+                  <p className="text-sm text-gray-500">{badge.progress}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -289,6 +289,16 @@ function App() {
           }
         />
         <Route
+          path="/participant/certificate/:certificateId"
+          element={
+            isAuthorized("participant") ? (
+              <ParticipantCertificates />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
           path="/participant/badges"
           element={
             isAuthorized("participant") ? (

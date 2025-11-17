@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
-import { Search, ChevronRight } from 'lucide-react';
-import { useAuth } from '../../contexts/useAuth';
+import { Search, ChevronRight, Check } from "lucide-react";
+import { useAuth } from "../../contexts/useAuth";
 
 const Evaluations = () => {
   const navigate = useNavigate();
   const [evaluations, setEvaluations] = useState([]);
   const [filteredEvaluations, setFilteredEvaluations] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
@@ -19,7 +19,7 @@ const Evaluations = () => {
 
   useEffect(() => {
     setFilteredEvaluations(
-      evaluations.filter(evaluation =>
+      evaluations.filter((evaluation) =>
         evaluation.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
     );
@@ -30,9 +30,9 @@ const Evaluations = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/forms/my-evaluations', {
+      const response = await fetch("/api/forms/my-evaluations", {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -43,7 +43,7 @@ const Evaluations = () => {
       const data = await response.json();
       setEvaluations(data.success ? data.data.forms : []);
     } catch (err) {
-      console.error('Error fetching evaluations:', err);
+      console.error("Error fetching evaluations:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -51,12 +51,12 @@ const Evaluations = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -117,30 +117,63 @@ const Evaluations = () => {
           {filteredEvaluations.length === 0 ? (
             <div className="text-center text-gray-500">
               <p className="text-lg">No evaluations available at this time.</p>
-              <p className="text-sm">Evaluations will appear here when assigned to you.</p>
+              <p className="text-sm">
+                Evaluations will appear here when assigned to you.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvaluations.map((evaluation, index) => (
-                <div
-                  key={evaluation.id || index}
-                  className="bg-[linear-gradient(-0.15deg,_#324BA3_38%,_#002474_100%)] rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-                  onClick={() => navigate(`/evaluations/start/${evaluation._id}`)}
-                >
-                  <div className="bg-white rounded-r-lg ml-3 p-8 flex items-center h-full">
+              {filteredEvaluations.map((evaluation, index) => {
+                const isCompleted = evaluation.completed || false;
+                return (
+                  <div
+                    key={evaluation._id || index}
+                    className={`rounded-lg shadow-md transition-all duration-300 ${
+                      isCompleted
+                        ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
+                        : "bg-[linear-gradient(-0.15deg,_#324BA3_38%,_#002474_100%)] hover:shadow-lg cursor-pointer"
+                    }`}
+                    onClick={!isCompleted ? () => navigate(`/evaluations/start/${evaluation._id}`) : undefined}
+                  >
+                    <div
+                      className={`rounded-r-lg ml-3 p-8 flex items-center h-full ${
+                        isCompleted ? "bg-green-50" : "bg-white"
+                      }`}
+                    >
                       <div className="grow">
-                        <h3 className="font-bold text-2xl mb-4 text-gray-800">{evaluation.title}</h3>
+                        <h3 className="font-bold text-2xl mb-4 text-gray-800">
+                          {evaluation.title}
+                        </h3>
+                        {isCompleted && (
+                          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            <Check className="h-4 w-4" />
+                            Completed
+                          </div>
+                        )}
                         <div className="text-sm text-gray-500 space-x-4">
-                          <span>Open: {formatDate(evaluation.eventStartDate)}</span>
-                          <span>Closes: {formatDate(evaluation.eventEndDate)}</span>
+                          <span>
+                            Open: {formatDate(evaluation.eventStartDate)}
+                          </span>
+                          <span>
+                            Closes: {formatDate(evaluation.eventEndDate)}
+                          </span>
                         </div>
                       </div>
-                      <div className="ml-4 text-gray-400">
-                        <ChevronRight className="h-6 w-6" />
+                      <div
+                        className={`ml-4 ${
+                          isCompleted ? "text-green-500" : "text-gray-400"
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <Check className="h-6 w-6" />
+                        ) : (
+                          <ChevronRight className="h-6 w-6" />
+                        )}
                       </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

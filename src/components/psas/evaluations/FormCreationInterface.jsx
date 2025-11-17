@@ -1514,8 +1514,39 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             const uploadData = await uploadResponse.json();
             if (uploadData.success && uploadData.data && uploadData.data.form) {
               toast.success("Form published successfully!");
-              // Navigate to evaluations page and clear any URL parameters
-              navigate("/psas/evaluations", { replace: true });
+              // Comprehensive cleanup then go back to dashboard
+              FormSessionManager.clearAllFormData();
+
+              // Clear localStorage keys
+              const keysToRemove = [
+                "tempFormData",
+                "uploadedFormId",
+                "editFormId",
+                "studentSelection",
+                "preservedFormId",
+                "preservedFormIdTimestamp",
+              ];
+              keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+              // Reset all form state
+              setQuestions([]);
+              setSections([]);
+              setFormTitle("Untitled Form");
+              setFormDescription("Form Description");
+              setUploadedFiles([]);
+              setUploadedLinks([]);
+              setUploadedCSVData(null);
+              setEventStartDate("");
+              setEventEndDate("");
+              setCurrentFormId(null);
+              setIsCertificateLinked(false);
+              setHasUnsavedChanges(false);
+              setHasShownRecipientsToast(false);
+              setFormWasPublished(true);
+              setShowSuccessScreen(false);
+
+              // Go back to dashboard view
+              onBack();
               return;
             }
           }

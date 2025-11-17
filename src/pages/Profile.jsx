@@ -2,7 +2,7 @@ import { Camera, ChevronRight } from "lucide-react";
 import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
 import ParticipantLayout from "../components/participants/ParticipantLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 // Import badge images (only for participants and club officers)
@@ -32,9 +32,70 @@ const ToggleSwitch = ({ label, enabled, setEnabled }) => (
 );
 
 function Profile() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [muteNotifications, setMuteNotifications] = useState(true);
   const [muteReminders, setMuteReminders] = useState(false);
+  const [acquiredBadges, setAcquiredBadges] = useState([]);
+  const [loadingBadges, setLoadingBadges] = useState(false);
+
+  // Badge configurations (same as in Badges.jsx)
+  const baseBadgeConfig = [
+    { name: "Bronze", icon: BronzeBadge, highlighted: true },
+    { name: "Silver", icon: SilverBadge },
+    { name: "Gold", icon: GoldBadge },
+    { name: "Titanium", icon: TitaniumBadge },
+    { name: "Platinum", icon: PlatinumBadge },
+  ];
+
+  // Fetch completion count and calculate acquired badges
+  const fetchBadgeData = async () => {
+    if (!token) return;
+
+    try {
+      setLoadingBadges(true);
+      const headers = new Headers();
+      if (token) {
+        headers.append("Authorization", `Bearer ${token}`);
+      }
+      headers.append("Content-Type", "application/json");
+
+      const response = await fetch("/api/forms/completion-stats", {
+        method: "GET",
+        headers,
+        credentials: "include",
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const completedCount = data?.data?.completedCount || 0;
+
+      // Calculate which badges are acquired
+      const acquired = baseBadgeConfig
+        .map((badge, index) => {
+          const target = (index + 1) * 5;
+          return {
+            ...badge,
+            target,
+            unlocked: completedCount >= target,
+          };
+        })
+        .filter(badge => badge.unlocked);
+
+      setAcquiredBadges(acquired);
+    } catch (err) {
+      console.error("Error fetching badge data:", err);
+    } finally {
+      setLoadingBadges(false);
+    }
+  };
+
+  // Fetch badge data when component mounts
+  useEffect(() => {
+    if ((user.role === 'participant' || user.role === 'club-officer') && token) {
+      fetchBadgeData();
+    }
+  }, [user, token]);
 
   if (!user) {
     return (
@@ -175,33 +236,51 @@ function Profile() {
               </div>
             </div>
 
-            {/* Evaluations Badges Card - Only show for participants and club officers */}
+            {/* Evaluation Badges Card - Only show for participants and club officers */}
             {(user.role === 'participant' || user.role === 'club-officer') && (
               <div className="bg-white rounded-xl shadow-md px-8 py-12">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-800">Evaluations Badges</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-gray-800">Evaluation Badges</h2>
                   <Link
                     to={badgesLink}
-                    className="flex items-center text-blue-600 hover:underline font-semibold"
+                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold"
                   >
                     View My Badges <ChevronRight className="w-5 h-5 ml-1" />
                   </Link>
                 </div>
-                {/*
-                  At profile level we must NOT assume any badges are unlocked.
-                  The My Badges page computes real progress from completion-stats.
-                  Here we only:
-                  - Show a neutral empty state when there are no completions yet.
-                  - Encourage the user to complete evaluations to unlock badges.
-                */}
-                <div className="flex flex-col items-center justify-center gap-2 text-center text-gray-500">
-                  <p className="text-sm">
-                    Start completing evaluation forms to unlock your first badge.
-                  </p>
-                  <p className="text-xs">
-                    Your earned badges will appear here once unlocked.
-                  </p>
-                </div>
+                
+                {loadingBadges ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : acquiredBadges.length > 0 ? (
+                  <div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                      {acquiredBadges.map((badge, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-col items-center text-center"
+                        >
+                          <img
+                            src={badge.icon}
+                            alt={badge.name}
+                            className="w-16 h-16 rounded-full mb-2 border-2 border-blue-200"
+                          />
+                          <p className="text-sm font-medium text-gray-800">{badge.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 text-center text-gray-500 py-8">
+                    <p className="text-sm">
+                      Start completing evaluation forms to unlock your first badge.
+                    </p>
+                    <p className="text-xs">
+                      Your earned badges will appear here once unlocked.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

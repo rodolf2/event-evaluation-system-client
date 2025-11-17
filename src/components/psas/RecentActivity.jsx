@@ -2,22 +2,22 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/useAuth';
 
 const RecentActivity = () => {
-  const { user } = useAuth();
+  const { token } = useAuth();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.token) {
+    if (token) {
       fetchActivities();
     }
-  }, [user?.token]);
+  }, [token]);
 
   const fetchActivities = async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/activities?limit=5', {
         headers: {
-          'Authorization': `Bearer ${user?.token}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

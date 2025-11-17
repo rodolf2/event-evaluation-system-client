@@ -1,6 +1,23 @@
 import { X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+const getIsActive = (item, currentPath, homePath) => {
+  // Special case for home path
+  if (item.path === homePath) {
+    return currentPath === item.path;
+  }
+  
+  // Special case for evaluations - also highlight on evaluation form pages
+  if (item.path.includes('/participant/evaluations') || item.label === 'My Evaluations') {
+    return currentPath === item.path ||
+           currentPath.startsWith('/evaluation/') ||
+           currentPath.startsWith('/participant/evaluations/');
+  }
+  
+  // Default behavior - check if current path starts with the item path
+  return currentPath.startsWith(item.path);
+};
+
 const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -63,11 +80,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
             src={item.icon}
             label={item.label}
             isOpen={isOpen}
-            isActive={
-              item.path === config.homePath
-                ? currentPath === item.path
-                : currentPath.startsWith(item.path)
-            }
+            isActive={getIsActive(item, currentPath, config.homePath)}
             onClick={() => {
               navigate(item.path);
               if (window.innerWidth < 1024) {

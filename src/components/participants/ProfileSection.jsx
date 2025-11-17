@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../../contexts/useAuth";
-import { Link } from "react-router-dom";
-import { ChevronRight } from 'lucide-react';
 
 function ProfileSection() {
   const { user, refreshUserData } = useAuth();
@@ -172,11 +170,11 @@ function ProfileSection() {
         {isExpanded && (
           <div className="mt-4 pt-2 border-t border-gray-100 animate-fadeIn">
             <p className="text-sm text-gray-600 mb-2">
-              <span className="font-medium">Activity Level:</span> 
+              <span className="font-medium">Activity Level:</span>
               <span className="ml-2">{Array(Math.ceil(activityLevel)).fill('●').join('')}</span>
             </p>
             <p className="text-sm text-gray-600">
-              <span className="font-medium">Last Updated:</span> 
+              <span className="font-medium">Last Updated:</span>
               <span className="ml-2">{new Date().toLocaleTimeString()}</span>
             </p>
           </div>

@@ -5,7 +5,6 @@ import CalendarWidget from "../../components/participants/CalendarWidget";
 import RecentActivity from "../../components/participants/RecentActivity";
 import Reminders from "../../components/participants/Reminders";
 import ReminderModal from "../../components/participants/ReminderModal";
-import ProfileSection from "../../components/participants/ProfileSection";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 

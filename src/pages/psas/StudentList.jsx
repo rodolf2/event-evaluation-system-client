@@ -160,7 +160,9 @@ const StudentList = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelected(paginatedStudents.map((s) => s.id));
+      // Select all filtered students across all pages
+      const allFilteredIds = filteredStudents.map((s) => s.id);
+      setSelected(allFilteredIds);
     } else {
       setSelected([]);
     }
@@ -196,8 +198,7 @@ const StudentList = () => {
     return filteredStudents.slice(startIndex, endIndex);
   }, [filteredStudents, currentPage, rowsPerPage]);
 
-  const isAllSelected =
-    selected.length > 0 && selected.length === paginatedStudents.length;
+  const isAllSelected = selected.length > 0 && selected.length === filteredStudents.length;
 
   const handleDoneClick = () => {
     const urlParams = new URLSearchParams(location.search);
@@ -232,25 +233,41 @@ const StudentList = () => {
       // Ensure FormSessionManager has the correct formId
       FormSessionManager.ensurePersistentFormId(finalFormId);
       
-      // Filter selected students with proper ID handling
+      console.log("🔍 Debug: Available students data structure:", students.slice(0, 2));
+      console.log("🔍 Debug: Selected IDs:", selected);
+      
+      // Filter selected students with proper ID handling - enhanced for bulk operations
       const selectedStudents = students
-        .filter(student => student && student.id && selected.includes(student.id))
-        .map(student => ({
-          ...student,
-          // Ensure all required fields are present
-          id: student.id,
-          name: student.name || student['full name'] || student['student name'] || "Unknown",
-          email: student.email || "",
-          department: student.department || "",
-          program: student.program || "",
-          year: student.year || ""
-        }));
+        .filter(student => {
+          const hasId = student && student.id;
+          const isSelected = hasId && selected.includes(student.id);
+          console.log(`🔍 Student ${student.email || student.name}: id=${student.id}, selected=${isSelected}`);
+          return isSelected;
+        })
+        .map(student => {
+          const processed = {
+            ...student,
+            // Ensure all required fields are present and normalized
+            id: student.id,
+            name: student.name || student['full name'] || student['student name'] || "Unknown",
+            email: student.email || "",
+            department: student.department || "",
+            program: student.program || "",
+            year: student.year || ""
+          };
+          console.log("✅ Processed student:", processed);
+          return processed;
+        });
 
-      console.log("✅ Filtered selected students:", selectedStudents);
+      console.log(`✅ Final selected students count: ${selectedStudents.length} out of ${selected.length} requested`);
 
       if (selectedStudents.length === 0) {
-        alert("No valid students found in selection. Please try again.");
+        alert("No valid students found in selection. Please check your selection and try again.");
         return;
+      }
+      
+      if (selectedStudents.length < selected.length) {
+        console.warn(`⚠️ Only ${selectedStudents.length} students processed out of ${selected.length} selected`);
       }
 
       // Save student assignments with debug logging
