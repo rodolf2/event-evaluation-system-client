@@ -2,47 +2,57 @@ import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
-const CertificateViewer = ({ formId, onDownload, onDone }) => {
+const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
   const { token } = useAuth();
-  const [certificates, setCertificates] = useState([]);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [certificateImage, setCertificateImage] = useState(null);
 
   useEffect(() => {
-    if (formId) {
-      fetchUserCertificates();
+    if (certificateId) {
+      fetchCertificateData();
     }
-  }, [formId]);
+  }, [certificateId]);
 
-  const fetchUserCertificates = async () => {
+  const fetchCertificateData = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/certificates/my", {
+
+      // First, try to get the certificate details
+      const certResponse = await fetch(`/api/certificates/${certificateId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const userCertificates = data.data || [];
-          setCertificates(userCertificates);
-          
-          // Find certificate for this specific form
-          const formCertificate = userCertificates.find(
-            cert => cert.formId?._id === formId || cert.eventId?._id === formId
-          );
-          
-          if (formCertificate) {
-            setSelectedCertificate(formCertificate);
-            await fetchCertificateImage(formCertificate.certificateId);
+      if (certResponse.ok) {
+        const certData = await certResponse.json();
+        if (certData.success) {
+          setSelectedCertificate(certData.data);
+        }
+      } else {
+        // Fallback: get from user certificates list if direct fetch fails
+        const listResponse = await fetch("/api/certificates/my", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (listResponse.ok) {
+          const listData = await listResponse.json();
+          if (listData.success) {
+            const foundCert = listData.data.find(cert => cert.certificateId === certificateId);
+            if (foundCert) {
+              setSelectedCertificate(foundCert);
+            }
           }
         }
       }
+
+      // Load the PDF/image if certificate was found
+      await fetchCertificateImage(certificateId);
     } catch (error) {
-      console.error("Error fetching certificates:", error);
+      console.error("Error fetching certificate:", error);
     } finally {
       setLoading(false);
     }
@@ -107,7 +117,7 @@ const CertificateViewer = ({ formId, onDownload, onDone }) => {
     );
   }
 
-  if (!selectedCertificate && certificates.length > 0) {
+  if (!selectedCertificate) {
     return (
       <div className="w-full flex items-center justify-center bg-white p-8 rounded-lg shadow-sm min-h-[400px]">
         <div className="text-center">
@@ -116,7 +126,7 @@ const CertificateViewer = ({ formId, onDownload, onDone }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <p className="text-gray-600 mb-4">Certificate not found for this evaluation.</p>
+          <p className="text-gray-600 mb-4">Certificate not found.</p>
           <button
             onClick={onDone}
             className="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors"
@@ -156,13 +166,31 @@ const CertificateViewer = ({ formId, onDownload, onDone }) => {
       {/* Certificate Display */}
       <div className="w-full max-w-4xl flex justify-center">
         {certificateImage ? (
-          <div className="relative w-full">
-            <iframe
-              src={certificateImage}
-              title="Certificate Preview"
-              className="w-full h-auto rounded-lg shadow-lg border"
+          <div className="relative w-full bg-gray-100 rounded-lg p-2">
+            <object
+              data={certificateImage}
+              type="application/pdf"
+              className="w-full h-auto rounded-lg border-0"
               style={{ minHeight: "600px", maxHeight: "800px" }}
-            />
+              title="Certificate Preview"
+            >
+              <embed
+                src={certificateImage}
+                type="application/pdf"
+                className="w-full h-auto rounded-lg border-0"
+                style={{ minHeight: "600px", maxHeight: "800px" }}
+              />
+              <iframe
+                src={certificateImage}
+                title="Certificate Preview"
+                className="w-full h-auto rounded-lg"
+                style={{ minHeight: "600px", maxHeight: "800px", border: "none" }}
+              >
+                <p className="text-center p-8 text-gray-500">
+                  Unable to display PDF. Please use the download button above.
+                </p>
+              </iframe>
+            </object>
           </div>
         ) : (
           <div className="bg-gray-50 rounded-lg p-12 text-center">
@@ -187,7 +215,7 @@ const CertificateViewer = ({ formId, onDownload, onDone }) => {
             <strong>Type:</strong> {selectedCertificate.certificateType || "Certificate of Participation"}
           </p>
           <p>
-            <strong>Issued:</strong> {new Date(selectedCertificate.createdAt).toLocaleDateString()}
+            <strong>Issued:</strong> {new Date(selectedCertificate.issuedDate || selectedCertificate.createdAt).toLocaleDateString()}
           </p>
           <p>
             <strong>Participant:</strong> {selectedCertificate.userId?.name || "Participant"}

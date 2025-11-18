@@ -1,12 +1,14 @@
 import { PanelTopClose, PanelTopOpen } from "lucide-react";
 
-const CanvasToolbar = ({ showPanels, onTogglePanels }) => {
+const CanvasToolbar = ({ showPanels, onTogglePanels, isMobile }) => {
   return (
     <div className="flex items-center justify-between w-full p-2">
       <div className="flex-1 text-center">
-        <span className="text-sm font-medium text-gray-700">Certificate Editor</span>
+        <span className="text-sm font-medium text-gray-700">
+          {isMobile ? "Certificate Editor (Mobile)" : "Certificate Editor"}
+        </span>
       </div>
-      
+
       {/* Panel Toggle Button */}
       <button
         onClick={onTogglePanels}
@@ -14,7 +16,7 @@ const CanvasToolbar = ({ showPanels, onTogglePanels }) => {
         title={showPanels ? "Hide Side Panels" : "Show Side Panels"}
       >
         {showPanels ? <PanelTopClose size={16} /> : <PanelTopOpen size={16} />}
-        <span className="text-sm font-medium">
+        <span className={`${isMobile ? 'hidden sm:inline' : ''} text-sm font-medium`}>
           {showPanels ? "Hide Panels" : "Show Panels"}
         </span>
       </button>

@@ -1,4 +1,4 @@
-import { Bold, Italic, Underline, Trash2, Copy, Plus, Upload } from "lucide-react";
+import { Bold, Italic, Underline, Trash2, Copy, Plus, Upload, Loader2 } from "lucide-react";
 
 const ElementsPanel = ({
   onAddText,
@@ -8,6 +8,8 @@ const ElementsPanel = ({
   onSetBackgroundImage,
   fileInputRef,
   bgInputRef,
+  isUploadingImage = false,
+  isUploadingBackground = false,
 }) => {
   return (
     <div>
@@ -34,9 +36,16 @@ const ElementsPanel = ({
         <div className="flex flex-col gap-2">
           <button
             onClick={() => fileInputRef.current.click()}
-            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100"
+            disabled={isUploadingImage}
+            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            title="Upload image file from your device"
           >
-            <Upload size={16} /> Upload
+            {isUploadingImage ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Upload size={16} />
+            )}
+            {isUploadingImage ? 'Uploading...' : 'Upload'}
           </button>
           <input
             type="file"
@@ -47,15 +56,20 @@ const ElementsPanel = ({
           />
           <button
             onClick={onAddImageFromUrl}
-            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 text-sm"
+            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 text-xs"
+            title="Load image from web URL (direct image links only)"
           >
             From URL
           </button>
           <button
             onClick={() => bgInputRef.current.click()}
-            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100"
+            disabled={isUploadingBackground}
+            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
-            Set Background
+            {isUploadingBackground ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : null}
+            {isUploadingBackground ? 'Setting...' : 'Set Background'}
           </button>
           <input
             type="file"

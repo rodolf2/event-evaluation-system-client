@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useCanvasHistory } from "../../../hooks/useCanvasHistory";
 import ElementsPanel from "./ElementsPanel";
 import CanvasToolbar from "./CanvasToolbar";
-import CanvasContainer from "./CanvasContainer";
 import {
   Bold,
   Italic,
@@ -14,6 +13,8 @@ import {
   Copy,
   ChevronUp,
   ChevronDown,
+  ChevronsUp,
+  ChevronsDown,
   AlignHorizontalJustifyStart,
   AlignHorizontalJustifyCenter,
   AlignHorizontalJustifyEnd,
@@ -39,13 +40,14 @@ const CertificateEditor = ({
   selectedTemplate = null,
   isPreviewMode = false,
   isFromEvaluation = false,
-  formId = null,
   onSave,
   onBack,
   onDone,
 }) => {
   const [certificateSize, setCertificateSize] = useState("US Letter");
   const [showPanels, setShowPanels] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [canvasViewportTransform, setCanvasViewportTransform] = useState(null);
 
   const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
   const BASE_HEIGHT = CERTIFICATE_SIZES[certificateSize].height;
@@ -58,21 +60,19 @@ const CertificateEditor = ({
 
   const [activeObject, setActiveObject] = useState(null);
   const [, setForceUpdate] = useState(0);
+  const [snapLines, setSnapLines] = useState([]);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingBackground, setIsUploadingBackground] = useState(false);
 
   const { pushHistory, undo, redo } = useCanvasHistory();
 
   // Create refs for functions to prevent unnecessary re-initialization
   const cloneObjectRef = useRef();
 
-  // Create ref to track container for cleanup
-  const containerRef = useRef(null);
 
   useEffect(() => {
     let resizeObserver = null;
     let mounted = true;
-
-    // Capture container at effect start
-    const container = containerRef.current;
 
     const initFabric = async () => {
       // Ensure clean canvas element before initialization
@@ -118,28 +118,38 @@ const CertificateEditor = ({
 
         /**
          * Fit the logical certificate canvas into the visible container and center it.
+         * Stores the initial viewport transform to maintain exact visual state when panels toggle.
          */
         const centerAndFitCanvas = () => {
           if (!safeHasCanvas()) return;
           const container = canvasContainerRef.current;
           if (!container) return;
 
-          const padding = 40; // visual margin inside container
-          const availableWidth = Math.max(
-            container.clientWidth - padding * 2,
-            100
-          );
-          const availableHeight = Math.max(
-            container.clientHeight - padding * 2,
-            100
-          );
+          // Account for padding (16px on each side from p-4 class)
+          const padding = 16;
+          const availableWidth = container.clientWidth - (padding * 2);
+          const availableHeight = container.clientHeight - (padding * 2);
 
+          // Calculate scale to fit the certificate within the available space
           const scaleX = availableWidth / BASE_WIDTH;
           const scaleY = availableHeight / BASE_HEIGHT;
-          const scale = Math.min(scaleX, scaleY, 1); // do not upscale above 1
+          let scale = Math.min(scaleX, scaleY, 1); // do not upscale above 1
 
-          const offsetX = (container.clientWidth - BASE_WIDTH * scale) / 2;
-          const offsetY = (container.clientHeight - BASE_HEIGHT * scale) / 2;
+          // Center the canvas in the container, accounting for padding
+          const offsetX = padding + (availableWidth - BASE_WIDTH * scale) / 2;
+          const offsetY = padding + (availableHeight - BASE_HEIGHT * scale) / 2;
+
+          // Store the complete viewport transform when first initialized
+          if (canvasViewportTransform === null) {
+            const transform = [scale, 0, 0, scale, offsetX, offsetY];
+            setCanvasViewportTransform(transform);
+          }
+
+          // Use the stored viewport transform to maintain exact visual state
+          if (canvasViewportTransform !== null) {
+            canvas.setViewportTransform(canvasViewportTransform);
+            return; // Skip the rest of the centering logic
+          }
 
           try {
             if (!safeHasCanvas()) return;
@@ -187,8 +197,10 @@ const CertificateEditor = ({
               );
             }
           });
-          if (canvasContainerRef.current) {
-            resizeObserver.observe(canvasContainerRef.current);
+          // Observe the parent container that changes when panels are toggled
+          const parentContainer = canvasContainerRef.current?.parentElement;
+          if (parentContainer) {
+            resizeObserver.observe(parentContainer);
           }
         }
 
@@ -218,21 +230,122 @@ const CertificateEditor = ({
         canvas.on("object:moving", (e) => {
           const obj = e.target;
           if (!obj) return;
-          const snap = 8;
+
+          const snapThreshold = 12; // Increased threshold for better snapping
+          const canvasWidth = canvas.getWidth();
+          const canvasHeight = canvas.getHeight();
+
+          // Calculate object bounds
+          const objLeft = obj.left;
+          const objRight = obj.left + obj.getScaledWidth();
+          const objTop = obj.top;
+          const objBottom = obj.top + obj.getScaledHeight();
           const objCenterX = obj.left + obj.getScaledWidth() / 2;
-          const canvasCenterX = canvas.getWidth() / 2;
-          if (Math.abs(objCenterX - canvasCenterX) < snap) {
-            obj.left = canvasCenterX - obj.getScaledWidth() / 2;
-          }
           const objCenterY = obj.top + obj.getScaledHeight() / 2;
-          const canvasCenterY = canvas.getHeight() / 2;
-          if (Math.abs(objCenterY - canvasCenterY) < snap) {
-            obj.top = canvasCenterY - obj.getScaledHeight() / 2;
+
+          // Define comprehensive snap points
+          const snapPoints = {
+            // Horizontal snap points
+            left: 0,
+            centerX: canvasWidth / 2,
+            right: canvasWidth,
+            quarterLeft: canvasWidth / 4,
+            quarterRight: (canvasWidth * 3) / 4,
+            thirdLeft: canvasWidth / 3,
+            thirdRight: (canvasWidth * 2) / 3,
+
+            // Vertical snap points
+            top: 0,
+            centerY: canvasHeight / 2,
+            bottom: canvasHeight,
+            quarterTop: canvasHeight / 4,
+            quarterBottom: (canvasHeight * 3) / 4,
+            thirdTop: canvasHeight / 3,
+            thirdBottom: (canvasHeight * 2) / 3,
+          };
+
+          const newSnapLines = [];
+          let snapped = false;
+
+          // Check horizontal snapping with priority (center first, then edges)
+          const horizontalSnaps = [
+            { point: objCenterX, target: snapPoints.centerX, type: 'vertical', label: 'center', priority: 1 },
+            { point: objLeft, target: snapPoints.left, type: 'vertical', label: 'left', priority: 2 },
+            { point: objRight, target: snapPoints.right, type: 'vertical', label: 'right', priority: 2 },
+            { point: objLeft, target: snapPoints.thirdLeft, type: 'vertical', label: 'third-left', priority: 3 },
+            { point: objRight, target: snapPoints.thirdRight, type: 'vertical', label: 'third-right', priority: 3 },
+            { point: objLeft, target: snapPoints.quarterLeft, type: 'vertical', label: 'quarter-left', priority: 4 },
+            { point: objRight, target: snapPoints.quarterRight, type: 'vertical', label: 'quarter-right', priority: 4 },
+          ];
+
+          // Sort by priority and check snapping
+          horizontalSnaps.sort((a, b) => a.priority - b.priority);
+
+          for (const { point, target, type, label } of horizontalSnaps) {
+            if (Math.abs(point - target) < snapThreshold) {
+              obj.left = target - (point - objLeft);
+              newSnapLines.push({ type, position: target, label });
+              snapped = true;
+              break; // Only snap to one horizontal point at a time
+            }
           }
+
+          // Check vertical snapping with priority (center first, then edges)
+          const verticalSnaps = [
+            { point: objCenterY, target: snapPoints.centerY, type: 'horizontal', label: 'center', priority: 1 },
+            { point: objTop, target: snapPoints.top, type: 'horizontal', label: 'top', priority: 2 },
+            { point: objBottom, target: snapPoints.bottom, type: 'horizontal', label: 'bottom', priority: 2 },
+            { point: objTop, target: snapPoints.thirdTop, type: 'horizontal', label: 'third-top', priority: 3 },
+            { point: objBottom, target: snapPoints.thirdBottom, type: 'horizontal', label: 'third-bottom', priority: 3 },
+            { point: objTop, target: snapPoints.quarterTop, type: 'horizontal', label: 'quarter-top', priority: 4 },
+            { point: objBottom, target: snapPoints.quarterBottom, type: 'horizontal', label: 'quarter-bottom', priority: 4 },
+          ];
+
+          // Sort by priority and check snapping
+          verticalSnaps.sort((a, b) => a.priority - b.priority);
+
+          for (const { point, target, type, label } of verticalSnaps) {
+            if (Math.abs(point - target) < snapThreshold) {
+              obj.top = target - (point - objTop);
+              newSnapLines.push({ type, position: target, label });
+              snapped = true;
+              break; // Only snap to one vertical point at a time
+            }
+          }
+
+          // If snapped, trigger canvas render
+          if (snapped) {
+            canvas.requestRenderAll();
+          }
+
+          setSnapLines(newSnapLines);
+        });
+
+        canvas.on("object:modified", () => {
+          setSnapLines([]);
         });
 
         if (initialData) {
           canvas.loadFromJSON(initialData, () => {
+            // Make all objects selectable and movable (including backgrounds and borders)
+            canvas.getObjects().forEach((obj) => {
+              obj.set({
+                selectable: true,
+                evented: true,
+                lockMovementX: false,
+                lockMovementY: false,
+                lockScalingX: false,
+                lockScalingY: false,
+                lockRotation: false,
+                hasControls: true,
+                hasBorders: true,
+                borderColor: "#2563EB",
+                cornerColor: "#2563EB",
+                cornerStyle: "circle",
+                transparentCorners: false,
+              });
+            });
+
             // Ensure all objects/backgrounds/borders are laid out on the logical canvas
             canvas.renderAll();
             // Center the full canvas (including any background/border) in the container
@@ -277,8 +390,12 @@ const CertificateEditor = ({
         return () => {
           window.removeEventListener("keydown", handleKey);
           try {
-            if (resizeObserver && containerRef.current) {
-              resizeObserver.unobserve(containerRef.current);
+            if (resizeObserver) {
+              // Unobserve the parent container
+              const parentContainer = canvasContainerRef.current?.parentElement;
+              if (parentContainer) {
+                resizeObserver.unobserve(parentContainer);
+              }
               resizeObserver.disconnect();
             }
           } catch {
@@ -316,8 +433,12 @@ const CertificateEditor = ({
       } else {
         // Fallback cleanup if init failed early
         try {
-          if (resizeObserver && containerRef.current) {
-            resizeObserver.unobserve(containerRef.current);
+          if (resizeObserver) {
+            // Unobserve the parent container
+            const parentContainer = canvasContainerRef.current?.parentElement;
+            if (parentContainer) {
+              resizeObserver.unobserve(parentContainer);
+            }
             resizeObserver.disconnect();
           }
         } catch {
@@ -334,6 +455,38 @@ const CertificateEditor = ({
       }
     };
   }, [certificateSize, initialData, pushHistory, redo, undo]);
+
+  // Handle responsive behavior - auto-hide panels on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768; // md breakpoint
+      setIsMobile(mobile);
+      if (mobile && showPanels) {
+        setShowPanels(false);
+      }
+    };
+
+    // Check on mount
+    checkMobile();
+
+    // Listen for resize events
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, [showPanels]);
+
+  // Handle canvas responsiveness when mobile state changes
+  useEffect(() => {
+    // Only update if we have a stored viewport transform
+    if (fabricCanvas.current && canvasViewportTransform) {
+      const canvas = fabricCanvas.current;
+      // Reapply the stored viewport transform to maintain exact visual state
+      canvas.setViewportTransform(canvasViewportTransform);
+      canvas.requestRenderAll();
+    }
+  }, [isMobile, canvasViewportTransform]);
 
   const addObjectToCanvas = useCallback((object) => {
     const canvas = fabricCanvas.current;
@@ -356,6 +509,7 @@ const CertificateEditor = ({
           fontFamily: "Inter, Arial",
           width: isHeadline ? 400 : 300,
           editable: true,
+          textAlign: "center",
         }
       );
       addObjectToCanvas(text);
@@ -366,38 +520,273 @@ const CertificateEditor = ({
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      e.target.value = "";
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image file is too large. Please select an image smaller than 10MB.');
+      e.target.value = "";
+      return;
+    }
+
+    setIsUploadingImage(true);
+
     const reader = new FileReader();
     reader.onload = (f) => {
+      const dataUrl = f.target.result;
       const fabric = fabricRef.current;
-      if (!fabric) return;
+      const canvas = fabricCanvas.current;
+
+      if (!fabric || !canvas) {
+        alert("Canvas is not ready. Please try again.");
+        console.error("Fabric or canvas not ready for image upload");
+        setIsUploadingImage(false);
+        return;
+      }
+
+      console.log("Creating Fabric.js image from data URL...");
+
+      // Try the standard Fabric.js approach first
+      let imageLoaded = false;
+
       fabric.Image.fromURL(
-        f.target.result,
+        dataUrl,
         (img) => {
-          img.scaleToWidth(300);
-          fabricCanvas.current.centerObject(img);
-          addObjectToCanvas(img);
+          imageLoaded = true;
+          console.log("Fabric.js image callback executed", img);
+          setIsUploadingImage(false);
+
+          if (!img) {
+            alert("Failed to load image. Please try a different image file.");
+            console.error("Failed to create image from URL - img is null/undefined");
+            return;
+          }
+
+          console.log("Image loaded successfully:", img.width, "x", img.height);
+          addImageToCanvas(img);
         },
-        { crossOrigin: "anonymous" }
+        {
+          crossOrigin: "anonymous",
+        }
       );
+
+      // Fallback: Use native Image object if Fabric.js fails
+      setTimeout(() => {
+        if (!imageLoaded) {
+          console.log("Fabric.js approach failed, trying fallback method...");
+
+          const nativeImg = new Image();
+          nativeImg.crossOrigin = "anonymous";
+          nativeImg.onload = () => {
+            console.log("Native image loaded, creating Fabric.js image...");
+            const img = new fabric.Image(nativeImg);
+            setIsUploadingImage(false);
+            addImageToCanvas(img);
+          };
+          nativeImg.onerror = () => {
+            setIsUploadingImage(false);
+            alert("Failed to load image. Please try a different image file.");
+            console.error("Both Fabric.js and native image loading failed");
+          };
+          nativeImg.src = dataUrl;
+        }
+      }, 2000); // Wait 2 seconds for Fabric.js to respond
+
+      // Add a timeout to reset loading state if callback never executes
+      setTimeout(() => {
+        if (!imageLoaded) {
+          setIsUploadingImage(false);
+          console.warn("Image upload timed out - resetting loading state");
+          alert("Image upload timed out. Please try again.");
+        }
+      }, 15000); // 15 second timeout
+
+      // Helper function to add image to canvas
+      const addImageToCanvas = (img) => {
+        // Scale image to reasonable size while maintaining aspect ratio
+        const maxWidth = 400;
+        const maxHeight = 300;
+
+        if (img.width > maxWidth || img.height > maxHeight) {
+          const scaleX = maxWidth / img.width;
+          const scaleY = maxHeight / img.height;
+          const scale = Math.min(scaleX, scaleY);
+          console.log("Scaling image by factor:", scale);
+          img.scale(scale);
+        }
+
+        // Set interactive properties
+        img.set({
+          selectable: true,
+          evented: true,
+          lockMovementX: false,
+          lockMovementY: false,
+          lockScalingX: false,
+          lockScalingY: false,
+          lockRotation: false,
+          hasControls: true,
+          hasBorders: true,
+          borderColor: "#2563EB",
+          cornerColor: "#2563EB",
+          cornerStyle: "circle",
+          transparentCorners: false,
+        });
+
+        // Center the image on canvas
+        canvas.centerObject(img);
+
+        // Add to canvas and make active
+        canvas.add(img);
+        canvas.setActiveObject(img);
+        canvas.requestRenderAll();
+
+        // Push to history for undo/redo
+        pushHistory();
+
+        console.log("Image added to canvas successfully!");
+      };
     };
+
+    reader.onerror = (error) => {
+      setIsUploadingImage(false);
+      alert("Error reading the image file. Please try again.");
+      console.error("Error reading file:", error);
+    };
+
     reader.readAsDataURL(file);
+
+    // Clear the input
     e.target.value = "";
   };
 
   const addImageFromUrl = () => {
-    const url = prompt("Enter image URL (must allow cross-origin)");
+    const url = prompt("Enter direct image URL (e.g., https://example.com/image.jpg)\n\nNote: Most websites block cross-origin access. Try these working examples:\n• https://picsum.photos/800/600 (random image)\n• https://via.placeholder.com/800x600 (placeholder)\n• Direct links from Unsplash/Pexels/Pixabay\n• Or upload files directly for best results");
     if (!url) return;
+
+    // Basic URL validation
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      alert("Please enter a valid URL.");
+      return;
+    }
+
+    // Check if it's likely a direct image URL
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+    const isImageUrl = imageExtensions.some(ext => parsedUrl.pathname.toLowerCase().includes(ext));
+
+    if (!isImageUrl) {
+      alert("This doesn't appear to be a direct image URL. Please use a direct link to an image file (ending in .jpg, .png, etc.)\n\nFor example:\n• https://images.unsplash.com/photo-123456789\n• https://picsum.photos/800/600\n• https://via.placeholder.com/800x600");
+      return;
+    }
+
     const fabric = fabricRef.current;
-    if (!fabric) return;
+    const canvas = fabricCanvas.current;
+
+    if (!fabric || !canvas) {
+      alert("Canvas is not ready. Please try again.");
+      console.error("Fabric or canvas not ready for URL image");
+      return;
+    }
+
+    console.log("Loading image from URL:", url);
+    alert("Loading image from URL... This may take a few seconds.");
+
+    // Try the standard Fabric.js approach first
+    let urlImageLoaded = false;
+
     fabric.Image.fromURL(
       url,
       (img) => {
-        img.scaleToWidth(300);
-        fabricCanvas.current.centerObject(img);
-        addObjectToCanvas(img);
+        urlImageLoaded = true;
+        console.log("URL Fabric.js image callback executed", img);
+
+        if (!img) {
+          alert("Failed to load image from URL. Make sure the URL allows cross-origin access and the image exists.");
+          console.error("Failed to load image from URL:", url);
+          return;
+        }
+
+        console.log("URL image loaded successfully:", img.width, "x", img.height);
+        addUrlImageToCanvas(img);
       },
-      { crossOrigin: "anonymous" }
+      {
+        crossOrigin: "anonymous",
+      }
     );
+
+    // Fallback: Use native Image object if Fabric.js fails
+    setTimeout(() => {
+      if (!urlImageLoaded) {
+        console.log("URL Fabric.js approach failed, trying fallback method...");
+
+        const nativeImg = new Image();
+        nativeImg.crossOrigin = "anonymous";
+        nativeImg.onload = () => {
+          console.log("Native URL image loaded, creating Fabric.js image...");
+          const img = new fabric.Image(nativeImg);
+          addUrlImageToCanvas(img);
+        };
+        nativeImg.onerror = (error) => {
+          console.error("URL image loading error:", error);
+          alert("Failed to load image from URL. This is usually due to:\n\n• CORS policy: The website doesn't allow cross-origin access\n• Invalid image URL: Check the link is correct\n• Network issues: Try again later\n\nSolutions:\n• Use direct image URLs from Unsplash, Pexels, or Pixabay\n• Copy the image address from browser dev tools\n• Upload the image file directly instead\n• Use a CORS proxy service");
+        };
+        nativeImg.src = url;
+      }
+    }, 3000); // Wait 3 seconds for Fabric.js to respond
+
+    // Helper function to add URL image to canvas
+    const addUrlImageToCanvas = (img) => {
+      // Scale image to reasonable size while maintaining aspect ratio
+      const maxWidth = 400;
+      const maxHeight = 300;
+
+      if (img.width > maxWidth || img.height > maxHeight) {
+        const scaleX = maxWidth / img.width;
+        const scaleY = maxHeight / img.height;
+        const scale = Math.min(scaleX, scaleY);
+        console.log("Scaling URL image by factor:", scale);
+        img.scale(scale);
+      }
+
+      // Set interactive properties
+      img.set({
+        selectable: true,
+        evented: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        lockRotation: false,
+        hasControls: true,
+        hasBorders: true,
+        borderColor: "#2563EB",
+        cornerColor: "#2563EB",
+        cornerStyle: "circle",
+        transparentCorners: false,
+      });
+
+      // Center the image on canvas
+      canvas.centerObject(img);
+
+      // Add to canvas and make active
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+
+      // Push to history for undo/redo
+      pushHistory();
+
+      alert("Image loaded successfully!");
+      console.log("URL image added to canvas successfully!");
+    };
   };
 
   const addShape = (type) => {
@@ -473,6 +862,14 @@ const CertificateEditor = ({
   // Update the ref after cloneObject is defined
   cloneObjectRef.current = cloneObject;
 
+  const bringToFront = useCallback(
+    () =>
+      fabricCanvas.current?.bringToFront(
+        fabricCanvas.current.getActiveObject()
+      ),
+    []
+  );
+
   const bringForward = useCallback(
     () =>
       fabricCanvas.current?.bringForward(
@@ -484,6 +881,14 @@ const CertificateEditor = ({
   const sendBackward = useCallback(
     () =>
       fabricCanvas.current?.sendBackwards(
+        fabricCanvas.current.getActiveObject()
+      ),
+    []
+  );
+
+  const sendToBack = useCallback(
+    () =>
+      fabricCanvas.current?.sendToBack(
         fabricCanvas.current.getActiveObject()
       ),
     []
@@ -587,40 +992,139 @@ const CertificateEditor = ({
   const handleBackgroundUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file for the background.');
+      e.target.value = "";
+      return;
+    }
+
+    // Validate file size (max 15MB for background)
+    if (file.size > 15 * 1024 * 1024) {
+      alert('Background image file is too large. Please select an image smaller than 15MB.');
+      e.target.value = "";
+      return;
+    }
+
+    setIsUploadingBackground(true);
+
     const reader = new FileReader();
     reader.onload = (f) => {
+      const dataUrl = f.target.result;
       const fabric = fabricRef.current;
-      if (!fabric || !fabricCanvas.current) return;
+      const canvas = fabricCanvas.current;
+
+      if (!fabric || !canvas) {
+        alert("Canvas is not ready. Please try again.");
+        console.error("Fabric or canvas not ready for background image");
+        setIsUploadingBackground(false);
+        return;
+      }
+
+      console.log("Creating background Fabric.js image from data URL...");
+
+      // Try the standard Fabric.js approach first
+      let backgroundLoaded = false;
+
       fabric.Image.fromURL(
-        f.target.result,
+        dataUrl,
         (img) => {
-          // Calculate the scaling factors
-          const scaleX = fabricCanvas.current.width / img.width;
-          const scaleY = fabricCanvas.current.height / img.height;
-          const scale = Math.max(scaleX, scaleY); // Use max to cover the entire canvas
+          backgroundLoaded = true;
+          console.log("Background Fabric.js image callback executed", img);
+          setIsUploadingBackground(false);
 
-          // Center the image
-          const centerX = fabricCanvas.current.width / 2;
-          const centerY = fabricCanvas.current.height / 2;
+          if (!img) {
+            alert("Failed to load background image. Please try a different image file.");
+            console.error("Failed to create background image - img is null/undefined");
+            return;
+          }
 
-          img.set({
-            scaleX: scale,
-            scaleY: scale,
-            originX: "center",
-            originY: "center",
-            left: centerX,
-            top: centerY,
-          });
-
-          fabricCanvas.current.setBackgroundImage(
-            img,
-            fabricCanvas.current.renderAll.bind(fabricCanvas.current)
-          );
+          console.log("Background image loaded successfully:", img.width, "x", img.height);
+          setBackgroundImage(img);
         },
-        { crossOrigin: "anonymous" }
+        {
+          crossOrigin: "anonymous",
+        }
       );
+
+      // Fallback: Use native Image object if Fabric.js fails
+      setTimeout(() => {
+        if (!backgroundLoaded) {
+          console.log("Background Fabric.js approach failed, trying fallback method...");
+
+          const nativeImg = new Image();
+          nativeImg.crossOrigin = "anonymous";
+          nativeImg.onload = () => {
+            console.log("Native background image loaded, creating Fabric.js image...");
+            const img = new fabric.Image(nativeImg);
+            setIsUploadingBackground(false);
+            setBackgroundImage(img);
+          };
+          nativeImg.onerror = () => {
+            setIsUploadingBackground(false);
+            alert("Failed to load background image. Please try a different image file.");
+            console.error("Both Fabric.js and native background image loading failed");
+          };
+          nativeImg.src = dataUrl;
+        }
+      }, 2000); // Wait 2 seconds for Fabric.js to respond
+
+      // Add a timeout to reset loading state if callback never executes
+      setTimeout(() => {
+        if (!backgroundLoaded) {
+          setIsUploadingBackground(false);
+          console.warn("Background image upload timed out - resetting loading state");
+          alert("Background image upload timed out. Please try again.");
+        }
+      }, 15000); // 15 second timeout
+
+      // Helper function to set background image
+      const setBackgroundImage = (img) => {
+        // Calculate the scaling factors to cover the entire canvas
+        const scaleX = canvas.width / img.width;
+        const scaleY = canvas.height / img.height;
+        const scale = Math.max(scaleX, scaleY);
+        console.log("Background scaling factor:", scale);
+
+        // Center the image
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        img.set({
+          scaleX: scale,
+          scaleY: scale,
+          originX: "center",
+          originY: "center",
+          left: centerX,
+          top: centerY,
+        });
+
+        // Try the correct Fabric.js method for setting background image
+        if (typeof canvas.setBackgroundImage === 'function') {
+          canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+        } else {
+          // Fallback for different Fabric.js versions
+          canvas.backgroundImage = img;
+          canvas.renderAll();
+        }
+
+        // Push to history for undo/redo
+        pushHistory();
+
+        console.log("Background image set successfully!");
+      };
     };
+
+    reader.onerror = (error) => {
+      setIsUploadingBackground(false);
+      alert("Error reading the background image file. Please try again.");
+      console.error("Error reading background file:", error);
+    };
+
     reader.readAsDataURL(file);
+
+    // Clear the input
     e.target.value = "";
   };
 
@@ -740,7 +1244,7 @@ const CertificateEditor = ({
 
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Layer</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
             <button
               disabled={!isObjectSelected}
               onClick={cloneObject}
@@ -751,8 +1255,17 @@ const CertificateEditor = ({
             </button>
             <button
               disabled={!isObjectSelected}
+              onClick={bringToFront}
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              title="Bring to Front"
+            >
+              <ChevronsUp size={16} />
+            </button>
+            <button
+              disabled={!isObjectSelected}
               onClick={bringForward}
               className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              title="Bring Forward"
             >
               <ChevronUp size={16} />
             </button>
@@ -760,13 +1273,23 @@ const CertificateEditor = ({
               disabled={!isObjectSelected}
               onClick={sendBackward}
               className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              title="Send Backward"
             >
               <ChevronDown size={16} />
             </button>
             <button
               disabled={!isObjectSelected}
+              onClick={sendToBack}
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              title="Send to Back"
+            >
+              <ChevronsDown size={16} />
+            </button>
+            <button
+              disabled={!isObjectSelected}
               onClick={deleteObject}
               className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              title="Delete"
             >
               <Trash2 size={16} />
             </button>
@@ -938,9 +1461,9 @@ const CertificateEditor = ({
 
   return (
     <div className="w-full h-screen bg-transparent font-sans overflow-hidden">
-      <div className="flex flex-col lg:flex-row h-full w-full overflow-hidden">
+      <div className={`flex ${isMobile ? 'flex-col' : 'flex-col lg:flex-row'} h-full w-full overflow-hidden`}>
         {/* Left Sidebar - Elements Panel */}
-        {showPanels && (
+        {showPanels && !isMobile && (
           <div className="w-full lg:w-60 xl:w-64 p-2 sm:p-3 flex flex-col gap-2 sm:gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 h-full lg:h-auto overflow-auto lg:overflow-hidden">
             <ElementsPanel
               onAddText={addText}
@@ -950,6 +1473,8 @@ const CertificateEditor = ({
               onSetBackgroundImage={handleBackgroundUpload}
               fileInputRef={fileInputRef}
               bgInputRef={bgInputRef}
+              isUploadingImage={isUploadingImage}
+              isUploadingBackground={isUploadingBackground}
             />
           </div>
         )}
@@ -961,6 +1486,7 @@ const CertificateEditor = ({
             <CanvasToolbar
               showPanels={showPanels}
               onTogglePanels={togglePanels}
+              isMobile={isMobile}
             />
           </div>
 
@@ -1005,27 +1531,76 @@ const CertificateEditor = ({
 
           {/* Canvas Container */}
           <div
-            className={`flex-1 overflow-hidden flex items-center justify-center bg-gray-100 p-2 sm:p-4 lg:p-6 xl:p-8 ${
-              showPanels ? "lg:pr-2 xl:pr-4" : ""
-            }`}
+            className="flex-1 overflow-hidden flex items-center justify-center bg-gray-100 p-4 mx-auto"
           >
             <div
-              className={`${
-                showPanels
-                  ? "w-[96%] sm:w-[95%] lg:w-[88%] xl:w-[90%]"
-                  : "w-[98%]"
-              } max-w-full h-[65vh] sm:h-[70vh] md:h-[75vh] lg:h-[85vh] xl:h-[80vh] max-h-[85vh] bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-300`}
+              ref={canvasContainerRef}
+              className="bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 relative w-full h-full max-w-full max-h-full"
             >
-              <CanvasContainer
-                canvasRef={canvasRef}
-                containerRef={canvasContainerRef}
+              <canvas
+                ref={canvasRef}
+                className="w-full h-full"
               />
+
+              {/* Snap Lines Overlay */}
+              {snapLines.length > 0 && fabricCanvas.current && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  {(() => {
+                    const canvas = fabricCanvas.current;
+                    const vpt = canvas.viewportTransform;
+                    if (!vpt) return null;
+
+                    const scale = vpt[0]; // scaleX
+                    const offsetX = vpt[4];
+                    const offsetY = vpt[5];
+
+                    return snapLines.map((line, index) => {
+                      const scaledPosition = line.position * scale;
+                      const adjustedPosition = scaledPosition + (line.type === 'vertical' ? offsetX : offsetY);
+
+                      return (
+                        <div
+                          key={`${line.type}-${line.position}-${index}`}
+                          className={`absolute bg-red-500 ${
+                            line.type === 'vertical' ? 'w-px h-full' : 'h-px w-full'
+                          }`}
+                          style={{
+                            ...(line.type === 'vertical'
+                              ? { left: `${adjustedPosition}px` }
+                              : { top: `${adjustedPosition}px` }
+                            ),
+                            opacity: 0.8,
+                            zIndex: 1000,
+                          }}
+                        >
+                          {/* Snap point indicator */}
+                          <div
+                            className="absolute bg-red-500 rounded-full w-2 h-2 -translate-x-1 -translate-y-1"
+                            style={{
+                              ...(line.type === 'vertical'
+                                ? { left: '0px', top: '50%' }
+                                : { top: '0px', left: '50%' }
+                              ),
+                            }}
+                          />
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Right Sidebar - Properties Panel */}
-        {showPanels && (
+        {showPanels && !isMobile && (
           <div className="w-full lg:w-60 xl:w-64 p-2 sm:p-3 flex flex-col gap-2 sm:gap-3 bg-white border-t lg:border-l lg:border-t-0 shrink-0 h-full lg:h-auto overflow-auto lg:overflow-hidden relative">
             <div className="flex-1 min-h-0 overflow-auto">
               <div className="flex items-center justify-between mb-2 sm:mb-3 sticky top-0 z-30 bg-white pb-1 sm:pb-2">
@@ -1055,6 +1630,39 @@ const CertificateEditor = ({
           </div>
         )}
       </div>
+
+      {/* Mobile Panels Overlay */}
+      {isMobile && showPanels && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex">
+          <div className="ml-auto w-80 max-w-[90vw] h-full bg-white shadow-xl flex flex-col">
+            {/* Mobile Panel Header */}
+            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+              <h3 className="font-semibold text-gray-700">Properties</h3>
+              <button
+                onClick={togglePanels}
+                className="p-2 hover:bg-gray-200 rounded-md"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Mobile Panel Content */}
+            <div className="flex-1 overflow-auto p-4">
+              <PropertiesPanel />
+            </div>
+
+            {/* Mobile Panel Footer */}
+            <div className="p-4 border-t bg-gray-50">
+              <button
+                onClick={clearCanvas}
+                className="w-full px-4 py-2 bg-white border border-gray-300 text-sm text-gray-700 rounded-md hover:bg-gray-100"
+              >
+                Clear Canvas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
