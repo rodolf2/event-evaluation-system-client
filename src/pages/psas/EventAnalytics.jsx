@@ -331,8 +331,6 @@ const EventAnalytics = () => {
       <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">Event Analytics</h1>
-          
           {/* Form Selector */}
           {availableForms.length > 0 && (
             <div className="flex items-center gap-4">

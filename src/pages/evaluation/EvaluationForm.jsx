@@ -243,7 +243,7 @@ const EvaluationForm = () => {
         certificateId: resultData.data?.certificateId,
         downloadUrl: resultData.data?.downloadUrl,
         formId: formId,
-        formTitle: form.title
+        formTitle: form.title,
       };
 
       // Store certificate info for potential session recovery
@@ -288,11 +288,11 @@ const EvaluationForm = () => {
 
   // Create ordered sections array with proper section numbering
   const sectionsData = [];
-  
+
   // Always add the main section as the first section
   sectionsData.push({
     id: "main",
-    title: "Section 1",
+    title: title,
     description: "",
     sectionNumber: 0,
   });
@@ -304,6 +304,7 @@ const EvaluationForm = () => {
       ...s,
       id: String(s.id || `section_${sectionCounter}`).trim(),
       sectionNumber: sectionCounter,
+      title: s.title || `Section ${sectionCounter + 1}`,
     });
     sectionCounter++;
   });
@@ -311,11 +312,11 @@ const EvaluationForm = () => {
   // Sort sections by sectionNumber
   sectionsData.sort((a, b) => (a.sectionNumber || 0) - (b.sectionNumber || 0));
 
-  // Group questions by sectionId - only include questions with actual titles
+  // Group questions by sectionId - only include questions with actual titles and sectionId
   const groupedQuestions = {};
   questions.forEach((q) => {
-    if (!q.title) return; // Skip invalid questions
-    const secId = String(q.sectionId || "main").trim();
+    if (!q.title || !q.sectionId) return; // Skip invalid questions or questions without sectionId
+    const secId = String(q.sectionId).trim();
     if (!groupedQuestions[secId]) {
       groupedQuestions[secId] = [];
     }
@@ -332,17 +333,17 @@ const EvaluationForm = () => {
   console.log("🔍 DEBUG: Section grouping analysis:", {
     totalQuestions: questions.length,
     totalSections: sectionsData.length,
-    groupedQuestions: Object.keys(groupedQuestions).map(key => ({
+    groupedQuestions: Object.keys(groupedQuestions).map((key) => ({
       sectionId: key,
       questionCount: groupedQuestions[key].length,
-      sampleTitles: groupedQuestions[key].slice(0, 3).map(q => q.title)
+      sampleTitles: groupedQuestions[key].slice(0, 3).map((q) => q.title),
     })),
-    finalSections: allSections.map(s => ({
+    finalSections: allSections.map((s) => ({
       id: s.id,
       title: s.title,
       questionCount: s.questions.length,
-      sampleTitles: s.questions.slice(0, 3).map(q => q.title)
-    }))
+      sampleTitles: s.questions.slice(0, 3).map((q) => q.title),
+    })),
   });
 
   const currentSection = allSections[currentSectionIndex];

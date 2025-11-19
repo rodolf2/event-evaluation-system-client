@@ -10,7 +10,7 @@ const getIsActive = (item, currentPath, homePath) => {
   // Special case for evaluations - also highlight on evaluation form pages
   if (item.path.includes('/participant/evaluations') || item.label === 'My Evaluations') {
     return currentPath === item.path ||
-           currentPath.startsWith('/evaluation/') ||
+           currentPath.startsWith('/evaluations/') ||
            currentPath.startsWith('/participant/evaluations/');
   }
   

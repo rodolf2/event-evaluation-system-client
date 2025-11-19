@@ -13,6 +13,7 @@ import {
   Link as LinkIcon,
   FileText,
   X,
+  Palette,
 } from "lucide-react";
 import Question from "./Question";
 import Section from "./Section";
@@ -21,6 +22,7 @@ import SuccessScreen from "./SuccessScreen";
 import CertificateStatusWidget from "./CertificateStatusWidget";
 import InlineCertificatePanel from "./InlineCertificatePanel";
 import EnhancedPublishArea from "./EnhancedPublishArea.jsx";
+import CertificateCustomizer from "../certificates/CertificateCustomizer";
 import { useAuth } from "../../../contexts/useAuth";
 import { FormSessionManager } from "../../../utils/formSessionManager";
 import PSASLayout from "../../psas/PSASLayout";
@@ -59,6 +61,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const [showCertificateCustomizer, setShowCertificateCustomizer] = useState(false);
 
   // Form content state
   const [activeSectionId, setActiveSectionId] = useState("main");
@@ -75,6 +78,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [uploadedLinks, setUploadedLinks] = useState([]);
   const [uploadedCSVData, setUploadedCSVData] = useState(null);
   const [linkedCertificateId, setLinkedCertificateId] = useState(null);
+  const [linkedCertificateType, setLinkedCertificateType] =
+    useState("completion");
+  const [certificateTemplateName, setCertificateTemplateName] = useState(null);
   // Initialization flag no longer controls the Publish button UI; keep internal-only usage if needed.
 
   // Form session context
@@ -480,6 +486,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               setEventEndDate("");
               setIsCertificateLinked(false);
               setLinkedCertificateId(null);
+              setLinkedCertificateType("completion");
+              setCertificateTemplateName(null);
               setHasUnsavedChanges(false);
               return;
             } else {
@@ -503,6 +511,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 setEventEndDate(loadedData.eventEndDate || "");
                 setIsCertificateLinked(loadedData.isCertificateLinked || false);
                 setLinkedCertificateId(loadedData.linkedCertificateId || null);
+                setLinkedCertificateType(
+                  loadedData.linkedCertificateType || "completion"
+                );
+                setCertificateTemplateName(
+                  loadedData.certificateTemplateName || null
+                );
                 setAssignedStudents(
                   FormSessionManager.loadStudentAssignments() || []
                 );
@@ -758,6 +772,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             uploadedLinks,
             eventStartDate,
             eventEndDate,
+            isCertificateLinked,
+            linkedCertificateId,
           };
 
           const res = await fetch(`/api/forms/${currentFormId}/draft`, {
@@ -1147,6 +1163,47 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       // Also save to FormSessionManager for cross-page access
       FormSessionManager.saveTransientCSVData(csvData);
 
+      // If this is an existing published form, update the attendee list in the database
+      if (currentFormId && /^[0-9a-fA-F]{24}$/.test(currentFormId)) {
+        try {
+          console.log(`[CSV-UPLOAD] Updating attendee list for published form ${currentFormId}`);
+
+          // Convert CSV students to attendee format
+          const attendeeList = csvData.students.map(student => ({
+            name: student.name,
+            email: student.email.toLowerCase().trim(),
+            hasResponded: false,
+            uploadedAt: new Date(),
+          }));
+
+          const response = await fetch(`/api/forms/${currentFormId}/attendees-json`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              attendeeFile: {
+                filename: csvData.filename,
+                students: attendeeList,
+              },
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`[CSV-UPLOAD] Successfully updated attendee list:`, result);
+            toast.success(`Attendee list updated in database (${attendeeList.length} students)`);
+          } else {
+            console.error(`[CSV-UPLOAD] Failed to update attendee list:`, response.status);
+            toast.error("CSV uploaded but attendee list update failed");
+          }
+        } catch (attendeeError) {
+          console.error(`[CSV-UPLOAD] Error updating attendee list:`, attendeeError);
+          toast.error("CSV uploaded but attendee list update failed");
+        }
+      }
+
       setCSVValidationStatus({
         isValid: true,
         message: `Successfully loaded ${csvData.students.length} students`,
@@ -1258,6 +1315,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const validateCertificateTemplate = useCallback(
     async (certificateId) => {
       try {
+        console.log(
+          `[Frontend] Starting validation for template: ${certificateId}`
+        );
         const response = await fetch(
           `/api/certificates/${certificateId}/validate`,
           {
@@ -1267,21 +1327,40 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           }
         );
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            setCertificateValidationStatus({
-              isValid: data.data.isValid,
-              message: data.data.message || "Certificate template is valid",
-            });
-            return data.data.isValid;
-          }
+        console.log(
+          `[Frontend] Validation response status: ${response.status}`
+        );
+
+        if (!response.ok) {
+          console.error(
+            `[Frontend] Validation failed with status ${response.status}`
+          );
+          const errorData = await response.json().catch(() => ({}));
+          console.error(`[Frontend] Error response:`, errorData);
+          setCertificateValidationStatus({
+            isValid: false,
+            message:
+              errorData.message ||
+              `Template validation failed (${response.status})`,
+          });
+          return false;
+        }
+
+        const data = await response.json();
+        console.log(`[Frontend] Validation success:`, data);
+
+        if (data.success && data.data) {
+          setCertificateValidationStatus({
+            isValid: data.data.isValid,
+            message: data.data.message || "Certificate template is valid",
+          });
+          return data.data.isValid;
         }
       } catch (error) {
         console.error("Certificate validation error:", error);
         setCertificateValidationStatus({
           isValid: false,
-          message: "Unable to validate certificate certificate template",
+          message: `Validation error: ${error.message}`,
         });
         return false;
       }
@@ -1373,13 +1452,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
   // Handle form publishing
   const handlePublish = async () => {
-    // Flatten questions from sections and main questions
-    const allQuestions = [
-      ...questions,
-      ...sections.flatMap((s) => s.questions || []),
-    ];
-
-    if (allQuestions.length === 0) {
+    if (
+      questions.length + sections.flatMap((s) => s.questions?.length || 0) ===
+      0
+    ) {
       toast.error("Please add at least one question");
       return;
     }
@@ -1452,7 +1528,16 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       return;
     }
 
-    const backendQuestions = mapQuestionsToBackend(allQuestions, sections);
+    const backendQuestions = mapQuestionsToBackend(questions, sections);
+
+    // Strip questions from sections for backend (store flat)
+    const sectionsWithoutQuestions = sections.map((section) => {
+      const { questions: _, ...rest } = section;
+      return rest;
+    });
+
+    // Use sectionsWithoutQuestions in the publish payload
+    console.log("Sections without questions:", sectionsWithoutQuestions);
 
     // Get certificate information for publishing
     // NOTE: certificate linkage is currently handled separately; no-op placeholder removed
@@ -1493,6 +1578,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         eventStartDate: eventStartDate,
         eventEndDate: eventEndDate,
         selectedStudents: finalSelectedStudents, // Include selected students or CSV data
+        isCertificateLinked: isCertificateLinked,
+        linkedCertificateId: linkedCertificateId,
       };
 
       // If there was a file in the temporary data, we need to upload it now
@@ -1568,6 +1655,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         eventStartDate,
         eventEndDate,
         selectedStudents: finalSelectedStudents,
+        isCertificateLinked: isCertificateLinked,
+        linkedCertificateId: linkedCertificateId,
       };
     }
 
@@ -1650,6 +1739,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         eventStartDate,
         eventEndDate,
         selectedStudents: finalSelectedStudents, // Include selected students for attendee list
+        isCertificateLinked,
+        linkedCertificateId,
+        linkedCertificateType,
+        certificateTemplateName,
       };
 
       const publishResponse = await fetch(
@@ -1780,13 +1873,22 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               >
                 <Plus size={24} className="rotate-45" />
               </button>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Set Event Dates
                 </button>
+                {isCertificateLinked && currentFormId && (
+                  <button
+                    onClick={() => setShowCertificateCustomizer(true)}
+                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <Palette size={16} />
+                    Customize Certificate
+                  </button>
+                )}
               </div>
             </div>
 
@@ -2394,6 +2496,22 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             }}
             uploadedCSVData={uploadedCSVData}
           />
+
+          {/* Certificate Customizer Modal */}
+          {showCertificateCustomizer && currentFormId && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="max-h-[90vh] overflow-y-auto">
+                <CertificateCustomizer
+                  formId={currentFormId}
+                  onSave={(customizations) => {
+                    console.log("Certificate customizations saved:", customizations);
+                    // Optionally update local state or show success message
+                  }}
+                  onClose={() => setShowCertificateCustomizer(false)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

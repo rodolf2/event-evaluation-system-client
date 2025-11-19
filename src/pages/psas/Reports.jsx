@@ -1,21 +1,29 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, ArrowUp, ArrowDown, Filter, Calendar, RefreshCw, TrendingUp } from 'lucide-react';
-import PSASLayout from '../../components/psas/PSASLayout';
-import { useAuth } from '../../contexts/useAuth';
-import QuantitativeRatings from '../reports/QuantitativeRatings';
-import QualitativeComments from '../reports/QualitativeComments';
-import PositiveComments from '../reports/PositiveComments';
-import NegativeComments from '../reports/NegativeComments';
-import NeutralComments from '../reports/NeutralComments';
-import CompleteReport from '../reports/CompleteReport';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  Search,
+  ArrowUp,
+  ArrowDown,
+  Filter,
+  Calendar,
+  RefreshCw,
+  TrendingUp,
+} from "lucide-react";
+import PSASLayout from "../../components/psas/PSASLayout";
+import { useAuth } from "../../contexts/useAuth";
+import QuantitativeRatings from "../reports/QuantitativeRatings";
+import QualitativeComments from "../reports/QualitativeComments";
+import PositiveComments from "../reports/PositiveComments";
+import NegativeComments from "../reports/NegativeComments";
+import NeutralComments from "../reports/NeutralComments";
+import CompleteReport from "../reports/CompleteReport";
 
 const ReportCard = ({ report, onSelect, isLive = false }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -86,38 +94,54 @@ const ReportCard = ({ report, onSelect, isLive = false }) => {
   );
 };
 
-const FilterPanel = ({ filters, onFiltersChange, onApplyFilters, onClearFilters, departments }) => {
+const FilterPanel = ({
+  filters,
+  onFiltersChange,
+  onApplyFilters,
+  onClearFilters,
+  departments,
+}) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border">
       <div className="flex items-center gap-2 mb-4">
         <Filter className="w-4 h-4 text-gray-500" />
         <h3 className="text-sm font-semibold text-gray-700">Filters</h3>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Date Range</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Date Range
+          </label>
           <div className="space-y-2">
             <input
               type="date"
-              value={filters.startDate || ''}
-              onChange={(e) => onFiltersChange({ ...filters, startDate: e.target.value })}
+              value={filters.startDate || ""}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, startDate: e.target.value })
+              }
               className="w-full text-xs border border-gray-300 rounded px-2 py-1"
             />
             <input
               type="date"
-              value={filters.endDate || ''}
-              onChange={(e) => onFiltersChange({ ...filters, endDate: e.target.value })}
+              value={filters.endDate || ""}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, endDate: e.target.value })
+              }
               className="w-full text-xs border border-gray-300 rounded px-2 py-1"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Status
+          </label>
           <select
-            value={filters.status || 'all'}
-            onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+            value={filters.status || "all"}
+            onChange={(e) =>
+              onFiltersChange({ ...filters, status: e.target.value })
+            }
             className="w-full text-xs border border-gray-300 rounded px-2 py-1"
           >
             <option value="all">All Status</option>
@@ -128,24 +152,34 @@ const FilterPanel = ({ filters, onFiltersChange, onApplyFilters, onClearFilters,
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Department</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Department
+          </label>
           <select
-            value={filters.department || ''}
-            onChange={(e) => onFiltersChange({ ...filters, department: e.target.value })}
+            value={filters.department || ""}
+            onChange={(e) =>
+              onFiltersChange({ ...filters, department: e.target.value })
+            }
             className="w-full text-xs border border-gray-300 rounded px-2 py-1"
           >
             <option value="">All Departments</option>
-            {departments.map(dept => (
-              <option key={dept} value={dept}>{dept}</option>
+            {departments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Rating Range</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Rating Range
+          </label>
           <select
-            value={filters.ratingFilter || ''}
-            onChange={(e) => onFiltersChange({ ...filters, ratingFilter: e.target.value })}
+            value={filters.ratingFilter || ""}
+            onChange={(e) =>
+              onFiltersChange({ ...filters, ratingFilter: e.target.value })
+            }
             className="w-full text-xs border border-gray-300 rounded px-2 py-1"
           >
             <option value="">All Ratings</option>
@@ -177,38 +211,38 @@ const FilterPanel = ({ filters, onFiltersChange, onApplyFilters, onClearFilters,
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [lastRefresh, setLastRefresh] = useState(null);
+  const [lastRefresh, setLastRefresh] = useState(null); // eslint-disable-line no-unused-vars
   const [showFilters, setShowFilters] = useState(false);
   const { token } = useAuth();
 
-  const [view, setView] = useState('list');
+  const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
-  
+
   // Dynamic filtering state
   const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
-    status: 'all',
-    department: '',
-    ratingFilter: ''
+    startDate: "",
+    endDate: "",
+    status: "all",
+    department: "",
+    ratingFilter: "",
   });
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
     total: 0,
-    pages: 0
+    pages: 0,
   });
 
   // Extract unique departments from reports
   const availableDepartments = useMemo(() => {
     const depts = new Set();
-    reports.forEach(report => {
+    reports.forEach((report) => {
       if (report.metadata?.department) {
         depts.add(report.metadata.department);
       }
@@ -216,56 +250,59 @@ const Reports = () => {
     return Array.from(depts).sort();
   }, [reports]);
 
-  const fetchReports = useCallback(async (searchParams = {}) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Build query parameters
-      const queryParams = new URLSearchParams({
-        ...searchParams,
-        limit: pagination.limit,
-        page: pagination.page,
-        search: searchQuery,
-        ...(filters.status !== 'all' && { status: filters.status }),
-        ...(filters.startDate && { startDate: filters.startDate }),
-        ...(filters.endDate && { endDate: filters.endDate }),
-        ...(filters.department && { department: filters.department }),
-      });
+  const fetchReports = useCallback(
+    async (searchParams = {}) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const response = await fetch(`/api/analytics/reports/all?${queryParams}`, {
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch reports: ${response.status}`);
+        // Build query parameters
+        const queryParams = new URLSearchParams({
+          ...searchParams,
+          limit: pagination.limit,
+          page: pagination.page,
+          search: searchQuery,
+          ...(filters.status !== "all" && { status: filters.status }),
+          ...(filters.startDate && { startDate: filters.startDate }),
+          ...(filters.endDate && { endDate: filters.endDate }),
+          ...(filters.department && { department: filters.department }),
+        });
+
+        const response = await fetch(`/api/analytics/reports?${queryParams}`, {
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch reports: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          setReports(result.data.reports);
+          setPagination(result.data.pagination);
+          setLastRefresh(new Date().toISOString());
+        } else {
+          throw new Error(result.message || "Failed to fetch reports");
+        }
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setReports(result.data.reports);
-        setPagination(result.data.pagination);
-        setLastRefresh(new Date().toISOString());
-      } else {
-        throw new Error(result.message || 'Failed to fetch reports');
-      }
-    } catch (err) {
-      console.error('Error fetching reports:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token, searchQuery, filters, pagination.limit, pagination.page]);
+    },
+    [token, searchQuery, filters, pagination.limit, pagination.page]
+  );
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      if (view === 'list') {
+      if (view === "list") {
         setRefreshing(true);
         fetchReports();
       }
@@ -275,7 +312,7 @@ const Reports = () => {
   }, [view, fetchReports]);
 
   useEffect(() => {
-    if (view === 'list') {
+    if (view === "list") {
       fetchReports();
     }
   }, [fetchReports, view]);
@@ -286,40 +323,40 @@ const Reports = () => {
   }, [fetchReports]);
 
   const handleSort = () => {
-    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
   };
 
   const handleSelectReport = (report) => {
     setSelectedReport(report);
-    setView('dashboard');
+    setView("dashboard");
   };
 
   const handleBackToList = () => {
-    setView('list');
+    setView("list");
     setSelectedReport(null);
   };
 
   const handleApplyFilters = () => {
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
     fetchReports();
   };
 
   const handleClearFilters = () => {
     const clearedFilters = {
-      startDate: '',
-      endDate: '',
-      status: 'all',
-      department: '',
-      ratingFilter: ''
+      startDate: "",
+      endDate: "",
+      status: "all",
+      department: "",
+      ratingFilter: "",
     };
     setFilters(clearedFilters);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
     fetchReports();
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
     // Debounce search
     setTimeout(() => {
       fetchReports({ search: query });
@@ -327,7 +364,7 @@ const Reports = () => {
   };
 
   const sortedReports = [...reports].sort((a, b) => {
-    if (sortOrder === 'asc') {
+    if (sortOrder === "asc") {
       return new Date(a.eventDate) - new Date(b.eventDate);
     }
     return new Date(b.eventDate) - new Date(a.eventDate);
@@ -367,18 +404,17 @@ const Reports = () => {
 
   return (
     <PSASLayout>
-      {view === 'list' && (
+      {view === "list" && (
         <div className="p-8 bg-gray-100 min-h-full">
           {/* Header with refresh and filter toggle */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Event Reports</h1>
-              {lastRefresh && (
+              {/* {lastRefresh && (
                 <p className="text-sm text-gray-500">
                   Last updated: {new Date(lastRefresh).toLocaleTimeString()}
                   {refreshing && <span className="ml-2 text-blue-500">Refreshing...</span>}
                 </p>
-              )}
+              )} */}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -393,7 +429,9 @@ const Reports = () => {
                 disabled={refreshing}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+                />
                 Refresh
               </button>
             </div>
@@ -415,7 +453,7 @@ const Reports = () => {
               onClick={handleSort}
               className="flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition"
             >
-              {sortOrder === 'asc' ? (
+              {sortOrder === "asc" ? (
                 <ArrowUp className="w-5 h-5 text-gray-600 mr-2" />
               ) : (
                 <ArrowDown className="w-5 h-5 text-gray-600 mr-2" />
@@ -440,7 +478,7 @@ const Reports = () => {
             {sortedReports.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">No reports found</p>
-                {(searchQuery || Object.values(filters).some(f => f)) && (
+                {(searchQuery || Object.values(filters).some((f) => f)) && (
                   <p className="text-sm text-gray-400 mt-2">
                     Try adjusting your search or filters
                   </p>
@@ -449,25 +487,39 @@ const Reports = () => {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {sortedReports.map(report => (
+                  {sortedReports.map((report, index) => (
                     <ReportCard
-                      key={report.id}
+                      key={`${report.id}-${index}`}
                       report={report}
                       onSelect={handleSelectReport}
-                      isLive={report.lastUpdated && (Date.now() - new Date(report.lastUpdated).getTime()) < 300000} // 5 minutes
+                      isLive={
+                        report.lastUpdated &&
+                        Date.now() - new Date(report.lastUpdated).getTime() <
+                          300000
+                      } // 5 minutes
                     />
                   ))}
                 </div>
-                
+
                 {/* Pagination */}
                 {pagination.pages > 1 && (
                   <div className="flex items-center justify-between mt-6">
                     <div className="text-sm text-gray-500">
-                      Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} reports
+                      Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+                      {Math.min(
+                        pagination.page * pagination.limit,
+                        pagination.total
+                      )}{" "}
+                      of {pagination.total} reports
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                        onClick={() =>
+                          setPagination((prev) => ({
+                            ...prev,
+                            page: prev.page - 1,
+                          }))
+                        }
                         disabled={pagination.page === 1}
                         className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
                       >
@@ -477,7 +529,12 @@ const Reports = () => {
                         Page {pagination.page} of {pagination.pages}
                       </span>
                       <button
-                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                        onClick={() =>
+                          setPagination((prev) => ({
+                            ...prev,
+                            page: prev.page + 1,
+                          }))
+                        }
                         disabled={pagination.page === pagination.pages}
                         className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
                       >
@@ -492,23 +549,38 @@ const Reports = () => {
         </div>
       )}
 
-      {view === 'dashboard' && selectedReport && (
+      {view === "dashboard" && selectedReport && (
         <CompleteReport report={selectedReport} onBack={handleBackToList} />
       )}
-      {view === 'quantitative' && selectedReport && (
-        <QuantitativeRatings report={selectedReport} onBack={() => setView('dashboard')} />
+      {view === "quantitative" && selectedReport && (
+        <QuantitativeRatings
+          report={selectedReport}
+          onBack={() => setView("dashboard")}
+        />
       )}
-      {view === 'qualitative' && selectedReport && (
-        <QualitativeComments report={selectedReport} onBack={() => setView('dashboard')} />
+      {view === "qualitative" && selectedReport && (
+        <QualitativeComments
+          report={selectedReport}
+          onBack={() => setView("dashboard")}
+        />
       )}
-      {view === 'positive' && selectedReport && (
-        <PositiveComments report={selectedReport} onBack={() => setView('dashboard')} />
+      {view === "positive" && selectedReport && (
+        <PositiveComments
+          report={selectedReport}
+          onBack={() => setView("dashboard")}
+        />
       )}
-      {view === 'negative' && selectedReport && (
-        <NegativeComments report={selectedReport} onBack={() => setView('dashboard')} />
+      {view === "negative" && selectedReport && (
+        <NegativeComments
+          report={selectedReport}
+          onBack={() => setView("dashboard")}
+        />
       )}
-      {view === 'neutral' && selectedReport && (
-        <NeutralComments report={selectedReport} onBack={() => setView('dashboard')} />
+      {view === "neutral" && selectedReport && (
+        <NeutralComments
+          report={selectedReport}
+          onBack={() => setView("dashboard")}
+        />
       )}
     </PSASLayout>
   );

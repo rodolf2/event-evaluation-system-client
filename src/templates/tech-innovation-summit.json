@@ -8,7 +8,7 @@
       "width": 1056,
       "height": 816,
       "fill": "#F9FAFB",
-      "selectable": true, "evented": true,
+      "selectable": true,
       "evented": false
     },
     {
@@ -20,7 +20,7 @@
       "stroke": "#0F172A",
       "strokeWidth": 6,
       "fill": "transparent",
-      "selectable": true, "evented": true,
+      "selectable": true,
       "evented": false
     },
     {
