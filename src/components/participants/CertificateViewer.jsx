@@ -41,7 +41,9 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
         if (listResponse.ok) {
           const listData = await listResponse.json();
           if (listData.success) {
-            const foundCert = listData.data.find(cert => cert.certificateId === certificateId);
+            const foundCert = listData.data.find(
+              (cert) => cert.certificateId === certificateId
+            );
             if (foundCert) {
               setSelectedCertificate(foundCert);
             }
@@ -60,11 +62,14 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
 
   const fetchCertificateImage = async (certificateId) => {
     try {
-      const response = await fetch(`/api/certificates/download/${certificateId}?inline=true`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/certificates/download/${certificateId}?inline=true`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.ok) {
         const blob = await response.blob();
@@ -78,20 +83,25 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
 
   const handleDownload = async () => {
     if (!selectedCertificate) return;
-    
+
     try {
-      const response = await fetch(`/api/certificates/download/${selectedCertificate.certificateId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/certificates/download/${selectedCertificate.certificateId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Certificate_${selectedCertificate.userId?.name || 'Participant'}_${new Date().getFullYear()}.pdf`;
+        a.download = `Certificate_${
+          selectedCertificate.userId?.name || "Participant"
+        }_${new Date().getFullYear()}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -122,8 +132,18 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
       <div className="w-full flex items-center justify-center bg-white p-8 rounded-lg shadow-sm min-h-[400px]">
         <div className="text-center">
           <div className="text-gray-500 mb-4">
-            <svg className="w-16 h-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="w-16 h-16 mx-auto mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
           </div>
           <p className="text-gray-600 mb-4">Certificate not found.</p>
@@ -150,7 +170,7 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
           >
             <Download className="w-5 h-5" />
           </button>
-          
+
           <button
             onClick={onDone}
             className="px-4 py-2 bg-[#0C2A92] text-white font-medium rounded-lg hover:bg-blue-800 transition-colors shadow-sm text-sm"
@@ -159,69 +179,72 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
           </button>
         </div>
       </div>
-      
+
       {/* White Background Container */}
       <div className="w-full bg-white p-8 rounded-lg shadow-sm">
-
-      {/* Certificate Display */}
-      <div className="w-full max-w-4xl flex justify-center">
-        {certificateImage ? (
-          <div className="relative w-full bg-gray-100 rounded-lg p-2">
-            <object
-              data={certificateImage}
-              type="application/pdf"
-              className="w-full h-auto rounded-lg border-0"
-              style={{ minHeight: "600px", maxHeight: "800px" }}
-              title="Certificate Preview"
-            >
+        {/* Certificate Display */}
+        <div className="w-full max-w-4xl flex justify-center">
+          {certificateImage ? (
+            <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden">
               <embed
-                src={certificateImage}
+                src={`${certificateImage}#toolbar=0&navpanes=0&scrollbar=0`}
                 type="application/pdf"
-                className="w-full h-auto rounded-lg border-0"
-                style={{ minHeight: "600px", maxHeight: "800px" }}
-              />
-              <iframe
-                src={certificateImage}
+                className="w-full rounded-lg"
+                style={{ minHeight: "600px", height: "800px" }}
                 title="Certificate Preview"
-                className="w-full h-auto rounded-lg"
-                style={{ minHeight: "600px", maxHeight: "800px", border: "none" }}
-              >
-                <p className="text-center p-8 text-gray-500">
-                  Unable to display PDF. Please use the download button above.
-                </p>
-              </iframe>
-            </object>
-          </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg p-12 text-center">
-            <div className="text-gray-500 mb-4">
-              <svg className="w-16 h-16 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              />
             </div>
-            <p className="text-gray-600 mb-4">Certificate preview not available</p>
-            <p className="text-sm text-gray-500">Use the download button above to save your certificate</p>
+          ) : (
+            <div className="bg-gray-50 rounded-lg p-12 text-center">
+              <div className="text-gray-500 mb-4">
+                <svg
+                  className="w-16 h-16 mx-auto mb-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Certificate preview not available
+              </p>
+              <p className="text-sm text-gray-500">
+                Use the download button above to save your certificate
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Certificate Info */}
+        {selectedCertificate && (
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <p>
+              <strong>Event:</strong>{" "}
+              {selectedCertificate.eventId?.name || "Evaluation Event"}
+            </p>
+            <p>
+              <strong>Type:</strong>{" "}
+              {selectedCertificate.certificateType ||
+                "Certificate of Participation"}
+            </p>
+            <p>
+              <strong>Issued:</strong>{" "}
+              {new Date(
+                selectedCertificate.issuedDate || selectedCertificate.createdAt
+              ).toLocaleDateString()}
+            </p>
+            <p>
+              <strong>Participant:</strong>{" "}
+              {selectedCertificate.userId?.name || "Participant"}
+            </p>
           </div>
         )}
-      </div>
-
-      {/* Certificate Info */}
-      {selectedCertificate && (
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>
-            <strong>Event:</strong> {selectedCertificate.eventId?.name || "Evaluation Event"}
-          </p>
-          <p>
-            <strong>Type:</strong> {selectedCertificate.certificateType || "Certificate of Participation"}
-          </p>
-          <p>
-            <strong>Issued:</strong> {new Date(selectedCertificate.issuedDate || selectedCertificate.createdAt).toLocaleDateString()}
-          </p>
-          <p>
-            <strong>Participant:</strong> {selectedCertificate.userId?.name || "Participant"}
-          </p>
-        </div>
-      )}
       </div>
     </div>
   );

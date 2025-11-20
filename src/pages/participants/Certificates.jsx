@@ -59,6 +59,54 @@ const Certificates = () => {
     }
   }, [certificateId, certificates]);
 
+  // State for certificate thumbnails
+  const [certificateThumbnails, setCertificateThumbnails] = useState({});
+
+  // Fetch certificate PDFs with authentication and create blob URLs
+  useEffect(() => {
+    const fetchCertificateThumbnails = async () => {
+      for (const cert of certificates) {
+        if (!certificateThumbnails[cert.certificateId]) {
+          try {
+            const response = await fetch(
+              `/api/certificates/download/${cert.certificateId}?inline=true`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (response.ok) {
+              const blob = await response.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              setCertificateThumbnails((prev) => ({
+                ...prev,
+                [cert.certificateId]: blobUrl,
+              }));
+            }
+          } catch (error) {
+            console.error(
+              `Error loading thumbnail for ${cert.certificateId}:`,
+              error
+            );
+          }
+        }
+      }
+    };
+
+    if (certificates.length > 0 && token) {
+      fetchCertificateThumbnails();
+    }
+
+    // Cleanup blob URLs on unmount
+    return () => {
+      Object.values(certificateThumbnails).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [certificates, token]);
+
   const handleDownload = async (certificateId, certificate) => {
     try {
       const response = await fetch(
@@ -202,8 +250,29 @@ const Certificates = () => {
                   key={cert._id}
                   className="bg-white rounded-lg shadow-md p-4 text-center hover:shadow-lg transition-shadow duration-300"
                 >
-                  <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-md mb-4 p-8 flex items-center justify-center">
-                    <div className="text-6xl">🏆</div>
+                  <div
+                    className="relative bg-gray-50 rounded-md mb-4 overflow-hidden flex items-center justify-center"
+                    style={{ aspectRatio: "1056/816" }}
+                  >
+                    {certificateThumbnails[cert.certificateId] ? (
+                      <embed
+                        src={`${
+                          certificateThumbnails[cert.certificateId]
+                        }#toolbar=0&navpanes=0&scrollbar=0`}
+                        type="application/pdf"
+                        className="w-full h-full"
+                        title={`Certificate preview for ${
+                          cert.eventId?.name || "Certificate"
+                        }`}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="text-xs text-gray-500">
+                          Loading...
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <h3 className="font-semibold text-gray-800 mb-2">
                     {cert.eventId?.name || "Certificate"}
