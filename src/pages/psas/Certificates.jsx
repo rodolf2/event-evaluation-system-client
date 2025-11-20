@@ -36,15 +36,37 @@ const Certificates = () => {
     // Handle template confirmation from gallery - navigate back to form editor
     if (action === "confirm" && saveTemplate) {
       if (isFromEvaluation && formId) {
+        // **ROOT CAUSE FIX**: Handle formId conflicts and ensure linkedCertificateId is saved
+        const currentFormId = FormSessionManager.getCurrentFormId();
+        const navigationFormId = currentFormId || formId;
+
         // Save form data before navigating back
         const formCreationState = localStorage.getItem("formCreationState");
-        if (formCreationState) {
-          const formData = JSON.parse(formCreationState);
-          FormSessionManager.saveFormData(formData);
+        let formData = formCreationState
+          ? JSON.parse(formCreationState)
+          : FormSessionManager.loadFormData();
+
+        if (formData) {
+          // Update the loaded form data with certificate linked status
+          const updatedFormData = {
+            ...formData,
+            isCertificateLinked: true,
+            linkedCertificateId: template?.id || null,
+          };
+          FormSessionManager.saveFormData(updatedFormData);
         }
 
         // Store certificate template data for form editor
         if (template) {
+          localStorage.setItem(
+            `certificateTemplate_${navigationFormId}`,
+            JSON.stringify({
+              template: template,
+              canvasData: template.data,
+              savedAt: new Date().toISOString(),
+            })
+          );
+          // Also save for original formId to be safe
           localStorage.setItem(
             `certificateTemplate_${formId}`,
             JSON.stringify({
@@ -56,14 +78,15 @@ const Certificates = () => {
         }
 
         // Set certificate linked flag
+        localStorage.setItem(`certificateLinked_${navigationFormId}`, "true");
         localStorage.setItem(`certificateLinked_${formId}`, "true");
 
         // Ensure form ID persistence
-        FormSessionManager.ensurePersistentFormId(formId);
+        FormSessionManager.ensurePersistentFormId(navigationFormId);
         FormSessionManager.preserveFormId();
 
         // Navigate back to evaluations form editor - preserve formId and set edit mode
-        navigate(`/psas/evaluations?edit=${formId}`);
+        navigate(`/psas/evaluations?edit=${navigationFormId}`);
         return;
       } else {
         // For standalone editing, save template and return to gallery
@@ -106,7 +129,7 @@ const Certificates = () => {
       // We need to ensure the certificate link uses the correct formId for navigation
       const currentFormId = FormSessionManager.getCurrentFormId();
       const navigationFormId = currentFormId || formId; // Use current formId if available, fallback to original formId
-      
+
       // Store the customized certificate template data for the correct formId
       if (canvasData) {
         localStorage.setItem(
@@ -129,11 +152,11 @@ const Certificates = () => {
         const updatedFormData = {
           ...formData,
           isCertificateLinked: true,
-          linkedCertificateId: selectedTemplate?.id || null
+          linkedCertificateId: selectedTemplate?.id || null,
         };
         FormSessionManager.saveFormData(updatedFormData);
       }
-      
+
       // Preserve certificate linking for both formIds to handle the transition
       // This ensures the certificate link survives the formId change during handlePublish
       localStorage.setItem(`certificateLinked_${formId}`, "true");
@@ -186,8 +209,12 @@ const Certificates = () => {
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
             <div className="text-center">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">Loading Certificates...</h3>
-              <p className="text-sm text-gray-600">Preparing your certificate templates</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">
+                Loading Certificates...
+              </h3>
+              <p className="text-sm text-gray-600">
+                Preparing your certificate templates
+              </p>
             </div>
           </div>
         </div>
