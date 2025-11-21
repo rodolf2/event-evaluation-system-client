@@ -28,6 +28,8 @@ import { FormSessionManager } from "../../../utils/formSessionManager";
 import PSASLayout from "../../psas/PSASLayout";
 import toast from "react-hot-toast";
 
+// Helper to generate IDs
+
 /**
  * FormCreationInterface - Comprehensive form creation system
  * Key principles:
@@ -61,7 +63,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
-  const [showCertificateCustomizer, setShowCertificateCustomizer] = useState(false);
+  const [showCertificateCustomizer, setShowCertificateCustomizer] =
+    useState(false);
 
   // Form content state
   const [activeSectionId, setActiveSectionId] = useState("main");
@@ -236,7 +239,15 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         !isReturningFromCertificate);
 
     if (shouldClearExistingData) {
+      // Preserve tempFormData if it exists (e.g. from Google Forms extraction)
+      const tempFormData = localStorage.getItem("tempFormData");
+
       FormSessionManager.clearAllFormData();
+
+      // Restore tempFormData
+      if (tempFormData) {
+        localStorage.setItem("tempFormData", tempFormData);
+      }
 
       setQuestions([]);
       setSections([]);
@@ -710,6 +721,126 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       localStorage.removeItem("editFormId");
     }
 
+    // Check for tempFormData from URL extraction (Google Forms, file upload, etc.)
+    const tempFormDataStr = localStorage.getItem("tempFormData");
+    if (tempFormDataStr && !hasShownRecipientsToast && !edit) {
+      const loadTimeout = setTimeout(() => {
+        try {
+          const tempData = JSON.parse(tempFormDataStr);
+          console.log(
+            "📥 [FormCreationInterface] Loading tempFormData:",
+            tempData
+          );
+
+          // Convert backend format questions to frontend format
+          const convertedQuestions = (tempData.questions || []).map((q) => {
+            let clientType = "Short Answer";
+            let clientOptions = [];
+            let ratingScale = 5;
+            let emojiStyle = "Default";
+            let likertStart = 1;
+            let likertEnd = 5;
+            let likertStartLabel = "Poor";
+            let likertEndLabel = "Excellent";
+
+            switch (q.type) {
+              case "multiple_choice":
+                clientType = "Multiple Choices";
+                clientOptions = q.options || [];
+                break;
+              case "short_answer":
+                clientType = "Short Answer";
+                break;
+              case "paragraph":
+                clientType = "Paragraph";
+                break;
+              case "scale":
+                if (q.lowLabel || q.highLabel) {
+                  clientType = "Likert Scale";
+                  likertStart = q.low || 1;
+                  likertEnd = q.high || 5;
+                  likertStartLabel = q.lowLabel || "Poor";
+                  likertEndLabel = q.highLabel || "Excellent";
+                  emojiStyle = null;
+                } else {
+                  clientType = "Numeric Ratings";
+                  ratingScale = q.high || 5;
+                  emojiStyle = "Default";
+                }
+                break;
+              case "date":
+                clientType = "Date";
+                break;
+              case "time":
+                clientType = "Time";
+                break;
+              case "file_upload":
+                clientType = "File Upload";
+                break;
+              default:
+                clientType = "Short Answer";
+            }
+
+            return {
+              id: makeId(),
+              type: clientType,
+              title: q.title || "",
+              options: clientOptions,
+              ratingScale,
+              emojiStyle,
+              required: q.required || false,
+              likertStart,
+              likertEnd,
+              likertStartLabel,
+              likertEndLabel,
+            };
+          });
+
+          console.log(
+            `✅ [FormCreationInterface] Converted ${convertedQuestions.length} questions`
+          );
+
+          // Load the data into the form
+          setFormTitle(tempData.title || "Untitled Form");
+          setFormDescription(tempData.description || "Form Description");
+          setQuestions(convertedQuestions);
+          setUploadedFiles(tempData.uploadedFiles || []);
+          setUploadedLinks(tempData.uploadedLinks || []);
+
+          // Save to FormSessionManager so it persists
+          const formDataToSave = {
+            formTitle: tempData.title || "Untitled Form",
+            formDescription: tempData.description || "Form Description",
+            questions: convertedQuestions,
+            sections: [],
+            uploadedFiles: tempData.uploadedFiles || [],
+            uploadedLinks: tempData.uploadedLinks || [],
+            eventStartDate: "",
+            eventEndDate: "",
+            currentFormId: finalFormId,
+            isCertificateLinked: false,
+            linkedCertificateId: null,
+          };
+
+          FormSessionManager.saveFormData(formDataToSave);
+
+          // Clear tempFormData after loading
+          localStorage.removeItem("tempFormData");
+
+          toast.success(
+            `Loaded form with ${convertedQuestions.length} question${
+              convertedQuestions.length !== 1 ? "s" : ""
+            }`
+          );
+        } catch (error) {
+          console.error("Error loading tempFormData:", error);
+          toast.error("Failed to load extracted form data");
+          localStorage.removeItem("tempFormData");
+        }
+      }, 100);
+      return () => clearTimeout(loadTimeout);
+    }
+
     // Mark initialization as complete (no longer used to gate Publish button)
     // Previously: setIsInitializing(false);
   }, [
@@ -1166,40 +1297,56 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       // If this is an existing published form, update the attendee list in the database
       if (currentFormId && /^[0-9a-fA-F]{24}$/.test(currentFormId)) {
         try {
-          console.log(`[CSV-UPLOAD] Updating attendee list for published form ${currentFormId}`);
+          console.log(
+            `[CSV-UPLOAD] Updating attendee list for published form ${currentFormId}`
+          );
 
           // Convert CSV students to attendee format
-          const attendeeList = csvData.students.map(student => ({
+          const attendeeList = csvData.students.map((student) => ({
             name: student.name,
             email: student.email.toLowerCase().trim(),
             hasResponded: false,
             uploadedAt: new Date(),
           }));
 
-          const response = await fetch(`/api/forms/${currentFormId}/attendees-json`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              attendeeFile: {
-                filename: csvData.filename,
-                students: attendeeList,
+          const response = await fetch(
+            `/api/forms/${currentFormId}/attendees-json`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
               },
-            }),
-          });
+              body: JSON.stringify({
+                attendeeFile: {
+                  filename: csvData.filename,
+                  students: attendeeList,
+                },
+              }),
+            }
+          );
 
           if (response.ok) {
             const result = await response.json();
-            console.log(`[CSV-UPLOAD] Successfully updated attendee list:`, result);
-            toast.success(`Attendee list updated in database (${attendeeList.length} students)`);
+            console.log(
+              `[CSV-UPLOAD] Successfully updated attendee list:`,
+              result
+            );
+            toast.success(
+              `Attendee list updated in database (${attendeeList.length} students)`
+            );
           } else {
-            console.error(`[CSV-UPLOAD] Failed to update attendee list:`, response.status);
+            console.error(
+              `[CSV-UPLOAD] Failed to update attendee list:`,
+              response.status
+            );
             toast.error("CSV uploaded but attendee list update failed");
           }
         } catch (attendeeError) {
-          console.error(`[CSV-UPLOAD] Error updating attendee list:`, attendeeError);
+          console.error(
+            `[CSV-UPLOAD] Error updating attendee list:`,
+            attendeeError
+          );
           toast.error("CSV uploaded but attendee list update failed");
         }
       }
@@ -1854,6 +2001,122 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const hasStudents =
     Array.isArray(assignedStudents) && assignedStudents.length > 0;
 
+  // Debug function to manually load tempFormData
+  const debugLoadTempData = () => {
+    const tempFormDataStr = localStorage.getItem("tempFormData");
+    if (!tempFormDataStr) {
+      alert("No tempFormData found in localStorage!");
+      return;
+    }
+    try {
+      const tempData = JSON.parse(tempFormDataStr);
+
+      // Detailed debug for MC questions
+      const mcQuestion = tempData.questions?.find(
+        (q) => q.type === "multiple_choice" || q.type === "checkbox"
+      );
+      const mcDebugInfo = mcQuestion
+        ? `\nFirst MC Question: "${mcQuestion.title}" has ${
+            mcQuestion.options?.length || 0
+          } options: [${(mcQuestion.options || []).join(", ")}]`
+        : "\nNo MC questions found.";
+
+      alert(
+        `Found tempFormData with ${tempData.questions?.length} questions. Title: ${tempData.title}${mcDebugInfo}`
+      );
+
+      // Convert backend format questions to frontend format
+      const convertedQuestions = (tempData.questions || []).map((q) => {
+        let clientType = "Short Answer";
+        let clientOptions = [];
+        let ratingScale = 5;
+        let emojiStyle = "Default";
+        let likertStart = 1;
+        let likertEnd = 5;
+        let likertStartLabel = "Poor";
+        let likertEndLabel = "Excellent";
+
+        switch (q.type) {
+          case "multiple_choice":
+            clientType = "Multiple Choices";
+            clientOptions = q.options || [];
+            break;
+          case "short_answer":
+            clientType = "Short Answer";
+            break;
+          case "paragraph":
+            clientType = "Paragraph";
+            break;
+          case "scale":
+            if (q.lowLabel || q.highLabel) {
+              clientType = "Likert Scale";
+              likertStart = q.low || 1;
+              likertEnd = q.high || 5;
+              likertStartLabel = q.lowLabel || "Poor";
+              likertEndLabel = q.highLabel || "Excellent";
+              emojiStyle = null;
+            } else {
+              clientType = "Numeric Ratings";
+              ratingScale = q.high || 5;
+              emojiStyle = "Default";
+            }
+            break;
+          case "date":
+            clientType = "Date";
+            break;
+          case "time":
+            clientType = "Time";
+            break;
+          case "file_upload":
+            clientType = "File Upload";
+            break;
+          default:
+            clientType = "Short Answer";
+        }
+
+        return {
+          id: makeId(),
+          type: clientType,
+          title: q.title || "",
+          options: clientOptions,
+          ratingScale,
+          emojiStyle,
+          required: q.required || false,
+          likertStart,
+          likertEnd,
+          likertStartLabel,
+          likertEndLabel,
+        };
+      });
+
+      setFormTitle(tempData.title || "Untitled Form");
+      setFormDescription(tempData.description || "Form Description");
+      setQuestions(convertedQuestions);
+      setUploadedFiles(tempData.uploadedFiles || []);
+      setUploadedLinks(tempData.uploadedLinks || []);
+
+      // Force save
+      const formDataToSave = {
+        formTitle: tempData.title || "Untitled Form",
+        formDescription: tempData.description || "Form Description",
+        questions: convertedQuestions,
+        sections: [],
+        uploadedFiles: tempData.uploadedFiles || [],
+        uploadedLinks: tempData.uploadedLinks || [],
+        eventStartDate: "",
+        eventEndDate: "",
+        currentFormId: currentFormId,
+        isCertificateLinked: false,
+        linkedCertificateId: null,
+      };
+      FormSessionManager.saveFormData(formDataToSave);
+
+      alert(`Loaded ${convertedQuestions.length} questions!`);
+    } catch (e) {
+      alert("Error parsing tempFormData: " + e.message);
+    }
+  };
+
   const content = (
     <>
       {/* Certificate Status Widget - Floating status indicator */}
@@ -1879,6 +2142,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Set Event Dates
+                </button>
+                <button
+                  onClick={debugLoadTempData}
+                  className="px-4 py-2 border border-red-300 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition-colors"
+                >
+                  Debug: Load Data
                 </button>
                 {isCertificateLinked && currentFormId && (
                   <button
@@ -2504,7 +2773,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 <CertificateCustomizer
                   formId={currentFormId}
                   onSave={(customizations) => {
-                    console.log("Certificate customizations saved:", customizations);
+                    console.log(
+                      "Certificate customizations saved:",
+                      customizations
+                    );
                     // Optionally update local state or show success message
                   }}
                   onClose={() => setShowCertificateCustomizer(false)}

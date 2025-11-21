@@ -1,9 +1,9 @@
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import PSASLayout from '../../components/psas/PSASLayout';
-import ReportHeader from './ReportHeader';
-import ReportDescription from './ReportDescription';
-import ReportActions from './ReportActions';
+import React from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import PSASLayout from "../../components/psas/PSASLayout";
+import ReportHeader from "./ReportHeader";
+import ReportDescription from "./ReportDescription";
+import ReportActions from "./ReportActions";
 
 const QualitativeComments = ({ report, onBack }) => {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ const QualitativeComments = ({ report, onBack }) => {
     "I found the balance between formal presentations and casual discussions to be effective.",
     "The follow-up materials provided after the event were comprehensive and useful.",
     "The event fostered a sense of community among participants from different backgrounds.",
-    "Overall, it was a professionally organized event that met my expectations for quality content."
+    "Overall, it was a professionally organized event that met my expectations for quality content.",
   ];
 
   const content = (
@@ -50,17 +50,25 @@ const QualitativeComments = ({ report, onBack }) => {
                 <p className="text-lg">College Level</p>
               </div>
               <h4 className="text-xl font-bold mb-4">Qualitative Comments</h4>
-              <p className="text-sm text-gray-600 mb-6">Total Qualitative Comments: {qualitativeComments.length}</p>
+              <p className="text-sm text-gray-600 mb-6">
+                Total Qualitative Comments: {qualitativeComments.length}
+              </p>
               <div className="space-y-4">
                 {qualitativeComments.map((comment, index) => (
-                  <div key={index} className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded-r-lg">
+                  <div
+                    key={index}
+                    className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded-r-lg"
+                  >
                     <p className="text-gray-800">{comment}</p>
                   </div>
                 ))}
               </div>
             </main>
             <div className="bg-blue-900 text-white text-center py-4 rounded-b-lg">
-              <p>MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 | info@laverdad.edu.ph</p>
+              <p>
+                MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 |
+                info@laverdad.edu.ph
+              </p>
             </div>
           </div>
         </div>
@@ -73,11 +81,7 @@ const QualitativeComments = ({ report, onBack }) => {
     return content;
   }
 
-  return (
-    <PSASLayout>
-      {content}
-    </PSASLayout>
-  );
+  return <PSASLayout>{content}</PSASLayout>;
 };
 
 export default QualitativeComments;

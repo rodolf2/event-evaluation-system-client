@@ -4,7 +4,6 @@ import {
   ArrowUp,
   ArrowDown,
   Filter,
-  Calendar,
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
@@ -52,9 +51,18 @@ const ReportCard = ({ report, onSelect, isLive = false }) => {
       )}
       <div className="relative">
         <img
-          src={report.thumbnail}
+          src={
+            report.thumbnail ||
+            "https://placehold.co/800x450/1e3a8a/ffffff?text=Generating+Thumbnail..."
+          }
           alt={report.title}
           className="w-full h-40 object-cover"
+          onError={(e) => {
+            e.target.onerror = null;
+            // Fallback to placeholder with report title
+            const encodedTitle = encodeURIComponent(report.title || "Report");
+            e.target.src = `https://placehold.co/800x450/1e3a8a/ffffff?text=${encodedTitle}`;
+          }}
         />
         <div className="absolute inset-0 bg-[#DEDFE0] bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
@@ -232,12 +240,17 @@ const Reports = () => {
     ratingFilter: "",
   });
 
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    pages: 0,
-  });
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const pagination = {
+    page,
+    limit,
+    total,
+    pages: totalPages,
+  };
 
   // Extract unique departments from reports
   const availableDepartments = useMemo(() => {
@@ -259,8 +272,8 @@ const Reports = () => {
         // Build query parameters
         const queryParams = new URLSearchParams({
           ...searchParams,
-          limit: pagination.limit,
-          page: pagination.page,
+          limit: limit,
+          page: page,
           search: searchQuery,
           ...(filters.status !== "all" && { status: filters.status }),
           ...(filters.startDate && { startDate: filters.startDate }),
@@ -283,7 +296,8 @@ const Reports = () => {
 
         if (result.success) {
           setReports(result.data.reports);
-          setPagination(result.data.pagination);
+          setTotal(result.data.pagination.total);
+          setTotalPages(result.data.pagination.pages);
           setLastRefresh(new Date().toISOString());
         } else {
           throw new Error(result.message || "Failed to fetch reports");
@@ -296,7 +310,7 @@ const Reports = () => {
         setRefreshing(false);
       }
     },
-    [token, searchQuery, filters, pagination.limit, pagination.page]
+    [token, searchQuery, filters, limit, page]
   );
 
   // Auto-refresh every 30 seconds
@@ -337,8 +351,7 @@ const Reports = () => {
   };
 
   const handleApplyFilters = () => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchReports();
+    setPage(1);
   };
 
   const handleClearFilters = () => {
@@ -350,17 +363,12 @@ const Reports = () => {
       ratingFilter: "",
     };
     setFilters(clearedFilters);
-    setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchReports();
+    setPage(1);
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    setPagination((prev) => ({ ...prev, page: 1 }));
-    // Debounce search
-    setTimeout(() => {
-      fetchReports({ search: query });
-    }, 300);
+    setPage(1);
   };
 
   const sortedReports = [...reports].sort((a, b) => {
@@ -514,28 +522,18 @@ const Reports = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() =>
-                          setPagination((prev) => ({
-                            ...prev,
-                            page: prev.page - 1,
-                          }))
-                        }
-                        disabled={pagination.page === 1}
+                        onClick={() => setPage(page - 1)}
+                        disabled={page === 1}
                         className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
                       >
                         Previous
                       </button>
                       <span className="text-sm text-gray-500">
-                        Page {pagination.page} of {pagination.pages}
+                        Page {page} of {totalPages}
                       </span>
                       <button
-                        onClick={() =>
-                          setPagination((prev) => ({
-                            ...prev,
-                            page: prev.page + 1,
-                          }))
-                        }
-                        disabled={pagination.page === pagination.pages}
+                        onClick={() => setPage(page + 1)}
+                        disabled={page === totalPages}
                         className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
                       >
                         Next

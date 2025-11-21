@@ -1,12 +1,8 @@
-import React from "react";
-
-const ReportDescription = () => {
+const ReportDescription = ({ title = "Sample Event Evaluation Report" }) => {
   return (
     <div className="mt-10 text-center">
       {/* Big Title */}
-      <h1 className="text-5xl font-extrabold text-black">
-        Sample Event Evaluation Report
-      </h1>
+      <h1 className="text-5xl font-extrabold text-black">{title}</h1>
 
       {/* Custom underline bar */}
       <div className="mx-auto mt-4 h-2 w-[1150px] bg-[#D8D8D8] rounded"></div>

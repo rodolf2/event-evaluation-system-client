@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Settings, TrendingUp, MessageSquare, Filter } from 'lucide-react';
-import PSASLayout from '../../components/psas/PSASLayout';
-import ReportHeader from './ReportHeader';
-import ReportDescription from './ReportDescription';
-import ReportActions from './ReportActions';
-import { useDynamicReportData } from '../../hooks/useDynamicReportData';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  RefreshCw,
+  Settings,
+  TrendingUp,
+  MessageSquare,
+  Filter,
+} from "lucide-react";
+import PSASLayout from "../../components/psas/PSASLayout";
+import ReportHeader from "./ReportHeader";
+import ReportDescription from "./ReportDescription";
+import ReportActions from "./ReportActions";
+import { useDynamicReportData } from "../../hooks/useDynamicReportData";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+} from "recharts";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
 // Dynamic Chart Components
 const DynamicBarChart = ({ data, title, subtitle, loading = false }) => {
@@ -31,7 +50,9 @@ const DynamicBarChart = ({ data, title, subtitle, loading = false }) => {
   return (
     <div>
       <h5 className="text-lg font-semibold text-center mb-2">{title}</h5>
-      {subtitle && <p className="text-center text-sm text-gray-500 mb-4">{subtitle}</p>}
+      {subtitle && (
+        <p className="text-center text-sm text-gray-500 mb-4">{subtitle}</p>
+      )}
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} layout="vertical">
           <XAxis type="number" />
@@ -64,7 +85,9 @@ const DynamicPieChart = ({ data, title, subtitle, loading = false }) => {
   return (
     <div>
       <h5 className="text-lg font-semibold text-center mb-2">{title}</h5>
-      {subtitle && <p className="text-center text-sm text-gray-500 mb-4">{subtitle}</p>}
+      {subtitle && (
+        <p className="text-center text-sm text-gray-500 mb-4">{subtitle}</p>
+      )}
       <ResponsiveContainer width="100%" height={400}>
         <PieChart>
           <Pie
@@ -78,7 +101,10 @@ const DynamicPieChart = ({ data, title, subtitle, loading = false }) => {
             label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+              />
             ))}
           </Pie>
           <Tooltip />
@@ -89,22 +115,35 @@ const DynamicPieChart = ({ data, title, subtitle, loading = false }) => {
   );
 };
 
-const CommentSection = ({ title, comments, loading = false, type = 'neutral' }) => {
+const CommentSection = ({
+  title,
+  comments,
+  loading = false,
+  type = "neutral",
+}) => {
   const getBorderColor = () => {
     switch (type) {
-      case 'positive': return 'border-green-500';
-      case 'negative': return 'border-red-500';
-      case 'neutral': return 'border-yellow-500';
-      default: return 'border-gray-500';
+      case "positive":
+        return "border-green-500";
+      case "negative":
+        return "border-red-500";
+      case "neutral":
+        return "border-yellow-500";
+      default:
+        return "border-gray-500";
     }
   };
 
   const getBgColor = () => {
     switch (type) {
-      case 'positive': return 'bg-green-50';
-      case 'negative': return 'bg-red-50';
-      case 'neutral': return 'bg-yellow-50';
-      default: return 'bg-gray-50';
+      case "positive":
+        return "bg-green-50";
+      case "negative":
+        return "bg-red-50";
+      case "neutral":
+        return "bg-yellow-50";
+      default:
+        return "bg-gray-50";
     }
   };
 
@@ -134,10 +173,15 @@ const CommentSection = ({ title, comments, loading = false, type = 'neutral' }) 
 
   return (
     <>
-      <p className="text-sm text-gray-600 mb-6">Total {title}: {comments.length}</p>
+      <p className="text-sm text-gray-600 mb-6">
+        Total {title}: {comments.length}
+      </p>
       <div className="space-y-4">
         {comments.map((comment, index) => (
-          <div key={comment.id || index} className={`${getBgColor()} border-l-4 ${getBorderColor()} p-4 rounded-r-lg`}>
+          <div
+            key={comment.id || index}
+            className={`${getBgColor()} border-l-4 ${getBorderColor()} p-4 rounded-r-lg`}
+          >
             <p className="text-gray-800">{comment.comment}</p>
             {comment.user && (
               <p className="text-xs text-gray-500 mt-2">
@@ -156,7 +200,7 @@ const CommentSection = ({ title, comments, loading = false, type = 'neutral' }) 
 const CompleteReport = ({ report, onBack }) => {
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Use dynamic data hook
   const {
     quantitativeData,
@@ -167,7 +211,7 @@ const CompleteReport = ({ report, onBack }) => {
     filters,
     updateFilters,
     applyFilters,
-    refreshData
+    refreshData,
   } = useDynamicReportData(report?.id);
 
   // If rendered as child component (with props), don't use PSASLayout
@@ -178,32 +222,42 @@ const CompleteReport = ({ report, onBack }) => {
     if (isChildComponent) {
       onBack();
     } else {
-      navigate('/psas/reports');
+      navigate("/psas/reports");
     }
   };
 
   const SectionWrapper = ({ title, children, showLiveIndicator = false }) => (
     <div className="section-page">
       <div className="bg-white">
-        <ReportHeader title={`${title} - ${report?.title || 'Event Evaluation Report'}`} />
-        <ReportDescription />
+        <ReportHeader
+          title={`${title} - ${report?.title || "Event Evaluation Report"}`}
+        />
+        <ReportDescription title={report?.title} />
         <main className="p-8">
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold">EVENT EVALUATION REPORT</h3>
+            <h3 className="text-2xl font-bold">
+              {report?.title || "EVENT EVALUATION REPORT"}
+            </h3>
             <p className="text-xl font-semibold">EVALUATION RESULT</p>
             <p className="text-lg">College Level</p>
             <h4 className="text-xl font-bold mt-4">{title}</h4>
             {showLiveIndicator && lastUpdated && (
               <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Live Data - Last updated: {new Date(lastUpdated).toLocaleTimeString()}</span>
+                <span>
+                  Live Data - Last updated:{" "}
+                  {new Date(lastUpdated).toLocaleTimeString()}
+                </span>
               </div>
             )}
           </div>
           {children}
         </main>
         <div className="bg-blue-900 text-white text-center py-4">
-          <p>MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 | info@laverdad.edu.ph</p>
+          <p>
+            MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 |
+            info@laverdad.edu.ph
+          </p>
         </div>
       </div>
     </div>
@@ -216,22 +270,26 @@ const CompleteReport = ({ report, onBack }) => {
       <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-4 h-4 text-gray-500" />
-          <h3 className="text-sm font-semibold text-gray-700">Dynamic Filters</h3>
+          <h3 className="text-sm font-semibold text-gray-700">
+            Dynamic Filters
+          </h3>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Date Range</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Date Range
+            </label>
             <div className="space-y-2">
               <input
                 type="date"
-                value={filters.startDate || ''}
+                value={filters.startDate || ""}
                 onChange={(e) => updateFilters({ startDate: e.target.value })}
                 className="w-full text-xs border border-gray-300 rounded px-2 py-1"
               />
               <input
                 type="date"
-                value={filters.endDate || ''}
+                value={filters.endDate || ""}
                 onChange={(e) => updateFilters({ endDate: e.target.value })}
                 className="w-full text-xs border border-gray-300 rounded px-2 py-1"
               />
@@ -239,9 +297,11 @@ const CompleteReport = ({ report, onBack }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Rating Filter</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Rating Filter
+            </label>
             <select
-              value={filters.ratingFilter || ''}
+              value={filters.ratingFilter || ""}
               onChange={(e) => updateFilters({ ratingFilter: e.target.value })}
               className="w-full text-xs border border-gray-300 rounded px-2 py-1"
             >
@@ -254,9 +314,11 @@ const CompleteReport = ({ report, onBack }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Sentiment</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Sentiment
+            </label>
             <select
-              value={filters.sentiment || 'all'}
+              value={filters.sentiment || "all"}
               onChange={(e) => updateFilters({ sentiment: e.target.value })}
               className="w-full text-xs border border-gray-300 rounded px-2 py-1"
             >
@@ -278,11 +340,11 @@ const CompleteReport = ({ report, onBack }) => {
           <button
             onClick={() => {
               updateFilters({
-                startDate: '',
-                endDate: '',
-                ratingFilter: '',
-                sentiment: 'all',
-                keyword: ''
+                startDate: "",
+                endDate: "",
+                ratingFilter: "",
+                sentiment: "all",
+                keyword: "",
               });
               applyFilters();
             }}
@@ -300,10 +362,9 @@ const CompleteReport = ({ report, onBack }) => {
       <ReportActions onBackClick={handleBackClick} />
       <div className="bg-gray-100 min-h-screen report-print-content print:block">
         <div className="container mx-auto py-8">
-          
           {/* Live Data Controls */}
           <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 print:hidden">
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
@@ -316,30 +377,40 @@ const CompleteReport = ({ report, onBack }) => {
                 disabled={loading}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                />
                 Refresh Data
               </button>
             </div>
-            
+
             {quantitativeData?.metrics && (
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-4 text-sm print:hidden">
                 <div className="flex items-center gap-1">
                   <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span>Avg: {quantitativeData.metrics.averageRating.toFixed(1)}</span>
+                  <span>
+                    Avg: {quantitativeData.metrics.averageRating.toFixed(1)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <MessageSquare className="w-4 h-4 text-green-600" />
-                  <span>{quantitativeData.metrics.totalResponses} responses</span>
+                  <span>
+                    {quantitativeData.metrics.totalResponses} responses
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
-          <FilterPanel />
+          <div className="print:hidden">
+            <FilterPanel />
+          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-600 text-sm">Error loading data: {error}</p>
+              <p className="text-red-600 text-sm">
+                Error loading data: {error}
+              </p>
               <button
                 onClick={refreshData}
                 className="mt-2 text-red-700 underline text-sm hover:text-red-800"
@@ -356,7 +427,9 @@ const CompleteReport = ({ report, onBack }) => {
                 <DynamicBarChart
                   data={quantitativeData?.charts?.yearData}
                   title="Current Year Data"
-                  subtitle={`${quantitativeData?.metrics?.totalResponses || 0} Responses`}
+                  subtitle={`${
+                    quantitativeData?.metrics?.totalResponses || 0
+                  } Responses`}
                   loading={loading}
                 />
               </div>
@@ -420,11 +493,7 @@ const CompleteReport = ({ report, onBack }) => {
     return content;
   }
 
-  return (
-    <PSASLayout>
-      {content}
-    </PSASLayout>
-  );
+  return <PSASLayout>{content}</PSASLayout>;
 };
 
 export default CompleteReport;
