@@ -88,6 +88,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
   // Form session context
   const formCanvasRef = useRef(null);
+  const tempFormDataLoadedRef = useRef(false); // Track if we've loaded tempFormData
   const [assignedStudents, setAssignedStudents] = useState(
     FormSessionManager.loadStudentAssignments() || []
   );
@@ -229,14 +230,21 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     // Check if we're returning from certificate linking (special case - don't clear data)
     const isReturningFromCertificate = edit && recipients;
 
+    // Check if we have pending tempFormData to load (from Google Forms import, etc.)
+    const hasTempFormData = !!localStorage.getItem("tempFormData");
+
     // Only clear existing data when this is an explicit brand-new creation context,
     // NOT on every render without params. This prevents infinite reset loops.
+    // ALSO: Don't clear if we have tempFormData waiting to be loaded!
+    // ALSO: Don't clear if we just loaded tempFormData (prevents clearing after load)
     const shouldClearExistingData =
-      isNewForm ||
-      (formIdFromUrl === null &&
-        !edit &&
-        !recipients &&
-        !isReturningFromCertificate);
+      !hasTempFormData &&
+      !tempFormDataLoadedRef.current &&
+      (isNewForm ||
+        (formIdFromUrl === null &&
+          !edit &&
+          !recipients &&
+          !isReturningFromCertificate));
 
     if (shouldClearExistingData) {
       // Preserve tempFormData if it exists (e.g. from Google Forms extraction)
@@ -507,6 +515,11 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           } catch {
             // On fetch error, restore any existing session instead of looping
             const restoreTimeout = setTimeout(() => {
+              // If we just loaded tempFormData, DO NOT restore from session storage
+              if (tempFormDataLoadedRef.current) {
+                return;
+              }
+
               const loadedData = FormSessionManager.loadFormData();
               if (loadedData) {
                 setFormTitle(loadedData.formTitle || "Untitled Form");
@@ -541,6 +554,11 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       } else {
         // Invalid backend id: treat as purely local draft, do NOT call any /api/certificates/form/:id here.
         const restoreTimeout = setTimeout(() => {
+          // If we just loaded tempFormData, DO NOT restore from session storage
+          if (tempFormDataLoadedRef.current) {
+            return;
+          }
+
           const loadedData = FormSessionManager.loadFormData();
           if (loadedData) {
             setFormTitle(loadedData.formTitle || "Untitled Form");
@@ -571,6 +589,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     } else {
       // No effective id: restore any existing session or create new persistent one
       const restoreTimeout = setTimeout(() => {
+        // If we just loaded tempFormData, DO NOT restore from session storage
+        // as it might overwrite our fresh data with stale data
+        if (tempFormDataLoadedRef.current) {
+          return;
+        }
+
         const loadedData = FormSessionManager.loadFormData();
         if (loadedData) {
           setFormTitle(loadedData.formTitle || "Untitled Form");
@@ -723,6 +747,17 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
     // Check for tempFormData from URL extraction (Google Forms, file upload, etc.)
     const tempFormDataStr = localStorage.getItem("tempFormData");
+    console.log(
+      "🔎 [FormCreationInterface] Checking for tempFormData:",
+      tempFormDataStr ? "FOUND" : "NOT FOUND"
+    );
+    console.log("🔎 [FormCreationInterface] Load conditions:", {
+      hasTempFormData: !!tempFormDataStr,
+      hasShownRecipientsToast,
+      edit,
+      willLoad: !!(tempFormDataStr && !hasShownRecipientsToast && !edit),
+    });
+
     if (tempFormDataStr && !hasShownRecipientsToast && !edit) {
       const loadTimeout = setTimeout(() => {
         try {
@@ -823,6 +858,14 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             })
           );
 
+          console.log("🔍 [FormCreationInterface] tempFormData analysis:");
+          console.log("  - Raw tempData.sections:", tempData.sections);
+          console.log("  - Raw tempData.questions:", tempData.questions);
+          console.log("  - Converted questions:", convertedQuestions);
+          console.log("  - Main questions:", mainQuestions);
+          console.log("  - Section questions:", sectionQuestions);
+          console.log("  - Reconstructed sections:", reconstructedSections);
+
           // Load the data into the form
           setFormTitle(tempData.title || "Untitled Form");
           setFormDescription(tempData.description || "Form Description");
@@ -874,6 +917,130 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     checkCertificateLinkedStatus,
     propFormId,
   ]);
+
+  /**
+   * Separate useEffect to watch for tempFormData
+   * This runs on every render to catch tempFormData that gets saved AFTER component mounts
+   */
+  useEffect(() => {
+    const tempFormDataStr = localStorage.getItem("tempFormData");
+
+    if (tempFormDataStr && !hasShownRecipientsToast) {
+      try {
+        const tempData = JSON.parse(tempFormDataStr);
+
+        // Convert backend format questions to frontend format
+        const convertedQuestions = (tempData.questions || []).map((q) => {
+          let clientType = "Short Answer";
+          let clientOptions = [];
+          let ratingScale = 5;
+          let emojiStyle = "Default";
+          let likertStart = 1;
+          let likertEnd = 5;
+          let likertStartLabel = "Poor";
+          let likertEndLabel = "Excellent";
+
+          switch (q.type) {
+            case "multiple_choice":
+              clientType = "Multiple Choices";
+              clientOptions = q.options || [];
+              break;
+            case "short_answer":
+              clientType = "Short Answer";
+              break;
+            case "paragraph":
+              clientType = "Paragraph";
+              break;
+            case "scale":
+              if (q.lowLabel || q.highLabel) {
+                clientType = "Likert Scale";
+                likertStart = q.low || 1;
+                likertEnd = q.high || 5;
+                likertStartLabel = q.lowLabel || "Poor";
+                likertEndLabel = q.highLabel || "Excellent";
+                emojiStyle = null;
+              } else {
+                clientType = "Numeric Ratings";
+                ratingScale = q.high || 5;
+                emojiStyle = "Default";
+              }
+              break;
+            case "date":
+              clientType = "Date";
+              break;
+            case "time":
+              clientType = "Time";
+              break;
+            case "file_upload":
+              clientType = "File Upload";
+              break;
+            default:
+              clientType = "Short Answer";
+          }
+
+          return {
+            id: makeId(),
+            type: clientType,
+            title: q.title || "",
+            options: clientOptions,
+            ratingScale,
+            emojiStyle,
+            required: q.required || false,
+            likertStart,
+            likertEnd,
+            likertStartLabel,
+            likertEndLabel,
+            sectionId: q.sectionId,
+          };
+        });
+
+        // Separate main questions and section questions
+        const mainQuestions = [];
+        const sectionQuestions = [];
+
+        convertedQuestions.forEach((q) => {
+          if (!q.sectionId || q.sectionId === "main") {
+            mainQuestions.push(q);
+          } else {
+            sectionQuestions.push(q);
+          }
+        });
+
+        // Reconstruct sections with their questions
+        const reconstructedSections = (tempData.sections || []).map(
+          (section) => ({
+            ...section,
+            questions: sectionQuestions.filter(
+              (q) => q.sectionId === section.id
+            ),
+          })
+        );
+
+        // Load the data into the form
+        setFormTitle(tempData.title || "Untitled Form");
+        setFormDescription(tempData.description || "Form Description");
+        setQuestions(mainQuestions);
+        setSections(reconstructedSections);
+        setUploadedFiles(tempData.uploadedFiles || []);
+        setUploadedLinks(tempData.uploadedLinks || []);
+
+        // Mark that we've loaded tempFormData to prevent clearing
+        tempFormDataLoadedRef.current = true;
+
+        // Clear tempFormData after loading
+        localStorage.removeItem("tempFormData");
+
+        toast.success(
+          `Loaded form with ${convertedQuestions.length} question${
+            convertedQuestions.length !== 1 ? "s" : ""
+          }`
+        );
+      } catch (error) {
+        console.error("Error loading tempFormData:", error);
+        localStorage.removeItem("tempFormData");
+      }
+    }
+  }, [hasShownRecipientsToast]); // Runs when hasShownRecipientsToast changes
 
   /**
    * Debounced autosave:
@@ -2025,122 +2192,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const hasStudents =
     Array.isArray(assignedStudents) && assignedStudents.length > 0;
 
-  // Debug function to manually load tempFormData
-  const debugLoadTempData = () => {
-    const tempFormDataStr = localStorage.getItem("tempFormData");
-    if (!tempFormDataStr) {
-      alert("No tempFormData found in localStorage!");
-      return;
-    }
-    try {
-      const tempData = JSON.parse(tempFormDataStr);
-
-      // Detailed debug for MC questions
-      const mcQuestion = tempData.questions?.find(
-        (q) => q.type === "multiple_choice" || q.type === "checkbox"
-      );
-      const mcDebugInfo = mcQuestion
-        ? `\nFirst MC Question: "${mcQuestion.title}" has ${
-            mcQuestion.options?.length || 0
-          } options: [${(mcQuestion.options || []).join(", ")}]`
-        : "\nNo MC questions found.";
-
-      alert(
-        `Found tempFormData with ${tempData.questions?.length} questions. Title: ${tempData.title}${mcDebugInfo}`
-      );
-
-      // Convert backend format questions to frontend format
-      const convertedQuestions = (tempData.questions || []).map((q) => {
-        let clientType = "Short Answer";
-        let clientOptions = [];
-        let ratingScale = 5;
-        let emojiStyle = "Default";
-        let likertStart = 1;
-        let likertEnd = 5;
-        let likertStartLabel = "Poor";
-        let likertEndLabel = "Excellent";
-
-        switch (q.type) {
-          case "multiple_choice":
-            clientType = "Multiple Choices";
-            clientOptions = q.options || [];
-            break;
-          case "short_answer":
-            clientType = "Short Answer";
-            break;
-          case "paragraph":
-            clientType = "Paragraph";
-            break;
-          case "scale":
-            if (q.lowLabel || q.highLabel) {
-              clientType = "Likert Scale";
-              likertStart = q.low || 1;
-              likertEnd = q.high || 5;
-              likertStartLabel = q.lowLabel || "Poor";
-              likertEndLabel = q.highLabel || "Excellent";
-              emojiStyle = null;
-            } else {
-              clientType = "Numeric Ratings";
-              ratingScale = q.high || 5;
-              emojiStyle = "Default";
-            }
-            break;
-          case "date":
-            clientType = "Date";
-            break;
-          case "time":
-            clientType = "Time";
-            break;
-          case "file_upload":
-            clientType = "File Upload";
-            break;
-          default:
-            clientType = "Short Answer";
-        }
-
-        return {
-          id: makeId(),
-          type: clientType,
-          title: q.title || "",
-          options: clientOptions,
-          ratingScale,
-          emojiStyle,
-          required: q.required || false,
-          likertStart,
-          likertEnd,
-          likertStartLabel,
-          likertEndLabel,
-        };
-      });
-
-      setFormTitle(tempData.title || "Untitled Form");
-      setFormDescription(tempData.description || "Form Description");
-      setQuestions(convertedQuestions);
-      setUploadedFiles(tempData.uploadedFiles || []);
-      setUploadedLinks(tempData.uploadedLinks || []);
-
-      // Force save
-      const formDataToSave = {
-        formTitle: tempData.title || "Untitled Form",
-        formDescription: tempData.description || "Form Description",
-        questions: convertedQuestions,
-        sections: [],
-        uploadedFiles: tempData.uploadedFiles || [],
-        uploadedLinks: tempData.uploadedLinks || [],
-        eventStartDate: "",
-        eventEndDate: "",
-        currentFormId: currentFormId,
-        isCertificateLinked: false,
-        linkedCertificateId: null,
-      };
-      FormSessionManager.saveFormData(formDataToSave);
-
-      alert(`Loaded ${convertedQuestions.length} questions!`);
-    } catch (e) {
-      alert("Error parsing tempFormData: " + e.message);
-    }
-  };
-
   const content = (
     <>
       {/* Certificate Status Widget - Floating status indicator */}
@@ -2166,12 +2217,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Set Event Dates
-                </button>
-                <button
-                  onClick={debugLoadTempData}
-                  className="px-4 py-2 border border-red-300 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition-colors"
-                >
-                  Debug: Load Data
                 </button>
                 {isCertificateLinked && currentFormId && (
                   <button

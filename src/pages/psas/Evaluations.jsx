@@ -15,6 +15,7 @@ const Evaluations = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [evaluationForms, setEvaluationForms] = useState([]);
   const [currentFormId, setCurrentFormId] = useState(null);
   const selectedTemplate = searchParams.get("template");
@@ -167,6 +168,8 @@ const Evaluations = () => {
       return;
     }
 
+    setIsExtracting(true);
+
     try {
       const response = await fetch("/api/forms/extract-by-url", {
         method: "POST",
@@ -228,6 +231,8 @@ const Evaluations = () => {
     } catch (error) {
       console.error("Import error:", error);
       toast.error(`An error occurred: ${error.message}`);
+    } finally {
+      setIsExtracting(false);
     }
   };
 
@@ -282,7 +287,10 @@ const Evaluations = () => {
                   placeholder="https://docs.google.com/forms/d/.../viewform"
                   onChange={handleUrlChange}
                   value={googleFormsUrl} // Bind value to state
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  disabled={isExtracting}
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                    isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   Paste the URL of an existing Google Form to import its
@@ -296,15 +304,47 @@ const Evaluations = () => {
                     setShowUploadModal(false);
                     setGoogleFormsUrl(""); // Clear the URL input on cancel
                   }}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+                  disabled={isExtracting}
+                  className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${
+                    isExtracting ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpload}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  disabled={isExtracting}
+                  className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${
+                    isExtracting ? "opacity-75 cursor-not-allowed" : ""
+                  }`}
                 >
-                  Import Form
+                  {isExtracting ? (
+                    <>
+                      <svg
+                        className="animate-spin h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Extracting...
+                    </>
+                  ) : (
+                    "Import Form"
+                  )}
                 </button>
               </div>
             </div>
