@@ -25,6 +25,9 @@ import {
   Save,
   Eye,
   Edit3,
+  Plus,
+  Sliders,
+  X,
 } from "lucide-react";
 
 import { jsPDF } from "jspdf";
@@ -47,6 +50,7 @@ const CertificateEditor = ({
   const [certificateSize, setCertificateSize] = useState("US Letter");
   const [showPanels, setShowPanels] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState(null); // 'elements' | 'properties' | null
   const [canvasViewportTransform, setCanvasViewportTransform] = useState(null);
 
   const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
@@ -64,11 +68,32 @@ const CertificateEditor = ({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
 
-  const { pushHistory, undo, redo } = useCanvasHistory();
+  const {
+    pushHistory: rawPushHistory,
+    undo: rawUndo,
+    redo: rawRedo,
+  } = useCanvasHistory();
+
+  const pushHistory = useCallback(() => {
+    if (fabricCanvas.current) {
+      rawPushHistory(fabricCanvas.current);
+    }
+  }, [rawPushHistory]);
+
+  const undo = useCallback(() => {
+    if (fabricCanvas.current) {
+      rawUndo(fabricCanvas.current);
+    }
+  }, [rawUndo]);
+
+  const redo = useCallback(() => {
+    if (fabricCanvas.current) {
+      rawRedo(fabricCanvas.current);
+    }
+  }, [rawRedo]);
 
   // Create refs for functions to prevent unnecessary re-initialization
   const cloneObjectRef = useRef();
-
 
   useEffect(() => {
     let resizeObserver = null;
@@ -127,8 +152,8 @@ const CertificateEditor = ({
 
           // Account for padding (16px on each side from p-4 class)
           const padding = 16;
-          const availableWidth = container.clientWidth - (padding * 2);
-          const availableHeight = container.clientHeight - (padding * 2);
+          const availableWidth = container.clientWidth - padding * 2;
+          const availableHeight = container.clientHeight - padding * 2;
 
           // Calculate scale to fit the certificate within the available space
           const scaleX = availableWidth / BASE_WIDTH;
@@ -209,10 +234,15 @@ const CertificateEditor = ({
           setForceUpdate((f) => f + 1);
         };
 
+        const handleModification = () => {
+          updateSelection();
+          rawPushHistory(canvas);
+        };
+
         canvas.on({
-          "object:modified": updateSelection,
-          "object:added": updateSelection,
-          "object:removed": updateSelection,
+          "object:modified": handleModification,
+          "object:added": handleModification,
+          "object:removed": handleModification,
           "selection:created": updateSelection,
           "selection:updated": updateSelection,
           "selection:cleared": updateSelection,
@@ -269,13 +299,55 @@ const CertificateEditor = ({
 
           // Check horizontal snapping with priority (center first, then edges)
           const horizontalSnaps = [
-            { point: objCenterX, target: snapPoints.centerX, type: 'vertical', label: 'center', priority: 1 },
-            { point: objLeft, target: snapPoints.left, type: 'vertical', label: 'left', priority: 2 },
-            { point: objRight, target: snapPoints.right, type: 'vertical', label: 'right', priority: 2 },
-            { point: objLeft, target: snapPoints.thirdLeft, type: 'vertical', label: 'third-left', priority: 3 },
-            { point: objRight, target: snapPoints.thirdRight, type: 'vertical', label: 'third-right', priority: 3 },
-            { point: objLeft, target: snapPoints.quarterLeft, type: 'vertical', label: 'quarter-left', priority: 4 },
-            { point: objRight, target: snapPoints.quarterRight, type: 'vertical', label: 'quarter-right', priority: 4 },
+            {
+              point: objCenterX,
+              target: snapPoints.centerX,
+              type: "vertical",
+              label: "center",
+              priority: 1,
+            },
+            {
+              point: objLeft,
+              target: snapPoints.left,
+              type: "vertical",
+              label: "left",
+              priority: 2,
+            },
+            {
+              point: objRight,
+              target: snapPoints.right,
+              type: "vertical",
+              label: "right",
+              priority: 2,
+            },
+            {
+              point: objLeft,
+              target: snapPoints.thirdLeft,
+              type: "vertical",
+              label: "third-left",
+              priority: 3,
+            },
+            {
+              point: objRight,
+              target: snapPoints.thirdRight,
+              type: "vertical",
+              label: "third-right",
+              priority: 3,
+            },
+            {
+              point: objLeft,
+              target: snapPoints.quarterLeft,
+              type: "vertical",
+              label: "quarter-left",
+              priority: 4,
+            },
+            {
+              point: objRight,
+              target: snapPoints.quarterRight,
+              type: "vertical",
+              label: "quarter-right",
+              priority: 4,
+            },
           ];
 
           // Sort by priority and check snapping
@@ -292,13 +364,55 @@ const CertificateEditor = ({
 
           // Check vertical snapping with priority (center first, then edges)
           const verticalSnaps = [
-            { point: objCenterY, target: snapPoints.centerY, type: 'horizontal', label: 'center', priority: 1 },
-            { point: objTop, target: snapPoints.top, type: 'horizontal', label: 'top', priority: 2 },
-            { point: objBottom, target: snapPoints.bottom, type: 'horizontal', label: 'bottom', priority: 2 },
-            { point: objTop, target: snapPoints.thirdTop, type: 'horizontal', label: 'third-top', priority: 3 },
-            { point: objBottom, target: snapPoints.thirdBottom, type: 'horizontal', label: 'third-bottom', priority: 3 },
-            { point: objTop, target: snapPoints.quarterTop, type: 'horizontal', label: 'quarter-top', priority: 4 },
-            { point: objBottom, target: snapPoints.quarterBottom, type: 'horizontal', label: 'quarter-bottom', priority: 4 },
+            {
+              point: objCenterY,
+              target: snapPoints.centerY,
+              type: "horizontal",
+              label: "center",
+              priority: 1,
+            },
+            {
+              point: objTop,
+              target: snapPoints.top,
+              type: "horizontal",
+              label: "top",
+              priority: 2,
+            },
+            {
+              point: objBottom,
+              target: snapPoints.bottom,
+              type: "horizontal",
+              label: "bottom",
+              priority: 2,
+            },
+            {
+              point: objTop,
+              target: snapPoints.thirdTop,
+              type: "horizontal",
+              label: "third-top",
+              priority: 3,
+            },
+            {
+              point: objBottom,
+              target: snapPoints.thirdBottom,
+              type: "horizontal",
+              label: "third-bottom",
+              priority: 3,
+            },
+            {
+              point: objTop,
+              target: snapPoints.quarterTop,
+              type: "horizontal",
+              label: "quarter-top",
+              priority: 4,
+            },
+            {
+              point: objBottom,
+              target: snapPoints.quarterBottom,
+              type: "horizontal",
+              label: "quarter-bottom",
+              priority: 4,
+            },
           ];
 
           // Sort by priority and check snapping
@@ -470,10 +584,10 @@ const CertificateEditor = ({
     checkMobile();
 
     // Listen for resize events
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
 
     return () => {
-      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener("resize", checkMobile);
     };
   }, [showPanels]);
 
@@ -522,15 +636,17 @@ const CertificateEditor = ({
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file.');
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
       e.target.value = "";
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image file is too large. Please select an image smaller than 10MB.');
+      alert(
+        "Image file is too large. Please select an image smaller than 10MB."
+      );
       e.target.value = "";
       return;
     }
@@ -564,7 +680,9 @@ const CertificateEditor = ({
 
           if (!img) {
             alert("Failed to load image. Please try a different image file.");
-            console.error("Failed to create image from URL - img is null/undefined");
+            console.error(
+              "Failed to create image from URL - img is null/undefined"
+            );
             return;
           }
 
@@ -666,7 +784,9 @@ const CertificateEditor = ({
   };
 
   const addImageFromUrl = () => {
-    const url = prompt("Enter direct image URL (e.g., https://example.com/image.jpg)\n\nNote: Most websites block cross-origin access. Try these working examples:\n• https://picsum.photos/800/600 (random image)\n• https://via.placeholder.com/800x600 (placeholder)\n• Direct links from Unsplash/Pexels/Pixabay\n• Or upload files directly for best results");
+    const url = prompt(
+      "Enter direct image URL (e.g., https://example.com/image.jpg)\n\nNote: Most websites block cross-origin access. Try these working examples:\n• https://picsum.photos/800/600 (random image)\n• https://via.placeholder.com/800x600 (placeholder)\n• Direct links from Unsplash/Pexels/Pixabay\n• Or upload files directly for best results"
+    );
     if (!url) return;
 
     // Basic URL validation
@@ -679,11 +799,23 @@ const CertificateEditor = ({
     }
 
     // Check if it's likely a direct image URL
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
-    const isImageUrl = imageExtensions.some(ext => parsedUrl.pathname.toLowerCase().includes(ext));
+    const imageExtensions = [
+      ".jpg",
+      ".jpeg",
+      ".png",
+      ".gif",
+      ".webp",
+      ".svg",
+      ".bmp",
+    ];
+    const isImageUrl = imageExtensions.some((ext) =>
+      parsedUrl.pathname.toLowerCase().includes(ext)
+    );
 
     if (!isImageUrl) {
-      alert("This doesn't appear to be a direct image URL. Please use a direct link to an image file (ending in .jpg, .png, etc.)\n\nFor example:\n• https://images.unsplash.com/photo-123456789\n• https://picsum.photos/800/600\n• https://via.placeholder.com/800x600");
+      alert(
+        "This doesn't appear to be a direct image URL. Please use a direct link to an image file (ending in .jpg, .png, etc.)\n\nFor example:\n• https://images.unsplash.com/photo-123456789\n• https://picsum.photos/800/600\n• https://via.placeholder.com/800x600"
+      );
       return;
     }
 
@@ -709,12 +841,19 @@ const CertificateEditor = ({
         console.log("URL Fabric.js image callback executed", img);
 
         if (!img) {
-          alert("Failed to load image from URL. Make sure the URL allows cross-origin access and the image exists.");
+          alert(
+            "Failed to load image from URL. Make sure the URL allows cross-origin access and the image exists."
+          );
           console.error("Failed to load image from URL:", url);
           return;
         }
 
-        console.log("URL image loaded successfully:", img.width, "x", img.height);
+        console.log(
+          "URL image loaded successfully:",
+          img.width,
+          "x",
+          img.height
+        );
         addUrlImageToCanvas(img);
       },
       {
@@ -736,7 +875,9 @@ const CertificateEditor = ({
         };
         nativeImg.onerror = (error) => {
           console.error("URL image loading error:", error);
-          alert("Failed to load image from URL. This is usually due to:\n\n• CORS policy: The website doesn't allow cross-origin access\n• Invalid image URL: Check the link is correct\n• Network issues: Try again later\n\nSolutions:\n• Use direct image URLs from Unsplash, Pexels, or Pixabay\n• Copy the image address from browser dev tools\n• Upload the image file directly instead\n• Use a CORS proxy service");
+          alert(
+            "Failed to load image from URL. This is usually due to:\n\n• CORS policy: The website doesn't allow cross-origin access\n• Invalid image URL: Check the link is correct\n• Network issues: Try again later\n\nSolutions:\n• Use direct image URLs from Unsplash, Pexels, or Pixabay\n• Copy the image address from browser dev tools\n• Upload the image file directly instead\n• Use a CORS proxy service"
+          );
         };
         nativeImg.src = url;
       }
@@ -848,103 +989,129 @@ const CertificateEditor = ({
     }
   };
 
-  const cloneObject = useCallback(() => {
+  const cloneObject = useCallback(async () => {
     const canvas = fabricCanvas.current;
     const obj = canvas?.getActiveObject();
     if (!obj) return;
-    obj.clone((cloned) => {
+
+    try {
+      const cloned = await obj.clone();
       cloned.set({ left: obj.left + 12, top: obj.top + 12 });
       canvas.add(cloned);
       canvas.setActiveObject(cloned);
-    });
-  }, []);
+      canvas.requestRenderAll();
+      pushHistory();
+    } catch (err) {
+      console.error("Error cloning object:", err);
+    }
+  }, [pushHistory]);
 
   // Update the ref after cloneObject is defined
   cloneObjectRef.current = cloneObject;
 
-  const bringToFront = useCallback(
-    () =>
-      fabricCanvas.current?.bringToFront(
-        fabricCanvas.current.getActiveObject()
-      ),
-    []
-  );
-
-  const bringForward = useCallback(
-    () =>
-      fabricCanvas.current?.bringForward(
-        fabricCanvas.current.getActiveObject()
-      ),
-    []
-  );
-
-  const sendBackward = useCallback(
-    () =>
-      fabricCanvas.current?.sendBackwards(
-        fabricCanvas.current.getActiveObject()
-      ),
-    []
-  );
-
-  const sendToBack = useCallback(
-    () =>
-      fabricCanvas.current?.sendToBack(
-        fabricCanvas.current.getActiveObject()
-      ),
-    []
-  );
-
-  const deleteObject = useCallback(
-    () => fabricCanvas.current?.remove(fabricCanvas.current.getActiveObject()),
-    []
-  );
-
-  const alignObject = useCallback((edge) => {
+  const bringToFront = useCallback(() => {
     const canvas = fabricCanvas.current;
     const obj = canvas?.getActiveObject();
     if (!obj) return;
-    switch (edge) {
-      case "left":
-        obj.set("left", 0);
-        break;
-      case "h-center":
-        obj.set(
-          "left",
-          (canvas.width / canvas.getZoom() - obj.getScaledWidth()) / 2
-        );
-        break;
-      case "right":
-        obj.set("left", canvas.width / canvas.getZoom() - obj.getScaledWidth());
-        break;
-      case "top":
-        obj.set("top", 0);
-        break;
-      case "v-center":
-        obj.set(
-          "top",
-          (canvas.height / canvas.getZoom() - obj.getScaledHeight()) / 2
-        );
-        break;
-      case "bottom":
-        obj.set(
-          "top",
-          canvas.height / canvas.getZoom() - obj.getScaledHeight()
-        );
-        break;
-      default:
-        break;
-    }
+    canvas.bringObjectToFront(obj);
     canvas.requestRenderAll();
-  }, []);
+    pushHistory();
+  }, [pushHistory]);
 
-  const updateProperty = useCallback((prop, value) => {
-    const obj = fabricCanvas.current?.getActiveObject();
-    if (obj) {
-      obj.set(prop, value);
-      fabricCanvas.current.requestRenderAll();
-      setForceUpdate((f) => f + 1);
-    }
-  }, []);
+  const bringForward = useCallback(() => {
+    const canvas = fabricCanvas.current;
+    const obj = canvas?.getActiveObject();
+    if (!obj) return;
+    canvas.bringObjectForward(obj);
+    canvas.requestRenderAll();
+    pushHistory();
+  }, [pushHistory]);
+
+  const sendBackward = useCallback(() => {
+    const canvas = fabricCanvas.current;
+    const obj = canvas?.getActiveObject();
+    if (!obj) return;
+    canvas.sendObjectBackwards(obj);
+    canvas.requestRenderAll();
+    pushHistory();
+  }, [pushHistory]);
+
+  const sendToBack = useCallback(() => {
+    const canvas = fabricCanvas.current;
+    const obj = canvas?.getActiveObject();
+    if (!obj) return;
+    canvas.sendObjectToBack(obj);
+    canvas.requestRenderAll();
+    pushHistory();
+  }, [pushHistory]);
+
+  const deleteObject = useCallback(() => {
+    const canvas = fabricCanvas.current;
+    const obj = canvas?.getActiveObject();
+    if (!obj) return;
+    canvas.remove(obj);
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    pushHistory();
+  }, [pushHistory]);
+
+  const alignObject = useCallback(
+    (edge) => {
+      const canvas = fabricCanvas.current;
+      const obj = canvas?.getActiveObject();
+      if (!obj) return;
+      switch (edge) {
+        case "left":
+          obj.set("left", 0);
+          break;
+        case "h-center":
+          obj.set(
+            "left",
+            (canvas.width / canvas.getZoom() - obj.getScaledWidth()) / 2
+          );
+          break;
+        case "right":
+          obj.set(
+            "left",
+            canvas.width / canvas.getZoom() - obj.getScaledWidth()
+          );
+          break;
+        case "top":
+          obj.set("top", 0);
+          break;
+        case "v-center":
+          obj.set(
+            "top",
+            (canvas.height / canvas.getZoom() - obj.getScaledHeight()) / 2
+          );
+          break;
+        case "bottom":
+          obj.set(
+            "top",
+            canvas.height / canvas.getZoom() - obj.getScaledHeight()
+          );
+          break;
+        default:
+          break;
+      }
+      canvas.requestRenderAll();
+      pushHistory();
+    },
+    [pushHistory]
+  );
+
+  const updateProperty = useCallback(
+    (prop, value) => {
+      const obj = fabricCanvas.current?.getActiveObject();
+      if (obj) {
+        obj.set(prop, value);
+        fabricCanvas.current.requestRenderAll();
+        setForceUpdate((f) => f + 1);
+        pushHistory();
+      }
+    },
+    [pushHistory]
+  );
 
   const downloadPDF = () => {
     const canvas = fabricCanvas.current;
@@ -994,15 +1161,17 @@ const CertificateEditor = ({
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file for the background.');
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file for the background.");
       e.target.value = "";
       return;
     }
 
     // Validate file size (max 15MB for background)
     if (file.size > 15 * 1024 * 1024) {
-      alert('Background image file is too large. Please select an image smaller than 15MB.');
+      alert(
+        "Background image file is too large. Please select an image smaller than 15MB."
+      );
       e.target.value = "";
       return;
     }
@@ -1035,12 +1204,21 @@ const CertificateEditor = ({
           setIsUploadingBackground(false);
 
           if (!img) {
-            alert("Failed to load background image. Please try a different image file.");
-            console.error("Failed to create background image - img is null/undefined");
+            alert(
+              "Failed to load background image. Please try a different image file."
+            );
+            console.error(
+              "Failed to create background image - img is null/undefined"
+            );
             return;
           }
 
-          console.log("Background image loaded successfully:", img.width, "x", img.height);
+          console.log(
+            "Background image loaded successfully:",
+            img.width,
+            "x",
+            img.height
+          );
           setBackgroundImage(img);
         },
         {
@@ -1051,20 +1229,28 @@ const CertificateEditor = ({
       // Fallback: Use native Image object if Fabric.js fails
       setTimeout(() => {
         if (!backgroundLoaded) {
-          console.log("Background Fabric.js approach failed, trying fallback method...");
+          console.log(
+            "Background Fabric.js approach failed, trying fallback method..."
+          );
 
           const nativeImg = new Image();
           nativeImg.crossOrigin = "anonymous";
           nativeImg.onload = () => {
-            console.log("Native background image loaded, creating Fabric.js image...");
+            console.log(
+              "Native background image loaded, creating Fabric.js image..."
+            );
             const img = new fabric.Image(nativeImg);
             setIsUploadingBackground(false);
             setBackgroundImage(img);
           };
           nativeImg.onerror = () => {
             setIsUploadingBackground(false);
-            alert("Failed to load background image. Please try a different image file.");
-            console.error("Both Fabric.js and native background image loading failed");
+            alert(
+              "Failed to load background image. Please try a different image file."
+            );
+            console.error(
+              "Both Fabric.js and native background image loading failed"
+            );
           };
           nativeImg.src = dataUrl;
         }
@@ -1074,7 +1260,9 @@ const CertificateEditor = ({
       setTimeout(() => {
         if (!backgroundLoaded) {
           setIsUploadingBackground(false);
-          console.warn("Background image upload timed out - resetting loading state");
+          console.warn(
+            "Background image upload timed out - resetting loading state"
+          );
           alert("Background image upload timed out. Please try again.");
         }
       }, 15000); // 15 second timeout
@@ -1101,7 +1289,7 @@ const CertificateEditor = ({
         });
 
         // Try the correct Fabric.js method for setting background image
-        if (typeof canvas.setBackgroundImage === 'function') {
+        if (typeof canvas.setBackgroundImage === "function") {
           canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
         } else {
           // Fallback for different Fabric.js versions
@@ -1196,102 +1384,108 @@ const CertificateEditor = ({
 
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Position</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
             <button
               disabled={!isObjectSelected}
               onClick={() => alignObject("left")}
-              className="p-1.5 sm:p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+              title="Align Left"
             >
-              <AlignHorizontalJustifyStart size={14} sm={{ size: 16 }} />
+              <AlignHorizontalJustifyStart className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={() => alignObject("h-center")}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+              title="Align Center Horizontal"
             >
-              <AlignHorizontalJustifyCenter size={16} />
+              <AlignHorizontalJustifyCenter className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={() => alignObject("right")}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+              title="Align Right"
             >
-              <AlignHorizontalJustifyEnd size={16} />
+              <AlignHorizontalJustifyEnd className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={() => alignObject("top")}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+              title="Align Top"
             >
-              <AlignVerticalJustifyStart size={16} />
+              <AlignVerticalJustifyStart className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={() => alignObject("v-center")}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+              title="Align Center Vertical"
             >
-              <AlignVerticalJustifyCenter size={16} />
+              <AlignVerticalJustifyCenter className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={() => alignObject("bottom")}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+              title="Align Bottom"
             >
-              <AlignVerticalJustifyEnd size={16} />
+              <AlignVerticalJustifyEnd className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">Layer</h4>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-1">
             <button
               disabled={!isObjectSelected}
               onClick={cloneObject}
-              className="p-1.5 sm:p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
               title="Duplicate (Ctrl/Cmd+D)"
             >
-              <Copy size={14} className="sm:w-4 sm:h-4" />
+              <Copy className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={bringToFront}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
               title="Bring to Front"
             >
-              <ChevronsUp size={16} />
+              <ChevronsUp className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={bringForward}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
               title="Bring Forward"
             >
-              <ChevronUp size={16} />
+              <ChevronUp className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={sendBackward}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
               title="Send Backward"
             >
-              <ChevronDown size={16} />
+              <ChevronDown className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={sendToBack}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
               title="Send to Back"
             >
-              <ChevronsDown size={16} />
+              <ChevronsDown className="w-4 h-4" />
             </button>
             <button
               disabled={!isObjectSelected}
               onClick={deleteObject}
-              className="p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+              className="p-2 border rounded-md hover:bg-red-50 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 text-red-600 transition-colors"
               title="Delete"
             >
-              <Trash2 size={16} />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1304,15 +1498,17 @@ const CertificateEditor = ({
           >
             Text
           </h4>
-          <div className="flex gap-2 mb-2">
+          <div className="flex flex-col sm:flex-row gap-2 mb-2">
             <select
               disabled={!isText}
               value={getProp("fontFamily", "Inter")}
               onChange={(e) => updateProperty("fontFamily", e.target.value)}
               className="flex-1 p-2 border rounded-md text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
-              <option>Inter</option> <option>Arial</option>{" "}
-              <option>Times New Roman</option> <option>Courier New</option>
+              <option>Inter</option>
+              <option>Arial</option>
+              <option>Times New Roman</option>
+              <option>Courier New</option>
             </select>
             <input
               disabled={!isText}
@@ -1321,10 +1517,10 @@ const CertificateEditor = ({
               onChange={(e) =>
                 updateProperty("fontSize", parseInt(e.target.value, 10) || 1)
               }
-              className="w-20 p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full sm:w-20 p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 mb-2">
+          <div className="grid grid-cols-4 gap-1 mb-2">
             <button
               disabled={!isText}
               onClick={() =>
@@ -1333,11 +1529,14 @@ const CertificateEditor = ({
                   getProp("fontWeight", "normal") === "bold" ? "normal" : "bold"
                 )
               }
-              className={`p-1.5 sm:p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
-                getProp("fontWeight", "normal") === "bold" ? "bg-gray-200" : ""
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("fontWeight", "normal") === "bold"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
               }`}
+              title="Bold"
             >
-              <Bold size={14} className="sm:w-4 sm:h-4" />
+              <Bold className="w-4 h-4" />
             </button>
             <button
               disabled={!isText}
@@ -1349,22 +1548,26 @@ const CertificateEditor = ({
                     : "italic"
                 )
               }
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
-                getProp("fontStyle", "normal") === "italic" ? "bg-gray-200" : ""
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("fontStyle", "normal") === "italic"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
               }`}
+              title="Italic"
             >
-              <Italic size={16} />
+              <Italic className="w-4 h-4" />
             </button>
             <button
               disabled={!isText}
               onClick={() =>
                 updateProperty("underline", !getProp("underline", false))
               }
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
-                getProp("underline", false) ? "bg-gray-200" : ""
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("underline", false) ? "bg-blue-100 border-blue-500" : ""
               }`}
+              title="Underline"
             >
-              <Underline size={16} />
+              <Underline className="w-4 h-4" />
             </button>
             <input
               disabled={!isText}
@@ -1372,35 +1575,45 @@ const CertificateEditor = ({
               value={getProp("fill", "#000000")}
               onChange={(e) => updateProperty("fill", e.target.value)}
               className="w-full h-full p-1 border-gray-300 rounded-md cursor-pointer disabled:cursor-not-allowed"
+              title="Text Color"
             />
           </div>
           <div className="grid grid-cols-3 gap-1">
             <button
               disabled={!isText}
               onClick={() => updateProperty("textAlign", "left")}
-              className={`p-1.5 sm:p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
-                getProp("textAlign", "left") === "left" ? "bg-gray-200" : ""
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("textAlign", "left") === "left"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
               }`}
+              title="Align Text Left"
             >
-              <AlignLeft size={14} className="sm:w-4 sm:h-4" />
+              <AlignLeft className="w-4 h-4" />
             </button>
             <button
               disabled={!isText}
               onClick={() => updateProperty("textAlign", "center")}
-              className={`p-1 md:p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
-                getProp("textAlign", "center") === "center" ? "bg-gray-200" : ""
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("textAlign", "center") === "center"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
               }`}
+              title="Align Text Center"
             >
-              <AlignCenter size={16} />
+              <AlignCenter className="w-4 h-4" />
             </button>
             <button
               disabled={!isText}
               onClick={() => updateProperty("textAlign", "right")}
-              className={`p-1 md:p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 ${
-                getProp("textAlign", "right") === "right" ? "bg-gray-200" : ""
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("textAlign", "right") === "right"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
               }`}
+              title="Align Text Right"
             >
-              <AlignRight size={16} />
+              <AlignRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1425,31 +1638,33 @@ const CertificateEditor = ({
         </div>
 
         <div>
-          <h4 className="font-semibold mb-2">Quick Actions</h4>
+          <h4 className="font-semibold text-gray-700 mb-2">Quick Actions</h4>
           <div className="flex gap-2">
             <button
               onClick={undo}
-              className="flex-1 px-3 py-2 border rounded-md hover:bg-gray-100"
+              className="flex-1 px-3 py-2 border rounded-md hover:bg-gray-100 transition-colors text-sm"
+              title="Undo (Ctrl/Cmd+Z)"
             >
               Undo
             </button>
             <button
               onClick={redo}
-              className="flex-1 px-3 py-2 border rounded-md hover:bg-gray-100"
+              className="flex-1 px-3 py-2 border rounded-md hover:bg-gray-100 transition-colors text-sm"
+              title="Redo (Ctrl/Cmd+Y)"
             >
               Redo
             </button>
           </div>
-          <div className="flex gap-2 mt-2">
+          <div className="flex flex-col sm:flex-row gap-2 mt-2">
             <button
               onClick={downloadPDF}
-              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
             >
               Download PDF
             </button>
             <button
               onClick={downloadTemplateJson}
-              className="px-3 py-2 border rounded-md hover:bg-gray-100"
+              className="px-3 py-2 border rounded-md hover:bg-gray-100 transition-colors text-sm whitespace-nowrap"
             >
               Download JSON
             </button>
@@ -1461,10 +1676,10 @@ const CertificateEditor = ({
 
   return (
     <div className="w-full h-screen bg-transparent font-sans overflow-hidden">
-      <div className={`flex ${isMobile ? 'flex-col' : 'flex-col lg:flex-row'} h-full w-full overflow-hidden`}>
+      <div className="flex flex-col lg:flex-row h-full w-full overflow-hidden">
         {/* Left Sidebar - Elements Panel */}
         {showPanels && !isMobile && (
-          <div className="w-full lg:w-60 xl:w-64 p-2 sm:p-3 flex flex-col gap-2 sm:gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 h-full lg:h-auto overflow-auto lg:overflow-hidden">
+          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 overflow-y-auto">
             <ElementsPanel
               onAddText={addText}
               onAddImage={handleImageUpload}
@@ -1480,7 +1695,11 @@ const CertificateEditor = ({
         )}
 
         {/* Main Canvas Area */}
-        <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-hidden lg:overflow-auto lg:min-h-0">
+        <div
+          className={`flex-1 flex flex-col min-w-0 max-w-full overflow-hidden lg:overflow-auto lg:min-h-0 ${
+            isMobile ? "pb-16" : ""
+          }`}
+        >
           {/* Top Toolbar */}
           <div className="relative shrink-0 bg-white border-b z-10">
             <CanvasToolbar
@@ -1530,25 +1749,20 @@ const CertificateEditor = ({
           )}
 
           {/* Canvas Container */}
-          <div
-            className="flex-1 overflow-hidden flex items-center justify-center bg-gray-100 p-4 mx-auto"
-          >
+          <div className="flex-1 overflow-hidden flex items-center justify-center bg-gray-100 p-4 mx-auto">
             <div
               ref={canvasContainerRef}
               className="bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 relative w-full h-full max-w-full max-h-full"
             >
-              <canvas
-                ref={canvasRef}
-                className="w-full h-full"
-              />
+              <canvas ref={canvasRef} className="w-full h-full" />
 
               {/* Snap Lines Overlay */}
               {snapLines.length > 0 && fabricCanvas.current && (
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
-                    width: '100%',
-                    height: '100%',
+                    width: "100%",
+                    height: "100%",
                   }}
                 >
                   {(() => {
@@ -1562,19 +1776,22 @@ const CertificateEditor = ({
 
                     return snapLines.map((line, index) => {
                       const scaledPosition = line.position * scale;
-                      const adjustedPosition = scaledPosition + (line.type === 'vertical' ? offsetX : offsetY);
+                      const adjustedPosition =
+                        scaledPosition +
+                        (line.type === "vertical" ? offsetX : offsetY);
 
                       return (
                         <div
                           key={`${line.type}-${line.position}-${index}`}
                           className={`absolute bg-red-500 ${
-                            line.type === 'vertical' ? 'w-px h-full' : 'h-px w-full'
+                            line.type === "vertical"
+                              ? "w-px h-full"
+                              : "h-px w-full"
                           }`}
                           style={{
-                            ...(line.type === 'vertical'
+                            ...(line.type === "vertical"
                               ? { left: `${adjustedPosition}px` }
-                              : { top: `${adjustedPosition}px` }
-                            ),
+                              : { top: `${adjustedPosition}px` }),
                             opacity: 0.8,
                             zIndex: 1000,
                           }}
@@ -1583,10 +1800,9 @@ const CertificateEditor = ({
                           <div
                             className="absolute bg-red-500 rounded-full w-2 h-2 -translate-x-1 -translate-y-1"
                             style={{
-                              ...(line.type === 'vertical'
-                                ? { left: '0px', top: '50%' }
-                                : { top: '0px', left: '50%' }
-                              ),
+                              ...(line.type === "vertical"
+                                ? { left: "0px", top: "50%" }
+                                : { top: "0px", left: "50%" }),
                             }}
                           />
                         </div>
@@ -1601,17 +1817,17 @@ const CertificateEditor = ({
 
         {/* Right Sidebar - Properties Panel */}
         {showPanels && !isMobile && (
-          <div className="w-full lg:w-60 xl:w-64 p-2 sm:p-3 flex flex-col gap-2 sm:gap-3 bg-white border-t lg:border-l lg:border-t-0 shrink-0 h-full lg:h-auto overflow-auto lg:overflow-hidden relative">
-            <div className="flex-1 min-h-0 overflow-auto">
-              <div className="flex items-center justify-between mb-2 sm:mb-3 sticky top-0 z-30 bg-white pb-1 sm:pb-2">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-700">
+          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-t lg:border-l lg:border-t-0 shrink-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="flex items-center justify-between mb-3 sticky top-0 z-30 bg-white pb-2">
+                <h3 className="text-sm font-semibold text-gray-700">
                   Properties
                 </h3>
                 {/* Legacy Done button for evaluation flow */}
                 {isFromEvaluation && (onDone || onSave) && (
                   <button
                     onClick={onSave || onDone}
-                    className="px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-sm"
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-sm transition-colors"
                   >
                     Done
                   </button>
@@ -1622,7 +1838,7 @@ const CertificateEditor = ({
             <div className="shrink-0 pt-2">
               <button
                 onClick={clearCanvas}
-                className="w-full px-3 sm:px-4 py-2 bg-white border border-gray-300 text-sm text-gray-700 rounded-md hover:bg-gray-100 text-center"
+                className="w-full px-4 py-2 bg-white border border-gray-300 text-sm text-gray-700 rounded-md hover:bg-gray-100 text-center transition-colors"
               >
                 Clear Canvas
               </button>
@@ -1632,33 +1848,78 @@ const CertificateEditor = ({
       </div>
 
       {/* Mobile Panels Overlay */}
-      {isMobile && showPanels && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex">
-          <div className="ml-auto w-80 max-w-[90vw] h-full bg-white shadow-xl flex flex-col">
-            {/* Mobile Panel Header */}
+      {/* Mobile Bottom Bar */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around items-center h-16 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          <button
+            onClick={() =>
+              setActiveMobileTab(
+                activeMobileTab === "elements" ? null : "elements"
+              )
+            }
+            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+              activeMobileTab === "elements" ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            <Plus className="w-6 h-6 mb-1" />
+            <span className="text-xs font-medium">Add Elements</span>
+          </button>
+          <div className="w-px h-8 bg-gray-200"></div>
+          <button
+            onClick={() =>
+              setActiveMobileTab(
+                activeMobileTab === "properties" ? null : "properties"
+              )
+            }
+            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+              activeMobileTab === "properties"
+                ? "text-blue-600"
+                : "text-gray-600"
+            }`}
+          >
+            <Sliders className="w-6 h-6 mb-1" />
+            <span className="text-xs font-medium">Properties</span>
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Bottom Sheet */}
+      {isMobile && activeMobileTab && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm transition-opacity"
+          onClick={() => setActiveMobileTab(null)}
+        >
+          <div
+            className="bg-white rounded-t-2xl shadow-2xl w-full max-h-[50vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-              <h3 className="font-semibold text-gray-700">Properties</h3>
+              <h3 className="font-semibold text-gray-800">
+                {activeMobileTab === "elements" ? "Add Elements" : "Properties"}
+              </h3>
               <button
-                onClick={togglePanels}
-                className="p-2 hover:bg-gray-200 rounded-md"
+                onClick={() => setActiveMobileTab(null)}
+                className="p-2 hover:bg-gray-200 rounded-full transition-colors"
               >
-                ✕
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
-
-            {/* Mobile Panel Content */}
-            <div className="flex-1 overflow-auto p-4">
-              <PropertiesPanel />
-            </div>
-
-            {/* Mobile Panel Footer */}
-            <div className="p-4 border-t bg-gray-50">
-              <button
-                onClick={clearCanvas}
-                className="w-full px-4 py-2 bg-white border border-gray-300 text-sm text-gray-700 rounded-md hover:bg-gray-100"
-              >
-                Clear Canvas
-              </button>
+            <div className="flex-1 overflow-y-auto p-4 bg-white">
+              {activeMobileTab === "elements" ? (
+                <ElementsPanel
+                  onAddText={addText}
+                  onAddImage={handleImageUpload}
+                  onAddImageFromUrl={addImageFromUrl}
+                  onAddShape={addShape}
+                  onSetBackgroundImage={handleBackgroundUpload}
+                  fileInputRef={fileInputRef}
+                  bgInputRef={bgInputRef}
+                  isUploadingImage={isUploadingImage}
+                  isUploadingBackground={isUploadingBackground}
+                />
+              ) : (
+                <PropertiesPanel />
+              )}
             </div>
           </div>
         </div>

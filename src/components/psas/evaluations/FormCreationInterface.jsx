@@ -793,6 +793,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               likertEnd,
               likertStartLabel,
               likertEndLabel,
+              sectionId: q.sectionId, // Preserve sectionId
             };
           });
 
@@ -800,10 +801,33 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             `✅ [FormCreationInterface] Converted ${convertedQuestions.length} questions`
           );
 
+          // Separate main questions and section questions
+          const mainQuestions = [];
+          const sectionQuestions = [];
+
+          convertedQuestions.forEach((q) => {
+            if (!q.sectionId || q.sectionId === "main") {
+              mainQuestions.push(q);
+            } else {
+              sectionQuestions.push(q);
+            }
+          });
+
+          // Reconstruct sections with their questions
+          const reconstructedSections = (tempData.sections || []).map(
+            (section) => ({
+              ...section,
+              questions: sectionQuestions.filter(
+                (q) => q.sectionId === section.id
+              ),
+            })
+          );
+
           // Load the data into the form
           setFormTitle(tempData.title || "Untitled Form");
           setFormDescription(tempData.description || "Form Description");
-          setQuestions(convertedQuestions);
+          setQuestions(mainQuestions);
+          setSections(reconstructedSections);
           setUploadedFiles(tempData.uploadedFiles || []);
           setUploadedLinks(tempData.uploadedLinks || []);
 
@@ -811,8 +835,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           const formDataToSave = {
             formTitle: tempData.title || "Untitled Form",
             formDescription: tempData.description || "Form Description",
-            questions: convertedQuestions,
-            sections: [],
+            questions: mainQuestions,
+            sections: reconstructedSections,
             uploadedFiles: tempData.uploadedFiles || [],
             uploadedLinks: tempData.uploadedLinks || [],
             eventStartDate: "",

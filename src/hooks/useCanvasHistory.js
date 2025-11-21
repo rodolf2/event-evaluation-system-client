@@ -19,19 +19,31 @@ export const useCanvasHistory = () => {
     }
   }, []);
 
-  const undo = useCallback((canvas) => {
+  const undo = useCallback(async (canvas) => {
     if (!canvas || historyRef.current.length <= 1) return;
     const current = historyRef.current.pop();
     redoRef.current.push(current);
     const prev = historyRef.current[historyRef.current.length - 1];
-    if (prev) canvas.loadFromJSON(prev, () => canvas.renderAll());
+    if (prev) {
+      try {
+        await canvas.loadFromJSON(prev);
+        canvas.renderAll();
+      } catch (error) {
+        console.error("Error undoing:", error);
+      }
+    }
   }, []);
 
-  const redo = useCallback((canvas) => {
+  const redo = useCallback(async (canvas) => {
     if (!canvas || !redoRef.current.length) return;
     const next = redoRef.current.pop();
     historyRef.current.push(next);
-    canvas.loadFromJSON(next, () => canvas.renderAll());
+    try {
+      await canvas.loadFromJSON(next);
+      canvas.renderAll();
+    } catch (error) {
+      console.error("Error redoing:", error);
+    }
   }, []);
 
   const clearHistory = useCallback(() => {

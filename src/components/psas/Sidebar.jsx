@@ -24,8 +24,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       className={`fixed lg:top-5 lg:left-5 transition-all duration-300 z-30 
         ${
           isOpen
-            ? "top-0 left-0 w-full h-full lg:w-64 lg:h-[95vh]"
-            : "top-0 -left-full lg:left-5 w-full lg:w-24 h-full lg:h-[95vh]"
+            ? "top-0 left-0 w-1/2 h-full lg:w-64 lg:h-[95vh]"
+            : "top-0 -left-1/2 lg:left-5 w-1/2 lg:w-24 h-full lg:h-[95vh]"
         }
         bg-[#1F3463] text-white flex flex-col items-center py-6 lg:rounded-[15px]`}
     >

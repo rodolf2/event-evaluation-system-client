@@ -10,16 +10,26 @@ const CanvasToolbar = ({ showPanels, onTogglePanels, isMobile }) => {
       </div>
 
       {/* Panel Toggle Button */}
-      <button
-        onClick={onTogglePanels}
-        className="flex items-center gap-2 px-3 py-2 text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors ml-2"
-        title={showPanels ? "Hide Side Panels" : "Show Side Panels"}
-      >
-        {showPanels ? <PanelTopClose size={16} /> : <PanelTopOpen size={16} />}
-        <span className={`${isMobile ? 'hidden sm:inline' : ''} text-sm font-medium`}>
-          {showPanels ? "Hide Panels" : "Show Panels"}
-        </span>
-      </button>
+      {!isMobile && (
+        <button
+          onClick={onTogglePanels}
+          className="flex items-center gap-2 px-3 py-2 text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors ml-2"
+          title={showPanels ? "Hide Side Panels" : "Show Side Panels"}
+        >
+          {showPanels ? (
+            <PanelTopClose size={16} />
+          ) : (
+            <PanelTopOpen size={16} />
+          )}
+          <span
+            className={`${
+              isMobile ? "hidden sm:inline" : ""
+            } text-sm font-medium`}
+          >
+            {showPanels ? "Hide Panels" : "Show Panels"}
+          </span>
+        </button>
+      )}
     </div>
   );
 };

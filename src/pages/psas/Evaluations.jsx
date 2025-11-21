@@ -29,7 +29,7 @@ const Evaluations = () => {
         });
         const data = await response.json();
         if (data.success) {
-          const mappedForms = data.data.map(form => ({
+          const mappedForms = data.data.map((form) => ({
             id: form._id,
             title: form.title || `Evaluation Form ${form._id.slice(-6)}`,
             description: form.description,
@@ -64,7 +64,7 @@ const Evaluations = () => {
     const editParam = searchParams.get("edit");
     if (editParam) {
       // Store the form ID to edit and switch to create view
-      localStorage.setItem('editFormId', editParam);
+      localStorage.setItem("editFormId", editParam);
       setCurrentFormId(editParam);
       setView("create");
     }
@@ -76,10 +76,9 @@ const Evaluations = () => {
     const formId = searchParams.get("formId");
 
     if (recipients) {
-
       // If formId is provided, ensure it matches the edit form ID
       if (formId) {
-        localStorage.setItem('editFormId', formId);
+        localStorage.setItem("editFormId", formId);
         setCurrentFormId(formId); // Store for passing to FormCreationInterface
       }
 
@@ -104,9 +103,9 @@ const Evaluations = () => {
 
   const handleCreateNew = () => {
     // Clear any temporary form data to ensure we start with a blank form
-    localStorage.removeItem('tempFormData');
-    localStorage.removeItem('editFormId');
-    
+    localStorage.removeItem("tempFormData");
+    localStorage.removeItem("editFormId");
+
     setView("create");
   };
 
@@ -117,39 +116,39 @@ const Evaluations = () => {
   const handleDeleteForm = async (formId) => {
     try {
       const response = await fetch(`/api/forms/${formId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Remove the deleted form from the local state
-        setEvaluationForms(prev => prev.filter(form => form.id !== formId));
-        
+        setEvaluationForms((prev) => prev.filter((form) => form.id !== formId));
+
         // Clean up localStorage for the deleted form
-        if (localStorage.getItem('editFormId') === formId) {
-          localStorage.removeItem('editFormId');
+        if (localStorage.getItem("editFormId") === formId) {
+          localStorage.removeItem("editFormId");
         }
-        
+
         // Clean up any form session data
         const formSessionKey = `formSession_${formId}`;
         const formRecipientsKey = `formRecipients_${formId}`;
         const certificateLinkedKey = `certificateLinked_${formId}`;
-        
+
         localStorage.removeItem(formSessionKey);
         localStorage.removeItem(formRecipientsKey);
         localStorage.removeItem(certificateLinkedKey);
-        
-        toast.success('Form deleted successfully');
+
+        toast.success("Form deleted successfully");
       } else {
-        toast.error('Failed to delete form');
+        toast.error("Failed to delete form");
       }
     } catch (error) {
-      console.error('Error deleting form:', error);
-      toast.error('Failed to delete form');
+      console.error("Error deleting form:", error);
+      toast.error("Failed to delete form");
     }
   };
 
@@ -173,7 +172,7 @@ const Evaluations = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           url: googleFormsUrl,
@@ -190,32 +189,38 @@ const Evaluations = () => {
           title: extractedData.title,
           description: extractedData.description,
           questions: extractedData.questions || [],
+          sections: extractedData.sections || [],
           uploadedFiles: extractedData.uploadedFiles || [],
           uploadedLinks: extractedData.uploadedLinks || [],
           file: null, // No file to keep
         };
 
-        localStorage.setItem('tempFormData', JSON.stringify(tempData));
+        localStorage.setItem("tempFormData", JSON.stringify(tempData));
 
         setShowUploadModal(false);
         setGoogleFormsUrl(""); // Clear the URL input
 
         setView("create");
 
-        localStorage.removeItem('uploadedFormId');
+        localStorage.removeItem("uploadedFormId");
       } else {
         let errorData;
         try {
           errorData = await response.json();
         } catch (jsonError) {
-          console.error('Failed to parse error response as JSON:', jsonError);
-          errorData = { message: 'Unknown server error' };
+          console.error("Failed to parse error response as JSON:", jsonError);
+          errorData = { message: "Unknown server error" };
         }
 
         if (response.status === 409) {
-          toast.error("This Google Form has already been imported. You can find it in your recent evaluations.");
+          toast.error(
+            "This Google Form has already been imported. You can find it in your recent evaluations."
+          );
         } else if (response.status === 400) {
-          toast.error(errorData.message || "Invalid input. Please check your data and try again.");
+          toast.error(
+            errorData.message ||
+              "Invalid input. Please check your data and try again."
+          );
         } else {
           toast.error(`Import failed: ${errorData.message}`);
         }
@@ -246,7 +251,7 @@ const Evaluations = () => {
             onBack={() => {
               setView("dashboard");
               // Clear edit form ID when going back
-              localStorage.removeItem('editFormId');
+              localStorage.removeItem("editFormId");
               setCurrentFormId(null);
             }}
           />
@@ -280,7 +285,8 @@ const Evaluations = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Paste the URL of an existing Google Form to import its questions
+                  Paste the URL of an existing Google Form to import its
+                  questions
                 </p>
               </div>
 

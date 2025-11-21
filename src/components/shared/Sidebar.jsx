@@ -6,14 +6,19 @@ const getIsActive = (item, currentPath, homePath) => {
   if (item.path === homePath) {
     return currentPath === item.path;
   }
-  
+
   // Special case for evaluations - also highlight on evaluation form pages
-  if (item.path.includes('/participant/evaluations') || item.label === 'My Evaluations') {
-    return currentPath === item.path ||
-           currentPath.startsWith('/evaluations/') ||
-           currentPath.startsWith('/participant/evaluations/');
+  if (
+    item.path.includes("/participant/evaluations") ||
+    item.label === "My Evaluations"
+  ) {
+    return (
+      currentPath === item.path ||
+      currentPath.startsWith("/evaluations/") ||
+      currentPath.startsWith("/participant/evaluations/")
+    );
   }
-  
+
   // Default behavior - check if current path starts with the item path
   return currentPath.startsWith(item.path);
 };
@@ -30,8 +35,8 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
     alt: "Logo",
     text: {
       main: "La Verdad",
-      sub: "Christian College, Inc."
-    }
+      sub: "Christian College, Inc.",
+    },
   };
 
   const logoConfig = { ...defaultLogo, ...logo };
@@ -41,8 +46,8 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
       className={`fixed lg:top-5 lg:left-5 transition-all duration-300 z-30
         ${
           isOpen
-            ? "top-0 left-0 w-full h-full lg:w-64 lg:h-[95vh]"
-            : "top-0 -left-full lg:left-5 w-full lg:w-24 h-full lg:h-[95vh]"
+            ? "top-0 left-0 w-1/2 h-full lg:w-64 lg:h-[95vh]"
+            : "top-0 -left-1/2 lg:left-5 w-1/2 lg:w-24 h-full lg:h-[95vh]"
         }
         bg-[#1F3463] text-white flex flex-col items-center py-6 lg:rounded-[15px] ${className}`}
     >

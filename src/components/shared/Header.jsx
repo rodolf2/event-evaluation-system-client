@@ -19,7 +19,7 @@ const Header = ({
     try {
       if (!token) return;
 
-      const response = await fetch("/api/notifications", {
+      const response = await fetch("/api/notifications/stats", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -29,9 +29,7 @@ const Header = ({
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          // Count unread notifications
-          const unread = result.data.filter((notif) => !notif.isRead).length;
-          setUnreadCount(unread);
+          setUnreadCount(result.data.unread || 0);
         }
       }
     } catch (error) {

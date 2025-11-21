@@ -57,7 +57,17 @@ const ReportCard = ({ report, onSelect, isLive = false }) => {
           }
           alt={report.title}
           className="w-full h-40 object-cover"
+          onLoad={() => {
+            console.log(
+              `✅ Thumbnail loaded for: ${report.title}`,
+              report.thumbnail
+            );
+          }}
           onError={(e) => {
+            console.error(
+              `❌ Thumbnail failed for: ${report.title}`,
+              report.thumbnail
+            );
             e.target.onerror = null;
             // Fallback to placeholder with report title
             const encodedTitle = encodeURIComponent(report.title || "Report");
