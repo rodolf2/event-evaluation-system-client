@@ -9,25 +9,33 @@ export const headerConfig = {
     "/participant/home": "Home",
     "*evaluations": "My Evaluations",
     "*certificates": "My Certificates",
-    "*badges": "My Badges"
+    "*badges": "My Badges",
   },
   defaultTitle: "Home",
-  notificationPath: false // uses /participant/notifications
+  notificationPath: false, // uses /participant/notifications
 };
 
 export const sidebarConfig = {
   homePath: "/participant/home",
   menuItems: [
     { icon: HomeIcon, label: "Home", path: "/participant/home" },
-    { icon: EvaluationsIcon, label: "My Evaluations", path: "/participant/evaluations" },
-    { icon: CertificateIcon, label: "My Certificates", path: "/participant/certificates" },
+    {
+      icon: EvaluationsIcon,
+      label: "My Evaluations",
+      path: "/participant/evaluations",
+    },
+    {
+      icon: CertificateIcon,
+      label: "My Certificates",
+      path: "/participant/certificates",
+    },
     { icon: BadgeIcon, label: "My Badges", path: "/participant/badges" },
-  ]
+  ],
 };
 
 export const layoutConfig = {
-  showProfileSection: true,
-  profileSectionPaths: ["/psas/home", "/participant/home"],
+  showProfileSection: false,
+  profileSectionPaths: ["/participant/home"],
   headerConfig,
-  sidebarConfig
+  sidebarConfig,
 };

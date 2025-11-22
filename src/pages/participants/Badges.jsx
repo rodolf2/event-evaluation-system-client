@@ -46,40 +46,77 @@ const Badges = () => {
   const [badges, setBadges] = useState([]);
   const [_selectedBadge, setSelectedBadge] = useState(null);
 
+  // Map theme to appropriate border color
+  const getBorderColor = (theme) => {
+    const colorMap = {
+      bronze: "border-amber-600",
+      silver: "border-gray-400",
+      gold: "border-yellow-500",
+      titanium: "border-gray-500",
+      platinum: "border-gray-300",
+      quartz: "border-pink-300",
+      onyx: "border-gray-800",
+      pearl: "border-orange-200",
+      topaz: "border-orange-400",
+      garnet: "border-red-600",
+      amethyst: "border-purple-500",
+      jade: "border-green-500",
+      obsidian: "border-black",
+      opal: "border-cyan-300",
+      sapphire: "border-blue-500",
+      emerald: "border-green-600",
+      ruby: "border-red-500",
+      diamond: "border-blue-300",
+      cobalt: "border-blue-700",
+      ivory: "border-orange-100",
+      crimson: "border-red-700",
+      aurora: "border-green-400",
+      solaris: "border-yellow-400",
+      lunar: "border-blue-200",
+      eclipse: "border-gray-900",
+      celestial: "border-purple-400",
+      mythic: "border-indigo-600",
+      legendary: "border-yellow-600",
+      master: "border-purple-600",
+      grandmaster: "border-orange-500",
+    };
+    return colorMap[theme] || "border-blue-500";
+  };
+
   // Define evaluation-completion based badge tiers.
   // Adjust thresholds to match your product spec.
   // Base badge order; thresholds are computed (5, 10, 15, ...) based on position.
   const baseBadgeConfig = [
-    { name: "Bronze", icon: BronzeBadge, highlighted: true },
-    { name: "Silver", icon: SilverBadge },
-    { name: "Gold", icon: GoldBadge },
-    { name: "Titanium", icon: TitaniumBadge },
-    { name: "Platinum", icon: PlatinumBadge },
-    { name: "Quartz", icon: QuartzBadge },
-    { name: "Onyx", icon: OnyxBadge },
-    { name: "Pearl", icon: PearlBadge },
-    { name: "Topaz", icon: TopazBadge },
-    { name: "Garnet", icon: GarnetBadge },
-    { name: "Amethyst", icon: AmethystBadge },
-    { name: "Jade", icon: JadeBadge },
-    { name: "Obsidian", icon: ObsidianBadge },
-    { name: "Opal", icon: OpalBadge },
-    { name: "Sapphire", icon: SapphireBadge },
-    { name: "Emerald", icon: EmeraldBadge },
-    { name: "Ruby", icon: RubyBadge },
-    { name: "Diamond", icon: DiamondBadge },
-    { name: "Cobalt", icon: CobaltBadge },
-    { name: "Ivory", icon: IvoryBadge },
-    { name: "Crimson", icon: CrimsonBadge },
-    { name: "Aurora", icon: AuroraBadge },
-    { name: "Solaris", icon: SolarisBadge },
-    { name: "Lunar", icon: LunarBadge },
-    { name: "Eclipse", icon: EclipseBadge },
-    { name: "Celestial", icon: CelestialBadge },
-    { name: "Mythic", icon: MythicBadge },
-    { name: "Legendary", icon: LegendaryBadge },
-    { name: "Master", icon: MasterBadge },
-    { name: "Grandmaster", icon: GrandmasterBadge },
+    { name: "Bronze", icon: BronzeBadge, highlighted: true, theme: "bronze" },
+    { name: "Silver", icon: SilverBadge, theme: "silver" },
+    { name: "Gold", icon: GoldBadge, theme: "gold" },
+    { name: "Titanium", icon: TitaniumBadge, theme: "titanium" },
+    { name: "Platinum", icon: PlatinumBadge, theme: "platinum" },
+    { name: "Quartz", icon: QuartzBadge, theme: "quartz" },
+    { name: "Onyx", icon: OnyxBadge, theme: "onyx" },
+    { name: "Pearl", icon: PearlBadge, theme: "pearl" },
+    { name: "Topaz", icon: TopazBadge, theme: "topaz" },
+    { name: "Garnet", icon: GarnetBadge, theme: "garnet" },
+    { name: "Amethyst", icon: AmethystBadge, theme: "amethyst" },
+    { name: "Jade", icon: JadeBadge, theme: "jade" },
+    { name: "Obsidian", icon: ObsidianBadge, theme: "obsidian" },
+    { name: "Opal", icon: OpalBadge, theme: "opal" },
+    { name: "Sapphire", icon: SapphireBadge, theme: "sapphire" },
+    { name: "Emerald", icon: EmeraldBadge, theme: "emerald" },
+    { name: "Ruby", icon: RubyBadge, theme: "ruby" },
+    { name: "Diamond", icon: DiamondBadge, theme: "diamond" },
+    { name: "Cobalt", icon: CobaltBadge, theme: "cobalt" },
+    { name: "Ivory", icon: IvoryBadge, theme: "ivory" },
+    { name: "Crimson", icon: CrimsonBadge, theme: "crimson" },
+    { name: "Aurora", icon: AuroraBadge, theme: "aurora" },
+    { name: "Solaris", icon: SolarisBadge, theme: "solaris" },
+    { name: "Lunar", icon: LunarBadge, theme: "lunar" },
+    { name: "Eclipse", icon: EclipseBadge, theme: "eclipse" },
+    { name: "Celestial", icon: CelestialBadge, theme: "celestial" },
+    { name: "Mythic", icon: MythicBadge, theme: "mythic" },
+    { name: "Legendary", icon: LegendaryBadge, theme: "legendary" },
+    { name: "Master", icon: MasterBadge, theme: "master" },
+    { name: "Grandmaster", icon: GrandmasterBadge, theme: "grandmaster" },
   ];
 
   // Fetch participant's completion count from a dedicated endpoint.
@@ -229,22 +266,28 @@ const Badges = () => {
                 <div
                   key={index}
                   onClick={handleBadgeClick}
-                  className={`rounded-lg p-4 text-center transition-all duration-300 cursor-pointer select-none ${
+                  className={`rounded-lg p-4 text-center transition-all duration-300 cursor-pointer select-none border-2 ${
                     badge.unlocked
-                      ? "bg-white shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
-                      : "bg-[#B7B7B8] cursor-not-allowed"
+                      ? `bg-white shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${getBorderColor(
+                          badge.theme
+                        )}`
+                      : "bg-[#B7B7B8] cursor-not-allowed border-gray-400"
                   } ${
                     badge.highlighted && selectedFilter === "All"
-                      ? "border-2 border-blue-500 shadow-lg"
+                      ? "shadow-lg"
                       : ""
                   }`}
                 >
                   <img
                     src={badge.icon}
                     alt={badge.name}
-                    className={`w-20 h-20 mx-auto mb-3 transition-transform duration-200 ${
-                      badge.unlocked ? "" : "filter grayscale"
-                    } ${badge.unlocked ? "hover:rotate-12" : ""}`}
+                    className={`w-20 h-20 mx-auto mb-3 rounded-full border-2 transition-transform duration-200 ${
+                      badge.unlocked
+                        ? `border-opacity-70 ${getBorderColor(badge.theme)}`
+                        : "border-gray-400"
+                    } ${badge.unlocked ? "" : "filter grayscale"} ${
+                      badge.unlocked ? "hover:rotate-12" : ""
+                    }`}
                   />
                   <h3 className="font-semibold text-gray-800">{badge.name}</h3>
                   <p className="text-sm text-gray-500">{badge.progress}</p>

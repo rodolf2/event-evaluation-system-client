@@ -10,12 +10,9 @@ const QuestionDisplay = ({
 }) => {
   // Convert backend question format to client format for rendering
   const convertToClientFormat = (q) => {
-    let clientType = "Short Answer";
+    let clientType = "Numeric Ratings";
 
     switch (q.type) {
-      case "short_answer":
-        clientType = "Short Answer";
-        break;
       case "paragraph":
         clientType = "Paragraph";
         break;
@@ -44,17 +41,8 @@ const QuestionDisplay = ({
             icon: q.icon || "star",
           };
         }
-      case "date":
-        clientType = "Date";
-        break;
-      case "time":
-        clientType = "Time";
-        break;
-      case "file_upload":
-        clientType = "File Upload";
-        break;
       default:
-        clientType = "Short Answer";
+        clientType = "Numeric Ratings";
     }
 
     return {
@@ -143,13 +131,6 @@ const QuestionDisplay = ({
           />
         );
 
-      case "Short Answer":
-        return (
-          <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
-            <span className="text-gray-500">Short answer text</span>
-          </div>
-        );
-
       case "Paragraph":
         return (
           <div className="border border-gray-200 rounded-md p-3 bg-gray-50 min-h-[100px]">
@@ -157,27 +138,7 @@ const QuestionDisplay = ({
           </div>
         );
 
-      case "Date":
-        return (
-          <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
-            <span className="text-gray-500">Select date</span>
-          </div>
-        );
-
-      case "Time":
-        return (
-          <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
-            <span className="text-gray-500">Select time</span>
-          </div>
-        );
-
-      case "File Upload":
-        return (
-          <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
-            <span className="text-gray-500">Upload file</span>
-          </div>
-        );
-
+ 
       default:
         return (
           <div className="border border-gray-200 rounded-md p-3 bg-gray-50">

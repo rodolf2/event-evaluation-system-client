@@ -11,10 +11,10 @@ export const headerConfig = {
     "*evaluations": "Evaluations",
     "*certificates": "Certificates",
     "/psas/analytics": "Event Analytics",
-    "*reports": "Reports"
+    "*reports": "Reports",
   },
   defaultTitle: "Home",
-  notificationPath: true // uses /psas/notifications
+  notificationPath: true, // uses /psas/notifications
 };
 
 export const sidebarConfig = {
@@ -25,12 +25,12 @@ export const sidebarConfig = {
     { icon: CertificateIcon, label: "Certificate", path: "/psas/certificates" },
     { icon: AnalyticsIcon, label: "Event Analytics", path: "/psas/analytics" },
     { icon: ReportsIcon, label: "Report", path: "/psas/reports" },
-  ]
+  ],
 };
 
 export const layoutConfig = {
-  showProfileSection: true,
+  showProfileSection: false,
   profileSectionPaths: ["/psas/home"],
   headerConfig,
-  sidebarConfig
+  sidebarConfig,
 };

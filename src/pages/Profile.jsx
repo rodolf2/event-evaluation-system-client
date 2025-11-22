@@ -38,13 +38,25 @@ function Profile() {
   const [acquiredBadges, setAcquiredBadges] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(false);
 
+  // Map theme to appropriate border color (same as in Badges.jsx)
+  const getBorderColor = (theme) => {
+    const colorMap = {
+      bronze: "border-amber-600",
+      silver: "border-gray-400",
+      gold: "border-yellow-500",
+      titanium: "border-gray-500",
+      platinum: "border-gray-300",
+    };
+    return colorMap[theme] || "border-blue-200";
+  };
+
   // Badge configurations (same as in Badges.jsx)
   const baseBadgeConfig = [
-    { name: "Bronze", icon: BronzeBadge, highlighted: true },
-    { name: "Silver", icon: SilverBadge },
-    { name: "Gold", icon: GoldBadge },
-    { name: "Titanium", icon: TitaniumBadge },
-    { name: "Platinum", icon: PlatinumBadge },
+    { name: "Bronze", icon: BronzeBadge, highlighted: true, theme: "bronze" },
+    { name: "Silver", icon: SilverBadge, theme: "silver" },
+    { name: "Gold", icon: GoldBadge, theme: "gold" },
+    { name: "Titanium", icon: TitaniumBadge, theme: "titanium" },
+    { name: "Platinum", icon: PlatinumBadge, theme: "platinum" },
   ];
 
   // Fetch completion count and calculate acquired badges
@@ -80,7 +92,7 @@ function Profile() {
             unlocked: completedCount >= target,
           };
         })
-        .filter(badge => badge.unlocked);
+        .filter((badge) => badge.unlocked);
 
       setAcquiredBadges(acquired);
     } catch (err) {
@@ -92,7 +104,10 @@ function Profile() {
 
   // Fetch badge data when component mounts
   useEffect(() => {
-    if ((user.role === 'participant' || user.role === 'club-officer') && token) {
+    if (
+      (user.role === "participant" || user.role === "club-officer") &&
+      token
+    ) {
       fetchBadgeData();
     }
   }, [user, token]);
@@ -141,14 +156,20 @@ function Profile() {
                   <Camera className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900">{user.name}</h3>
-              <p className="text-gray-500 mt-1">Prefect of Student Affairs and Services</p>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                {user.name}
+              </h3>
+              <p className="text-gray-500 mt-1">
+                Prefect of Student Affairs and Services
+              </p>
               <p className="text-gray-500">Department Head</p>
             </div>
 
             {/* Account Settings Header */}
             <div className="bg-white rounded-xl shadow-md p-4 text-center">
-              <h2 className="text-xl font-bold text-gray-800">Account Settings</h2>
+              <h2 className="text-xl font-bold text-gray-800">
+                Account Settings
+              </h2>
             </div>
 
             {/* Toggles Card */}
@@ -173,35 +194,61 @@ function Profile() {
             {/* Personal Information Card */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Personal Information</h2>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Personal Information
+                </h2>
                 <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
                   Edit
                 </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-sm">
                 <div>
-                  <label className="block text-gray-500 font-medium">Email Address</label>
-                  <p className="text-gray-800 font-semibold mt-1">{user.email}</p>
+                  <label className="block text-gray-500 font-medium">
+                    Email Address
+                  </label>
+                  <p className="text-gray-800 font-semibold mt-1">
+                    {user.email}
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-gray-500 font-medium">Position</label>
-                  <p className="text-gray-800 font-semibold mt-1">{user.role || "Department Head"}</p>
+                  <label className="block text-gray-500 font-medium">
+                    Position
+                  </label>
+                  <p className="text-gray-800 font-semibold mt-1">
+                    {user.role || "Department Head"}
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-gray-500 font-medium">Department</label>
-                  <p className="text-gray-800 font-semibold mt-1">Prefect of Student Affairs and Services Department</p>
+                  <label className="block text-gray-500 font-medium">
+                    Department
+                  </label>
+                  <p className="text-gray-800 font-semibold mt-1">
+                    Prefect of Student Affairs and Services Department
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-gray-500 font-medium">Access Level</label>
-                  <p className="text-gray-800 font-semibold mt-1">Administrative Access</p>
+                  <label className="block text-gray-500 font-medium">
+                    Access Level
+                  </label>
+                  <p className="text-gray-800 font-semibold mt-1">
+                    Administrative Access
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-gray-500 font-medium">Country</label>
-                  <p className="text-gray-800 font-semibold mt-1">Philippines</p>
+                  <label className="block text-gray-500 font-medium">
+                    Country
+                  </label>
+                  <p className="text-gray-800 font-semibold mt-1">
+                    Philippines
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-gray-500 font-medium">Timezone</label>
-                  <p className="text-gray-800 font-semibold mt-1">Asia/Manila</p>
+                  <label className="block text-gray-500 font-medium">
+                    Timezone
+                  </label>
+                  <p className="text-gray-800 font-semibold mt-1">
+                    Asia/Manila
+                  </p>
                 </div>
               </div>
             </div>
@@ -209,14 +256,18 @@ function Profile() {
             {/* Password Management Card */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Password Management</h2>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Password Management
+                </h2>
                 <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
                   Edit
                 </button>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-gray-600 font-medium mb-1">Current Password</label>
+                  <label className="block text-gray-600 font-medium mb-1">
+                    Current Password
+                  </label>
                   <input
                     type="password"
                     defaultValue="••••••••"
@@ -225,7 +276,9 @@ function Profile() {
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-600 font-medium mb-1">New Password</label>
+                  <label className="block text-gray-600 font-medium mb-1">
+                    New Password
+                  </label>
                   <input
                     type="password"
                     placeholder="New Password"
@@ -237,10 +290,12 @@ function Profile() {
             </div>
 
             {/* Evaluation Badges Card - Only show for participants and club officers */}
-            {(user.role === 'participant' || user.role === 'club-officer') && (
+            {(user.role === "participant" || user.role === "club-officer") && (
               <div className="bg-white rounded-xl shadow-md px-8 py-12">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-800">Evaluation Badges</h2>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Evaluation Badges
+                  </h2>
                   <Link
                     to={badgesLink}
                     className="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold"
@@ -248,7 +303,7 @@ function Profile() {
                     View My Badges <ChevronRight className="w-5 h-5 ml-1" />
                   </Link>
                 </div>
-                
+
                 {loadingBadges ? (
                   <div className="flex justify-center items-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -264,9 +319,13 @@ function Profile() {
                           <img
                             src={badge.icon}
                             alt={badge.name}
-                            className="w-16 h-16 rounded-full mb-2 border-2 border-blue-200"
+                            className={`w-16 h-16 rounded-full mb-2 border-2 ${getBorderColor(
+                              badge.theme
+                            )}`}
                           />
-                          <p className="text-sm font-medium text-gray-800">{badge.name}</p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {badge.name}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -274,7 +333,8 @@ function Profile() {
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2 text-center text-gray-500 py-8">
                     <p className="text-sm">
-                      Start completing evaluation forms to unlock your first badge.
+                      Start completing evaluation forms to unlock your first
+                      badge.
                     </p>
                     <p className="text-xs">
                       Your earned badges will appear here once unlocked.

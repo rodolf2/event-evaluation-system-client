@@ -19,13 +19,18 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
     showProfileSection = false,
     headerConfig = {},
     sidebarConfig = {},
-    profileSectionPaths = []
+    profileSectionPaths = [],
   } = config;
 
-  const showProfileSectionOnPath = profileSectionPaths.includes(location.pathname);
+  const showProfileSectionOnPath = profileSectionPaths.includes(
+    location.pathname
+  );
 
   const handleProfileClick = (rect) => {
-    setModalPosition({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    setModalPosition({
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    });
     setProfileModalOpen(!isProfileModalOpen);
   };
 
@@ -45,9 +50,11 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
   }, []);
 
   return (
-    <div className={`flex min-h-screen bg-gray-100 relative ml-7 ${
+    <div
+      className={`flex min-h-screen bg-gray-100 relative ml-7 ${
         isMobile ? "items-center justify-center" : ""
-      }`}>
+      }`}
+    >
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={toggleSidebar}
@@ -73,9 +80,19 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
           onProfileClick={handleProfileClick}
           config={headerConfig}
           className="print:hidden"
+          isProfileModalOpen={isProfileModalOpen}
         />
-        {user && showProfileSection && showProfileSectionOnPath && !pageLoading && <ProfileSection />}
-        <div className={showProfileSection && showProfileSectionOnPath ? "mt-6" : ""}>{children}</div>
+        {user &&
+          showProfileSection &&
+          showProfileSectionOnPath &&
+          !pageLoading && <ProfileSection />}
+        <div
+          className={
+            showProfileSection && showProfileSectionOnPath ? "mt-6" : ""
+          }
+        >
+          {children}
+        </div>
       </main>
 
       <ProfileModal

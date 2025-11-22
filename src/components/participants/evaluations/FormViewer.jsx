@@ -40,12 +40,9 @@ const FormViewer = ({ formId, onClose }) => {
 
   // Convert backend question format to client format for rendering
   const convertToClientFormat = (question) => {
-    let clientType = "Short Answer";
+    let clientType = "Numeric Ratings";
 
     switch (question.type) {
-      case "short_answer":
-        clientType = "Short Answer";
-        break;
       case "paragraph":
         clientType = "Paragraph";
         break;
@@ -70,17 +67,8 @@ const FormViewer = ({ formId, onClose }) => {
           clientType = "Numeric Ratings";
         }
         break;
-      case "date":
-        clientType = "Date";
-        break;
-      case "time":
-        clientType = "Time";
-        break;
-      case "file_upload":
-        clientType = "File Upload";
-        break;
       default:
-        clientType = "Short Answer";
+        clientType = "Numeric Ratings";
     }
 
     return {
@@ -106,46 +94,6 @@ const FormViewer = ({ formId, onClose }) => {
 
     const renderInput = () => {
       switch (clientQuestion.type) {
-        case "Short Answer":
-          return (
-            <input
-              type="text"
-              value={currentResponse}
-              onChange={(e) => updateResponse(e.target.value)}
-              className="w-full border border-gray-200 rounded-md p-2"
-              placeholder="Enter your answer"
-            />
-          );
-
-        case "Date":
-          return (
-            <input
-              type="date"
-              value={currentResponse}
-              onChange={(e) => updateResponse(e.target.value)}
-              className="w-full border border-gray-200 rounded-md p-2"
-            />
-          );
-
-        case "Time":
-          return (
-            <input
-              type="time"
-              value={currentResponse}
-              onChange={(e) => updateResponse(e.target.value)}
-              className="w-full border border-gray-200 rounded-md p-2"
-            />
-          );
-
-        case "File Upload":
-          return (
-            <input
-              type="file"
-              onChange={(e) => updateResponse(e.target.files[0] || "")}
-              className="w-full border border-gray-200 rounded-md p-2"
-            />
-          );
-
         case "Multiple Choices":
           return (
             <div className="space-y-2">

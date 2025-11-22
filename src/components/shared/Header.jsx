@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Menu } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, Menu } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -8,6 +8,7 @@ const Header = ({
   onProfileClick,
   config = {},
   className = "",
+  isProfileModalOpen = false,
 }) => {
   const { user, token, refreshUserData } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -117,7 +118,11 @@ const Header = ({
             <span className="font-medium text-gray-700 hidden sm:block">
               {user?.name || "User"}
             </span>
-            <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
+            {isProfileModalOpen ? (
+              <ChevronUp className="w-4 h-4 text-gray-500 hidden sm:block" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
+            )}
           </div>
         </div>
       </div>

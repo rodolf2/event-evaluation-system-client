@@ -5,11 +5,14 @@ import PSASLayout from "../../components/psas/PSASLayout";
 import FormCreationInterface from "../../components/psas/evaluations/FormCreationInterface";
 import EvaluationContent from "../../components/psas/evaluations/EvaluationContent";
 import { useAuth } from "../../contexts/useAuth";
+import { FormSessionManager } from "../../utils/formSessionManager";
 
 const Evaluations = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { token } = useAuth();
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(
+    localStorage.getItem("evaluationsView") || "dashboard"
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -19,6 +22,11 @@ const Evaluations = () => {
   const [evaluationForms, setEvaluationForms] = useState([]);
   const [currentFormId, setCurrentFormId] = useState(null);
   const selectedTemplate = searchParams.get("template");
+
+  // Persist view state to support page reloads
+  useEffect(() => {
+    localStorage.setItem("evaluationsView", view);
+  }, [view]);
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -104,8 +112,8 @@ const Evaluations = () => {
 
   const handleCreateNew = () => {
     // Clear any temporary form data to ensure we start with a blank form
-    localStorage.removeItem("tempFormData");
-    localStorage.removeItem("editFormId");
+    FormSessionManager.clearAllFormData();
+    setCurrentFormId(null);
 
     setView("create");
   };
@@ -255,6 +263,7 @@ const Evaluations = () => {
             currentFormId={currentFormId}
             onBack={() => {
               setView("dashboard");
+              setSearchParams({}); // Clear URL params
               // Clear edit form ID when going back
               localStorage.removeItem("editFormId");
               setCurrentFormId(null);

@@ -15,7 +15,7 @@ import Reports from "./pages/psas/Reports";
 import Notifications from "./pages/psas/Notifications";
 import StudentList from "./pages/psas/StudentList";
 import ClubOfficerDashboard from "./pages/club-officers/Dashboard";
-import ParticipantDashboard from "./pages/participants/Dashboard";
+import ParticipantHome from "./pages/participants/Home";
 import ParticipantEvaluations from "./pages/participants/Evaluations";
 import ParticipantCertificates from "./pages/participants/Certificates";
 import ParticipantBadges from "./pages/participants/Badges";
@@ -258,7 +258,7 @@ function App() {
           path="/participant/home"
           element={
             isAuthorized("participant") ? (
-              <ParticipantDashboard />
+              <ParticipantHome />
             ) : (
               <Navigate to={getHomeRoute()} />
             )

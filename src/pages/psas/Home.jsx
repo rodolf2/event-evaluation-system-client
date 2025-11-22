@@ -46,9 +46,37 @@ function Home() {
       const formData = await formRes.json();
       const formId = formData.success ? formData.data?.id : null;
 
-      // Use the same thumbnail for both analytics and reports
-      const thumb = formId ? `/api/thumbnails/form-${formId}.png` : null;
-      setThumbnailUrls({ analytics: thumb, reports: thumb });
+      if (formId) {
+        // Fetch analytics data to trigger thumbnail generation with latest data
+        try {
+          await fetch(`/api/analytics/form/${formId}`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          console.log(
+            `✅ Analytics data fetched for form ${formId}, thumbnail should be updated`
+          );
+        } catch (analyticsError) {
+          console.error(
+            "Error fetching analytics for thumbnail:",
+            analyticsError
+          );
+          // Continue even if analytics fetch fails
+        }
+      }
+
+      // Add cache-busting timestamp to ensure fresh thumbnail
+      const timestamp = new Date().getTime();
+      const analyticsThumb = formId
+        ? `/api/thumbnails/analytics-${formId}.png?t=${timestamp}`
+        : null;
+      const reportsThumb = formId
+        ? `/api/thumbnails/form-${formId}.png?t=${timestamp}`
+        : null;
+      setThumbnailUrls({ analytics: analyticsThumb, reports: reportsThumb });
     } catch (err) {
       console.error("Error fetching thumbnails:", err);
     }
@@ -132,8 +160,17 @@ function Home() {
       ) : (
         <>
           <div className="space-y-6">
-            {/* Cards & Calendar */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Profile, Cards & Calendar Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:auto-rows-min">
+              {/* Profile Section - spans 2 columns, 1 row */}
+              <div className="lg:col-span-2">
+                <ProfileSection />
+              </div>
+              {/* Calendar - spans 1 column, 2 rows */}
+              <div className="lg:row-span-2">
+                <CalendarWidget openModal={openModal} reminders={reminders} />
+              </div>
+              {/* Cards - spans 2 columns, positioned in second row */}
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DashboardCard
                   image={thumbnailUrls.analytics}
@@ -146,7 +183,6 @@ function Home() {
                   buttonText="View Event Reports"
                 />
               </div>
-              <CalendarWidget openModal={openModal} reminders={reminders} />
             </div>
 
             {/* Activity & Reminders */}

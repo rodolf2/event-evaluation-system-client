@@ -228,7 +228,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       urlParams.get("new") === "true" || urlParams.get("view") === "create";
 
     // Check if we're returning from certificate linking (special case - don't clear data)
-    const isReturningFromCertificate = edit && recipients;
 
     // Check if we have pending tempFormData to load (from Google Forms import, etc.)
     const hasTempFormData = !!localStorage.getItem("tempFormData");
@@ -238,13 +237,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     // ALSO: Don't clear if we have tempFormData waiting to be loaded!
     // ALSO: Don't clear if we just loaded tempFormData (prevents clearing after load)
     const shouldClearExistingData =
-      !hasTempFormData &&
-      !tempFormDataLoadedRef.current &&
-      (isNewForm ||
-        (formIdFromUrl === null &&
-          !edit &&
-          !recipients &&
-          !isReturningFromCertificate));
+      !hasTempFormData && !tempFormDataLoadedRef.current && isNewForm;
 
     if (shouldClearExistingData) {
       // Preserve tempFormData if it exists (e.g. from Google Forms extraction)
@@ -273,9 +266,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setFormWasPublished(false);
 
       FormSessionManager.clearPreservedFormId();
-      console.log(
-        "🧹 FormCreationInterface - Starting with completely empty form state"
-      );
     }
 
     // Check if we're returning from a navigation (CSV upload, certificate linking, etc.)
@@ -335,7 +325,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
                 if (formData.questions) {
                   formData.questions.forEach((q) => {
-                    let clientType = "Short Answer";
+                    let clientType = "Numeric Ratings";
                     let clientOptions = [];
                     let ratingScale = 5;
                     let emojiStyle = "Default";
@@ -348,9 +338,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                       case "multiple_choice":
                         clientType = "Multiple Choices";
                         clientOptions = q.options || [];
-                        break;
-                      case "short_answer":
-                        clientType = "Short Answer";
                         break;
                       case "paragraph":
                         clientType = "Paragraph";
@@ -369,17 +356,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                           emojiStyle = "Default";
                         }
                         break;
-                      case "date":
-                        clientType = "Date";
-                        break;
-                      case "time":
-                        clientType = "Time";
-                        break;
-                      case "file_upload":
-                        clientType = "File Upload";
-                        break;
                       default:
-                        clientType = "Short Answer";
+                        clientType = "Numeric Ratings";
                     }
 
                     const clientQuestion = {
@@ -649,11 +627,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         FormSessionManager.loadStudentAssignments() || [];
       setAssignedStudents(updatedAssignedStudents);
 
-      // Force immediate save again after student assignment to ensure all sections are preserved
-      setTimeout(() => {
-        persistFormState();
-      }, 100);
-
       setHasUnsavedChanges(false);
       const toastTimeout = setTimeout(() => {
         toast.success(`${recipients} students assigned to this form`);
@@ -671,17 +644,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       // First priority: restore from saved form data (this preserves sections, questions, etc.)
       const formData = FormSessionManager.loadFormData();
       if (formData) {
-        console.log(
-          "🔄 Restoring form data from certificate linking:",
-          formData
-        );
-
         // Use direct setState to restore all form data including sections
         setFormTitle(formData.formTitle || "Untitled Form");
         setFormDescription(formData.formDescription || "Form Description");
         setQuestions(formData.questions || []);
         // Debug log: show loaded sections
-        console.log("[Restore] Loaded sections:", formData.sections);
+
         setSections(formData.sections || []);
         setUploadedFiles(formData.uploadedFiles || []);
         setUploadedLinks(formData.uploadedLinks || []);
@@ -736,40 +704,21 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       // Clear preserved form ID after successful return from certificate linking
       FormSessionManager.clearPreservedFormId();
 
-      // Force immediate save again after certificate linking to ensure all sections are preserved
-      setTimeout(() => {
-        persistFormState();
-      }, 100);
-
       // Clear the editFormId since we've successfully handled the edit context
       localStorage.removeItem("editFormId");
     }
 
     // Check for tempFormData from URL extraction (Google Forms, file upload, etc.)
     const tempFormDataStr = localStorage.getItem("tempFormData");
-    console.log(
-      "🔎 [FormCreationInterface] Checking for tempFormData:",
-      tempFormDataStr ? "FOUND" : "NOT FOUND"
-    );
-    console.log("🔎 [FormCreationInterface] Load conditions:", {
-      hasTempFormData: !!tempFormDataStr,
-      hasShownRecipientsToast,
-      edit,
-      willLoad: !!(tempFormDataStr && !hasShownRecipientsToast && !edit),
-    });
 
     if (tempFormDataStr && !hasShownRecipientsToast && !edit) {
       const loadTimeout = setTimeout(() => {
         try {
           const tempData = JSON.parse(tempFormDataStr);
-          console.log(
-            "📥 [FormCreationInterface] Loading tempFormData:",
-            tempData
-          );
 
           // Convert backend format questions to frontend format
           const convertedQuestions = (tempData.questions || []).map((q) => {
-            let clientType = "Short Answer";
+            let clientType = "Numeric Ratings";
             let clientOptions = [];
             let ratingScale = 5;
             let emojiStyle = "Default";
@@ -782,9 +731,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               case "multiple_choice":
                 clientType = "Multiple Choices";
                 clientOptions = q.options || [];
-                break;
-              case "short_answer":
-                clientType = "Short Answer";
                 break;
               case "paragraph":
                 clientType = "Paragraph";
@@ -803,17 +749,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   emojiStyle = "Default";
                 }
                 break;
-              case "date":
-                clientType = "Date";
-                break;
-              case "time":
-                clientType = "Time";
-                break;
-              case "file_upload":
-                clientType = "File Upload";
-                break;
               default:
-                clientType = "Short Answer";
+                clientType = "Numeric Ratings";
             }
 
             return {
@@ -831,10 +768,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               sectionId: q.sectionId, // Preserve sectionId
             };
           });
-
-          console.log(
-            `✅ [FormCreationInterface] Converted ${convertedQuestions.length} questions`
-          );
 
           // Separate main questions and section questions
           const mainQuestions = [];
@@ -857,14 +790,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               ),
             })
           );
-
-          console.log("🔍 [FormCreationInterface] tempFormData analysis:");
-          console.log("  - Raw tempData.sections:", tempData.sections);
-          console.log("  - Raw tempData.questions:", tempData.questions);
-          console.log("  - Converted questions:", convertedQuestions);
-          console.log("  - Main questions:", mainQuestions);
-          console.log("  - Section questions:", sectionQuestions);
-          console.log("  - Reconstructed sections:", reconstructedSections);
 
           // Load the data into the form
           setFormTitle(tempData.title || "Untitled Form");
@@ -931,7 +856,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
         // Convert backend format questions to frontend format
         const convertedQuestions = (tempData.questions || []).map((q) => {
-          let clientType = "Short Answer";
+          let clientType = "Numeric Ratings";
           let clientOptions = [];
           let ratingScale = 5;
           let emojiStyle = "Default";
@@ -944,9 +869,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             case "multiple_choice":
               clientType = "Multiple Choices";
               clientOptions = q.options || [];
-              break;
-            case "short_answer":
-              clientType = "Short Answer";
               break;
             case "paragraph":
               clientType = "Paragraph";
@@ -965,17 +887,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 emojiStyle = "Default";
               }
               break;
-            case "date":
-              clientType = "Date";
-              break;
-            case "time":
-              clientType = "Time";
-              break;
-            case "file_upload":
-              clientType = "File Upload";
-              break;
             default:
-              clientType = "Short Answer";
+              clientType = "Numeric Ratings";
           }
 
           return {
@@ -1168,7 +1081,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   // Centralized helper to create a new default question object
   const createDefaultQuestion = () => ({
     id: makeId(),
-    type: "Short Answer",
+    type: "Numeric Ratings",
     title: "",
     options: [],
     ratingScale: 5,
@@ -1228,7 +1141,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       }));
 
       // Debug log: show updated sections array
-      console.log("[addSection] Updated sections:", reindexed);
 
       // Set active section (will trigger debounced persist)
       const last = reindexed[reindexed.length - 1];
@@ -1267,7 +1179,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
   // Handle section title and description updates
   const updateSection = useCallback((sectionId, field, value) => {
-    console.log(`🔄 Updating section ${sectionId} ${field}:`, value);
     setSections((prev) =>
       prev.map((s) => (s.id === sectionId ? { ...s, [field]: value } : s))
     );
@@ -1488,10 +1399,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       // If this is an existing published form, update the attendee list in the database
       if (currentFormId && /^[0-9a-fA-F]{24}$/.test(currentFormId)) {
         try {
-          console.log(
-            `[CSV-UPLOAD] Updating attendee list for published form ${currentFormId}`
-          );
-
           // Convert CSV students to attendee format
           const attendeeList = csvData.students.map((student) => ({
             name: student.name,
@@ -1518,11 +1425,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           );
 
           if (response.ok) {
-            const result = await response.json();
-            console.log(
-              `[CSV-UPLOAD] Successfully updated attendee list:`,
-              result
-            );
+            await response.json();
+
             toast.success(
               `Attendee list updated in database (${attendeeList.length} students)`
             );
@@ -1653,9 +1557,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const validateCertificateTemplate = useCallback(
     async (certificateId) => {
       try {
-        console.log(
-          `[Frontend] Starting validation for template: ${certificateId}`
-        );
         const response = await fetch(
           `/api/certificates/${certificateId}/validate`,
           {
@@ -1663,10 +1564,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               Authorization: `Bearer ${token}`,
             },
           }
-        );
-
-        console.log(
-          `[Frontend] Validation response status: ${response.status}`
         );
 
         if (!response.ok) {
@@ -1685,7 +1582,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         }
 
         const data = await response.json();
-        console.log(`[Frontend] Validation success:`, data);
 
         if (data.success && data.data) {
           setCertificateValidationStatus({
@@ -1747,9 +1643,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           type = "multiple_choice";
           backendQuestion.options = q.options || [];
           break;
-        case "Short Answer":
-          type = "short_answer";
-          break;
         case "Paragraph":
           type = "paragraph";
           break;
@@ -1769,15 +1662,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           // Labels are not typically used for numeric ratings, so they can be omitted or set to default
           backendQuestion.lowLabel = "";
           backendQuestion.highLabel = "";
-          break;
-        case "Date":
-          type = "date";
-          break;
-        case "Time":
-          type = "time";
-          break;
-        case "File Upload":
-          type = "file_upload";
           break;
         default:
           type = "short_answer";
@@ -1867,15 +1751,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     }
 
     const backendQuestions = mapQuestionsToBackend(questions, sections);
-
-    // Strip questions from sections for backend (store flat)
-    const sectionsWithoutQuestions = sections.map((section) => {
-      const { questions: _, ...rest } = section;
-      return rest;
-    });
-
-    // Use sectionsWithoutQuestions in the publish payload
-    console.log("Sections without questions:", sectionsWithoutQuestions);
 
     // Get certificate information for publishing
     // NOTE: certificate linkage is currently handled separately; no-op placeholder removed
@@ -2099,6 +1974,28 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
       if (publishResponse.ok && publishData.success) {
         toast.success("Form published successfully!");
+
+        // Clear persistent storage immediately to prevent restoration on reload
+        FormSessionManager.clearAllFormData();
+
+        // Clear specific keys
+        const keysToRemove = [
+          "tempFormData",
+          "uploadedFormId",
+          "editFormId",
+          "studentSelection",
+          "preservedFormId",
+          "preservedFormIdTimestamp",
+        ];
+        keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+        // Clear form-specific session data
+        if (serverFormId) {
+          localStorage.removeItem(`formSession_${serverFormId}`);
+          localStorage.removeItem(`formRecipients_${serverFormId}`);
+          localStorage.removeItem(`certificateLinked_${serverFormId}`);
+        }
+
         setShowSuccessScreen(true);
         setFormWasPublished(true);
       } else {
@@ -2132,6 +2029,14 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         onBackToEvaluations={() => {
           // Comprehensive state cleanup
           FormSessionManager.clearAllFormData();
+
+          // Explicitly clear the current form session using the state ID
+          // This ensures cleanup even if FormSessionManager has lost the ID
+          if (currentFormId) {
+            localStorage.removeItem(`formSession_${currentFormId}`);
+            localStorage.removeItem(`formRecipients_${currentFormId}`);
+            localStorage.removeItem(`certificateLinked_${currentFormId}`);
+          }
 
           // Clear localStorage keys
           const keysToRemove = [
@@ -2169,7 +2074,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           setShowSuccessScreen(false);
 
           // Navigate back to evaluations page and clear any URL parameters
-          navigate("/psas/evaluations", { replace: true });
+          localStorage.setItem("evaluationsView", "dashboard");
+          if (onBack) {
+            onBack();
+          } else {
+            navigate("/psas/evaluations");
+          }
         }}
       />
     );
@@ -2841,11 +2751,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               <div className="max-h-[90vh] overflow-y-auto">
                 <CertificateCustomizer
                   formId={currentFormId}
-                  onSave={(customizations) => {
-                    console.log(
-                      "Certificate customizations saved:",
-                      customizations
-                    );
+                  onSave={() => {
                     // Optionally update local state or show success message
                   }}
                   onClose={() => setShowCertificateCustomizer(false)}
