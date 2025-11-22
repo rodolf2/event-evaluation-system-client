@@ -10,12 +10,17 @@ import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
 function Home() {
-   const [reminders, setReminders] = useState([]);
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [selectedDate, setSelectedDate] = useState(dayjs());
-   const [modalPosition, setModalPosition] = useState(null);
-   const [pageLoading, setPageLoading] = useState(true);
-   const { token, isLoading } = useAuth();
+  const [reminders, setReminders] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [modalPosition, setModalPosition] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [thumbnailUrls, setThumbnailUrls] = useState({
+    form: "https://placehold.co/400x225/1e3a8a/ffffff?text=Latest+Form",
+    certificate:
+      "https://placehold.co/400x225/1e3a8a/ffffff?text=Latest+Certificate",
+  });
+  const { token, isLoading } = useAuth();
 
   useEffect(() => {
     const fetchReminders = async () => {
@@ -32,8 +37,40 @@ function Home() {
       }
     };
 
+    const fetchLatestThumbnails = async () => {
+      try {
+        // Fetch latest form thumbnail
+        const formResponse = await fetch("/api/forms/latest/id");
+        if (formResponse.ok) {
+          const formData = await formResponse.json();
+          if (formData.success && formData.data.id) {
+            setThumbnailUrls((prev) => ({
+              ...prev,
+              form: `/api/thumbnails/form-${formData.data.id}.png`,
+            }));
+          }
+        }
+
+        // Fetch latest certificate thumbnail
+        const certResponse = await fetch("/api/certificates/latest/id");
+        if (certResponse.ok) {
+          const certData = await certResponse.json();
+          if (certData.success && certData.data.id) {
+            setThumbnailUrls((prev) => ({
+              ...prev,
+              certificate: `/api/thumbnails/certificate-${certData.data.id}.png`,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching thumbnails:", error);
+        // Keep default thumbnails on error
+      }
+    };
+
     if (token) {
       fetchReminders();
+      fetchLatestThumbnails();
     }
 
     // Simulate page loading delay for consistent user experience
@@ -68,7 +105,7 @@ function Home() {
         },
         body: JSON.stringify({
           ...reminder,
-          priority: "medium" // Default priority
+          priority: "medium", // Default priority
         }),
       });
       const data = await response.json();
@@ -84,15 +121,12 @@ function Home() {
 
   const deleteReminder = async (id) => {
     try {
-      const response = await fetch(
-        `/api/reminders/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/reminders/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (response.ok) {
         await fetchReminders(); // Refresh the entire list
       }
@@ -125,14 +159,16 @@ function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DashboardCard
-                  image="../../../thumbnails/event-analytics.png"
-                  title="Event Analytics"
-                  buttonText="View Event Analytics"
+                  image={thumbnailUrls.form}
+                  title="Latest Form"
+                  buttonText="View Latest Form"
+                  link="/forms"
                 />
                 <DashboardCard
-                  image="../../../thumbnails/event-reports.png"
-                  title="Event Reports"
-                  buttonText="View Event Reports"
+                  image={thumbnailUrls.certificate}
+                  title="Latest Certificate"
+                  buttonText="View Latest Certificate"
+                  link="/certificates"
                 />
               </div>
               <CalendarWidget openModal={openModal} reminders={reminders} />

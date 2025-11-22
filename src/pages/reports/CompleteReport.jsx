@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   RefreshCw,
   Settings,
@@ -199,7 +199,10 @@ const CommentSection = ({
 
 const CompleteReport = ({ report, onBack }) => {
   const navigate = useNavigate();
+  const { eventId } = useParams(); // Get eventId from URL if not provided as prop
   const [showFilters, setShowFilters] = useState(false);
+
+  const reportId = report?.id || eventId;
 
   // Use dynamic data hook
   const {
@@ -212,7 +215,7 @@ const CompleteReport = ({ report, onBack }) => {
     updateFilters,
     applyFilters,
     refreshData,
-  } = useDynamicReportData(report?.id);
+  } = useDynamicReportData(reportId);
 
   // If rendered as child component (with props), don't use PSASLayout
   // If accessed via direct routing (no props), use PSASLayout

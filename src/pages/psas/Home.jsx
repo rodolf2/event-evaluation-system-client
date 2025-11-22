@@ -10,12 +10,16 @@ import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
 function Home() {
-   const [reminders, setReminders] = useState([]);
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [selectedDate, setSelectedDate] = useState(dayjs());
-   const [modalPosition, setModalPosition] = useState(null);
-   const [pageLoading, setPageLoading] = useState(true);
-   const { token, isLoading } = useAuth();
+  const [reminders, setReminders] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [modalPosition, setModalPosition] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [thumbnailUrls, setThumbnailUrls] = useState({
+    analytics: null,
+    reports: null,
+  });
+  const { token, isLoading } = useAuth();
 
   const fetchReminders = useCallback(async () => {
     if (!token) return; // Ensure token exists before fetching
@@ -32,8 +36,27 @@ function Home() {
     }
   }, [token]);
 
+  const fetchThumbnails = useCallback(async () => {
+    if (!token) return;
+    try {
+      // Get latest form ID
+      const formRes = await fetch("/api/forms/latest/id", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const formData = await formRes.json();
+      const formId = formData.success ? formData.data?.id : null;
+
+      // Use the same thumbnail for both analytics and reports
+      const thumb = formId ? `/api/thumbnails/form-${formId}.png` : null;
+      setThumbnailUrls({ analytics: thumb, reports: thumb });
+    } catch (err) {
+      console.error("Error fetching thumbnails:", err);
+    }
+  }, [token]);
+
   useEffect(() => {
     fetchReminders();
+    fetchThumbnails();
 
     // Simulate page loading delay for consistent user experience
     const timer = setTimeout(() => {
@@ -41,50 +64,53 @@ function Home() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [fetchReminders]);
+  }, [fetchReminders, fetchThumbnails]);
 
-  const addReminder = useCallback(async (reminder) => {
-    try {
-      const response = await fetch("/api/reminders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...reminder,
-          priority: "medium" // Default priority
-        }),
-      });
-      const data = await response.json();
-      if (data.success !== false) {
-        await fetchReminders(); // Refresh the entire list
-      } else {
-        console.error("Error adding reminder:", data.message);
+  const addReminder = useCallback(
+    async (reminder) => {
+      try {
+        const response = await fetch("/api/reminders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...reminder,
+            priority: "medium", // Default priority
+          }),
+        });
+        const data = await response.json();
+        if (data.success !== false) {
+          await fetchReminders(); // Refresh the entire list
+        } else {
+          console.error("Error adding reminder:", data.message);
+        }
+      } catch (error) {
+        console.error("Error adding reminder:", error);
       }
-    } catch (error) {
-      console.error("Error adding reminder:", error);
-    }
-  }, [token, fetchReminders]);
+    },
+    [token, fetchReminders]
+  );
 
-  const deleteReminder = useCallback(async (id) => {
-    try {
-      const response = await fetch(
-        `/api/reminders/${id}`,
-        {
+  const deleteReminder = useCallback(
+    async (id) => {
+      try {
+        const response = await fetch(`/api/reminders/${id}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
           },
+        });
+        if (response.ok) {
+          await fetchReminders(); // Refresh the entire list
         }
-      );
-      if (response.ok) {
-        await fetchReminders(); // Refresh the entire list
+      } catch (error) {
+        console.error("Error deleting reminder:", error);
       }
-    } catch (error) {
-      console.error("Error deleting reminder:", error);
-    }
-  }, [token, fetchReminders]);
+    },
+    [token, fetchReminders]
+  );
 
   const openModal = (date, position) => {
     setSelectedDate(date);
@@ -110,12 +136,12 @@ function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DashboardCard
-                  image="../../../thumbnails/event-analytics.png"
+                  image={thumbnailUrls.analytics}
                   title="Event Analytics"
                   buttonText="View Event Analytics"
                 />
                 <DashboardCard
-                  image="../../../thumbnails/event-reports.png"
+                  image={thumbnailUrls.reports}
                   title="Event Reports"
                   buttonText="View Event Reports"
                 />

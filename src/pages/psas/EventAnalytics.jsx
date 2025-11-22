@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import PSASLayout from "../../components/psas/PSASLayout";
+import { useAuth } from "../../contexts/useAuth";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -22,6 +25,8 @@ ChartJS.register(
 );
 
 const EventAnalytics = () => {
+  const { token } = useAuth();
+  const navigate = useNavigate();
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formId, setFormId] = useState(null);
@@ -31,45 +36,37 @@ const EventAnalytics = () => {
   // Fetch available forms for the current user
   useEffect(() => {
     const fetchAvailableForms = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
+      if (!token) return;
 
-        const response = await fetch('/api/forms', {
-          method: 'GET',
+      try {
+        const response = await fetch("/api/forms", {
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch forms');
+          throw new Error("Failed to fetch forms");
         }
 
         const result = await response.json();
-        
+
         if (result.success && result.data) {
           // Filter to only published forms (since only they have responses)
-          const publishedForms = result.data.filter(form => form.status === 'published');
+          const publishedForms = result.data.filter(
+            (form) => form.status === "published"
+          );
           setAvailableForms(publishedForms);
-          
+
           // Auto-select first form if none is selected
-          if (!formId && publishedForms.length > 0) {
+          if (publishedForms.length > 0 && !formId) {
             setFormId(publishedForms[0]._id);
-          } else if (formId) {
-            // Check if the current formId is in the published forms list
-            // If not, reset to the first published form
-            const currentFormExists = publishedForms.some(form => form._id === formId);
-            if (!currentFormExists && publishedForms.length > 0) {
-              setFormId(publishedForms[0]._id);
-            }
           }
         }
       } catch (error) {
-        console.error('Failed to fetch available forms:', error);
+        console.error("Failed to fetch available forms:", error);
         setAvailableForms([]);
       } finally {
         setFormsLoading(false);
@@ -77,13 +74,14 @@ const EventAnalytics = () => {
     };
 
     fetchAvailableForms();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // Run when token changes
 
   // Get form ID from URL params only (no localStorage to avoid custom IDs)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlFormId = urlParams.get('formId');
-    
+    const urlFormId = urlParams.get("formId");
+
     if (urlFormId && /^[0-9a-fA-F]{24}$/.test(urlFormId)) {
       setFormId(urlFormId);
     }
@@ -99,7 +97,10 @@ const EventAnalytics = () => {
 
       // Validate that the formId is a proper MongoDB ObjectId (24 hex characters)
       if (!/^[0-9a-fA-F]{24}$/.test(formId)) {
-        console.warn('Invalid form ID format, skipping analytics fetch:', formId);
+        console.warn(
+          "Invalid form ID format, skipping analytics fetch:",
+          formId
+        );
         setAnalyticsData({
           totalAttendees: 0,
           totalResponses: 0,
@@ -108,13 +109,13 @@ const EventAnalytics = () => {
           responseBreakdown: {
             positive: { percentage: 0, count: 0 },
             neutral: { percentage: 0, count: 0 },
-            negative: { percentage: 0, count: 0 }
+            negative: { percentage: 0, count: 0 },
           },
           responseOverview: {
             labels: [],
             data: [],
-            dateRange: "No data available"
-          }
+            dateRange: "No data available",
+          },
         });
         setLoading(false);
         return;
@@ -122,49 +123,58 @@ const EventAnalytics = () => {
 
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
         if (!token) {
-          throw new Error('No authentication token found');
+          throw new Error("No authentication token found");
         }
 
         // Fetch real analytics data from the API
         const response = await fetch(`/api/analytics/form/${formId}`, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch analytics data');
+          throw new Error(
+            errorData.message || "Failed to fetch analytics data"
+          );
         }
 
         const result = await response.json();
-        
+
         if (result.success && result.data) {
           setAnalyticsData(result.data);
         } else {
-          throw new Error('Invalid response format');
+          throw new Error("Invalid response format");
         }
       } catch (error) {
         console.error("Failed to fetch event analytics:", error);
-        
+
         // If we get a CastError, it means the formId is not a valid ObjectId
-        if (error.message && error.message.includes('Cast to ObjectId failed')) {
-          console.error('Invalid form ID format. This form may not be published yet or the ID is corrupted.');
+        if (
+          error.message &&
+          error.message.includes("Cast to ObjectId failed")
+        ) {
+          console.error(
+            "Invalid form ID format. This form may not be published yet or the ID is corrupted."
+          );
           // Check if we should switch to another available form
           if (availableForms.length > 0 && formId !== availableForms[0]._id) {
-            console.log('Switching to first available published form');
+            console.log("Switching to first available published form");
             setFormId(availableForms[0]._id);
             return; // Let the effect run again with the new formId
           }
         }
-        
+
         // You could show a toast notification here with the error message
-        console.error('Analytics Error:', error.message || 'Failed to load analytics data');
-        
+        console.error(
+          "Analytics Error:",
+          error.message || "Failed to load analytics data"
+        );
+
         // Set empty data to show "no data" state
         setAnalyticsData({
           totalAttendees: 0,
@@ -174,13 +184,13 @@ const EventAnalytics = () => {
           responseBreakdown: {
             positive: { percentage: 0, count: 0 },
             neutral: { percentage: 0, count: 0 },
-            negative: { percentage: 0, count: 0 }
+            negative: { percentage: 0, count: 0 },
           },
           responseOverview: {
             labels: [],
             data: [],
-            dateRange: "No data available"
-          }
+            dateRange: "No data available",
+          },
         });
       } finally {
         setLoading(false);
@@ -188,7 +198,7 @@ const EventAnalytics = () => {
     };
 
     fetchData();
-  }, [formId, availableForms]);
+  }, [formId, availableForms, token]);
 
   // Show loading state
   if (loading || formsLoading) {
@@ -207,8 +217,12 @@ const EventAnalytics = () => {
       <PSASLayout>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">No Published Forms Available</h2>
-            <p className="text-gray-600 mb-6">You need to have at least one published form to view analytics.</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              No Published Forms Available
+            </h2>
+            <p className="text-gray-600 mb-6">
+              You need to have at least one published form to view analytics.
+            </p>
             <a
               href="/psas/evaluations"
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -227,8 +241,13 @@ const EventAnalytics = () => {
       <PSASLayout>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Invalid Form Selected</h2>
-            <p className="text-gray-600 mb-6">The selected form is not valid. Please select a published form to view analytics.</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Invalid Form Selected
+            </h2>
+            <p className="text-gray-600 mb-6">
+              The selected form is not valid. Please select a published form to
+              view analytics.
+            </p>
             {availableForms.length > 0 && (
               <a
                 href="/psas/evaluations"
@@ -249,7 +268,9 @@ const EventAnalytics = () => {
       <PSASLayout>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Loading Analytics...</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Loading Analytics...
+            </h2>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           </div>
         </div>
@@ -326,6 +347,41 @@ const EventAnalytics = () => {
     plugins: { legend: { display: false } },
   };
 
+  const handleGenerateReport = async () => {
+    try {
+      const toastId = toast.loading("Generating report...");
+      const response = await fetch(
+        `/api/analytics/reports/generate/${formId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Report generated successfully!", { id: toastId });
+        // Navigate to reports page to see the generated report
+        navigate("/psas/reports");
+      } else {
+        toast.error(result.message || "Failed to generate report", {
+          id: toastId,
+        });
+      }
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("An error occurred while generating the report");
+    }
+  };
+
+  const handleViewReport = () => {
+    navigate(`/psas/reports/${formId}`);
+  };
+
   return (
     <PSASLayout>
       <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
@@ -334,12 +390,15 @@ const EventAnalytics = () => {
           {/* Form Selector */}
           {availableForms.length > 0 && (
             <div className="flex items-center gap-4">
-              <label htmlFor="form-select" className="text-sm font-medium text-gray-700">
+              <label
+                htmlFor="form-select"
+                className="text-sm font-medium text-gray-700"
+              >
                 Select Form:
               </label>
               <select
                 id="form-select"
-                value={formId || ''}
+                value={formId || ""}
                 onChange={(e) => setFormId(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
@@ -371,6 +430,8 @@ const EventAnalytics = () => {
           responseBreakdownOptions={responseBreakdownOptions}
           responseOverviewOptions={responseOverviewOptions}
           responseBreakdown={responseBreakdown}
+          onGenerateReport={handleGenerateReport}
+          onViewReport={handleViewReport}
         />
       </div>
     </PSASLayout>

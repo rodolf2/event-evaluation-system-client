@@ -9,20 +9,23 @@ import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
 function ParticipantDashboard() {
-   const [reminders, setReminders] = useState([]);
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [selectedDate, setSelectedDate] = useState(dayjs());
-   const [modalPosition, setModalPosition] = useState(null);
-   const [pageLoading, setPageLoading] = useState(true);
-   const { token, isLoading } = useAuth();
+  const { token, isLoading } = useAuth();
+  const [reminders, setReminders] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [modalPosition, setModalPosition] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [thumbnailUrls, setThumbnailUrls] = useState({
+    evaluations: null,
+    certificates: null,
+  });
 
+  // Fetch reminders -------------------------------------------------------
   const fetchReminders = useCallback(async () => {
-    if (!token) return; // Ensure token exists before fetching
+    if (!token) return;
     try {
       const response = await fetch("/api/reminders", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
       setReminders(Array.isArray(data) ? data : []);
@@ -31,17 +34,43 @@ function ParticipantDashboard() {
     }
   }, [token]);
 
+  // Fetch latest thumbnails ------------------------------------------------
+  const fetchThumbnails = useCallback(async () => {
+    if (!token) return;
+    try {
+      // Latest form ID
+      const formRes = await fetch("/api/forms/latest/id", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const formData = await formRes.json();
+      const formId = formData.success ? formData.data?.id : null;
+
+      // Latest certificate ID
+      const certRes = await fetch("/api/certificates/latest/id", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const certData = await certRes.json();
+      const certId = certData.success ? certData.data?.id : null;
+
+      const evalThumb = formId ? `/api/thumbnails/form-${formId}.png` : null;
+      const certThumb = certId
+        ? `/api/thumbnails/certificate-${certId}.png`
+        : null;
+      setThumbnailUrls({ evaluations: evalThumb, certificates: certThumb });
+    } catch (err) {
+      console.error("Error fetching thumbnails:", err);
+    }
+  }, [token]);
+
+  // Initial load ----------------------------------------------------------
   useEffect(() => {
     fetchReminders();
-
-    // Simulate page loading delay for consistent user experience
-    const timer = setTimeout(() => {
-      setPageLoading(false);
-    }, 1000);
-
+    fetchThumbnails();
+    const timer = setTimeout(() => setPageLoading(false), 1000);
     return () => clearTimeout(timer);
-  }, [fetchReminders]);
+  }, [fetchReminders, fetchThumbnails]);
 
+  // Reminder CRUD ----------------------------------------------------------
   const addReminder = async (reminder) => {
     try {
       const response = await fetch("/api/reminders", {
@@ -50,14 +79,11 @@ function ParticipantDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...reminder,
-          priority: "medium" // Default priority
-        }),
+        body: JSON.stringify({ ...reminder, priority: "medium" }),
       });
       const data = await response.json();
       if (data.success !== false) {
-        await fetchReminders(); // Refresh the entire list
+        await fetchReminders();
       } else {
         console.error("Error adding reminder:", data.message);
       }
@@ -68,17 +94,12 @@ function ParticipantDashboard() {
 
   const deleteReminder = async (id) => {
     try {
-      const response = await fetch(
-        `/api/reminders/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/reminders/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (response.ok) {
-        await fetchReminders(); // Refresh the entire list
+        await fetchReminders();
       }
     } catch (error) {
       console.error("Error deleting reminder:", error);
@@ -109,13 +130,13 @@ function ParticipantDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <DashboardCard
-                  image="../../../thumbnails/event-analytics.png"
+                  image={thumbnailUrls.evaluations}
                   title="My Evaluations"
                   buttonText="Go to My Evaluations"
                   link="/participant/evaluations"
                 />
                 <DashboardCard
-                  image="../../../thumbnails/event-reports.png"
+                  image={thumbnailUrls.certificates}
                   title="My Certificates"
                   buttonText="View My Certificates"
                   link="/participant/certificates"

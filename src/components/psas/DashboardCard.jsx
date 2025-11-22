@@ -23,11 +23,17 @@ const DashboardCard = ({ image, title, buttonText }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg cursor-pointer">
-      <img src={image} alt={title} className="rounded-md mb-4 w-40 h-40 object-cover" />
+    <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center hover:shadow-lg cursor-pointer h-full">
+      {image && (
+        <img
+          src={image}
+          alt={title}
+          className="rounded-md mb-3 w-full h-48 object-cover"
+        />
+      )}
       <button
         onClick={handleButtonClick}
-        className="text-blue-600 font-medium hover:underline text-lg"
+        className="text-blue-600 font-medium hover:underline text-base"
       >
         {buttonText}
       </button>

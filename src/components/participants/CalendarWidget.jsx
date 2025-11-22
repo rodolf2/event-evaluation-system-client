@@ -3,9 +3,18 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const CalendarWidget = ({ openModal, reminders = [], onDateSelect, selectedStartDate: propStartDate, selectedEndDate: propEndDate, onRangeSelect }) => {
+const CalendarWidget = ({
+  openModal,
+  reminders = [],
+  onDateSelect,
+  selectedStartDate: propStartDate,
+  selectedEndDate: propEndDate,
+  onRangeSelect,
+}) => {
   const [month, setMonth] = useState(dayjs());
-  const [selectedStartDate, setSelectedStartDate] = useState(propStartDate || null);
+  const [selectedStartDate, setSelectedStartDate] = useState(
+    propStartDate || null
+  );
   const [selectedEndDate, setSelectedEndDate] = useState(propEndDate || null);
 
   const daysInMonth = month.daysInMonth();
@@ -25,26 +34,31 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect, selectedStart
   // Helper function to check if date is within selected range
   const isInRange = (date) => {
     if (!selectedStartDate || !selectedEndDate) return false;
-    return date.isAfter(selectedStartDate.subtract(1, 'day')) &&
-           date.isBefore(selectedEndDate.add(1, 'day'));
+    return (
+      date.isAfter(selectedStartDate.subtract(1, "day")) &&
+      date.isBefore(selectedEndDate.add(1, "day"))
+    );
   };
 
   // Helper function to check if date is start or end date
   const isStartOrEnd = (date) => {
     if (!selectedStartDate && !selectedEndDate) return false;
-    return date.isSame(selectedStartDate, 'day') || date.isSame(selectedEndDate, 'day');
+    return (
+      date.isSame(selectedStartDate, "day") ||
+      date.isSame(selectedEndDate, "day")
+    );
   };
 
   const handlePrev = () => setMonth(month.subtract(1, "month"));
   const handleNext = () => setMonth(month.add(1, "month"));
 
   return (
-    <div className="bg-white rounded-xl shadow p-4">
-      <div className="flex justify-between items-center mb-3">
+    <div className="bg-white rounded-xl shadow p-4 h-full flex flex-col">
+      <div className="flex justify-between items-center mb-2">
         <button onClick={handlePrev}>
           <ChevronLeft className="w-5 h-5 text-gray-600" />
         </button>
-        <h2 className="font-semibold text-gray-700">
+        <h2 className="font-semibold text-gray-700 text-sm">
           {month.format("MMMM YYYY")}
         </h2>
         <button onClick={handleNext}>
@@ -52,7 +66,7 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect, selectedStart
         </button>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-sm text-gray-600">
+      <div className="grid grid-cols-7 text-center text-xs text-gray-600">
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
           <div key={day} className="font-semibold">
             {day}
@@ -109,10 +123,10 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect, selectedStart
             <div
               key={day}
               onClick={handleDayClick}
-              className="relative p-2 cursor-pointer group"
+              className="relative p-1 cursor-pointer group"
             >
               <div
-                className={`rounded-full p-2 flex items-center justify-center
+                className={`rounded-full p-1.5 flex items-center justify-center text-xs
                   ${
                     isStartOrEndDate
                       ? "bg-[#1F3463] text-white font-bold"
@@ -128,7 +142,7 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect, selectedStart
                 {day}
               </div>
               {hasReminderForDay && (
-                <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-[#1F3463]" />
+                <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-[#1F3463]" />
               )}
             </div>
           );
@@ -139,4 +153,3 @@ const CalendarWidget = ({ openModal, reminders = [], onDateSelect, selectedStart
 };
 
 export default CalendarWidget;
-
