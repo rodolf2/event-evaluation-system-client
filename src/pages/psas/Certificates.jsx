@@ -8,7 +8,8 @@ import { FormSessionManager } from "../../utils/formSessionManager";
 const Certificates = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [view, setView] = useState("gallery");
+
+  const [view, setView] = useState("gallery"); // "gallery" or "editor"
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -16,96 +17,58 @@ const Certificates = () => {
   const [formId, setFormId] = useState(null);
   const [isPreviewMode, setIsPreviewMode] = useState(true);
 
-  // Initialize from URL params
+  // Initialise state from URL parameters
   useEffect(() => {
-    const fromEvaluation = searchParams.get("from") === "evaluation";
+    const fromEval = searchParams.get("from") === "evaluation" || !searchParams.get("from");
     const currentFormId = searchParams.get("formId");
-
-    setIsFromEvaluation(fromEvaluation);
+    setIsFromEvaluation(fromEval);
     setFormId(currentFormId);
-
-    // Simulate loading delay for consistent user experience
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    // Simulate a short loading delay for a smoother UX
+    setTimeout(() => setLoading(false), 500);
   }, [searchParams]);
 
+  /**
+   * Handles selection of a template from the gallery.
+   * If the user confirms (clicks "Done - Use This Template"), we persist the link
+   * and navigate back to the form creation page.
+   */
   const handleTemplatePreview = (template, options = {}) => {
     const { action, saveTemplate } = options;
 
-    // Handle template confirmation from gallery - navigate back to form editor
+    // Confirmed from gallery – save link and go back
     if (action === "confirm" && saveTemplate) {
-      if (isFromEvaluation && formId) {
-        // **ROOT CAUSE FIX**: Handle formId conflicts and ensure linkedCertificateId is saved
-        const currentFormId = FormSessionManager.getCurrentFormId();
-        const navigationFormId = currentFormId || formId;
+      const navigationFormId = FormSessionManager.ensurePersistentFormId(formId) || FormSessionManager.getCurrentFormId();
 
-        // Save form data before navigating back
-        const formCreationState = localStorage.getItem("formCreationState");
-        let formData = formCreationState
-          ? JSON.parse(formCreationState)
-          : FormSessionManager.loadFormData();
-
-        if (formData) {
-          // Update the loaded form data with certificate linked status
-          const updatedFormData = {
-            ...formData,
-            isCertificateLinked: true,
-            linkedCertificateId: template?.id || null,
-          };
-          FormSessionManager.saveFormData(updatedFormData);
-        }
-
-        // Store certificate template data for form editor
-        if (template) {
-          localStorage.setItem(
-            `certificateTemplate_${navigationFormId}`,
-            JSON.stringify({
-              template: template,
-              canvasData: template.data,
-              savedAt: new Date().toISOString(),
-            })
-          );
-          // Also save for original formId to be safe
-          localStorage.setItem(
-            `certificateTemplate_${formId}`,
-            JSON.stringify({
-              template: template,
-              canvasData: template.data,
-              savedAt: new Date().toISOString(),
-            })
-          );
-        }
-
-        // Set certificate linked flag
-        localStorage.setItem(`certificateLinked_${navigationFormId}`, "true");
-        localStorage.setItem(`certificateLinked_${formId}`, "true");
-
-        // Ensure form ID persistence
-        FormSessionManager.ensurePersistentFormId(navigationFormId);
-        FormSessionManager.preserveFormId();
-
-        // Navigate back to evaluations form editor - preserve formId and set edit mode
-        navigate(`/psas/evaluations?edit=${navigationFormId}`);
-        return;
-      } else {
-        // For standalone editing, save template and return to gallery
-        if (template && template.data) {
-          localStorage.setItem(
-            "standaloneCertificateData",
-            JSON.stringify({
-              canvasData: template.data,
-              template: template,
-              savedAt: new Date().toISOString(),
-            })
-          );
-        }
-        setView("gallery");
-        return;
+      // Persist certificate link in FormSessionManager
+      const formCreationState = localStorage.getItem("formCreationState");
+      const formData = formCreationState ? JSON.parse(formCreationState) : FormSessionManager.loadFormData();
+      if (formData) {
+        FormSessionManager.saveFormData({
+          ...formData,
+          isCertificateLinked: true,
+          linkedCertificateId: template?.id || null,
+        });
       }
+
+      // Store template data for the form editor (used by CertificateEditor later)
+      if (template) {
+        const payload = JSON.stringify({ template, canvasData: template.data, savedAt: new Date().toISOString() });
+        localStorage.setItem(`certificateTemplate_${navigationFormId}`, payload);
+        // Also keep a copy under the original formId for safety
+        if (formId) localStorage.setItem(`certificateTemplate_${formId}`, payload);
+        localStorage.setItem(`certificateLinked_${navigationFormId}`, "true");
+        if (formId) localStorage.setItem(`certificateLinked_${formId}`, "true");
+      }
+
+      // Ensure the formId is persisted for the next navigation
+      FormSessionManager.ensurePersistentFormId(navigationFormId);
+      FormSessionManager.preserveFormId();
+
+      navigate(`/psas/evaluations?edit=${navigationFormId}`);
+      return;
     }
 
-    // Handle template selection for preview/editing
+    // Otherwise just preview/edit the template
     if (template && action !== "confirm") {
       setSelectedTemplate(template);
       setInitialData(template.data);
@@ -115,106 +78,59 @@ const Certificates = () => {
   };
 
   const handleBlankCanvas = () => {
-    // Start with blank canvas
     setSelectedTemplate(null);
     setInitialData(null);
     setView("editor");
   };
 
+  /**
+   * Called by CertificateEditor when the user clicks "Done - Use This Template".
+   */
   const handleSaveTemplate = (canvasData) => {
-    // Handle "Done - Use This Template" from CertificateEditor
-    if (isFromEvaluation && formId) {
-      // **ROOT CAUSE FIX**: Handle formId conflicts when 3 requirements are completed
-      // When all 3 requirements are completed, handlePublish creates a new serverFormId
-      // We need to ensure the certificate link uses the correct formId for navigation
-      const currentFormId = FormSessionManager.getCurrentFormId();
-      const navigationFormId = currentFormId || formId; // Use current formId if available, fallback to original formId
+    const navigationFormId = FormSessionManager.ensurePersistentFormId(formId) || FormSessionManager.getCurrentFormId();
 
-      // Store the customized certificate template data for the correct formId
-      if (canvasData) {
-        localStorage.setItem(
-          `certificateTemplate_${navigationFormId}`,
-          JSON.stringify({
-            template: selectedTemplate,
-            canvasData: canvasData,
-            savedAt: new Date().toISOString(),
-          })
-        );
-      }
-
-      // Set certificate linked flag for the correct formId
-      localStorage.setItem(`certificateLinked_${navigationFormId}`, "true");
-
-      // **FIXED**: Save form data properly using FormSessionManager
-      const formData = FormSessionManager.loadFormData();
-      if (formData) {
-        // Update the loaded form data with certificate linked status
-        const updatedFormData = {
-          ...formData,
-          isCertificateLinked: true,
-          linkedCertificateId: selectedTemplate?.id || null,
-        };
-        FormSessionManager.saveFormData(updatedFormData);
-      }
-
-      // Preserve certificate linking for both formIds to handle the transition
-      // This ensures the certificate link survives the formId change during handlePublish
-      localStorage.setItem(`certificateLinked_${formId}`, "true");
-      if (canvasData) {
-        localStorage.setItem(
-          `certificateTemplate_${formId}`,
-          JSON.stringify({
-            template: selectedTemplate,
-            canvasData: canvasData,
-            savedAt: new Date().toISOString(),
-          })
-        );
-      }
-
-      // Ensure form ID persistence
-      FormSessionManager.ensurePersistentFormId(navigationFormId);
-      FormSessionManager.preserveFormId();
-
-      // Navigate back to evaluations form editor using the correct formId
-      navigate(`/psas/evaluations?edit=${navigationFormId}`);
-    } else {
-      // Standalone mode - save locally and exit preview mode
-      if (canvasData) {
-        localStorage.setItem(
-          "standaloneCertificateData",
-          JSON.stringify({
-            canvasData: canvasData,
-            template: selectedTemplate,
-            savedAt: new Date().toISOString(),
-          })
-        );
-      }
-      setIsPreviewMode(false); // Allow full editing
+    // Persist the customized template
+    if (canvasData) {
+      const payload = JSON.stringify({ template: selectedTemplate, canvasData, savedAt: new Date().toISOString() });
+      localStorage.setItem(`certificateTemplate_${navigationFormId}`, payload);
+      if (formId) localStorage.setItem(`certificateTemplate_${formId}`, payload);
     }
+    localStorage.setItem(`certificateLinked_${navigationFormId}`, "true");
+    if (formId) localStorage.setItem(`certificateLinked_${formId}`, "true");
+
+    // Update form data to reflect the linked certificate
+    const formData = FormSessionManager.loadFormData();
+    if (formData) {
+      FormSessionManager.saveFormData({
+        ...formData,
+        isCertificateLinked: true,
+        linkedCertificateId: selectedTemplate?.id || null,
+      });
+    }
+
+    // Persist formId and navigate back
+    FormSessionManager.ensurePersistentFormId(navigationFormId);
+    FormSessionManager.preserveFormId();
+    navigate(`/psas/evaluations?edit=${navigationFormId}`);
   };
 
   const handleBackToGallery = () => {
-    // Return to gallery without saving changes
     setView("gallery");
     setInitialData(null);
     setSelectedTemplate(null);
     setIsPreviewMode(true);
   };
 
-  // Show loading spinner while data is being initialized
+  // Loading spinner
   if (loading) {
     return (
       <PSASLayout>
         <div className="p-4 sm:p-6 md:p-8 bg-linear-to-br from-gray-50 to-blue-50 min-h-[80vh] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600" />
             <div className="text-center">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">
-                Loading Certificates...
-              </h3>
-              <p className="text-sm text-gray-600">
-                Preparing your certificate templates
-              </p>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-1">Loading Certificates...</h3>
+              <p className="text-sm text-gray-600">Preparing your certificate templates</p>
             </div>
           </div>
         </div>
@@ -222,7 +138,7 @@ const Certificates = () => {
     );
   }
 
-  // Editor view with preview mode
+  // Editor view
   if (view === "editor") {
     return (
       <PSASLayout>
@@ -239,7 +155,7 @@ const Certificates = () => {
     );
   }
 
-  // Gallery view with improved template selection
+  // Gallery view
   return (
     <PSASLayout>
       <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-[80vh]">
