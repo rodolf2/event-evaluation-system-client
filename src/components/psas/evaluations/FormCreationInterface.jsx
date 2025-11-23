@@ -417,8 +417,15 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                         .split("T")[0]
                     : "",
                   currentFormId: finalFormId,
-                  isCertificateLinked: false,
-                  linkedCertificateId: formData.certificateId || null,
+                  // Correctly map certificate fields
+                  isCertificateLinked: formData.isCertificateLinked || false,
+                  linkedCertificateId: formData.linkedCertificateId || null,
+                  linkedCertificateType:
+                    formData.linkedCertificateType || "completion",
+                  certificateTemplateName:
+                    formData.certificateTemplateName || null,
+                  // Map attendee list
+                  assignedStudents: formData.attendeeList || [],
                 };
 
                 // Apply mapped data
@@ -430,6 +437,24 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 setUploadedLinks(mappedFormData.uploadedLinks);
                 setEventStartDate(mappedFormData.eventStartDate);
                 setEventEndDate(mappedFormData.eventEndDate);
+
+                // Set certificate state
+                setIsCertificateLinked(mappedFormData.isCertificateLinked);
+                setLinkedCertificateId(mappedFormData.linkedCertificateId);
+                setLinkedCertificateType(mappedFormData.linkedCertificateType);
+                setCertificateTemplateName(
+                  mappedFormData.certificateTemplateName
+                );
+
+                // Set assigned students
+                setAssignedStudents(mappedFormData.assignedStudents);
+
+                // Save to FormSessionManager to persist across reloads
+                FormSessionManager.saveFormData(mappedFormData);
+                FormSessionManager.saveStudentAssignments(
+                  mappedFormData.assignedStudents
+                );
+
                 setHasUnsavedChanges(false);
 
                 // Optional certificate check (non-blocking) for persisted forms only
