@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
+import { SkeletonCard, SkeletonText } from "../../components/shared/SkeletonLoader";
 import { Search, ChevronRight, Check } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -63,8 +64,41 @@ const Evaluations = () => {
   if (loading) {
     return (
       <ParticipantLayout>
-        <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="bg-gray-100 min-h-screen pb-8">
+          <div className="max-w-full">
+            {/* Search and Filter Skeleton */}
+            <div className="flex items-center mb-8 gap-4">
+              <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="w-5 h-5 bg-gray-300 rounded animate-pulse"></div>
+                </div>
+                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
+              </div>
+              <div className="relative">
+                <div className="bg-gray-300 p-3 rounded-lg w-24 h-12 animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Evaluation Cards Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="rounded-lg shadow-md overflow-hidden">
+                  <div className="p-8 flex items-center h-full">
+                    <div className="grow space-y-4">
+                      <SkeletonText lines={1} width="large" height="h-8" />
+                      <div className="space-y-2">
+                        <SkeletonText lines={1} width="small" height="h-4" />
+                        <SkeletonText lines={1} width="medium" height="h-4" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <div className="w-6 h-6 bg-gray-300 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </ParticipantLayout>
     );

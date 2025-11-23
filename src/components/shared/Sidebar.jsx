@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import LvccName from "../../assets/fonts/lvcc-name.svg";
 
 const getIsActive = (item, currentPath, homePath) => {
   // Special case for home path
@@ -43,7 +44,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
 
   return (
     <aside
-      className={`fixed lg:top-5 lg:left-5 transition-all duration-300 z-30
+      className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-30
         ${
           isOpen
             ? "top-0 left-0 w-1/2 h-full lg:w-64 lg:h-[95vh]"
@@ -60,25 +61,27 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
       </button>
 
       {/* Logo and Text */}
-      <div className="flex items-center gap-3 mb-8 px-2">
+      <div className="flex items-center gap-3 mb-8 w-full pl-6">
         <img
           src={logoConfig.src}
           alt={logoConfig.alt}
-          className="w-12 h-12 rounded-full shrink-0"
+          className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${
+            isOpen ? "w-16 h-16" : "w-12 h-12"
+          }`}
         />
         {isOpen && (
-          <div className="flex flex-col">
-            <span className="text-white text-lg font-middleearth uppercase leading-5">
-              {logoConfig.text.main}
-              <br />
-              <span className="text-[10px]">{logoConfig.text.sub}</span>
-            </span>
+          <div className="flex flex-col justify-center overflow-hidden whitespace-nowrap">
+            <img
+              src={LvccName}
+              alt="La Verdad Christian College"
+              className="w-auto h-16 object-contain"
+            />
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col items-center justify-center space-y-2 w-full">
+      <nav className="flex flex-col space-y-2 w-full">
         {menuItems.map((item) => (
           <SidebarItem
             key={item.path}
@@ -114,7 +117,7 @@ const SidebarItem = ({ src, label, isOpen, isActive, onClick }) => (
         isActive
           ? "bg-white text-[#1F3463] rounded-lg mx-4"
           : "text-white hover:bg-white/5 rounded-lg mx-4"
-      } ${isOpen ? "" : "justify-center px-2"}`}
+      }`}
     >
       {/* Icon */}
       <div className={`relative ${isOpen ? "" : "mx-auto"}`}>

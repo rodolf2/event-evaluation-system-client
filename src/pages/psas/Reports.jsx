@@ -8,6 +8,11 @@ import PositiveComments from "../reports/PositiveComments";
 import NegativeComments from "../reports/NegativeComments";
 import NeutralComments from "../reports/NeutralComments";
 import CompleteReport from "../reports/CompleteReport";
+import {
+  SkeletonBase,
+  SkeletonCard,
+  SkeletonText,
+} from "../../components/shared/SkeletonLoader";
 
 const ReportCard = ({ report, onSelect, isLive = false }) => {
   return (
@@ -188,10 +193,32 @@ const Reports = () => {
   if (loading && reports.length === 0) {
     return (
       <PSASLayout>
-        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading reports...</p>
+        <div className="p-8 bg-gray-100 min-h-full">
+          {/* Search and Sort Bar Skeleton */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative max-w-md">
+              <SkeletonText className="w-full h-10 bg-gray-300 rounded-lg" />
+            </div>
+            <SkeletonText className="w-20 h-10 bg-gray-300 rounded-lg" />
+          </div>
+
+          {/* Reports Grid Skeleton */}
+          <div className="bg-white p-6 rounded-xl shadow-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-[#EEEEF0] rounded-lg shadow-sm overflow-hidden p-4"
+                >
+                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <SkeletonBase className="w-full h-48 bg-gray-300 rounded" />
+                    <div className="p-3">
+                      <SkeletonText className="h-4 w-3/4 mx-auto bg-gray-300 rounded" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </PSASLayout>

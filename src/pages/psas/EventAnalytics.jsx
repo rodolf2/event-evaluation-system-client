@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import PSASLayout from "../../components/psas/PSASLayout";
+import { SkeletonCard, SkeletonText, SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
 import {
   Chart as ChartJS,
@@ -204,8 +205,44 @@ const EventAnalytics = () => {
   if (loading || formsLoading) {
     return (
       <PSASLayout>
-        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+          {/* Header Section Skeleton */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <SkeletonText lines={1} width="small" height="h-4" />
+              <SkeletonBase className="w-64 h-10 rounded-lg" />
+            </div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md p-6">
+                <div className="space-y-4">
+                  <SkeletonText lines={1} width="small" height="h-4" />
+                  <SkeletonText lines={1} width="large" height="h-8" />
+                  <SkeletonText lines={1} width="small" height="h-3" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts Section Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
+              <SkeletonBase className="w-full h-64 rounded-lg" />
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
+              <SkeletonBase className="w-full h-64 rounded-lg" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
+            <SkeletonBase className="w-full h-64 rounded-lg" />
+          </div>
         </div>
       </PSASLayout>
     );
@@ -266,12 +303,43 @@ const EventAnalytics = () => {
   if (!analyticsData) {
     return (
       <PSASLayout>
-        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Loading Analytics...
-            </h2>
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+          {/* Header Section Skeleton */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <SkeletonText lines={1} width="small" height="h-4" />
+              <SkeletonBase className="w-64 h-10 rounded-lg" />
+            </div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md p-6">
+                <div className="space-y-4">
+                  <SkeletonText lines={1} width="small" height="h-4" />
+                  <SkeletonText lines={1} width="large" height="h-8" />
+                  <SkeletonText lines={1} width="small" height="h-3" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts Section Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
+              <SkeletonBase className="w-full h-64 rounded-lg" />
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
+              <SkeletonBase className="w-full h-64 rounded-lg" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
+            <SkeletonBase className="w-full h-64 rounded-lg" />
           </div>
         </div>
       </PSASLayout>

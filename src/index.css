@@ -1,25 +1,30 @@
 @import "tailwindcss";
 /* @import "tailwindcss/preflight"; */
-@tailwind utilities;
 
 /* Custom Fonts */
+
 @font-face {
-  font-family: 'Middleearth';
-  src: url('/fonts/Middleearth-ao6m.ttf') format('truetype');
+  font-family: "PartyBusiness";
+  src: url("/fonts/PartyBusiness-4B0K.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Tolkien';
-  src: url('/fonts/Tolkien.ttf') format('truetype');
+  font-family: "Tolkien";
+  src: url("/fonts/Tolkien.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
+}
+
+/* Font utility classes */
+.font-tolkien {
+  font-family: "Tolkien" , cursive !important;
 }
 /* Hide native calendar icon in Webkit browsers */
 .hide-native-calendar-icon::-webkit-calendar-picker-indicator {
-    display: none;
-    -webkit-appearance: none;
+  display: none;
+  -webkit-appearance: none;
 }
 
 /* Regular screen styles - make container smaller */
@@ -43,7 +48,9 @@
   }
 
   /* Hide navigation elements for print */
-  aside, header, nav {
+  aside,
+  header,
+  nav {
     display: none !important;
   }
 
@@ -258,8 +265,6 @@
     padding-bottom: 0 !important;
   }
 
-
-
   .report-print-content .container {
     padding: 0 !important;
   }
@@ -394,7 +399,8 @@
   }
 
   /* Force page breaks for better layout */
-  h3, h4 {
+  h3,
+  h4 {
     page-break-after: avoid;
   }
 
@@ -418,7 +424,10 @@
   }
 
   /* But keep individual comment boxes together */
-  .bg-green-50, .bg-red-50, .bg-yellow-50, .bg-gray-50 {
+  .bg-green-50,
+  .bg-red-50,
+  .bg-yellow-50,
+  .bg-gray-50 {
     page-break-inside: avoid;
     break-inside: avoid;
   }

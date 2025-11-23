@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
+import { SkeletonText, SkeletonCard, SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
 import DynamicRatingInput from "../../components/shared/DynamicRatingInput";
 import EvaluationSuccessScreen from "../../components/participants/EvaluationSuccessScreen";
@@ -560,9 +561,41 @@ const EvaluationForm = () => {
     return (
       <ParticipantLayout>
         <div className="w-full max-w-4xl mx-auto p-8">
-          <div className="bg-white p-8 rounded-lg shadow-md mb-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading evaluation form...</p>
+          {/* Form Header Skeleton */}
+          <div className="bg-white p-8 rounded-lg shadow-md mb-6">
+            <div className="text-center space-y-4">
+              <SkeletonText lines={1} width="extraLarge" height="h-12" />
+              <SkeletonText lines={1} width="medium" height="h-6" />
+            </div>
+            <div className="flex justify-between items-center mt-4">
+              <SkeletonText lines={1} width="small" height="h-4" />
+              <SkeletonText lines={1} width="small" height="h-4" />
+            </div>
+          </div>
+
+          {/* Section Header Skeleton */}
+          <div className="bg-[#1F3463] p-8 rounded-lg shadow-md text-white mb-6">
+            <SkeletonText lines={1} width="large" height="h-8" />
+          </div>
+
+          {/* Questions Skeleton */}
+          <div className="space-y-6">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="bg-white p-6 sm:p-8 rounded-lg shadow-sm border">
+                <div className="space-y-4">
+                  <SkeletonText lines={1} width="medium" height="h-6" />
+                  <SkeletonText lines={3} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Navigation Buttons Skeleton */}
+          <div className="flex justify-between items-center mt-8">
+            <div className="flex space-x-3">
+              <SkeletonBase className="w-24 h-10 rounded-lg" />
+            </div>
+            <SkeletonBase className="w-32 h-12 rounded-lg" />
           </div>
         </div>
       </ParticipantLayout>

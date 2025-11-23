@@ -6,6 +6,7 @@ import RecentActivity from "../../components/participants/RecentActivity";
 import Reminders from "../../components/participants/Reminders";
 import ReminderModal from "../../components/participants/ReminderModal";
 import ProfileSection from "../../components/participants/ProfileSection";
+import { SkeletonGrid, SkeletonDashboardCard, SkeletonCard, SkeletonText } from "../../components/shared/SkeletonLoader";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -135,8 +136,31 @@ function Home() {
   return (
     <ParticipantLayout isModalOpen={isModalOpen} pageLoading={pageLoading}>
       {isLoading || pageLoading ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="space-y-6">
+          {/* Profile, Cards & Calendar Grid Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:auto-rows-min">
+            {/* Profile Section - spans 2 columns, 1 row */}
+            <div className="lg:col-span-2">
+              <SkeletonCard showImage={false} showTitle={false} contentLines={6} />
+            </div>
+            {/* Calendar - spans 1 column, 2 rows */}
+            <div className="lg:row-span-2">
+              <SkeletonCard showImage={false} showTitle={true} showContent={false} />
+            </div>
+            {/* Cards - spans 2 columns, positioned in second row */}
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SkeletonDashboardCard />
+              <SkeletonDashboardCard />
+            </div>
+          </div>
+
+          {/* Activity & Reminders Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <SkeletonCard contentLines={4} />
+            </div>
+            <SkeletonCard contentLines={3} />
+          </div>
         </div>
       ) : (
         <>

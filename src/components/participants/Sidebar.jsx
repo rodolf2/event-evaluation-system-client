@@ -4,20 +4,34 @@ import HomeIcon from "../../assets/icons/home-icon.svg";
 import BadgeIcon from "../../assets/icons/badge-icon.svg";
 import EvaluationsIcon from "../../assets/icons/evaluations-icon.svg";
 import CertificateIcon from "../../assets/icons/certificate-icon.svg";
+import LvccName from "../../assets/fonts/lvcc-name.svg";
 
 const MENU_ITEMS = [
   { icon: HomeIcon, label: "Home", path: "/participant/home" },
-  { icon: EvaluationsIcon, label: "My Evaluations", path: "/participant/evaluations" },
-  { icon: CertificateIcon, label: "My Certificates", path: "/participant/certificates" },
+  {
+    icon: EvaluationsIcon,
+    label: "My Evaluations",
+    path: "/participant/evaluations",
+  },
+  {
+    icon: CertificateIcon,
+    label: "My Certificates",
+    path: "/participant/certificates",
+  },
   { icon: BadgeIcon, label: "My Badges", path: "/participant/badges" },
 ];
 
 const getIsActive = (item, currentPath) => {
   // Special case for evaluations - also highlight on evaluation form pages
-  if (item.path.includes('/participant/evaluations') || item.label === 'My Evaluations') {
-    return currentPath === item.path ||
-           currentPath.startsWith('/evaluation/') ||
-           currentPath.startsWith('/participant/evaluations/');
+  if (
+    item.path.includes("/participant/evaluations") ||
+    item.label === "My Evaluations"
+  ) {
+    return (
+      currentPath === item.path ||
+      currentPath.startsWith("/evaluation/") ||
+      currentPath.startsWith("/participant/evaluations/")
+    );
   }
 
   // Special case for home path
@@ -36,7 +50,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <aside
-      className={`fixed lg:top-5 lg:left-5 transition-all duration-300 z-30 
+      className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-30 
         ${
           isOpen
             ? "top-0 left-0 w-full h-full lg:w-64 lg:h-[95vh]"
@@ -53,24 +67,27 @@ const Sidebar = ({ isOpen, onClose }) => {
       </button>
 
       {/* Logo and Text */}
-      <div className="flex items-center gap-3 mb-8 px-2">
+      <div className="flex items-center gap-3 mb-8 w-full pl-6">
         <img
           src="/src/assets/logo/LOGO.png"
           alt="Logo"
-          className="w-12 h-12 rounded-full shrink-0"
+          className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${
+            isOpen ? "w-16 h-16" : "w-12 h-12"
+          }`}
         />
         {isOpen && (
-          <div className="flex flex-col ">
-            <span className="text-white text-lg  font-middleearth uppercase leading-5">
-              La Verdad <br />{" "}
-              <span className="text-[10px]">Christian College, Inc.</span>
-            </span>
+          <div className="flex flex-col justify-center overflow-hidden whitespace-nowrap">
+            <img
+              src={LvccName}
+              alt="La Verdad Christian College"
+              className="w-auto h-16 object-contain"
+            />
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col items-center justify-center space-y-2 w-full">
+      <nav className="flex flex-col space-y-2 w-full">
         {MENU_ITEMS.map((item) => (
           <SidebarItem
             key={item.path}
@@ -106,7 +123,7 @@ const SidebarItem = ({ src, label, isOpen, isActive, onClick }) => (
         isActive
           ? "bg-white text-[#1F3463] rounded-lg mx-4"
           : "text-white hover:bg-white/5 rounded-lg mx-4"
-      } ${isOpen ? "" : "justify-center px-2"}`}
+      }`}
     >
       {/* Icon */}
       <div className={`relative ${isOpen ? "" : "mx-auto"}`}>

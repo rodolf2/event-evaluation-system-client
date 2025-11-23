@@ -5,6 +5,7 @@ import CalendarWidget from "../../components/participants/CalendarWidget";
 import RecentActivity from "../../components/participants/RecentActivity";
 import Reminders from "../../components/participants/Reminders";
 import ReminderModal from "../../components/participants/ReminderModal";
+import { SkeletonCard, SkeletonDashboardCard } from "../../components/shared/SkeletonLoader";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -120,8 +121,23 @@ function ParticipantDashboard() {
   return (
     <ParticipantLayout isModalOpen={isModalOpen} pageLoading={pageLoading}>
       {isLoading || pageLoading ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="space-y-6">
+          {/* Cards & Calendar Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SkeletonDashboardCard />
+              <SkeletonDashboardCard />
+            </div>
+            <SkeletonCard showImage={false} showTitle={true} showContent={false} />
+          </div>
+
+          {/* Activity & Reminders Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <SkeletonCard contentLines={4} />
+            </div>
+            <SkeletonCard contentLines={3} />
+          </div>
         </div>
       ) : (
         <>

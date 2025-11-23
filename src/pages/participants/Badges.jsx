@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
+import { SkeletonBase, SkeletonText } from "../../components/shared/SkeletonLoader";
 import { ChevronDown } from "lucide-react";
 
 // Import all badge images
@@ -44,6 +45,7 @@ const Badges = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [badges, setBadges] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [_selectedBadge, setSelectedBadge] = useState(null);
 
   // Map theme to appropriate border color
@@ -167,6 +169,7 @@ const Badges = () => {
       setBadges(computedBadges);
     } catch (err) {
       console.error("Error fetching badge progress:", err);
+      setLoading(false);
       // Fallback: keep all badges locked with zero progress and 5-step targets.
       const lockedBadges = baseBadgeConfig.map((badge, index) => {
         const target = (index + 1) * 5;
@@ -178,11 +181,14 @@ const Badges = () => {
         };
       });
       setBadges(lockedBadges);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Initial load
   useEffect(() => {
+    setLoading(true);
     fetchCompletionCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -211,6 +217,32 @@ const Badges = () => {
     if (selectedFilter === "Not Acquired") return !badge.unlocked;
     return true;
   });
+
+  if (loading) {
+    return (
+      <ParticipantLayout>
+        <div className="bg-gray-100 min-h-screen pb-8">
+          <div className="max-w-full">
+            {/* Filter Button Skeleton */}
+            <div className="relative flex justify-end mb-6">
+              <div className="bg-gray-300 p-3 rounded-lg w-32 h-12 animate-pulse"></div>
+            </div>
+            
+            {/* Badges Grid Skeleton */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {Array.from({ length: 20 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 text-center border-2 border-gray-200">
+                  <div className="w-20 h-20 mx-auto mb-3 rounded-full border-2 border-gray-300 bg-gray-300 animate-pulse"></div>
+                  <SkeletonText lines={1} width="small" height="h-4" className="mx-auto" />
+                  <SkeletonText lines={1} width="extraSmall" height="h-3" className="mx-auto mt-1" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ParticipantLayout>
+    );
+  }
 
   return (
     <ParticipantLayout>

@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   });
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [isLoading, setIsLoading] = useState(() => {
-    // Only show loading if we have a token but no user data yet
+    // Don't start in loading state by default - use timeout approach
     const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
     return savedToken && !savedUser;
@@ -75,8 +75,17 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token && !user) {
-      refreshUserData();
+      // Add a timeout to ensure we don't get stuck in loading state
+      const loadingTimeout = setTimeout(() => {
+        setIsLoading(false);
+      }, 5000); // 5 second timeout
+
+      refreshUserData().finally(() => {
+        clearTimeout(loadingTimeout);
+      });
     } else if (!token) {
+      setIsLoading(false);
+    } else if (user) {
       setIsLoading(false);
     }
   }, [token, user, refreshUserData]);
@@ -109,7 +118,7 @@ export const AuthProvider = ({ children }) => {
         isLoading,
       }}
     >
-      {isLoading ? null : children}
+      {children}
     </AuthContext.Provider>
   );
 };

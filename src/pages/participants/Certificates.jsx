@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
+import { SkeletonCard, SkeletonText, SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { Search, Download, Eye } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
@@ -195,8 +196,36 @@ const Certificates = () => {
   if (loading) {
     return (
       <ParticipantLayout>
-        <div className="bg-gray-100 min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="bg-gray-100 min-h-screen pb-8">
+          <div className="max-w-full px-4 md:px-8">
+            {/* Search and Filter Skeleton */}
+            <div className="flex items-center mb-8 gap-4">
+              <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="w-5 h-5 bg-gray-300 rounded animate-pulse"></div>
+                </div>
+                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
+              </div>
+              <div className="relative">
+                <div className="bg-gray-300 p-3 rounded-lg w-32 h-12 animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Certificate Cards Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-md p-4 text-center">
+                  <div className="relative bg-gray-50 rounded-md mb-4 overflow-hidden" style={{ aspectRatio: "1056/816" }}>
+                    <SkeletonBase className="w-full h-full" />
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-16 animate-pulse"></div>
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-20 animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </ParticipantLayout>
     );
@@ -266,12 +295,7 @@ const Certificates = () => {
                         }`}
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="text-xs text-gray-500">
-                          Loading...
-                        </span>
-                      </div>
+                      <SkeletonBase className="w-full h-full" />
                     )}
                   </div>
 
