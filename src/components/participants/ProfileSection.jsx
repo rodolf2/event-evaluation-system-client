@@ -4,8 +4,6 @@ import { useAuth } from "../../contexts/useAuth";
 function ProfileSection() {
   const { user } = useAuth();
 
-  console.log("🔍 Participants ProfileSection rendering, user:", user);
-
   const getEmailHash = useCallback((email) => {
     let hash = 0;
     if (!email || email.length === 0) return hash;

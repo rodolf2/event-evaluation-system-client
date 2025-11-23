@@ -27,40 +27,39 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch(
-        "/api/auth/profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch("/api/auth/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
 
-        if (data.success && data.data.user) {
-          // Verify the user data is complete and valid
-          const user = data.data.user;
-          if (!user.email || !user.role) {
-            console.error("Invalid user data received");
-            removeToken();
-            return;
-          }
-          // Set default profile picture if none exists
-          if (!user.profilePicture) {
-            user.profilePicture = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
-          }
-          localStorage.setItem("user", JSON.stringify(user));
-          setUser(user);
-        } else {
-          console.error("Failed to fetch user profile");
+      if (data.success && data.data.user) {
+        // Verify the user data is complete and valid
+        const user = data.data.user;
+        if (!user.email || !user.role) {
+          console.error("Invalid user data received");
           removeToken();
+          return;
         }
-      } catch (error) {
-        console.error("Error fetching user:", error);
+        // Set default profile picture if none exists
+        if (!user.profilePicture) {
+          user.profilePicture = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            user.name
+          )}&background=random`;
+        }
+        localStorage.setItem("user", JSON.stringify(user));
+        setUser(user);
+      } else {
+        console.error("Failed to fetch user profile");
         removeToken();
-      } finally {
-        setIsLoading(false);
       }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      removeToken();
+    } finally {
+      setIsLoading(false);
+    }
   }, [token, user]);
   // Function to refresh user data with error handling
   const refreshUserData = useCallback(async () => {
@@ -100,14 +99,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      token,
-      saveToken,
-      removeToken,
-      refreshUserData,
-      isLoading
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        saveToken,
+        removeToken,
+        refreshUserData,
+        isLoading,
+      }}
+    >
       {isLoading ? null : children}
     </AuthContext.Provider>
   );

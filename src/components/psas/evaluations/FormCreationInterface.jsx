@@ -2,8 +2,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Plus,
-  RotateCcw,
-  RotateCw,
   UserPlus,
   AlignLeft,
   MoreVertical,
@@ -15,6 +13,7 @@ import {
   X,
   Palette,
 } from "lucide-react";
+import { LuUndo, LuRedo } from "react-icons/lu";
 import Question from "./Question";
 import Section from "./Section";
 import ImportCSVModal from "./ImportCSVModal";
@@ -65,6 +64,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [showCertificateCustomizer, setShowCertificateCustomizer] =
     useState(false);
+
+  // History state for Undo/Redo
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isHistoryAction = useRef(false);
+  const historyTimeoutRef = useRef(null);
 
   // Form content state
   const [activeSectionId, setActiveSectionId] = useState("main");
@@ -177,6 +182,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       linkedCertificateId,
     };
     FormSessionManager.saveFormData(currentState);
+    FormSessionManager.saveFormData(currentState);
   }, [
     formTitle,
     formDescription,
@@ -190,6 +196,127 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     isCertificateLinked,
     linkedCertificateId,
   ]);
+
+  // History tracking effect
+  useEffect(() => {
+    // Skip if this update was triggered by an undo/redo action
+    if (isHistoryAction.current) {
+      isHistoryAction.current = false;
+      return;
+    }
+
+    // Debounce history updates to group rapid changes
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+
+    historyTimeoutRef.current = setTimeout(() => {
+      const currentState = {
+        formTitle,
+        formDescription,
+        questions,
+        sections,
+        uploadedFiles,
+        uploadedLinks,
+        eventStartDate,
+        eventEndDate,
+        currentFormId,
+        isCertificateLinked,
+        linkedCertificateId,
+        linkedCertificateType,
+        certificateTemplateName,
+        assignedStudents,
+      };
+
+      setHistory((prev) => {
+        const newHistory = prev.slice(0, historyIndex + 1);
+        newHistory.push(currentState);
+        // Limit history size if needed (e.g., 50 steps)
+        if (newHistory.length > 50) {
+          newHistory.shift();
+        }
+        return newHistory;
+      });
+      setHistoryIndex((prev) => {
+        const newHistoryLength = prev + 2; // +1 for slice, +1 for push
+        return Math.min(newHistoryLength - 1, 49); // Adjust index if limited
+      });
+    }, 1000); // 1 second debounce
+
+    return () => {
+      if (historyTimeoutRef.current) {
+        clearTimeout(historyTimeoutRef.current);
+      }
+    };
+  }, [
+    formTitle,
+    formDescription,
+    questions,
+    sections,
+    uploadedFiles,
+    uploadedLinks,
+    eventStartDate,
+    eventEndDate,
+    currentFormId,
+    isCertificateLinked,
+    linkedCertificateId,
+    linkedCertificateType,
+    certificateTemplateName,
+    assignedStudents,
+    historyIndex, // Dependency needed for slicing correctly
+  ]);
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      isHistoryAction.current = true;
+      const newIndex = historyIndex - 1;
+      const snapshot = history[newIndex];
+
+      setHistoryIndex(newIndex);
+
+      // Restore state from snapshot
+      setFormTitle(snapshot.formTitle);
+      setFormDescription(snapshot.formDescription);
+      setQuestions(snapshot.questions);
+      setSections(snapshot.sections);
+      setUploadedFiles(snapshot.uploadedFiles);
+      setUploadedLinks(snapshot.uploadedLinks);
+      setEventStartDate(snapshot.eventStartDate);
+      setEventEndDate(snapshot.eventEndDate);
+      setCurrentFormId(snapshot.currentFormId);
+      setIsCertificateLinked(snapshot.isCertificateLinked);
+      setLinkedCertificateId(snapshot.linkedCertificateId);
+      setLinkedCertificateType(snapshot.linkedCertificateType);
+      setCertificateTemplateName(snapshot.certificateTemplateName);
+      setAssignedStudents(snapshot.assignedStudents);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      isHistoryAction.current = true;
+      const newIndex = historyIndex + 1;
+      const snapshot = history[newIndex];
+
+      setHistoryIndex(newIndex);
+
+      // Restore state from snapshot
+      setFormTitle(snapshot.formTitle);
+      setFormDescription(snapshot.formDescription);
+      setQuestions(snapshot.questions);
+      setSections(snapshot.sections);
+      setUploadedFiles(snapshot.uploadedFiles);
+      setUploadedLinks(snapshot.uploadedLinks);
+      setEventStartDate(snapshot.eventStartDate);
+      setEventEndDate(snapshot.eventEndDate);
+      setCurrentFormId(snapshot.currentFormId);
+      setIsCertificateLinked(snapshot.isCertificateLinked);
+      setLinkedCertificateId(snapshot.linkedCertificateId);
+      setLinkedCertificateType(snapshot.linkedCertificateType);
+      setCertificateTemplateName(snapshot.certificateTemplateName);
+      setAssignedStudents(snapshot.assignedStudents);
+    }
+  };
 
   // Check for recipients parameter from student list navigation
   const [hasShownRecipientsToast, setHasShownRecipientsToast] = useState(false);
@@ -2173,19 +2300,38 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  handleUndo();
                 }}
+                disabled={historyIndex <= 0}
+                title="Undo"
               >
-                <RotateCcw className="w-5 h-5" />
+                <LuUndo
+                  className={`w-5 h-5 ${
+                    historyIndex <= 0 ? "text-gray-300" : "text-gray-600"
+                  }`}
+                />
               </button>
               <button
-                className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
-                // placeholder: no-op for now; prevents page jumps
+                className={`p-2 rounded-full ${
+                  historyIndex >= history.length - 1
+                    ? "cursor-not-allowed"
+                    : "hover:bg-gray-200"
+                }`}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  handleRedo();
                 }}
+                disabled={historyIndex >= history.length - 1}
+                title="Redo"
               >
-                <RotateCw className="w-5 h-5" />
+                <LuRedo
+                  className={`w-5 h-5 ${
+                    historyIndex >= history.length - 1
+                      ? "text-gray-300"
+                      : "text-gray-600"
+                  }`}
+                />
               </button>
               <button
                 className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
