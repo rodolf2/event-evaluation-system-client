@@ -1,4 +1,5 @@
 import { Camera, ChevronRight } from "lucide-react";
+import ProfilePictureModal from "../components/shared/ProfilePictureModal";
 import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
 import ParticipantLayout from "../components/participants/ParticipantLayout";
@@ -37,7 +38,7 @@ function Profile() {
   const [muteReminders, setMuteReminders] = useState(false);
   const [acquiredBadges, setAcquiredBadges] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(false);
-  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Edit mode states
   const [isEditingInfo, setIsEditingInfo] = useState(false);
@@ -211,70 +212,72 @@ function Profile() {
 
   // Handle profile picture change
   const handleProfilePictureClick = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = handleFileSelect;
-    input.click();
+    setIsProfileModalOpen(true);
   };
 
-  const handleFileSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleSaveProfilePicture = async (base64String) => {
+    if (!token) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+    const response = await fetch("/api/auth/profile/picture", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ profilePicture: base64String }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Update local storage
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+      // Reload to update UI - The modal will show success state first, then we might reload or just update state
+      // The modal handles the success view. After modal closes, we can reload or update context.
+      // For now, let's just update the user in context if possible, but useAuth might not expose a setter.
+      // We'll rely on window.location.reload() after a short delay or let the user close the modal.
+      // Actually, the modal stays open on success. When closed, we should reflect changes.
+      // But the modal doesn't have an "onClose" that triggers reload.
+      // We can reload when the modal is closed if a change happened.
+      // Or we can just reload here and the modal might disappear.
+      // The user requirement says "the last image if the picture is saved".
+      // So we should wait for the user to close the modal.
+      // We'll update the local storage, and when the modal closes, we can reload.
+      // But the modal is a child.
+      // Let's just return success and let the modal show success.
+      // We will reload the page when the modal is closed if a save occurred.
+      // We can track this with a ref or state.
+    } else {
+      throw new Error(data.message || "Failed to upload profile picture");
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    if (!token) return;
+
+    // Check if there is an existing image to remove
+    // If user.profilePicture is null or the default one, we shouldn't be able to remove.
+    // However, the backend sets it to null.
+    // We can check if user.profilePicture is present.
+    if (!user.profilePicture) {
+      // Already default/null
       return;
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
-      return;
-    }
+    const response = await fetch("/api/auth/profile/picture", {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-    try {
-      setUploadingPicture(true);
+    const data = await response.json();
 
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result;
-
-        // Upload to server
-        const response = await fetch("/api/auth/profile/picture", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ profilePicture: base64String }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Update local storage
-          localStorage.setItem("user", JSON.stringify(data.data.user));
-          // Reload to update UI
-          window.location.reload();
-        } else {
-          alert(data.message || "Failed to upload profile picture");
-          setUploadingPicture(false);
-        }
-      };
-
-      reader.onerror = () => {
-        alert("Error reading file");
-        setUploadingPicture(false);
-      };
-
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error("Error uploading profile picture:", error);
-      alert("Error uploading profile picture");
-      setUploadingPicture(false);
+    if (data.success) {
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+      // We'll reload on close
+    } else {
+      throw new Error(data.message || "Failed to remove profile picture");
     }
   };
 
@@ -319,15 +322,10 @@ function Profile() {
                 />
                 <button
                   onClick={handleProfilePictureClick}
-                  disabled={uploadingPicture}
-                  className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition"
                   title="Change profile picture"
                 >
-                  {uploadingPicture ? (
-                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <Camera className="w-5 h-5 text-gray-600" />
-                  )}
+                  <Camera className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -616,6 +614,25 @@ function Profile() {
           </div>
         </div>
       </div>
+      <ProfilePictureModal
+        isOpen={isProfileModalOpen}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          // Reload if we saved/removed (we can check if localStorage changed or just always reload if we want to be safe,
+          // but better to only reload if changed. For now, let's reload if the modal was closed after a successful operation.
+          // Since we update localStorage in the handlers, we can check if the user object in localStorage is different from current state 'user'.
+          // Or simpler: just reload. The user expects to see the new picture.
+          // But we need to know if a change happened.
+          // Let's check:
+          const storedUser = JSON.parse(localStorage.getItem("user"));
+          if (storedUser && storedUser.profilePicture !== user.profilePicture) {
+            window.location.reload();
+          }
+        }}
+        currentImage={user.profilePicture || "/src/assets/users/user1.jpg"}
+        onSave={handleSaveProfilePicture}
+        onRemove={handleRemoveProfilePicture}
+      />
     </LayoutComponent>
   );
 }

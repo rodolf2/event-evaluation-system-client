@@ -43,8 +43,16 @@ function Home() {
       const formRes = await fetch("/api/forms/latest/id", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const formData = await formRes.json();
-      const formId = formData.success ? formData.data?.id : null;
+      let formId = null;
+      if (formRes.ok) {
+        const formData = await formRes.json();
+        formId = formData.success ? formData.data?.id : null;
+      } else if (formRes.status === 404) {
+        // No forms found - this is expected if no forms are published yet
+        formId = null;
+      } else {
+        console.warn(`Failed to fetch latest form: ${formRes.status}`);
+      }
 
       if (formId) {
         // Fetch analytics data to trigger thumbnail generation with latest data
