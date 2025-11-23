@@ -274,15 +274,7 @@ const Certificates = () => {
                       </div>
                     )}
                   </div>
-                  <h3 className="font-semibold text-gray-800 mb-2">
-                    {cert.eventId?.name || "Certificate"}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-2 capitalize">
-                    {cert.certificateType}
-                  </p>
-                  <p className="text-xs text-gray-500 mb-4">
-                    Issued: {new Date(cert.issuedDate).toLocaleDateString()}
-                  </p>
+
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => handleViewCertificate(cert)}

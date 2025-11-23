@@ -467,6 +467,21 @@
       "pathSide": "left",
       "minWidth": 20,
       "splitByGrapheme": false
+    },
+    {
+      "type": "textbox",
+      "version": "5.3.0",
+      "originX": "center",
+      "originY": "top",
+      "left": 400,
+      "top": 345,
+      "width": 600,
+      "height": 16.8,
+      "fill": "#6B7280",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": 12,
+      "text": "Issued: [Issued Date]",
+      "textAlign": "center"
     }
   ],
   "background": "#fff"

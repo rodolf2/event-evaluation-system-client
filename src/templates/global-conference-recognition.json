@@ -145,6 +145,19 @@
       "fontFamily": "Open Sans, sans-serif",
       "fill": "#6B7280",
       "text": "PSAS Department Head"
+    },
+    {
+      "type": "textbox",
+      "originX": "center",
+      "originY": "top",
+      "left": 528,
+      "top": 380,
+      "width": 600,
+      "textAlign": "center",
+      "fontSize": 12,
+      "fontFamily": "Open Sans, sans-serif",
+      "fill": "#6B7280",
+      "text": "Issued: [Issued Date]"
     }
   ],
   "background": "#ffffff"

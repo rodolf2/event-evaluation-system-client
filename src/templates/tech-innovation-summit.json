@@ -32,7 +32,8 @@
       "stroke": "#38BDF8",
       "strokeWidth": 2,
       "fill": "transparent",
-      "selectable": true, "evented": true,
+      "selectable": true,
+      "evented": true,
       "evented": false
     },
     {
@@ -523,6 +524,21 @@
       "strokeWidth": 2,
       "selectable": true,
       "evented": true
+    },
+    {
+      "type": "textbox",
+      "version": "5.3.0",
+      "originX": "center",
+      "originY": "top",
+      "left": 528,
+      "top": 380,
+      "width": 600,
+      "height": 16.8,
+      "fill": "#6B7280",
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": 12,
+      "text": "Issued: [Issued Date]",
+      "textAlign": "center"
     }
   ],
   "background": "#fff"

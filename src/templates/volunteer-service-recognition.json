@@ -164,6 +164,19 @@
       "strokeWidth": 2,
       "selectable": true,
       "evented": true
+    },
+    {
+      "type": "textbox",
+      "originX": "center",
+      "originY": "top",
+      "left": 528,
+      "top": 350,
+      "width": 600,
+      "textAlign": "center",
+      "fontSize": 12,
+      "fontFamily": "Lato, sans-serif",
+      "fill": "#6B7280",
+      "text": "Issued: [Issued Date]"
     }
   ],
   "background": "#ffffff"

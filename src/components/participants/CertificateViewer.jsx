@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Download } from "lucide-react";
+import { Download, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
 const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
@@ -160,8 +160,16 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Action Buttons - Outside White Background */}
-      <div className="w-full flex justify-end mb-6">
+      {/* Action Buttons - Back on left, Actions on right */}
+      <div className="w-full flex justify-between items-center mb-6">
+        <button
+          onClick={onDone}
+          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Back</span>
+        </button>
+
         <div className="flex gap-4">
           <button
             onClick={handleDownload}
@@ -183,14 +191,16 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
       {/* White Background Container */}
       <div className="w-full bg-white p-8 rounded-lg shadow-sm">
         {/* Certificate Display */}
-        <div className="w-full max-w-4xl flex justify-center">
+        <div className="w-full max-w-3xl mx-auto flex justify-center">
           {certificateImage ? (
-            <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden">
+            <div
+              className="relative w-full bg-gray-100 rounded-lg overflow-hidden"
+              style={{ aspectRatio: "1056/816" }}
+            >
               <embed
                 src={`${certificateImage}#toolbar=0&navpanes=0&scrollbar=0`}
                 type="application/pdf"
-                className="w-full rounded-lg"
-                style={{ minHeight: "600px", height: "800px" }}
+                className="w-full h-full rounded-lg"
                 title="Certificate Preview"
               />
             </div>
@@ -221,30 +231,6 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
           )}
         </div>
 
-        {/* Certificate Info */}
-        {selectedCertificate && (
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>
-              <strong>Event:</strong>{" "}
-              {selectedCertificate.eventId?.name || "Evaluation Event"}
-            </p>
-            <p>
-              <strong>Type:</strong>{" "}
-              {selectedCertificate.certificateType ||
-                "Certificate of Participation"}
-            </p>
-            <p>
-              <strong>Issued:</strong>{" "}
-              {new Date(
-                selectedCertificate.issuedDate || selectedCertificate.createdAt
-              ).toLocaleDateString()}
-            </p>
-            <p>
-              <strong>Participant:</strong>{" "}
-              {selectedCertificate.userId?.name || "Participant"}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

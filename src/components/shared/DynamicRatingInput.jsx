@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 // SVG Icons matching FormCreationInterface Question.jsx
 import E1 from "../../assets/icons/emojis/E1.svg";
 import E2 from "../../assets/icons/emojis/E2.svg";
@@ -38,6 +38,7 @@ const DynamicRatingInput = ({
   onChange,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(null); // Track exact drag position
   const sliderRef = useRef(null);
 
   // Exact same mapping as FormCreationInterface Question.jsx
@@ -85,18 +86,46 @@ const DynamicRatingInput = ({
   const iconIndices = getIconIndices(scale);
   const emojiList = emojiStylesMap[icon] || emojiStylesMap.Star;
 
-  const handleMouseMove = useCallback((e) => {
-    if (!isDragging || !sliderRef.current) return;
-    const slider = sliderRef.current;
-    const rect = slider.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
-    const newValue = Math.round(percentage * (numbersToShow.length - 1)) + 1;
-    onChange(newValue);
-  }, [isDragging, numbersToShow.length, onChange]);
+  // Calculate the exact position percentage for the thumb to center it on icons
+  // Icons have fixed width with justify-between, so we need to account for that
+  const getThumbPosition = (currentValue) => {
+    const index = currentValue - 1;
+    const totalIcons = numbersToShow.length;
+
+    if (totalIcons === 1) return 50; // Single icon: center
+
+    // For fixed-width icons in justify-between layout:
+    // First icon center is offset inward by ~10% (half icon width)
+    // Last icon center is offset inward by ~10% from the right (90% total)
+    // This creates better visual alignment
+    const firstIconCenter = 10; // Approximate center of first icon
+    const lastIconCenter = 90; // Approximate center of last icon
+    const range = lastIconCenter - firstIconCenter;
+
+    return firstIconCenter + (index / (totalIcons - 1)) * range;
+  };
+
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDragging || !sliderRef.current) return;
+      const slider = sliderRef.current;
+      const rect = slider.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
+
+      // Update drag position for smooth thumb movement
+      setDragPosition(percentage * 100);
+
+      // Update the actual value (snapped to nearest rating)
+      const newValue = Math.round(percentage * (numbersToShow.length - 1)) + 1;
+      onChange(newValue);
+    },
+    [isDragging, numbersToShow.length, onChange]
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    setDragPosition(null); // Clear drag position on release
   }, []);
 
   useEffect(() => {
@@ -116,16 +145,21 @@ const DynamicRatingInput = ({
   const renderRatingIcons = () => {
     return (
       <div className="flex flex-col items-center w-full max-w-md mx-auto">
-        <div className="flex justify-between w-full relative z-10 mb-4">
+        <div className="flex justify-between w-full relative z-10 mb-4 items-center px-2 sm:px-4">
           {numbersToShow.map((num, index) => {
             const i = iconIndices[index];
             const isSelected = value === num;
             const color = getColorGradient(icon, num);
 
             return (
-              <label
+              <div
                 key={num}
                 className="flex flex-col items-center cursor-pointer group relative"
+                style={{
+                  width: "clamp(48px, 8vw, 72px)",
+                  flex: "0 0 clamp(48px, 8vw, 72px)",
+                }}
+                onClick={() => onChange(num)}
               >
                 <input
                   type="radio"
@@ -138,7 +172,7 @@ const DynamicRatingInput = ({
 
                 {/* Number ABOVE icon */}
                 <span
-                  className={`text-sm font-medium mb-1 transition-colors ${
+                  className={`text-xs sm:text-sm font-medium mb-1 transition-colors ${
                     isSelected
                       ? "text-gray-900 scale-110 drop-shadow-sm"
                       : "text-gray-600 group-hover:text-gray-800"
@@ -149,7 +183,7 @@ const DynamicRatingInput = ({
 
                 {/* Icon */}
                 <div
-                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center transition-all group-hover:scale-105 shadow-md ${
+                  className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full border-2 flex items-center justify-center transition-all group-hover:scale-105 shadow-md ${
                     isSelected
                       ? `ring-2 ring-blue-500 scale-110 bg-[${color}] border-gray-300 shadow-lg`
                       : `bg-[${color}] border-[${color}] hover:border-gray-300 hover:shadow-md`
@@ -158,41 +192,50 @@ const DynamicRatingInput = ({
                   <img
                     src={emojiList[i]}
                     alt={`${icon} ${num}`}
-                    className="w-9 h-9 sm:w-10 sm:h-10 drop-shadow-sm"
+                    className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-12 lg:h-12 drop-shadow-sm"
                   />
                 </div>
-              </label>
+              </div>
             );
           })}
         </div>
 
         {/* Continuous connected gradient slider */}
-        <div
-          ref={sliderRef}
-          className="relative w-full h-4 bg-gray-200 rounded-full shadow-inner overflow-hidden mt-2 cursor-pointer"
-          onMouseDown={(e) => {
-            setIsDragging(true);
-            handleMouseMove(e);
-          }}
-        >
+        <div className="relative w-full h-3 sm:h-4 md:h-5 mt-2 px-2 sm:px-4">
+          {/* Gradient background that extends beyond icon area for better alignment */}
           <div
-            className="absolute inset-0 rounded-full"
+            className="absolute top-0 sm:top-0.5 md:top-1 left-0 right-0 h-2 sm:h-3 md:h-4 bg-gray-200 rounded-full shadow-inner"
             style={{
               background: `linear-gradient(to right, ${numbersToShow
                 .map((num) => getColorGradient(icon, num))
                 .join(", ")})`,
             }}
           ></div>
+
+          {/* Invisible slider interaction area - wider to catch clicks */}
+          <div
+            ref={sliderRef}
+            className="absolute top-0 left-0 right-0 h-4 sm:h-5 md:h-6 cursor-pointer z-10"
+            onMouseDown={(e) => {
+              setIsDragging(true);
+              handleMouseMove(e);
+            }}
+          ></div>
+
+          {/* Slider thumb - positioned so tip is inside the bar */}
           {value && (
             <img
               src={SliderIcon}
               alt="Slider"
-              className="absolute w-6 h-6 z-20"
+              className="absolute w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 z-20"
               style={{
-                left: `${((value - 1) / (numbersToShow.length - 1)) * 100}%`,
-                transform: "translateX(-50%) translateY(100%)",
-                bottom: "-4px",
+                left: `${
+                  dragPosition !== null ? dragPosition : getThumbPosition(value)
+                }%`,
+                top: "0.75rem",
+                transform: "translateX(-50%)",
                 cursor: "pointer",
+                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
               }}
               onMouseDown={(e) => {
                 e.stopPropagation();
