@@ -9,6 +9,7 @@ export const useDynamicReportData = (reportId) => {
   const [quantitativeData, setQuantitativeData] = useState(null);
   const [qualitativeData, setQualitativeData] = useState(null);
   const [commentsData, setCommentsData] = useState(null);
+  const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -97,7 +98,7 @@ export const useDynamicReportData = (reportId) => {
   // Fetch comments data
   const fetchCommentsData = useCallback(async (queryFilters = {}) => {
     if (!reportId) return;
-    
+
     try {
       setError(null);
       const queryParams = new URLSearchParams({
@@ -131,6 +132,36 @@ export const useDynamicReportData = (reportId) => {
     }
   }, [reportId, token, filters.commentType, filters.department, filters.ratingFilter]);
 
+  // Fetch form data
+  const fetchFormData = useCallback(async () => {
+    if (!reportId) return;
+
+    try {
+      setError(null);
+      const response = await fetch(`/api/forms/${reportId}`, {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch form data: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setFormData(result.data);
+        setLastUpdated(new Date().toISOString());
+      } else {
+        throw new Error(result.message || 'Failed to fetch form data');
+      }
+    } catch (err) {
+      console.error('Error fetching form data:', err);
+      setError(err.message);
+    }
+  }, [reportId, token]);
+
   // Update filters
   const updateFilters = useCallback((newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -142,11 +173,12 @@ export const useDynamicReportData = (reportId) => {
     Promise.all([
       fetchQuantitativeData(),
       fetchQualitativeData(),
-      fetchCommentsData()
+      fetchCommentsData(),
+      fetchFormData()
     ]).finally(() => {
       setLoading(false);
     });
-  }, [fetchQuantitativeData, fetchQualitativeData, fetchCommentsData]);
+  }, [fetchQuantitativeData, fetchQualitativeData, fetchCommentsData, fetchFormData]);
 
   // Refresh all data
   const refreshData = useCallback(() => {
@@ -154,11 +186,12 @@ export const useDynamicReportData = (reportId) => {
     Promise.all([
       fetchQuantitativeData(),
       fetchQualitativeData(),
-      fetchCommentsData()
+      fetchCommentsData(),
+      fetchFormData()
     ]).finally(() => {
       setLoading(false);
     });
-  }, [fetchQuantitativeData, fetchQualitativeData, fetchCommentsData]);
+  }, [fetchQuantitativeData, fetchQualitativeData, fetchCommentsData, fetchFormData]);
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
@@ -184,6 +217,7 @@ export const useDynamicReportData = (reportId) => {
     quantitativeData,
     qualitativeData,
     commentsData,
+    formData,
     loading,
     error,
     lastUpdated,
@@ -193,6 +227,7 @@ export const useDynamicReportData = (reportId) => {
     refreshData,
     fetchQuantitativeData,
     fetchQualitativeData,
-    fetchCommentsData
+    fetchCommentsData,
+    fetchFormData
   };
 };

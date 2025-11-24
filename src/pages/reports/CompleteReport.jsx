@@ -223,6 +223,7 @@ const CompleteReport = ({ report, onBack }) => {
   const {
     quantitativeData,
     qualitativeData,
+    formData,
     loading,
     error,
     lastUpdated,
@@ -249,13 +250,13 @@ const CompleteReport = ({ report, onBack }) => {
 
         {/* Report Description */}
         <ReportDescription
-          title={report?.title || "Sample Event Evaluation Report"}
+          title={formData?.title || "Sample Event Evaluation Report"}
         />
 
         <div className="p-8">
           <div className="text-center mb-8">
             <h3 className="text-2xl font-bold mb-2">
-              {report?.title || "EVENT EVALUATION REPORT"}
+              {formData?.title || "EVENT EVALUATION REPORT"}
             </h3>
             <p className="text-xl font-bold">EVALUATION RESULT</p>
             <p className="text-lg">College Level</p>
