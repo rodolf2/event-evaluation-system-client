@@ -213,7 +213,7 @@ const CommentSection = ({
   );
 };
 
-const CompleteReport = ({ report, onBack }) => {
+const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
   const navigate = useNavigate();
   const { eventId } = useParams(); // Get eventId from URL if not provided as prop
 
@@ -557,7 +557,11 @@ const CompleteReport = ({ report, onBack }) => {
 
   const content = (
     <>
-      <ReportActions onBackClick={handleBackClick} eventId={eventId} />
+      <ReportActions
+        onBackClick={handleBackClick}
+        eventId={eventId}
+        isGeneratedReport={isGeneratedReport}
+      />
       <div className="bg-gray-100 min-h-screen report-print-content print:block p-8">
         <div className="container mx-auto max-w-5xl">
           {error && (

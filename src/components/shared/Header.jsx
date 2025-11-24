@@ -12,6 +12,8 @@ const Header = ({
 }) => {
   const { user, token, refreshUserData } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showBadge, setShowBadge] = useState(false);
+  const [lastUnreadCount, setLastUnreadCount] = useState(0);
   const location = useLocation();
   const profileRef = useRef(null);
 
@@ -30,7 +32,18 @@ const Header = ({
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          setUnreadCount(result.data.unread || 0);
+          const newCount = result.data.unread || 0;
+          setUnreadCount(newCount);
+
+          // Show badge for 3 seconds when new notifications arrive, but only after a 2-second delay
+          if (newCount > lastUnreadCount) {
+            setTimeout(() => {
+              setShowBadge(true);
+              setTimeout(() => setShowBadge(false), 3000);
+            }, 2000); // 2-second delay before showing badge
+          }
+
+          setLastUnreadCount(newCount);
         }
       }
     } catch (error) {
@@ -102,6 +115,9 @@ const Header = ({
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
+          )}
+          {showBadge && (
+            <div className="absolute -top-2 -right-2 w-3 h-3 bg-blue-500 rounded-full animate-ping"></div>
           )}
         </Link>
         <div className="relative">

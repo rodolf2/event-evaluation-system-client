@@ -1,18 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Filter } from "lucide-react";
-import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
-import QuantitativeRatings from "../reports/QuantitativeRatings";
-import QualitativeComments from "../reports/QualitativeComments";
-import PositiveComments from "../reports/PositiveComments";
-import NegativeComments from "../reports/NegativeComments";
-import NeutralComments from "../reports/NeutralComments";
-import CompleteReport from "../reports/CompleteReport";
-import {
-  SkeletonBase,
-  SkeletonCard,
-  SkeletonText,
-} from "../../components/shared/SkeletonLoader";
+import QuantitativeRatings from "../../pages/reports/QuantitativeRatings";
+import QualitativeComments from "../../pages/reports/QualitativeComments";
+import PositiveComments from "../../pages/reports/PositiveComments";
+import NegativeComments from "../../pages/reports/NegativeComments";
+import NeutralComments from "../../pages/reports/NeutralComments";
+import CompleteReport from "../../pages/reports/CompleteReport";
+import { SkeletonBase, SkeletonText } from "./SkeletonLoader";
 
 const ReportCard = ({ report, onSelect }) => {
   return (
@@ -60,7 +55,7 @@ const ReportCard = ({ report, onSelect }) => {
   );
 };
 
-const Reports = () => {
+const ReportsContent = () => {
   const [reports, setReports] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -245,60 +240,56 @@ const Reports = () => {
 
   if (loading && reports.length === 0) {
     return (
-      <PSASLayout>
-        <div className="p-8 bg-gray-100 min-h-full">
-          {/* Search and Sort Bar Skeleton */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative max-w-md">
-              <SkeletonText className="w-full h-10 bg-gray-300 rounded-lg" />
-            </div>
-            <SkeletonText className="w-20 h-10 bg-gray-300 rounded-lg" />
+      <div className="p-8 bg-gray-100 min-h-full">
+        {/* Search and Sort Bar Skeleton */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="relative max-w-md">
+            <SkeletonText className="w-full h-10 bg-gray-300 rounded-lg" />
           </div>
+          <SkeletonText className="w-20 h-10 bg-gray-300 rounded-lg" />
+        </div>
 
-          {/* Reports Grid Skeleton */}
-          <div className="bg-white p-6 rounded-xl shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-[#EEEEF0] rounded-lg shadow-sm overflow-hidden p-4"
-                >
-                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <SkeletonBase className="w-full h-48 bg-gray-300 rounded" />
-                    <div className="p-3">
-                      <SkeletonText className="h-4 w-3/4 mx-auto bg-gray-300 rounded" />
-                    </div>
+        {/* Reports Grid Skeleton */}
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-[#EEEEF0] rounded-lg shadow-sm overflow-hidden p-4"
+              >
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <SkeletonBase className="w-full h-48 bg-gray-300 rounded" />
+                  <div className="p-3">
+                    <SkeletonText className="h-4 w-3/4 mx-auto bg-gray-300 rounded" />
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      </PSASLayout>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <PSASLayout>
-        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-          <div className="text-red-600 text-center">
-            <p className="text-lg font-semibold">Error loading reports</p>
-            <p>{error}</p>
-            <button
-              onClick={() => fetchReports()}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              Try Again
-            </button>
-          </div>
+      <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-red-600 text-center">
+          <p className="text-lg font-semibold">Error loading reports</p>
+          <p>{error}</p>
+          <button
+            onClick={() => fetchReports()}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
         </div>
-      </PSASLayout>
+      </div>
     );
   }
 
   return (
-    <PSASLayout>
+    <>
       {view === "list" && (
         <div className="p-8 bg-gray-100 min-h-full">
           {/* Search and Sort Bar */}
@@ -419,8 +410,8 @@ const Reports = () => {
           onBack={() => setView("dashboard")}
         />
       )}
-    </PSASLayout>
+    </>
   );
 };
 
-export default Reports;
+export default ReportsContent;

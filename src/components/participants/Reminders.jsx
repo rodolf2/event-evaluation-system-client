@@ -5,23 +5,24 @@ const Reminders = ({ reminders, onDelete }) => {
   const safeReminders = Array.isArray(reminders) ? reminders : [];
 
   return (
-    <div className="bg-white rounded-xl shadow p-4">
+    <div className="bg-white rounded-xl shadow p-4 h-full min-h-[400px] flex flex-col">
       <h3 className="text-lg font-semibold mb-3">
         Reminders ({safeReminders.length})
       </h3>
       {safeReminders.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-4">
-          No reminders yet. Click on a date to add one.
-        </p>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500 text-sm text-center">
+            No reminders yet. Click on a date to add one.
+          </p>
+        </div>
       ) : (
-        <ul className="space-y-2 max-h-[300px] overflow-y-auto">
+        <ul className="space-y-2 overflow-y-auto flex-1 pr-2">
           {safeReminders.map((reminder) => (
             <li
               key={reminder._id || reminder.id}
               className="flex justify-between items-start text-gray-700 text-sm group p-2 hover:bg-gray-50 rounded"
             >
               <div className="flex-1 pr-4">
-                <div className="font-semibold mb-1">{reminder.title}</div>
                 <div className="text-gray-600">{reminder.description}</div>
                 <div className="text-gray-400 text-xs mt-1">
                   {new Date(reminder.date).toLocaleDateString()}

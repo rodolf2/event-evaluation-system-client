@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import PSASLayout from "../../components/psas/PSASLayout";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
+import { useAuth } from "../../contexts/useAuth";
 import {
   SkeletonCard,
   SkeletonBase,
@@ -146,10 +148,15 @@ const Certificates = () => {
     setIsPreviewMode(true);
   };
 
+  // Determine layout based on user role
+  const { user } = useAuth();
+  const isClubOfficer = user?.role === "club-officer";
+  const Layout = isClubOfficer ? ClubOfficerLayout : PSASLayout;
+
   // Loading skeleton
   if (loading) {
     return (
-      <PSASLayout>
+      <Layout>
         <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-[80vh]">
           {/* Header Section - Match CertificateGallery gradient layout */}
           <div className="shrink-0 mb-6 sm:mb-8">
@@ -235,14 +242,14 @@ const Certificates = () => {
             </div>
           </div>
         </div>
-      </PSASLayout>
+      </Layout>
     );
   }
 
   // Editor view
   if (view === "editor") {
     return (
-      <PSASLayout>
+      <Layout>
         <CertificateEditor
           initialData={initialData}
           selectedTemplate={selectedTemplate}
@@ -252,13 +259,13 @@ const Certificates = () => {
           onSave={handleSaveTemplate}
           onBack={handleBackToGallery}
         />
-      </PSASLayout>
+      </Layout>
     );
   }
 
   // Gallery view
   return (
-    <PSASLayout>
+    <Layout>
       <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-[80vh]">
         <CertificateGallery
           onTemplateSelect={handleTemplatePreview}
@@ -267,7 +274,7 @@ const Certificates = () => {
           eventName={searchParams.get("eventName")}
         />
       </div>
-    </PSASLayout>
+    </Layout>
   );
 };
 

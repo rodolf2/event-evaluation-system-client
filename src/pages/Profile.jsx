@@ -3,6 +3,7 @@ import ProfilePictureModal from "../components/shared/ProfilePictureModal";
 import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
 import ParticipantLayout from "../components/participants/ParticipantLayout";
+import ClubOfficerLayout from "../components/club-officers/ClubOfficerLayout";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -296,10 +297,12 @@ function Profile() {
       ? "/participant/badges"
       : null;
 
-  // Use role-specific layout so participants do NOT see the PSAS sidebar/layout.
+  // Use role-specific layout
   const LayoutComponent =
-    user.role === "participant" || user.role === "club-officer"
+    user.role === "participant"
       ? ParticipantLayout
+      : user.role === "club-officer"
+      ? ClubOfficerLayout
       : PSASLayout;
 
   return (

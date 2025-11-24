@@ -1,11 +1,11 @@
-import PSASLayout from "../../components/psas/PSASLayout";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import EventAnalyticsContent from "../../components/shared/EventAnalyticsContent";
 
 const EventAnalytics = () => {
   return (
-    <PSASLayout>
+    <ClubOfficerLayout>
       <EventAnalyticsContent />
-    </PSASLayout>
+    </ClubOfficerLayout>
   );
 };
 

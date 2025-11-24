@@ -34,7 +34,13 @@ const ProfileModal = ({ isOpen, onClose, position }) => {
       </div>
       <div className="pt-2">
         <Link
-          to="/profile"
+          to={
+            user?.role === "psas"
+              ? "/psas/profile"
+              : user?.role === "club-officer"
+              ? "/club-officer/profile"
+              : "/profile"
+          }
           onClick={onClose} // Close modal on navigation
           className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
         >

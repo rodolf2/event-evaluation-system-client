@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../contexts/useAuth";
 
 /**
  * Custom hook for managing dynamic report data
  */
-export const useDynamicReportData = (reportId) => {
+export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
   const { token } = useAuth();
   const [quantitativeData, setQuantitativeData] = useState(null);
   const [qualitativeData, setQualitativeData] = useState(null);
@@ -13,124 +13,159 @@ export const useDynamicReportData = (reportId) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [isLiveData, setIsLiveData] = useState(!isGeneratedReport);
   const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
-    department: '',
-    yearLevel: '',
-    ratingFilter: '',
-    sentiment: 'all',
-    keyword: '',
-    commentType: 'all'
+    startDate: "",
+    endDate: "",
+    department: "",
+    yearLevel: "",
+    ratingFilter: "",
+    sentiment: "all",
+    keyword: "",
+    commentType: "all",
   });
 
   // Fetch quantitative data
-  const fetchQuantitativeData = useCallback(async (queryFilters = {}) => {
-    if (!reportId) return;
-    
-    try {
-      setError(null);
-      const queryParams = new URLSearchParams({
-        ...filters,
-        ...queryFilters
-      });
+  const fetchQuantitativeData = useCallback(
+    async (queryFilters = {}) => {
+      if (!reportId) return;
 
-      const response = await fetch(`/api/analytics/reports/${reportId}/quantitative?${queryParams}`, {
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      try {
+        setError(null);
+        const queryParams = new URLSearchParams({
+          ...filters,
+          ...queryFilters,
+          useSnapshot: isGeneratedReport ? "true" : "false",
+        });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch quantitative data: ${response.status}`);
+        const response = await fetch(
+          `/api/analytics/reports/${reportId}/quantitative?${queryParams}`,
+          {
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch quantitative data: ${response.status}`
+          );
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          setQuantitativeData(result.data);
+          setLastUpdated(new Date().toISOString());
+        } else {
+          throw new Error(
+            result.message || "Failed to fetch quantitative data"
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching quantitative data:", err);
+        setError(err.message);
       }
-
-      const result = await response.json();
-      if (result.success) {
-        setQuantitativeData(result.data);
-        setLastUpdated(new Date().toISOString());
-      } else {
-        throw new Error(result.message || 'Failed to fetch quantitative data');
-      }
-    } catch (err) {
-      console.error('Error fetching quantitative data:', err);
-      setError(err.message);
-    }
-  }, [reportId, token, filters]);
+    },
+    [reportId, token, filters, isGeneratedReport]
+  );
 
   // Fetch qualitative data
-  const fetchQualitativeData = useCallback(async (queryFilters = {}) => {
-    if (!reportId) return;
-    
-    try {
-      setError(null);
-      const queryParams = new URLSearchParams({
-        sentiment: filters.sentiment,
-        keyword: filters.keyword,
-        ...queryFilters
-      });
+  const fetchQualitativeData = useCallback(
+    async (queryFilters = {}) => {
+      if (!reportId) return;
 
-      const response = await fetch(`/api/analytics/reports/${reportId}/qualitative?${queryParams}`, {
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      try {
+        setError(null);
+        const queryParams = new URLSearchParams({
+          sentiment: filters.sentiment,
+          keyword: filters.keyword,
+          ...queryFilters,
+          useSnapshot: isGeneratedReport ? "true" : "false",
+        });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch qualitative data: ${response.status}`);
+        const response = await fetch(
+          `/api/analytics/reports/${reportId}/qualitative?${queryParams}`,
+          {
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch qualitative data: ${response.status}`
+          );
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          setQualitativeData(result.data);
+          setLastUpdated(new Date().toISOString());
+        } else {
+          throw new Error(result.message || "Failed to fetch qualitative data");
+        }
+      } catch (err) {
+        console.error("Error fetching qualitative data:", err);
+        setError(err.message);
       }
-
-      const result = await response.json();
-      if (result.success) {
-        setQualitativeData(result.data);
-        setLastUpdated(new Date().toISOString());
-      } else {
-        throw new Error(result.message || 'Failed to fetch qualitative data');
-      }
-    } catch (err) {
-      console.error('Error fetching qualitative data:', err);
-      setError(err.message);
-    }
-  }, [reportId, token, filters.sentiment, filters.keyword]);
+    },
+    [reportId, token, filters.sentiment, filters.keyword, isGeneratedReport]
+  );
 
   // Fetch comments data
-  const fetchCommentsData = useCallback(async (queryFilters = {}) => {
-    if (!reportId) return;
+  const fetchCommentsData = useCallback(
+    async (queryFilters = {}) => {
+      if (!reportId) return;
 
-    try {
-      setError(null);
-      const queryParams = new URLSearchParams({
-        type: filters.commentType,
-        department: filters.department,
-        ratingRange: filters.ratingFilter,
-        ...queryFilters
-      });
+      try {
+        setError(null);
+        const queryParams = new URLSearchParams({
+          type: filters.commentType,
+          department: filters.department,
+          ratingRange: filters.ratingFilter,
+          ...queryFilters,
+          useSnapshot: isGeneratedReport ? "true" : "false",
+        });
 
-      const response = await fetch(`/api/analytics/reports/${reportId}/comments?${queryParams}`, {
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+        const response = await fetch(
+          `/api/analytics/reports/${reportId}/comments?${queryParams}`,
+          {
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch comments data: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch comments data: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          setCommentsData(result.data);
+          setLastUpdated(new Date().toISOString());
+        } else {
+          throw new Error(result.message || "Failed to fetch comments data");
+        }
+      } catch (err) {
+        console.error("Error fetching comments data:", err);
+        setError(err.message);
       }
-
-      const result = await response.json();
-      if (result.success) {
-        setCommentsData(result.data);
-        setLastUpdated(new Date().toISOString());
-      } else {
-        throw new Error(result.message || 'Failed to fetch comments data');
-      }
-    } catch (err) {
-      console.error('Error fetching comments data:', err);
-      setError(err.message);
-    }
-  }, [reportId, token, filters.commentType, filters.department, filters.ratingFilter]);
+    },
+    [
+      reportId,
+      token,
+      filters.commentType,
+      filters.department,
+      filters.ratingFilter,
+      isGeneratedReport,
+    ]
+  );
 
   // Fetch form data
   const fetchFormData = useCallback(async () => {
@@ -139,9 +174,9 @@ export const useDynamicReportData = (reportId) => {
     try {
       setError(null);
       const response = await fetch(`/api/forms/${reportId}`, {
-        credentials: 'include',
+        credentials: "include",
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -154,17 +189,17 @@ export const useDynamicReportData = (reportId) => {
         setFormData(result.data);
         setLastUpdated(new Date().toISOString());
       } else {
-        throw new Error(result.message || 'Failed to fetch form data');
+        throw new Error(result.message || "Failed to fetch form data");
       }
     } catch (err) {
-      console.error('Error fetching form data:', err);
+      console.error("Error fetching form data:", err);
       setError(err.message);
     }
   }, [reportId, token]);
 
   // Update filters
   const updateFilters = useCallback((newFilters) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+    setFilters((prev) => ({ ...prev, ...newFilters }));
   }, []);
 
   // Apply filters and refetch data
@@ -174,11 +209,16 @@ export const useDynamicReportData = (reportId) => {
       fetchQuantitativeData(),
       fetchQualitativeData(),
       fetchCommentsData(),
-      fetchFormData()
+      fetchFormData(),
     ]).finally(() => {
       setLoading(false);
     });
-  }, [fetchQuantitativeData, fetchQualitativeData, fetchCommentsData, fetchFormData]);
+  }, [
+    fetchQuantitativeData,
+    fetchQualitativeData,
+    fetchCommentsData,
+    fetchFormData,
+  ]);
 
   // Refresh all data
   const refreshData = useCallback(() => {
@@ -187,15 +227,20 @@ export const useDynamicReportData = (reportId) => {
       fetchQuantitativeData(),
       fetchQualitativeData(),
       fetchCommentsData(),
-      fetchFormData()
+      fetchFormData(),
     ]).finally(() => {
       setLoading(false);
     });
-  }, [fetchQuantitativeData, fetchQualitativeData, fetchCommentsData, fetchFormData]);
+  }, [
+    fetchQuantitativeData,
+    fetchQualitativeData,
+    fetchCommentsData,
+    fetchFormData,
+  ]);
 
-  // Auto-refresh every 60 seconds
+  // Auto-refresh every 60 seconds (only for live data, not generated reports)
   useEffect(() => {
-    if (reportId) {
+    if (reportId && !isGeneratedReport) {
       const interval = setInterval(() => {
         if (!loading) {
           refreshData();
@@ -204,7 +249,7 @@ export const useDynamicReportData = (reportId) => {
 
       return () => clearInterval(interval);
     }
-  }, [reportId, refreshData, loading]);
+  }, [reportId, refreshData, loading, isGeneratedReport]);
 
   // Initial data fetch
   useEffect(() => {
@@ -228,6 +273,7 @@ export const useDynamicReportData = (reportId) => {
     fetchQuantitativeData,
     fetchQualitativeData,
     fetchCommentsData,
-    fetchFormData
+    fetchFormData,
+    isLiveData,
   };
 };

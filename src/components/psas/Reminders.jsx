@@ -21,7 +21,6 @@ const Reminders = ({ reminders, onDelete }) => {
               className="flex justify-between items-start text-gray-700 text-sm group p-2 hover:bg-gray-50 rounded"
             >
               <div className="flex-1 pr-4">
-                <div className="font-semibold mb-1">{reminder.title}</div>
                 <div className="text-gray-600">{reminder.description}</div>
                 <div className="text-gray-400 text-xs mt-1">
                   {new Date(reminder.date).toLocaleDateString()}

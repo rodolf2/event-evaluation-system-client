@@ -7,8 +7,8 @@ import {
   Mail,
   MailOpen,
 } from "lucide-react";
-import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 
 const NotificationItem = ({
   notification,
@@ -39,15 +39,27 @@ const NotificationItem = ({
         className="mr-4 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
       />
       <div className="grow">
-        <span className="font-bold text-gray-800">{notification.from} -</span>
+        <span
+          className={`font-bold ${
+            isSelected ? "text-gray-800" : "text-gray-800"
+          }`}
+        >
+          {notification.from} -
+        </span>
         <span
           className={
-            notification.read ? "text-gray-700" : "font-semibold text-gray-900"
+            isSelected
+              ? "text-gray-800"
+              : notification.read
+              ? "text-gray-700"
+              : "font-semibold text-gray-900"
           }
         >
           {notification.title} -{" "}
         </span>
-        <span className="text-gray-500">{notification.preview}</span>
+        <span className={isSelected ? "text-gray-600" : "text-gray-500"}>
+          {notification.preview}
+        </span>
       </div>
       {isSelected ? (
         <div
@@ -72,7 +84,11 @@ const NotificationItem = ({
           />
         </div>
       ) : (
-        <div className="text-right font-medium w-24 ml-4 text-gray-600">
+        <div
+          className={`text-right font-medium w-24 ml-4 ${
+            isSelected ? "text-gray-800" : "text-gray-600"
+          }`}
+        >
           {notification.date}
         </div>
       )}
@@ -247,7 +263,6 @@ const NotificationDetail = ({ notification, onBack }) => {
                 <p className="mb-4">
                   {reminder?.description || notification.preview}
                 </p>
-                {/* Static content from image as fallback or if description matches */}
                 {!reminder?.description && (
                   <>
                     <p className="mb-2">
@@ -270,44 +285,44 @@ const NotificationDetail = ({ notification, onBack }) => {
   );
 };
 
-const Notifications = () => {
-  const { token } = useAuth();
+function Notifications() {
+  const { token, isLoading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalNotifications, setTotalNotifications] = useState(0);
   const [viewingNotification, setViewingNotification] = useState(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
+      // Skip if no token or still loading auth
+      if (!token || authLoading) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
-      const response = await fetch(
-        `/api/notifications?page=${currentPage}&limit=20`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch("/api/notifications", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
+        if (response.status === 403 || response.status === 401) {
+          setNotifications([]);
+          return;
+        }
         throw new Error("Failed to fetch notifications");
       }
 
       const result = await response.json();
 
       if (result.success) {
-        if (result.pagination) {
-          setTotalPages(result.pagination.pages || 1);
-          setTotalNotifications(result.pagination.total || 0);
-        }
-
+        // Transform API data to match component expectations
         const transformedNotifications = result.data.map((notification) => {
           const from =
             notification.createdBy?.name ||
@@ -327,6 +342,7 @@ const Notifications = () => {
           };
         });
 
+        // Sort client-side just in case, newest first
         transformedNotifications.sort(
           (a, b) => new Date(b.date) - new Date(a.date)
         );
@@ -337,16 +353,20 @@ const Notifications = () => {
       }
     } catch (err) {
       console.error("Error fetching notifications:", err);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage]);
+  }, [token, authLoading]);
 
   useEffect(() => {
-    if (token) {
+    if (token !== null && !authLoading) {
       fetchNotifications();
+    } else if (!authLoading && !token) {
+      setLoading(false);
+      setNotifications([]);
     }
-  }, [token, fetchNotifications]);
+  }, [token, authLoading, fetchNotifications]);
 
   const handleSelect = (id) => {
     setSelected((prev) =>
@@ -358,20 +378,6 @@ const Notifications = () => {
     if (e.target.checked) {
       setSelected(filteredNotifications.map((n) => n.id));
     } else {
-      setSelected([]);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-      setSelected([]);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
       setSelected([]);
     }
   };
@@ -399,6 +405,7 @@ const Notifications = () => {
       const result = await response.json();
 
       if (result.success) {
+        // Update local state to reflect the changes
         setNotifications((prev) =>
           prev.map((notification) =>
             selected.includes(notification.id)
@@ -411,6 +418,8 @@ const Notifications = () => {
         setActionMessage(
           `${result.message || selected.length} notifications marked as read`
         );
+
+        // Clear message after 3 seconds
         setTimeout(() => setActionMessage(""), 3000);
       } else {
         throw new Error(
@@ -420,6 +429,8 @@ const Notifications = () => {
     } catch (error) {
       console.error("Error marking notifications as read:", error);
       setActionMessage("Failed to mark notifications as read");
+
+      // Clear error message after 3 seconds
       setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
@@ -429,6 +440,7 @@ const Notifications = () => {
   const handleDeleteNotifications = async () => {
     if (selected.length === 0) return;
 
+    // Confirm deletion
     if (
       !window.confirm(
         `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`
@@ -462,6 +474,7 @@ const Notifications = () => {
       const result = await response.json();
 
       if (result.success) {
+        // Remove deleted notifications from local state
         setNotifications((prev) =>
           prev.filter((notification) => !selected.includes(notification.id))
         );
@@ -472,6 +485,8 @@ const Notifications = () => {
             result.message || selected.length
           } notifications deleted successfully`
         );
+
+        // Clear message after 3 seconds
         setTimeout(() => setActionMessage(""), 3000);
       } else {
         throw new Error(result.message || "Failed to delete notifications");
@@ -479,6 +494,8 @@ const Notifications = () => {
     } catch (error) {
       console.error("Error deleting notifications:", error);
       setActionMessage(error.message || "Failed to delete notifications");
+
+      // Clear error message after 3 seconds
       setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
@@ -533,6 +550,7 @@ const Notifications = () => {
   };
 
   const handleDeleteSingle = async (notificationId) => {
+    // Confirm deletion
     if (
       !window.confirm(
         "Are you sure you want to delete this notification? This action cannot be undone."
@@ -609,18 +627,19 @@ const Notifications = () => {
   const isAllSelected =
     selected.length > 0 && selected.length === filteredNotifications.length;
 
+  // Show loading spinner while data is being initialized
   if (loading && !viewingNotification) {
     return (
-      <PSASLayout>
+      <ClubOfficerLayout>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
-      </PSASLayout>
+      </ClubOfficerLayout>
     );
   }
 
   return (
-    <PSASLayout>
+    <ClubOfficerLayout>
       <div className="p-8 bg-gray-100 min-h-full">
         {viewingNotification ? (
           <NotificationDetail
@@ -657,29 +676,12 @@ const Notifications = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-gray-600">
-                  Page {currentPage} of {totalPages} ({totalNotifications}{" "}
-                  total)
+                  {filteredNotifications.length} of {notifications.length}
                 </span>
-                <button
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                  className={`p-2 rounded-full ${
-                    currentPage === 1
-                      ? "text-gray-300 cursor-not-allowed"
-                      : "hover:bg-gray-200 text-gray-700"
-                  }`}
-                >
+                <button className="p-2 rounded-full hover:bg-gray-200">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className={`p-2 rounded-full ${
-                    currentPage === totalPages
-                      ? "text-gray-300 cursor-not-allowed"
-                      : "hover:bg-gray-200 text-gray-700"
-                  }`}
-                >
+                <button className="p-2 rounded-full hover:bg-gray-200">
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
@@ -757,8 +759,8 @@ const Notifications = () => {
           </>
         )}
       </div>
-    </PSASLayout>
+    </ClubOfficerLayout>
   );
-};
+}
 
 export default Notifications;

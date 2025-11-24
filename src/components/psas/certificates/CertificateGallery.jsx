@@ -1,4 +1,4 @@
-import { Search, Eye, Edit3 } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { templates } from "../../../templates";
 import {
@@ -208,7 +208,8 @@ const CertificateGallery = ({
               return (
                 <div
                   key={template.id}
-                  className={`cursor-pointer group relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 ${
+                  onClick={() => handleTemplateSelect(template)}
+                  className={`cursor-pointer group relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
                     isSelected
                       ? "ring-2 ring-blue-500 ring-offset-2 shadow-xl"
                       : ""
@@ -221,7 +222,7 @@ const CertificateGallery = ({
                   )}
 
                   {/* Template Preview */}
-                  <div className="bg-gradient-to-br from-gray-100 to-gray-200 aspect-[4/3] flex items-center justify-center overflow-hidden border border-gray-300 group-hover:border-blue-500 transition-all">
+                  <div className="bg-linear-to-br from-gray-100 to-gray-200 aspect-4/3 flex items-center justify-center overflow-hidden border border-gray-300 group-hover:border-blue-500 transition-all">
                     {template.thumbnail ? (
                       <img
                         src={template.thumbnail}
@@ -237,43 +238,14 @@ const CertificateGallery = ({
 
                   {/* Template Info */}
                   <div className="p-3 sm:p-4">
-                    <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-1 leading-tight">
+                    <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-1 leading-tight text-center">
                       {template.name}
                     </h3>
                     {template.description && (
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed ">
                         {template.description}
                       </p>
                     )}
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-1 sm:gap-2">
-                      <button
-                        onClick={() => handleTemplateSelect(template)}
-                        className={`flex-1 flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium rounded-lg transition-colors ${
-                          isSelected
-                            ? "bg-blue-600 text-white"
-                            : "bg-blue-600 text-white hover:bg-blue-700"
-                        }`}
-                        title={
-                          isSelected
-                            ? "Template Selected - Click Done"
-                            : "Select Template"
-                        }
-                      >
-                        <Eye size={12} className="sm:w-3.5 sm:h-3.5" />
-                        <span className="hidden sm:inline">
-                          {isSelected ? "Selected" : "Select"}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => onBlankCanvas()}
-                        className="flex items-center justify-center p-1.5 sm:px-2 sm:py-1.5 border border-gray-300 text-gray-600 text-xs rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0"
-                        title="Start with Blank Canvas"
-                      >
-                        <Edit3 size={12} className="sm:w-3.5 sm:h-3.5" />
-                      </button>
-                    </div>
 
                     {isRecommended && eventName && (
                       <div className="mt-2 pt-2 border-t border-gray-100">

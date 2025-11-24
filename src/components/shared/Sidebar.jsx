@@ -1,11 +1,19 @@
-import { X } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useRef } from "react";
 import LvccName from "../../assets/fonts/lvcc-name.svg";
 
 const getIsActive = (item, currentPath, homePath) => {
   // Special case for home path
   if (item.path === homePath) {
     return currentPath === item.path;
+  }
+
+  // Check if any sub-item is active
+  if (item.subItems) {
+    return item.subItems.some((subItem) =>
+      currentPath.startsWith(subItem.path)
+    );
   }
 
   // Special case for evaluations - also highlight on evaluation form pages
@@ -29,6 +37,14 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   const location = useLocation();
   const currentPath = location.pathname;
 
+  // Load expanded state from localStorage
+  const [expandedItems, setExpandedItems] = useState(() => {
+    const saved = localStorage.getItem("sidebarExpandedItems");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [hoveredItem, setHoveredItem] = useState(null);
+
   const { menuItems = [], logo = {} } = config;
 
   const defaultLogo = {
@@ -41,6 +57,37 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   };
 
   const logoConfig = { ...defaultLogo, ...logo };
+
+  const toggleExpanded = (path) => {
+    setExpandedItems((prev) => {
+      const newState = {
+        ...prev,
+        [path]: !prev[path],
+      };
+      localStorage.setItem("sidebarExpandedItems", JSON.stringify(newState));
+      return newState;
+    });
+  };
+
+  const timeoutRef = useRef(null);
+
+  const handleMouseEnter = (path) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (!isOpen) {
+      setHoveredItem(path);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isOpen) {
+      timeoutRef.current = setTimeout(() => {
+        setHoveredItem(null);
+      }, 300); // 300ms delay to allow moving to the submenu
+    }
+  };
 
   return (
     <aside
@@ -83,26 +130,88 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
       {/* Navigation */}
       <nav className="flex flex-col space-y-2 w-full">
         {menuItems.map((item) => (
-          <SidebarItem
+          <div
             key={item.path}
-            src={item.icon}
-            label={item.label}
-            isOpen={isOpen}
-            isActive={getIsActive(item, currentPath, config.homePath)}
-            onClick={() => {
-              navigate(item.path);
-              if (window.innerWidth < 1024) {
-                onClose();
-              }
-            }}
-          />
+            className="relative"
+            onMouseEnter={() => handleMouseEnter(item.path)}
+            onMouseLeave={handleMouseLeave}
+          >
+            <SidebarItem
+              src={item.icon}
+              label={item.label}
+              isOpen={isOpen}
+              isActive={getIsActive(item, currentPath, config.homePath)}
+              hasSubItems={!!item.subItems}
+              isExpanded={expandedItems[item.path]}
+              onClick={() => {
+                if (item.subItems) {
+                  if (isOpen) {
+                    toggleExpanded(item.path);
+                  }
+                } else {
+                  navigate(item.path);
+                  if (window.innerWidth < 1024) {
+                    onClose();
+                  }
+                }
+              }}
+            />
+            {/* Sub-items (Accordion Style - When Open) */}
+            {item.subItems && isOpen && expandedItems[item.path] && (
+              <div className="ml-4 mt-1 space-y-1">
+                {item.subItems.map((subItem) => (
+                  <SubMenuItem
+                    key={subItem.path}
+                    label={subItem.label}
+                    isActive={currentPath === subItem.path}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent parent onClick from firing
+                      navigate(subItem.path);
+                      if (window.innerWidth < 1024) {
+                        onClose();
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Sub-items (Floating Style - When Closed) */}
+            {item.subItems && !isOpen && hoveredItem === item.path && (
+              <div className="absolute left-full top-0 ml-2 w-48 bg-[#1F3463] rounded-lg shadow-xl py-2 z-50 border border-gray-700">
+                <div className="px-4 py-2 border-b border-gray-700 mb-2">
+                  <span className="font-semibold text-white">{item.label}</span>
+                </div>
+                {item.subItems.map((subItem) => (
+                  <SubMenuItem
+                    key={subItem.path}
+                    label={subItem.label}
+                    isActive={currentPath === subItem.path}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(subItem.path);
+                      setHoveredItem(null);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
     </aside>
   );
 };
 
-const SidebarItem = ({ src, label, isOpen, isActive, onClick }) => (
+const SidebarItem = ({
+  src,
+  label,
+  isOpen,
+  isActive,
+  hasSubItems,
+  isExpanded,
+  onClick,
+}) => (
   <div className="w-full relative" onClick={onClick}>
     {/* Active vertical line on the left edge of sidebar */}
     {isActive && (
@@ -134,15 +243,37 @@ const SidebarItem = ({ src, label, isOpen, isActive, onClick }) => (
 
       {/* Text */}
       {isOpen && (
-        <span
-          className={`text-sm font-medium ${
-            isActive ? "text-[#1F3463]" : "text-white"
-          }`}
-        >
-          {label}
-        </span>
+        <div className="flex items-center justify-between flex-1">
+          <span
+            className={`text-sm font-medium ${
+              isActive ? "text-[#1F3463]" : "text-white"
+            }`}
+          >
+            {label}
+          </span>
+          {hasSubItems && (
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${
+                isExpanded ? "rotate-180" : ""
+              } ${isActive ? "text-[#1F3463]" : "text-white"}`}
+            />
+          )}
+        </div>
       )}
     </div>
+  </div>
+);
+
+const SubMenuItem = ({ label, isActive, onClick }) => (
+  <div
+    className={`flex items-center px-4 py-2 cursor-pointer transition-all rounded-lg mx-4 ${
+      isActive
+        ? "bg-white/20 text-white"
+        : "text-white/80 hover:bg-white/10 hover:text-white"
+    }`}
+    onClick={onClick}
+  >
+    <span className="text-sm">{label}</span>
   </div>
 );
 
