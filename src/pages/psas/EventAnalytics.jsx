@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import PSASLayout from "../../components/psas/PSASLayout";
-import { SkeletonCard, SkeletonText, SkeletonBase } from "../../components/shared/SkeletonLoader";
+import {
+  SkeletonCard,
+  SkeletonText,
+  SkeletonBase,
+} from "../../components/shared/SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
 import {
   Chart as ChartJS,
@@ -228,20 +232,56 @@ const EventAnalytics = () => {
           </div>
 
           {/* Charts Section Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
-            <SkeletonBase className="w-full h-64 rounded-lg" />
           </div>
         </div>
       </PSASLayout>
@@ -326,20 +366,56 @@ const EventAnalytics = () => {
           </div>
 
           {/* Charts Section Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-6"
+                  className="mb-4"
+                />
+                <SkeletonBase className="w-full h-64 rounded-lg" />
+              </div>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <SkeletonText lines={1} width="medium" height="h-6" className="mb-4" />
-            <SkeletonBase className="w-full h-64 rounded-lg" />
           </div>
         </div>
       </PSASLayout>

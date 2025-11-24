@@ -133,19 +133,15 @@ const ChartsSection = ({
           </p>
           <button
             onClick={onGenerateReport}
-            className={`${
-              responseRate >= 50
-                ? "bg-gray-700 hover:bg-gray-800"
-                : "cursor-not-allowed text-white px-4 py-2 rounded-xl transition text-base"
+            className={`text-white px-4 py-2 rounded-xl transition text-base ${
+              responseRate >= 50 ? "hover:bg-blue-700" : "cursor-not-allowed"
             }`}
-            style={
-              responseRate < 50
-                ? {
-                    background:
-                      "linear-gradient(0deg, #3F4250 38%, #404044 100%)",
-                  }
-                : {}
-            }
+            style={{
+              background:
+                responseRate >= 50
+                  ? "linear-gradient(180deg, #324BA3 38%, #002474 100%)"
+                  : "linear-gradient(0deg, #3F4250 38%, #404044 100%)",
+            }}
             disabled={responseRate < 50}
           >
             Generate Report

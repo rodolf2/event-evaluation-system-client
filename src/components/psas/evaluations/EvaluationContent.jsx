@@ -75,8 +75,8 @@ const EvaluationContent = ({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4 mb-7">
+            <h2 className="text-3xl font-bold text-gray-800">
               Recent Evaluations
             </h2>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">

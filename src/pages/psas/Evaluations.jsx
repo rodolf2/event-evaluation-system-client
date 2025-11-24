@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import PSASLayout from "../../components/psas/PSASLayout";
-import { SkeletonCard, SkeletonText, SkeletonBase } from "../../components/shared/SkeletonLoader";
+import {
+  SkeletonCard,
+  SkeletonText,
+  SkeletonBase,
+} from "../../components/shared/SkeletonLoader";
 import FormCreationInterface from "../../components/psas/evaluations/FormCreationInterface";
 import EvaluationContent from "../../components/psas/evaluations/EvaluationContent";
 import { useAuth } from "../../contexts/useAuth";
@@ -45,6 +49,7 @@ const Evaluations = () => {
             description: form.description,
             status: form.status,
             createdAt: new Date(form.createdAt).toLocaleDateString(),
+            createdAtRaw: new Date(form.createdAt),
             responses: form.responseCount || 0,
             questions: form.questions || [],
             sections: form.sections || [],
@@ -245,6 +250,24 @@ const Evaluations = () => {
     }
   };
 
+  // Filter and sort forms
+  const filteredAndSortedForms = evaluationForms
+    .filter((form) =>
+      form.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === "newest") {
+        return b.createdAtRaw - a.createdAtRaw;
+      } else if (sortBy === "oldest") {
+        return a.createdAtRaw - b.createdAtRaw;
+      } else if (sortBy === "title") {
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === "responses") {
+        return b.responses - a.responses;
+      }
+      return 0;
+    });
+
   if (loading) {
     return (
       <PSASLayout>
@@ -253,25 +276,49 @@ const Evaluations = () => {
           <div className="mb-8">
             <h2 className="text-3xl text-gray-800 mb-4">Start an evaluation</h2>
             <div className="mb-7">
-              <div className="mb-8 text-white p-8 rounded-xl shadow-lg relative" style={{
-                background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)"
-              }}>
+              <div
+                className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
+                style={{
+                  background:
+                    "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+                }}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
                   <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center">
                     <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
-                    <SkeletonText lines={1} width="medium" height="h-6" className="bg-gray-200 text-gray-800" />
+                    <SkeletonText
+                      lines={1}
+                      width="medium"
+                      height="h-6"
+                      className="bg-gray-200 text-gray-800"
+                    />
                   </div>
                   <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center">
                     <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
-                    <SkeletonText lines={1} width="medium" height="h-6" className="bg-gray-200 text-gray-800" />
+                    <SkeletonText
+                      lines={1}
+                      width="medium"
+                      height="h-6"
+                      className="bg-gray-200 text-gray-800"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto mt-5">
                   <div className="text-center">
-                    <SkeletonText lines={1} width="large" height="h-8" className="text-white bg-white/20" />
+                    <SkeletonText
+                      lines={1}
+                      width="large"
+                      height="h-8"
+                      className="text-white bg-white/20"
+                    />
                   </div>
                   <div className="text-center">
-                    <SkeletonText lines={1} width="large" height="h-8" className="text-white bg-white/20" />
+                    <SkeletonText
+                      lines={1}
+                      width="large"
+                      height="h-8"
+                      className="text-white bg-white/20"
+                    />
                   </div>
                 </div>
               </div>
@@ -280,7 +327,12 @@ const Evaluations = () => {
             {/* Recent Evaluations Section */}
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <SkeletonText lines={1} width="medium" height="h-8" className="bg-gray-300" />
+                <SkeletonText
+                  lines={1}
+                  width="medium"
+                  height="h-8"
+                  className="bg-gray-300"
+                />
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">
                   <div className="flex-1 relative">
                     <SkeletonBase className="w-full pl-12 pr-6 py-4 text-lg rounded-lg bg-gray-300" />
@@ -292,11 +344,22 @@ const Evaluations = () => {
               {/* Evaluation Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="rounded-lg shadow-md h-full flex flex-col">
+                  <div
+                    key={index}
+                    className="rounded-lg shadow-md h-full flex flex-col"
+                  >
                     <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
                       <div className="text-center mb-4">
-                        <SkeletonText lines={2} height="h-6" className="bg-gray-300" />
-                        <SkeletonText lines={1} height="h-4" className="bg-gray-300 mt-2" />
+                        <SkeletonText
+                          lines={2}
+                          height="h-6"
+                          className="bg-gray-300"
+                        />
+                        <SkeletonText
+                          lines={1}
+                          height="h-4"
+                          className="bg-gray-300 mt-2"
+                        />
                       </div>
                       <div className="grow">
                         <div className="flex justify-between items-center mb-4">
@@ -305,24 +368,48 @@ const Evaluations = () => {
                         <div className="space-y-3">
                           <div className="flex items-center">
                             <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText lines={1} height="h-4" className="ml-3 bg-gray-300" />
+                            <SkeletonText
+                              lines={1}
+                              height="h-4"
+                              className="ml-3 bg-gray-300"
+                            />
                           </div>
                           <div className="flex items-center">
                             <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText lines={1} height="h-4" className="ml-3 bg-gray-300" />
+                            <SkeletonText
+                              lines={1}
+                              height="h-4"
+                              className="ml-3 bg-gray-300"
+                            />
                           </div>
                           <div className="flex items-center">
                             <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText lines={1} height="h-4" className="ml-3 bg-gray-300" />
+                            <SkeletonText
+                              lines={1}
+                              height="h-4"
+                              className="ml-3 bg-gray-300"
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="p-4 rounded-b-lg bg-linear-to-r from-blue-800 to-blue-900">
-                      <SkeletonText lines={1} height="h-6" className="bg-white/20" />
+                      <SkeletonText
+                        lines={1}
+                        height="h-6"
+                        className="bg-white/20"
+                      />
                       <div className="mt-2 flex items-center justify-between">
-                        <SkeletonText lines={1} height="h-4" className="bg-white/20" />
-                        <SkeletonText lines={1} height="h-3" className="bg-white/20" />
+                        <SkeletonText
+                          lines={1}
+                          height="h-4"
+                          className="bg-white/20"
+                        />
+                        <SkeletonText
+                          lines={1}
+                          height="h-3"
+                          className="bg-white/20"
+                        />
                       </div>
                     </div>
                   </div>
@@ -356,7 +443,7 @@ const Evaluations = () => {
             setSearchTerm={setSearchTerm}
             sortBy={sortBy}
             setSortBy={setSortBy}
-            evaluationForms={evaluationForms}
+            evaluationForms={filteredAndSortedForms}
             onCreateNew={handleCreateNew}
             onShowUploadModal={handleShowUploadModal}
             onDeleteForm={handleDeleteForm}

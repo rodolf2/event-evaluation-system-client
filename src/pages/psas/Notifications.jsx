@@ -16,28 +16,30 @@ const NotificationItem = ({
   onSelect,
   onMarkAsRead,
   onDelete,
-  actionLoading
+  actionLoading,
 }) => {
   return (
     <div
-      className={`flex items-center p-3 border-t border-gray-200 ${
+      onClick={() => onSelect(notification.id)}
+      className={`flex items-center p-3 border-t border-gray-200 cursor-pointer ${
         isSelected
           ? "bg-[#C0C0C0]" // Selected state color
           : notification.read
-            ? "bg-white"
-            : "bg-blue-50"
+          ? "bg-white"
+          : "bg-blue-50"
       } hover:bg-gray-100 transition-colors`}
     >
       <input
         type="checkbox"
         checked={isSelected}
         onChange={() => onSelect(notification.id)}
+        onClick={(e) => e.stopPropagation()}
         className="mr-4 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
       />
       <div className="grow">
-        <span className={`font-bold ${
-          isSelected ? "text-white" : "text-gray-800"
-        }`}>
+        <span
+          className={`font-bold ${isSelected ? "text-white" : "text-gray-800"}`}
+        >
           {notification.from} -
         </span>
         <span
@@ -45,8 +47,8 @@ const NotificationItem = ({
             isSelected
               ? "text-white"
               : notification.read
-                ? "text-gray-700"
-                : "font-semibold text-gray-900"
+              ? "text-gray-700"
+              : "font-semibold text-gray-900"
           }
         >
           {notification.title} -{" "}
@@ -56,28 +58,33 @@ const NotificationItem = ({
         </span>
       </div>
       {isSelected ? (
-        <div className="flex items-center gap-4 ml-4">
+        <div
+          className="flex items-center gap-4 ml-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Trash2
             className={`w-5 h-5 ${
               actionLoading
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:text-red-600 cursor-pointer'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-500 hover:text-red-600 cursor-pointer"
             }`}
             onClick={!actionLoading ? onDelete : undefined}
           />
           <Mail
             className={`w-5 h-5 ${
               actionLoading
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:text-blue-600 cursor-pointer'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-500 hover:text-blue-600 cursor-pointer"
             }`}
             onClick={!actionLoading ? onMarkAsRead : undefined}
           />
         </div>
       ) : (
-        <div className={`text-right font-medium w-24 ml-4 ${
-          isSelected ? "text-white" : "text-gray-600"
-        }`}>
+        <div
+          className={`text-right font-medium w-24 ml-4 ${
+            isSelected ? "text-white" : "text-gray-600"
+          }`}
+        >
           {notification.date}
         </div>
       )}
@@ -93,16 +100,22 @@ const Notifications = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalNotifications, setTotalNotifications] = useState(0);
 
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/notifications", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `/api/notifications?page=${currentPage}&limit=20`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       console.log("[Notifications] API response status:", response.status);
       console.log(
@@ -118,6 +131,12 @@ const Notifications = () => {
       console.log("[Notifications] API response:", result);
 
       if (result.success) {
+        // Update pagination info
+        if (result.pagination) {
+          setTotalPages(result.pagination.pages || 1);
+          setTotalNotifications(result.pagination.total || 0);
+        }
+
         // Transform API data to match component expectations
         const transformedNotifications = result.data.map((notification) => {
           const from =
@@ -155,7 +174,7 @@ const Notifications = () => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, currentPage]);
 
   useEffect(() => {
     if (token) {
@@ -177,107 +196,135 @@ const Notifications = () => {
     }
   };
 
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      setSelected([]); // Clear selection when changing pages
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      setSelected([]); // Clear selection when changing pages
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     if (selected.length === 0) return;
-    
+
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
-      const response = await fetch('/api/notifications/read-multiple', {
-        method: 'PUT',
+      const response = await fetch("/api/notifications/read-multiple", {
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notificationIds: selected })
+        body: JSON.stringify({ notificationIds: selected }),
       });
-  
+
       if (!response.ok) {
-        throw new Error('Failed to mark notifications as read');
+        throw new Error("Failed to mark notifications as read");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
         // Update local state to reflect the changes
-        setNotifications(prev =>
-          prev.map(notification =>
+        setNotifications((prev) =>
+          prev.map((notification) =>
             selected.includes(notification.id)
               ? { ...notification, read: true }
               : notification
           )
         );
-        
+
         setSelected([]);
-        setActionMessage(`${result.message || selected.length} notifications marked as read`);
-        
+        setActionMessage(
+          `${result.message || selected.length} notifications marked as read`
+        );
+
         // Clear message after 3 seconds
-        setTimeout(() => setActionMessage(''), 3000);
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to mark notifications as read');
+        throw new Error(
+          result.message || "Failed to mark notifications as read"
+        );
       }
     } catch (error) {
-      console.error('Error marking notifications as read:', error);
-      setActionMessage('Failed to mark notifications as read');
-      
+      console.error("Error marking notifications as read:", error);
+      setActionMessage("Failed to mark notifications as read");
+
       // Clear error message after 3 seconds
-      setTimeout(() => setActionMessage(''), 3000);
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
   };
-  
+
   const handleDeleteNotifications = async () => {
     if (selected.length === 0) return;
-    
+
     // Confirm deletion
-    if (!window.confirm(`Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`
+      )
+    ) {
       return;
     }
-    
+
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
-      const response = await fetch('/api/notifications/multiple', {
-        method: 'DELETE',
+      const response = await fetch("/api/notifications/multiple", {
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notificationIds: selected })
+        body: JSON.stringify({ notificationIds: selected }),
       });
-  
+
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error('You do not have permission to delete these notifications');
+          throw new Error(
+            "You do not have permission to delete these notifications"
+          );
         }
-        throw new Error('Failed to delete notifications');
+        throw new Error("Failed to delete notifications");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
         // Remove deleted notifications from local state
-        setNotifications(prev =>
-          prev.filter(notification => !selected.includes(notification.id))
+        setNotifications((prev) =>
+          prev.filter((notification) => !selected.includes(notification.id))
         );
-        
+
         setSelected([]);
-        setActionMessage(`${result.message || selected.length} notifications deleted successfully`);
-        
+        setActionMessage(
+          `${
+            result.message || selected.length
+          } notifications deleted successfully`
+        );
+
         // Clear message after 3 seconds
-        setTimeout(() => setActionMessage(''), 3000);
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to delete notifications');
+        throw new Error(result.message || "Failed to delete notifications");
       }
     } catch (error) {
-      console.error('Error deleting notifications:', error);
-      setActionMessage(error.message || 'Failed to delete notifications');
-      
+      console.error("Error deleting notifications:", error);
+      setActionMessage(error.message || "Failed to delete notifications");
+
       // Clear error message after 3 seconds
-      setTimeout(() => setActionMessage(''), 3000);
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
@@ -285,87 +332,98 @@ const Notifications = () => {
 
   const handleMarkSingleAsRead = async (notificationId) => {
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `/api/notifications/${notificationId}/read`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-  
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to mark notification as read');
+        throw new Error("Failed to mark notification as read");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
-        setNotifications(prev =>
-          prev.map(notification =>
+        setNotifications((prev) =>
+          prev.map((notification) =>
             notification.id === notificationId
               ? { ...notification, read: true }
               : notification
           )
         );
-        
-        setActionMessage('Notification marked as read');
-        setTimeout(() => setActionMessage(''), 3000);
+
+        setActionMessage("Notification marked as read");
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to mark notification as read');
+        throw new Error(
+          result.message || "Failed to mark notification as read"
+        );
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
-      setActionMessage('Failed to mark notification as read');
-      setTimeout(() => setActionMessage(''), 3000);
+      console.error("Error marking notification as read:", error);
+      setActionMessage("Failed to mark notification as read");
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
   };
-  
+
   const handleDeleteSingle = async (notificationId) => {
     // Confirm deletion
-    if (!window.confirm('Are you sure you want to delete this notification? This action cannot be undone.')) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this notification? This action cannot be undone."
+      )
+    ) {
       return;
     }
-    
+
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
       const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-  
+
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error('You do not have permission to delete this notification');
+          throw new Error(
+            "You do not have permission to delete this notification"
+          );
         }
-        throw new Error('Failed to delete notification');
+        throw new Error("Failed to delete notification");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
-        setNotifications(prev =>
-          prev.filter(notification => notification.id !== notificationId)
+        setNotifications((prev) =>
+          prev.filter((notification) => notification.id !== notificationId)
         );
-        
-        setActionMessage('Notification deleted successfully');
-        setTimeout(() => setActionMessage(''), 3000);
+
+        setActionMessage("Notification deleted successfully");
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to delete notification');
+        throw new Error(result.message || "Failed to delete notification");
       }
     } catch (error) {
-      console.error('Error deleting notification:', error);
-      setActionMessage(error.message || 'Failed to delete notification');
-      setTimeout(() => setActionMessage(''), 3000);
+      console.error("Error deleting notification:", error);
+      setActionMessage(error.message || "Failed to delete notification");
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
@@ -400,11 +458,14 @@ const Notifications = () => {
       <div className="p-8 bg-gray-100 min-h-full">
         {/* Action Message */}
         {actionMessage && (
-          <div className={`mb-4 p-3 rounded-lg ${
-            actionMessage.includes('Failed') || actionMessage.includes('Error')
-              ? 'bg-red-100 text-red-700 border border-red-200'
-              : 'bg-green-100 text-green-700 border border-green-200'
-          }`}>
+          <div
+            className={`mb-4 p-3 rounded-lg ${
+              actionMessage.includes("Failed") ||
+              actionMessage.includes("Error")
+                ? "bg-red-100 text-red-700 border border-red-200"
+                : "bg-green-100 text-green-700 border border-green-200"
+            }`}
+          >
             {actionMessage}
           </div>
         )}
@@ -422,11 +483,29 @@ const Notifications = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-600">{filteredNotifications.length} of {notifications.length}</span>
-            <button className="p-2 rounded-full hover:bg-gray-200">
+            <span className="text-gray-600">
+              Page {currentPage} of {totalPages} ({totalNotifications} total)
+            </span>
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-full ${
+                currentPage === 1
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "hover:bg-gray-200 text-gray-700"
+              }`}
+            >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button className="p-2 rounded-full hover:bg-gray-200">
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-full ${
+                currentPage === totalPages
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "hover:bg-gray-200 text-gray-700"
+              }`}
+            >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
@@ -453,8 +532,8 @@ const Notifications = () => {
                 <MailOpen
                   className={`w-5 h-5 cursor-pointer transition-colors ${
                     actionLoading
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-blue-600'
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-blue-600"
                   }`}
                   title="Mark all as read"
                   onClick={!actionLoading ? handleMarkAllAsRead : undefined}
@@ -462,11 +541,13 @@ const Notifications = () => {
                 <Trash2
                   className={`w-5 h-5 cursor-pointer transition-colors ${
                     actionLoading
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-red-600'
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-red-600"
                   }`}
                   title="Delete all"
-                  onClick={!actionLoading ? handleDeleteNotifications : undefined}
+                  onClick={
+                    !actionLoading ? handleDeleteNotifications : undefined
+                  }
                 />
               </div>
             )}
@@ -476,7 +557,9 @@ const Notifications = () => {
           <div>
             {filteredNotifications.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                {notifications.length === 0 ? 'No notifications found' : 'No notifications match your search'}
+                {notifications.length === 0
+                  ? "No notifications found"
+                  : "No notifications match your search"}
               </div>
             ) : (
               filteredNotifications.map((notification) => (

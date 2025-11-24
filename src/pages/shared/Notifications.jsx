@@ -1,6 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, ChevronLeft, ChevronRight, Trash2, Mail, MailOpen } from 'lucide-react';
-import { useAuth } from '../../contexts/useAuth';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  Mail,
+  MailOpen,
+} from "lucide-react";
+import { useAuth } from "../../contexts/useAuth";
 
 const NotificationItem = ({
   notification,
@@ -8,28 +15,32 @@ const NotificationItem = ({
   onSelect,
   onMarkAsRead,
   onDelete,
-  actionLoading
+  actionLoading,
 }) => {
   return (
     <div
-      className={`flex items-center p-3 border-t border-gray-200 ${
+      onClick={() => onSelect(notification.id)}
+      className={`flex items-center p-3 border-t border-gray-200 cursor-pointer ${
         isSelected
           ? "bg-[#E1E8FD]" // Select all toggled color
           : notification.read
-            ? "bg-[#FAFAFA]" // Read notifications color
-            : "bg-white" // Unread notifications color
+          ? "bg-[#FAFAFA]" // Read notifications color
+          : "bg-white" // Unread notifications color
       }`}
     >
       <input
         type="checkbox"
         checked={isSelected}
         onChange={() => onSelect(notification.id)}
+        onClick={(e) => e.stopPropagation()}
         className="mr-4 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
       />
       <div className="grow">
-        <span className={`font-bold ${
-          isSelected ? "text-gray-800" : "text-gray-800"
-        }`}>
+        <span
+          className={`font-bold ${
+            isSelected ? "text-gray-800" : "text-gray-800"
+          }`}
+        >
           {notification.from} -
         </span>
         <span
@@ -37,8 +48,8 @@ const NotificationItem = ({
             isSelected
               ? "text-gray-800"
               : notification.read
-                ? "text-gray-700"
-                : "font-semibold text-gray-900"
+              ? "text-gray-700"
+              : "font-semibold text-gray-900"
           }
         >
           {notification.title} -{" "}
@@ -48,28 +59,33 @@ const NotificationItem = ({
         </span>
       </div>
       {isSelected ? (
-        <div className="flex items-center gap-4 ml-4">
+        <div
+          className="flex items-center gap-4 ml-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Trash2
             className={`w-5 h-5 ${
               actionLoading
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:text-red-600 cursor-pointer'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-500 hover:text-red-600 cursor-pointer"
             }`}
             onClick={!actionLoading ? onDelete : undefined}
           />
           <Mail
             className={`w-5 h-5 ${
               actionLoading
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-gray-500 hover:text-blue-600 cursor-pointer'
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-500 hover:text-blue-600 cursor-pointer"
             }`}
             onClick={!actionLoading ? onMarkAsRead : undefined}
           />
         </div>
       ) : (
-        <div className={`text-right font-medium w-24 ml-4 ${
-          isSelected ? "text-gray-800" : "text-gray-600"
-        }`}>
+        <div
+          className={`text-right font-medium w-24 ml-4 ${
+            isSelected ? "text-gray-800" : "text-gray-600"
+          }`}
+        >
           {notification.date}
         </div>
       )}
@@ -81,27 +97,32 @@ const Notifications = ({ layout: LayoutComponent }) => {
   const { token, isLoading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [selected, setSelected] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionMessage, setActionMessage] = useState('');
+  const [actionMessage, setActionMessage] = useState("");
 
   const fetchNotifications = useCallback(async () => {
     try {
       // Skip if no token or still loading auth
       if (!token || authLoading) {
-        console.log("[Notifications] Skipping fetch - token:", !!token, "authLoading:", authLoading);
+        console.log(
+          "[Notifications] Skipping fetch - token:",
+          !!token,
+          "authLoading:",
+          authLoading
+        );
         setLoading(false);
         return;
       }
 
       console.log("[Notifications] Fetching notifications for user...");
       setLoading(true);
-      const response = await fetch('/api/notifications', {
+      const response = await fetch("/api/notifications", {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       console.log("[Notifications] API response status:", response.status);
@@ -112,11 +133,13 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.error("[Notifications] 401 Unauthorized - user may not be logged in");
+          console.error(
+            "[Notifications] 401 Unauthorized - user may not be logged in"
+          );
           setNotifications([]);
           return;
         }
-        throw new Error('Failed to fetch notifications');
+        throw new Error("Failed to fetch notifications");
       }
 
       const result = await response.json();
@@ -127,7 +150,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
         const transformedNotifications = result.data.map((notification) => {
           const from =
             notification.createdBy?.name ||
-            (notification.isSystemGenerated ? 'System' : 'System');
+            (notification.isSystemGenerated ? "System" : "System");
 
           return {
             id: notification._id,
@@ -136,8 +159,8 @@ const Notifications = ({ layout: LayoutComponent }) => {
             preview: notification.message,
             date: notification.createdAt
               ? new Date(notification.createdAt).toLocaleString()
-              : '',
-            read: !!notification.isRead
+              : "",
+            read: !!notification.isRead,
           };
         });
 
@@ -153,10 +176,10 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
         setNotifications(transformedNotifications);
       } else {
-        throw new Error(result.message || 'Failed to fetch notifications');
+        throw new Error(result.message || "Failed to fetch notifications");
       }
     } catch (err) {
-      console.error('Error fetching notifications:', err);
+      console.error("Error fetching notifications:", err);
       setNotifications([]);
     } finally {
       setLoading(false);
@@ -172,122 +195,136 @@ const Notifications = ({ layout: LayoutComponent }) => {
       setNotifications([]);
     }
   }, [token, authLoading, fetchNotifications]);
-  
+
   const handleSelect = (id) => {
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
-  
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelected(filteredNotifications.map(n => n.id));
+      setSelected(filteredNotifications.map((n) => n.id));
     } else {
       setSelected([]);
     }
   };
-  
+
   const handleMarkAllAsRead = async () => {
     if (selected.length === 0) return;
-    
+
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
-      const response = await fetch('/api/notifications/read-multiple', {
-        method: 'PUT',
+      const response = await fetch("/api/notifications/read-multiple", {
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notificationIds: selected })
+        body: JSON.stringify({ notificationIds: selected }),
       });
-  
+
       if (!response.ok) {
-        throw new Error('Failed to mark notifications as read');
+        throw new Error("Failed to mark notifications as read");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
         // Update local state to reflect the changes
-        setNotifications(prev =>
-          prev.map(notification =>
+        setNotifications((prev) =>
+          prev.map((notification) =>
             selected.includes(notification.id)
               ? { ...notification, read: true }
               : notification
           )
         );
-        
+
         setSelected([]);
-        setActionMessage(`${result.message || selected.length} notifications marked as read`);
-        
+        setActionMessage(
+          `${result.message || selected.length} notifications marked as read`
+        );
+
         // Clear message after 3 seconds
-        setTimeout(() => setActionMessage(''), 3000);
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to mark notifications as read');
+        throw new Error(
+          result.message || "Failed to mark notifications as read"
+        );
       }
     } catch (error) {
-      console.error('Error marking notifications as read:', error);
-      setActionMessage('Failed to mark notifications as read');
-      
+      console.error("Error marking notifications as read:", error);
+      setActionMessage("Failed to mark notifications as read");
+
       // Clear error message after 3 seconds
-      setTimeout(() => setActionMessage(''), 3000);
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
   };
-  
+
   const handleDeleteNotifications = async () => {
     if (selected.length === 0) return;
-    
+
     // Confirm deletion
-    if (!window.confirm(`Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`
+      )
+    ) {
       return;
     }
-    
+
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
-      const response = await fetch('/api/notifications/multiple', {
-        method: 'DELETE',
+      const response = await fetch("/api/notifications/multiple", {
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notificationIds: selected })
+        body: JSON.stringify({ notificationIds: selected }),
       });
-  
+
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error('You do not have permission to delete these notifications');
+          throw new Error(
+            "You do not have permission to delete these notifications"
+          );
         }
-        throw new Error('Failed to delete notifications');
+        throw new Error("Failed to delete notifications");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
         // Remove deleted notifications from local state
-        setNotifications(prev =>
-          prev.filter(notification => !selected.includes(notification.id))
+        setNotifications((prev) =>
+          prev.filter((notification) => !selected.includes(notification.id))
         );
-        
+
         setSelected([]);
-        setActionMessage(`${result.message || selected.length} notifications deleted successfully`);
-        
+        setActionMessage(
+          `${
+            result.message || selected.length
+          } notifications deleted successfully`
+        );
+
         // Clear message after 3 seconds
-        setTimeout(() => setActionMessage(''), 3000);
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to delete notifications');
+        throw new Error(result.message || "Failed to delete notifications");
       }
     } catch (error) {
-      console.error('Error deleting notifications:', error);
-      setActionMessage(error.message || 'Failed to delete notifications');
-      
+      console.error("Error deleting notifications:", error);
+      setActionMessage(error.message || "Failed to delete notifications");
+
       // Clear error message after 3 seconds
-      setTimeout(() => setActionMessage(''), 3000);
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
@@ -295,99 +332,115 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
   const handleMarkSingleAsRead = async (notificationId) => {
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `/api/notifications/${notificationId}/read`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-  
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to mark notification as read');
+        throw new Error("Failed to mark notification as read");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
-        setNotifications(prev =>
-          prev.map(notification =>
+        setNotifications((prev) =>
+          prev.map((notification) =>
             notification.id === notificationId
               ? { ...notification, read: true }
               : notification
           )
         );
-        
-        setActionMessage('Notification marked as read');
-        setTimeout(() => setActionMessage(''), 3000);
+
+        setActionMessage("Notification marked as read");
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to mark notification as read');
+        throw new Error(
+          result.message || "Failed to mark notification as read"
+        );
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
-      setActionMessage('Failed to mark notification as read');
-      setTimeout(() => setActionMessage(''), 3000);
+      console.error("Error marking notification as read:", error);
+      setActionMessage("Failed to mark notification as read");
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
   };
-  
+
   const handleDeleteSingle = async (notificationId) => {
     // Confirm deletion
-    if (!window.confirm('Are you sure you want to delete this notification? This action cannot be undone.')) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this notification? This action cannot be undone."
+      )
+    ) {
       return;
     }
-    
+
     setActionLoading(true);
-    setActionMessage('');
-    
+    setActionMessage("");
+
     try {
       const response = await fetch(`/api/notifications/${notificationId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-  
+
       if (!response.ok) {
         if (response.status === 403) {
-          throw new Error('You do not have permission to delete this notification');
+          throw new Error(
+            "You do not have permission to delete this notification"
+          );
         }
-        throw new Error('Failed to delete notification');
+        throw new Error("Failed to delete notification");
       }
-  
+
       const result = await response.json();
-      
+
       if (result.success) {
-        setNotifications(prev =>
-          prev.filter(notification => notification.id !== notificationId)
+        setNotifications((prev) =>
+          prev.filter((notification) => notification.id !== notificationId)
         );
-        
-        setActionMessage('Notification deleted successfully');
-        setTimeout(() => setActionMessage(''), 3000);
+
+        setActionMessage("Notification deleted successfully");
+        setTimeout(() => setActionMessage(""), 3000);
       } else {
-        throw new Error(result.message || 'Failed to delete notification');
+        throw new Error(result.message || "Failed to delete notification");
       }
     } catch (error) {
-      console.error('Error deleting notification:', error);
-      setActionMessage(error.message || 'Failed to delete notification');
-      setTimeout(() => setActionMessage(''), 3000);
+      console.error("Error deleting notification:", error);
+      setActionMessage(error.message || "Failed to delete notification");
+      setTimeout(() => setActionMessage(""), 3000);
     } finally {
       setActionLoading(false);
     }
   };
-  
-  const filteredNotifications = useMemo(() =>
-    notifications.filter(n =>
-      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.from.toLowerCase().includes(searchQuery.toLowerCase())
-    ), [notifications, searchQuery]);
-  
-  const isAllSelected = selected.length > 0 && selected.length === filteredNotifications.length;
+
+  const filteredNotifications = useMemo(
+    () =>
+      notifications.filter(
+        (n) =>
+          n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          n.from.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [notifications, searchQuery]
+  );
+
+  const isAllSelected =
+    selected.length > 0 && selected.length === filteredNotifications.length;
 
   // Show loading spinner while data is being initialized
   if (loading) {
@@ -407,11 +460,14 @@ const Notifications = ({ layout: LayoutComponent }) => {
       <div className="p-8 bg-gray-100 min-h-full">
         {/* Action Message */}
         {actionMessage && (
-          <div className={`mb-4 p-3 rounded-lg ${
-            actionMessage.includes('Failed') || actionMessage.includes('Error')
-              ? 'bg-red-100 text-red-700 border border-red-200'
-              : 'bg-green-100 text-green-700 border border-green-200'
-          }`}>
+          <div
+            className={`mb-4 p-3 rounded-lg ${
+              actionMessage.includes("Failed") ||
+              actionMessage.includes("Error")
+                ? "bg-red-100 text-red-700 border border-red-200"
+                : "bg-green-100 text-green-700 border border-green-200"
+            }`}
+          >
             {actionMessage}
           </div>
         )}
@@ -429,9 +485,15 @@ const Notifications = ({ layout: LayoutComponent }) => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-600">{filteredNotifications.length} of {notifications.length}</span>
-            <button className="p-2 rounded-full hover:bg-gray-200"><ChevronLeft className="w-5 h-5" /></button>
-            <button className="p-2 rounded-full hover:bg-gray-200"><ChevronRight className="w-5 h-5" /></button>
+            <span className="text-gray-600">
+              {filteredNotifications.length} of {notifications.length}
+            </span>
+            <button className="p-2 rounded-full hover:bg-gray-200">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button className="p-2 rounded-full hover:bg-gray-200">
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -445,15 +507,19 @@ const Notifications = ({ layout: LayoutComponent }) => {
               onChange={handleSelectAll}
               className="mr-4 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
             />
-            <h2 className="text-lg font-semibold text-gray-700">Notification List</h2>
+            <h2 className="text-lg font-semibold text-gray-700">
+              Notification List
+            </h2>
             {selected.length > 0 && (
               <div className="flex items-center gap-4 ml-auto">
-                <span className="font-semibold text-sm text-gray-600">{selected.length} selected</span>
+                <span className="font-semibold text-sm text-gray-600">
+                  {selected.length} selected
+                </span>
                 <MailOpen
                   className={`w-5 h-5 cursor-pointer transition-colors ${
                     actionLoading
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-blue-600'
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-blue-600"
                   }`}
                   title="Mark all as read"
                   onClick={!actionLoading ? handleMarkAllAsRead : undefined}
@@ -461,11 +527,13 @@ const Notifications = ({ layout: LayoutComponent }) => {
                 <Trash2
                   className={`w-5 h-5 cursor-pointer transition-colors ${
                     actionLoading
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-red-600'
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-red-600"
                   }`}
                   title="Delete all"
-                  onClick={!actionLoading ? handleDeleteNotifications : undefined}
+                  onClick={
+                    !actionLoading ? handleDeleteNotifications : undefined
+                  }
                 />
               </div>
             )}
@@ -475,10 +543,12 @@ const Notifications = ({ layout: LayoutComponent }) => {
           <div>
             {filteredNotifications.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                {notifications.length === 0 ? 'No notifications found' : 'No notifications match your search'}
+                {notifications.length === 0
+                  ? "No notifications found"
+                  : "No notifications match your search"}
               </div>
             ) : (
-              filteredNotifications.map(notification => (
+              filteredNotifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}

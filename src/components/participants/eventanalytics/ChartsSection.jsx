@@ -1,4 +1,4 @@
-import { Doughnut, Bar } from 'react-chartjs-2';
+import { Doughnut, Bar } from "react-chartjs-2";
 
 const ChartsSection = ({
   responseRate,
@@ -8,7 +8,7 @@ const ChartsSection = ({
   responseOverviewData,
   responseRateOptions,
   responseBreakdownOptions,
-  responseOverviewOptions
+  responseOverviewOptions,
 }) => {
   return (
     <div className="grow grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -96,7 +96,7 @@ const ChartsSection = ({
           <button
             className={`${
               responseRate >= 50
-                ? "bg-gray-700 hover:bg-gray-800"
+                ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-gray-400 cursor-not-allowed"
             } text-white px-4 py-2 rounded-lg transition text-base`}
             disabled={responseRate < 50}

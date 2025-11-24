@@ -38,6 +38,7 @@ import PositiveComments from "./pages/reports/PositiveComments";
 import NegativeComments from "./pages/reports/NegativeComments";
 import NeutralComments from "./pages/reports/NeutralComments";
 import CompleteReport from "./pages/reports/CompleteReport";
+import ReportSharingPage from "./pages/reports/ReportSharingPage";
 import FormCreationInterface from "./components/psas/evaluations/FormCreationInterface";
 
 // Sample form data removed - now fetched dynamically by EvaluationForm component
@@ -199,6 +200,16 @@ function App() {
           element={
             isAuthorized("psas") ? (
               <NeutralComments />
+            ) : (
+              <Navigate to={getHomeRoute()} />
+            )
+          }
+        />
+        <Route
+          path="/psas/reports/prepared-by"
+          element={
+            isAuthorized("psas") ? (
+              <ReportSharingPage />
             ) : (
               <Navigate to={getHomeRoute()} />
             )

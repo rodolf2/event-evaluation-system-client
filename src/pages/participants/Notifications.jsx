@@ -20,7 +20,8 @@ const NotificationItem = ({
 }) => {
   return (
     <div
-      className={`flex items-center p-3 border-t border-gray-200 ${
+      onClick={() => onSelect(notification.id)}
+      className={`flex items-center p-3 border-t border-gray-200 cursor-pointer ${
         isSelected
           ? "bg-[#C0C0C0]" // Selected state color
           : notification.read
@@ -32,6 +33,7 @@ const NotificationItem = ({
         type="checkbox"
         checked={isSelected}
         onChange={() => onSelect(notification.id)}
+        onClick={(e) => e.stopPropagation()}
         className="mr-4 h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
       />
       <div className="grow">
@@ -56,7 +58,10 @@ const NotificationItem = ({
         </span>
       </div>
       {isSelected ? (
-        <div className="flex items-center gap-4 ml-4">
+        <div
+          className="flex items-center gap-4 ml-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Trash2
             className={`w-5 h-5 ${
               actionLoading

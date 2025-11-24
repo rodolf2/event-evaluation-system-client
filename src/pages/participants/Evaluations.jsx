@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
-import { SkeletonCard, SkeletonText } from "../../components/shared/SkeletonLoader";
+import {
+  SkeletonCard,
+  SkeletonText,
+} from "../../components/shared/SkeletonLoader";
 import { Search, ChevronRight, Check } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -82,7 +85,10 @@ const Evaluations = () => {
             {/* Evaluation Cards Skeleton */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="rounded-lg shadow-md overflow-hidden">
+                <div
+                  key={index}
+                  className="rounded-lg shadow-md overflow-hidden"
+                >
                   <div className="p-8 flex items-center h-full">
                     <div className="grow space-y-4">
                       <SkeletonText lines={1} width="large" height="h-8" />
@@ -159,15 +165,45 @@ const Evaluations = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredEvaluations.map((evaluation, index) => {
                 const isCompleted = evaluation.completed || false;
+                const now = new Date();
+                const startDate = evaluation.eventStartDate
+                  ? new Date(evaluation.eventStartDate)
+                  : null;
+                const endDate = evaluation.eventEndDate
+                  ? new Date(evaluation.eventEndDate)
+                  : null;
+
+                const isSameDay = (d1, d2) => {
+                  return (
+                    d1.getFullYear() === d2.getFullYear() &&
+                    d1.getMonth() === d2.getMonth() &&
+                    d1.getDate() === d2.getDate()
+                  );
+                };
+
+                const isUpcoming =
+                  startDate && now < startDate && !isSameDay(now, startDate);
+                const isExpired =
+                  endDate && now > endDate && !isSameDay(now, endDate);
+                const isAvailable = !isUpcoming && !isExpired && !isCompleted;
+
                 return (
                   <div
                     key={evaluation._id || index}
                     className={`rounded-lg shadow-md transition-all duration-300 ${
                       isCompleted
                         ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
+                        : isExpired
+                        ? "bg-gray-400 opacity-75 cursor-not-allowed"
+                        : isUpcoming
+                        ? "bg-blue-400 opacity-75 cursor-not-allowed"
                         : "bg-[linear-gradient(-0.15deg,_#324BA3_38%,_#002474_100%)] hover:shadow-lg cursor-pointer"
                     }`}
-                    onClick={!isCompleted ? () => navigate(`/evaluations/start/${evaluation._id}`) : undefined}
+                    onClick={
+                      isAvailable
+                        ? () => navigate(`/evaluations/start/${evaluation._id}`)
+                        : undefined
+                    }
                   >
                     <div
                       className={`rounded-r-lg ml-3 p-8 flex items-center h-full ${
@@ -182,6 +218,16 @@ const Evaluations = () => {
                           <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
                             <Check className="h-4 w-4" />
                             Completed
+                          </div>
+                        )}
+                        {isExpired && !isCompleted && (
+                          <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            Closed
+                          </div>
+                        )}
+                        {isUpcoming && !isCompleted && (
+                          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            Upcoming
                           </div>
                         )}
                         <div className="text-sm text-gray-500 space-x-4">

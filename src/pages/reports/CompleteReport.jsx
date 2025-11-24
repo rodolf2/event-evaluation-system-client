@@ -1,16 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  RefreshCw,
-  Settings,
-  TrendingUp,
-  MessageSquare,
-  Filter,
-} from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import ReportHeader from "./ReportHeader";
 import ReportDescription from "./ReportDescription";
 import ReportActions from "./ReportActions";
+import { ReportPageFooter } from "./ReportHeaderFooter";
 import { useDynamicReportData } from "../../hooks/useDynamicReportData";
 import {
   BarChart,
@@ -23,8 +18,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
 } from "recharts";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
@@ -121,31 +114,8 @@ const CommentSection = ({
   loading = false,
   type = "neutral",
 }) => {
-  const getBorderColor = () => {
-    switch (type) {
-      case "positive":
-        return "border-green-500";
-      case "negative":
-        return "border-red-500";
-      case "neutral":
-        return "border-yellow-500";
-      default:
-        return "border-gray-500";
-    }
-  };
-
-  const getBgColor = () => {
-    switch (type) {
-      case "positive":
-        return "bg-green-50";
-      case "negative":
-        return "bg-red-50";
-      case "neutral":
-        return "bg-yellow-50";
-      default:
-        return "bg-gray-50";
-    }
-  };
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const commentsPerPage = 10;
 
   if (loading) {
     return (
@@ -164,34 +134,80 @@ const CommentSection = ({
 
   if (!comments || comments.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-gray-500 print:hidden">
         <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
         <p>No comments found</p>
       </div>
     );
   }
 
+  // Calculate pagination
+  const totalPages = Math.ceil(comments.length / commentsPerPage);
+  const startIndex = (currentPage - 1) * commentsPerPage;
+  const endIndex = startIndex + commentsPerPage;
+  const currentComments = comments.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   return (
     <>
-      <p className="text-sm text-gray-600 mb-6">
-        Total {title}: {comments.length}
-      </p>
-      <div className="space-y-4">
-        {comments.map((comment, index) => (
-          <div
-            key={comment.id || index}
-            className={`${getBgColor()} border-l-4 ${getBorderColor()} p-4 rounded-r-lg`}
-          >
-            <p className="text-gray-800">{comment.comment}</p>
-            {comment.user && (
-              <p className="text-xs text-gray-500 mt-2">
-                — {comment.user}
-                {comment.department && `, ${comment.department}`}
-                {comment.yearLevel && `, ${comment.yearLevel}`}
-              </p>
-            )}
+      {type !== "neutral" && (
+        <div className="flex justify-between items-center mb-6">
+          <p className="text-sm text-gray-600">
+            Total {title}: {comments.length} | Page {currentPage} of{" "}
+            {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${
+                currentPage === 1
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${
+                currentPage === totalPages
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              Next
+            </button>
           </div>
-        ))}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {(type === "neutral" ? comments : currentComments).map(
+          (comment, index) => (
+            <div
+              key={
+                comment.id || (type === "neutral" ? index : startIndex + index)
+              }
+              className="flex gap-2"
+            >
+              <span className="text-gray-600 mt-1">•</span>
+              <p className="text-gray-800 flex-1">{comment.comment}</p>
+            </div>
+          )
+        )}
       </div>
     </>
   );
@@ -200,9 +216,8 @@ const CommentSection = ({
 const CompleteReport = ({ report, onBack }) => {
   const navigate = useNavigate();
   const { eventId } = useParams(); // Get eventId from URL if not provided as prop
-  const [showFilters, setShowFilters] = useState(false);
 
-  const reportId = report?.id || eventId;
+  const reportId = report?.formId || eventId;
 
   // Use dynamic data hook
   const {
@@ -211,9 +226,6 @@ const CompleteReport = ({ report, onBack }) => {
     loading,
     error,
     lastUpdated,
-    filters,
-    updateFilters,
-    applyFilters,
     refreshData,
   } = useDynamicReportData(reportId);
 
@@ -230,20 +242,26 @@ const CompleteReport = ({ report, onBack }) => {
   };
 
   const SectionWrapper = ({ title, children, showLiveIndicator = false }) => (
-    <div className="section-page">
-      <div className="bg-white">
-        <ReportHeader
-          title={`${title} - ${report?.title || "Event Evaluation Report"}`}
+    <div className="section-page mb-8">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {/* Report Header */}
+        <ReportHeader />
+
+        {/* Report Description */}
+        <ReportDescription
+          title={report?.title || "Sample Event Evaluation Report"}
         />
-        <ReportDescription title={report?.title} />
-        <main className="p-8">
+
+        <div className="p-8">
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold">
+            <h3 className="text-2xl font-bold mb-2">
               {report?.title || "EVENT EVALUATION REPORT"}
             </h3>
-            <p className="text-xl font-semibold">EVALUATION RESULT</p>
+            <p className="text-xl font-bold">
+              EVALUATION RESULT
+            </p>
             <p className="text-lg">College Level</p>
-            <h4 className="text-xl font-bold mt-4">{title}</h4>
+            <h4 className="text-xl font-bold mt-6">{title}</h4>
             {showLiveIndicator && lastUpdated && (
               <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -255,160 +273,292 @@ const CompleteReport = ({ report, onBack }) => {
             )}
           </div>
           {children}
-        </main>
-        <div className="bg-blue-900 text-white text-center py-4">
-          <p>
-            MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 |
-            info@laverdad.edu.ph
-          </p>
         </div>
+
+        {/* Report Footer */}
+        <ReportPageFooter />
       </div>
     </div>
   );
 
-  const FilterPanel = () => {
-    if (!showFilters) return null;
+  // Helper to get year data
+  const currentYear = new Date().getFullYear();
+  const previousYear = currentYear - 1;
+  const currentYearData =
+    quantitativeData?.charts?.yearData?.find(
+      (d) => d.name === String(currentYear)
+    )?.value || 0;
+  const previousYearData =
+    quantitativeData?.charts?.yearData?.find(
+      (d) => d.name === String(previousYear)
+    )?.value || 0;
 
-    return (
-      <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <h3 className="text-sm font-semibold text-gray-700">
-            Dynamic Filters
-          </h3>
-        </div>
+  // Helper to get sentiment data
+  const sentiment = qualitativeData?.sentimentBreakdown || {
+    positive: { percentage: 0 },
+    neutral: { percentage: 0 },
+    negative: { percentage: 0 },
+  };
+  const sentimentData = [
+    {
+      name: "Positive",
+      value: sentiment.positive?.percentage || 0,
+      color: "#3B82F6",
+    },
+    {
+      name: "Neutral",
+      value: sentiment.neutral?.percentage || 0,
+      color: "#9CA3AF",
+    },
+    {
+      name: "Negative",
+      value: sentiment.negative?.percentage || 0,
+      color: "#EF4444",
+    },
+  ].filter((d) => d.value > 0);
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Date Range
-            </label>
-            <div className="space-y-2">
-              <input
-                type="date"
-                value={filters.startDate || ""}
-                onChange={(e) => updateFilters({ startDate: e.target.value })}
-                className="w-full text-xs border border-gray-300 rounded px-2 py-1"
-              />
-              <input
-                type="date"
-                value={filters.endDate || ""}
-                onChange={(e) => updateFilters({ endDate: e.target.value })}
-                className="w-full text-xs border border-gray-300 rounded px-2 py-1"
-              />
-            </div>
-          </div>
+  // Helper to extract common themes from comments
+  const extractThemes = (comments, type) => {
+    if (!comments || comments.length === 0) return [];
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Rating Filter
-            </label>
-            <select
-              value={filters.ratingFilter || ""}
-              onChange={(e) => updateFilters({ ratingFilter: e.target.value })}
-              className="w-full text-xs border border-gray-300 rounded px-2 py-1"
-            >
-              <option value="">All Ratings</option>
-              <option value="4-5">4.0 - 5.0 (Excellent)</option>
-              <option value="3-4">3.0 - 4.0 (Good)</option>
-              <option value="2-3">2.0 - 3.0 (Fair)</option>
-              <option value="1-2">1.0 - 2.0 (Poor)</option>
-            </select>
-          </div>
+    const keywords = {
+      positive: [
+        "good",
+        "great",
+        "excellent",
+        "amazing",
+        "wonderful",
+        "fantastic",
+        "love",
+        "like",
+        "best",
+        "awesome",
+        "perfect",
+        "satisfied",
+        "happy",
+        "pleased",
+        "enjoyed",
+        "fun",
+        "informative",
+        "helpful",
+        "engaging",
+        "interesting",
+        "venue",
+        "speaker",
+        "attentive",
+      ],
+      negative: [
+        "bad",
+        "terrible",
+        "awful",
+        "horrible",
+        "hate",
+        "dislike",
+        "worst",
+        "disappointed",
+        "unsatisfied",
+        "sad",
+        "angry",
+        "frustrated",
+        "poor",
+        "fail",
+        "boring",
+        "long",
+        "time consuming",
+        "improve",
+        "better",
+        "lacking",
+        "confusing",
+      ],
+    };
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Sentiment
-            </label>
-            <select
-              value={filters.sentiment || "all"}
-              onChange={(e) => updateFilters({ sentiment: e.target.value })}
-              className="w-full text-xs border border-gray-300 rounded px-2 py-1"
-            >
-              <option value="all">All Sentiments</option>
-              <option value="positive">Positive</option>
-              <option value="neutral">Neutral</option>
-              <option value="negative">Negative</option>
-            </select>
-          </div>
-        </div>
+    const themes = {};
+    const targetKeywords = keywords[type] || [];
 
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={applyFilters}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition"
-          >
-            Apply Filters
-          </button>
-          <button
-            onClick={() => {
-              updateFilters({
-                startDate: "",
-                endDate: "",
-                ratingFilter: "",
-                sentiment: "all",
-                keyword: "",
-              });
-              applyFilters();
-            }}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-300 transition"
-          >
-            Clear All
-          </button>
-        </div>
-      </div>
-    );
+    comments.forEach((comment) => {
+      const text = (comment.comment || "").toLowerCase();
+      targetKeywords.forEach((keyword) => {
+        if (text.includes(keyword)) {
+          themes[keyword] = (themes[keyword] || 0) + 1;
+        }
+      });
+    });
+
+    // Get top 3 themes
+    return Object.entries(themes)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([keyword]) => keyword);
+  };
+
+  // Generate dynamic summary text
+  const generateSummary = (type) => {
+    const comments = qualitativeData?.categorizedComments?.[type] || [];
+    const count = comments.length;
+
+    if (count === 0) {
+      return `No ${type} feedback was received.`;
+    }
+
+    const themes = extractThemes(comments, type);
+
+    if (type === "positive") {
+      const themeText =
+        themes.length > 0
+          ? `citing ${themes.slice(0, 2).join(" and ")} experience`
+          : "citing good overall experience";
+      return `of the responses resulted to positive ${themeText} such as the venue, speakers, and overall event experience.`;
+    } else if (type === "neutral") {
+      return `of the responses resulted into neutral, providing balanced feedback without strong positive or negative sentiments.`;
+    } else if (type === "negative") {
+      const themeText =
+        themes.length > 0
+          ? `particularly regarding ${themes.slice(0, 2).join(" and ")}`
+          : "regarding various aspects";
+      return `of the responses resulted into negative ${themeText}, suggesting areas that need improvement.`;
+    }
+
+    return "";
+  };
+
+  // Generate dynamic insights and recommendations
+  const generateInsights = () => {
+    const positiveComments =
+      qualitativeData?.categorizedComments?.positive || [];
+    const negativeComments =
+      qualitativeData?.categorizedComments?.negative || [];
+    const neutralComments = qualitativeData?.categorizedComments?.neutral || [];
+
+    const positiveThemes = extractThemes(positiveComments, "positive");
+    const negativeThemes = extractThemes(negativeComments, "negative");
+
+    const insights = [];
+
+    // Overall satisfaction analysis
+    const positivePercentage = sentiment.positive?.percentage || 0;
+    const neutralPercentage = sentiment.neutral?.percentage || 0;
+    const negativePercentage = sentiment.negative?.percentage || 0;
+    const totalResponses =
+      positiveComments.length +
+      negativeComments.length +
+      neutralComments.length;
+
+    // Heading with overall assessment
+    if (positivePercentage > 70) {
+      insights.push(
+        `★ Overall Event Success: With ${positivePercentage.toFixed(
+          0
+        )}% positive feedback from ${totalResponses} responses, the event was highly successful. This strong approval rate indicates excellent execution and participant satisfaction.`
+      );
+    } else if (positivePercentage >= 50) {
+      insights.push(
+        `★ Moderate Success: The event received ${positivePercentage.toFixed(
+          0
+        )}% positive feedback from ${totalResponses} responses. While generally well-received, there is room for improvement to achieve excellence.`
+      );
+    } else {
+      insights.push(
+        `★ Needs Significant Improvement: With only ${positivePercentage.toFixed(
+          0
+        )}% positive feedback from ${totalResponses} responses, substantial changes are needed for future events.`
+      );
+    }
+
+    // Analyze positive feedback for strengths
+    if (positiveThemes.length > 0 && positiveComments.length > 0) {
+      const strengthText = positiveThemes.slice(0, 3).join(", ");
+      insights.push(
+        `• Strengths to Maintain: Participants particularly appreciated ${strengthText}. These elements received ${positiveComments.length} positive mentions and should be prioritized in future planning.`
+      );
+    }
+
+    // Analyze negative feedback for specific improvements
+    if (negativeThemes.length > 0 && negativeComments.length > 0) {
+      const improvementAreas = negativeThemes.slice(0, 3);
+      const concernText = improvementAreas.join(", ");
+
+      insights.push(
+        `• Areas Requiring Attention: ${negativeComments.length} responses highlighted concerns about ${concernText}. These areas should be prioritized for improvement.`
+      );
+
+      // Specific recommendations based on themes
+      if (
+        improvementAreas.some((theme) =>
+          ["time consuming", "long", "boring"].includes(theme)
+        )
+      ) {
+        insights.push(
+          `• Recommendation - Engagement: Consider reducing session duration, incorporating interactive activities, and adding breaks to maintain participant attention and energy levels.`
+        );
+      }
+
+      if (
+        improvementAreas.some((theme) =>
+          ["confusing", "unclear", "lacking"].includes(theme)
+        )
+      ) {
+        insights.push(
+          `• Recommendation - Clarity: Improve communication of event objectives, provide clearer instructions, and ensure materials are well-organized and accessible.`
+        );
+      }
+
+      if (
+        improvementAreas.some((theme) =>
+          ["venue", "location", "space"].includes(theme)
+        )
+      ) {
+        insights.push(
+          `• Recommendation - Facilities: Review venue selection criteria, ensuring adequate space, comfort, and accessibility for all participants.`
+        );
+      }
+    }
+
+    // Neutral feedback analysis
+    if (neutralPercentage > 30) {
+      insights.push(
+        `• Neutral Feedback (${neutralPercentage.toFixed(
+          0
+        )}%): A significant portion of responses were neutral, suggesting the event met basic expectations but didn't exceed them. Focus on creating more memorable and impactful experiences.`
+      );
+    }
+
+    // Action items based on overall assessment
+    if (negativePercentage > 30) {
+      insights.push(
+        `⚠ Urgent Action Required: With ${negativePercentage.toFixed(
+          0
+        )}% negative feedback, conduct a comprehensive post-event review meeting with stakeholders to address systemic issues before the next event.`
+      );
+    } else if (negativePercentage > 15) {
+      insights.push(
+        `• Improvement Opportunity: ${negativePercentage.toFixed(
+          0
+        )}% negative feedback indicates specific areas need attention. Gather follow-up feedback to understand root causes and implement targeted improvements.`
+      );
+    }
+
+    // Success recommendation
+    if (positivePercentage > 70 && negativePercentage < 15) {
+      insights.push(
+        `✓ Continue Current Approach: The high satisfaction rate indicates successful event planning and execution. Document current practices as a template for future events while remaining open to innovation.`
+      );
+    }
+
+    // Default insight if no specific themes found
+    if (insights.length === 0) {
+      insights.push(
+        `Based on ${totalResponses} evaluation responses, continue monitoring participant feedback to identify areas for enhancement and maintain event quality. Consider implementing more detailed feedback mechanisms for future events.`
+      );
+    }
+
+    return insights;
   };
 
   const content = (
     <>
-      <ReportActions onBackClick={handleBackClick} />
-      <div className="bg-gray-100 min-h-screen report-print-content print:block">
-        <div className="container mx-auto py-8">
-          {/* Live Data Controls */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-4 print:hidden">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                <Filter className="w-4 h-4" />
-                Filters
-              </button>
-              <button
-                onClick={refreshData}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                />
-                Refresh Data
-              </button>
-            </div>
-
-            {quantitativeData?.metrics && (
-              <div className="flex items-center gap-4 text-sm print:hidden">
-                <div className="flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span>
-                    Avg: {quantitativeData.metrics.averageRating.toFixed(1)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageSquare className="w-4 h-4 text-green-600" />
-                  <span>
-                    {quantitativeData.metrics.totalResponses} responses
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="print:hidden">
-            <FilterPanel />
-          </div>
-
+      <ReportActions onBackClick={handleBackClick} eventId={eventId} />
+      <div className="bg-gray-100 min-h-screen report-print-content print:block p-8">
+        <div className="container mx-auto max-w-5xl">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <p className="text-red-600 text-sm">
@@ -425,40 +575,240 @@ const CompleteReport = ({ report, onBack }) => {
 
           {/* Quantitative Ratings Section */}
           <SectionWrapper title="Quantitative Ratings" showLiveIndicator={true}>
-            <div className="grid grid-cols-1 print:grid-cols-1 md:grid-cols-2 print:space-y-8 print:block gap-8 mb-12">
-              <div className="print:mb-8">
-                <DynamicBarChart
-                  data={quantitativeData?.charts?.yearData}
-                  title="Current Year Data"
-                  subtitle={`${
-                    quantitativeData?.metrics?.totalResponses || 0
-                  } Responses`}
-                  loading={loading}
-                />
-              </div>
+            {/* Year Comparison */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+              {/* Previous Year */}
               <div>
-                <DynamicPieChart
-                  data={quantitativeData?.charts?.ratingDistribution}
-                  title="Rating Distribution"
-                  subtitle="How clearly were the examples explained?"
-                  loading={loading}
-                />
+                <h5 className="font-bold text-lg mb-1">
+                  Higher Education Department {previousYear}
+                </h5>
+                <p className="text-sm text-gray-500 mb-4">
+                  {previousYearData} Responses
+                </p>
+                {/* Mocking bars for visual similarity since we don't have year level breakdown yet */}
+                <div className="space-y-3">
+                  <div className="w-full bg-blue-100 rounded-r-full h-8 relative">
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-blue-800">
+                      Total Responses
+                    </div>
+                    <div
+                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs"
+                      style={{ width: "100%" }}
+                    >
+                      {previousYearData}
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Current Year */}
+              <div>
+                <h5 className="font-bold text-lg mb-1">
+                  Higher Education Department {currentYear}
+                </h5>
+                <p className="text-sm text-gray-500 mb-4">
+                  {currentYearData} Responses
+                </p>
+                <div className="space-y-3">
+                  <div className="w-full bg-blue-100 rounded-r-full h-8 relative">
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-blue-800">
+                      Total Responses
+                    </div>
+                    <div
+                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs"
+                      style={{ width: "100%" }}
+                    >
+                      {currentYearData}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Rating Distribution Pie Chart */}
+            <div className="mb-8">
+              <h5 className="text-lg font-bold mb-1">
+                1. How clearly were the examples explained?
+              </h5>
+              <p className="text-sm text-gray-500 mb-8">
+                {quantitativeData?.metrics?.totalResponses || 0} responses
+              </p>
+
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : !quantitativeData?.charts?.ratingDistribution ||
+                quantitativeData.charts.ratingDistribution.length === 0 ? (
+                <div className="flex items-center justify-center h-64 text-gray-500">
+                  <p>No rating distribution data available</p>
+                </div>
+              ) : (
+                <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                  <div className="w-64 h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={quantitativeData.charts.ratingDistribution}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={0}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                          labelLine={false}
+                          label={({ percent }) =>
+                            percent > 0.05
+                              ? `${(percent * 100).toFixed(0)}%`
+                              : ""
+                          }
+                        >
+                          {quantitativeData.charts.ratingDistribution.map(
+                            (entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            )
+                          )}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Custom Legend */}
+                  <div className="space-y-3">
+                    {quantitativeData.charts.ratingDistribution.map(
+                      (entry, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{
+                              backgroundColor: COLORS[index % COLORS.length],
+                            }}
+                          ></div>
+                          <span className="text-sm font-medium text-gray-700">
+                            {entry.name}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </SectionWrapper>
 
           {/* Qualitative Comments Section */}
           <SectionWrapper title="Qualitative Comments" showLiveIndicator={true}>
-            <CommentSection
-              title="Qualitative Comments"
-              comments={qualitativeData?.categorizedComments?.positive || []}
-              loading={loading}
-              type="neutral"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-12">
+              {/* Sentiment Pie Chart */}
+              <div className="h-64">
+                {loading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : !sentimentData || sentimentData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    <p>No sentiment data available</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={sentimentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={0}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        labelLine={true}
+                        label={({ percent }) =>
+                          `${(percent * 100).toFixed(0)}%`
+                        }
+                      >
+                        {sentimentData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Report Summary Text */}
+              <div>
+                <h5 className="text-lg font-bold mb-6 text-center md:text-left">
+                  Report Summary
+                </h5>
+
+                {/* Legend */}
+                <div className="flex gap-6 mb-8 justify-center md:justify-start">
+                  {sentimentData.map((entry, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      ></div>
+                      <span className="text-sm font-medium text-gray-600">
+                        {entry.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-6 text-sm text-gray-800 leading-relaxed">
+                  <p>
+                    <span className="font-bold">
+                      {sentiment.positive?.percentage || 0}%
+                    </span>{" "}
+                    {generateSummary("positive")}
+                  </p>
+                  <p>
+                    <span className="font-bold">
+                      {sentiment.neutral?.percentage || 0}%
+                    </span>{" "}
+                    {generateSummary("neutral")}
+                  </p>
+                  <p>
+                    <span className="font-bold">
+                      {sentiment.negative?.percentage || 0}%
+                    </span>{" "}
+                    {generateSummary("negative")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-center text-sm font-medium text-gray-900 mb-12">
+              Note: Breakdown of qualitative comments will be on the next page
+            </p>
+
+            {/* Event Insights */}
+            <div className="mb-12">
+              <h4 className="text-xl font-bold text-center mb-8">
+                Event Insights and Recommendations
+              </h4>
+              <div className="space-y-6 text-gray-800 max-w-3xl mx-auto">
+                {generateInsights().map((insight, index) => (
+                  <p key={index}>{insight}</p>
+                ))}
+                <p className="font-medium mt-8">
+                  Disclaimer: This is a system-generated recommendation,
+                  decision is still up to the management for implementation
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center font-bold text-gray-800 mt-16 mb-4">
+              Thanks be to God!
+            </div>
           </SectionWrapper>
 
-          {/* Positive Comments Section */}
-          <SectionWrapper title="Positive Comments" showLiveIndicator={true}>
+          {/* Detailed Comments - Each type on its own page */}
+          <SectionWrapper title="Qualitative Comments - Positive">
             <CommentSection
               title="Positive Comments"
               comments={qualitativeData?.categorizedComments?.positive || []}
@@ -467,8 +817,7 @@ const CompleteReport = ({ report, onBack }) => {
             />
           </SectionWrapper>
 
-          {/* Neutral Comments Section */}
-          <SectionWrapper title="Neutral Comments" showLiveIndicator={true}>
+          <SectionWrapper title="Qualitative Comments - Neutral">
             <CommentSection
               title="Neutral Comments"
               comments={qualitativeData?.categorizedComments?.neutral || []}
@@ -477,8 +826,7 @@ const CompleteReport = ({ report, onBack }) => {
             />
           </SectionWrapper>
 
-          {/* Negative Comments Section */}
-          <SectionWrapper title="Negative Comments" showLiveIndicator={true}>
+          <SectionWrapper title="Qualitative Comments - Negative">
             <CommentSection
               title="Negative Comments"
               comments={qualitativeData?.categorizedComments?.negative || []}

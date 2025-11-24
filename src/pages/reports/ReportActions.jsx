@@ -1,16 +1,16 @@
-import React from 'react';
-import { Download, Printer, User, ArrowLeft } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { Download, Printer, UserPlus, ArrowLeft } from "lucide-react";
 
-const ReportActions = ({ onBackClick }) => {
+const ReportActions = ({ onBackClick, eventId }) => {
+  const navigate = useNavigate();
+
   const handlePrint = () => {
     window.print();
   };
 
   const handleDownload = () => {
-    // For now, trigger print dialog which allows saving as PDF
-    // In a production app, this would generate a proper PDF
     const confirmDownload = window.confirm(
-      'This will open the print dialog. You can save the report as PDF from there. Would you like to continue?'
+      "This will open the print dialog. You can save the report as PDF from there. Would you like to continue?"
     );
     if (confirmDownload) {
       window.print();
@@ -18,12 +18,17 @@ const ReportActions = ({ onBackClick }) => {
   };
 
   const handleGenerate = () => {
-    // Placeholder for report generation functionality
-    alert('Report generation feature coming soon!');
+    alert("Report generation feature coming soon!");
+  };
+
+  const handleShowPreparedBy = () => {
+    navigate("/psas/reports/prepared-by", {
+      state: { reportId: eventId, eventId: eventId },
+    });
   };
 
   return (
-    <div className="bg-gray-50 py-4 px-8 border-b border-gray-200 print:hidden">
+    <div className="print:hidden">
       <div className="flex justify-between items-center">
         <button
           onClick={onBackClick}
@@ -33,8 +38,12 @@ const ReportActions = ({ onBackClick }) => {
           <ArrowLeft size={20} className="text-gray-600" />
         </button>
         <div className="flex items-center space-x-4">
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <User size={20} className="text-gray-600" />
+          <button
+            onClick={handleShowPreparedBy}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="View Prepared By"
+          >
+            <UserPlus size={20} className="text-gray-600" />
           </button>
           <button
             onClick={handlePrint}
