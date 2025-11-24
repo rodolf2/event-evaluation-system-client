@@ -10,17 +10,15 @@ import {
   Upload,
   Link as LinkIcon,
   FileText,
-  X,
   Palette,
+  ChevronLeft,
+  X,
 } from "lucide-react";
 import { LuUndo, LuRedo } from "react-icons/lu";
 import Question from "./Question";
 import Section from "./Section";
 import ImportCSVModal from "./ImportCSVModal";
 import SuccessScreen from "./SuccessScreen";
-import CertificateStatusWidget from "./CertificateStatusWidget";
-import InlineCertificatePanel from "./InlineCertificatePanel";
-import EnhancedPublishArea from "./EnhancedPublishArea.jsx";
 import CertificateCustomizer from "../certificates/CertificateCustomizer";
 import { useAuth } from "../../../contexts/useAuth";
 import { FormSessionManager } from "../../../utils/formSessionManager";
@@ -75,13 +73,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [activeSectionId, setActiveSectionId] = useState("main");
   const [activeQuestionId, setActiveQuestionId] = useState(null);
   const [isCertificateLinked, setIsCertificateLinked] = useState(false);
-  const [certificateValidationStatus, setCertificateValidationStatus] =
-    useState({ isValid: true, message: "" });
-  const [csvValidationStatus, setCSVValidationStatus] = useState({
-    isValid: true,
-    message: "",
-    recordCount: 0,
-  });
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadedLinks, setUploadedLinks] = useState([]);
   const [uploadedCSVData, setUploadedCSVData] = useState(null);
@@ -1520,11 +1511,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       ) {
         const errorMessage =
           "CSV upload failed validation. Ensure it includes 'name' and 'email' columns with unique, valid emails.";
-        setCSVValidationStatus({
-          isValid: false,
-          message: errorMessage,
-          recordCount: 0,
-        });
         toast.error(errorMessage);
         return;
       }
@@ -1532,11 +1518,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       // Enhanced validation layer
       const validationResults = validateRecipientsData(csvData.students);
       if (!validationResults.isValid) {
-        setCSVValidationStatus({
-          isValid: false,
-          message: validationResults.error,
-          recordCount: csvData.students.length,
-        });
         toast.error(validationResults.error);
         return;
       }
@@ -1598,11 +1579,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         }
       }
 
-      setCSVValidationStatus({
-        isValid: true,
-        message: `Successfully loaded ${csvData.students.length} students`,
-        recordCount: csvData.students.length,
-      });
       setHasUnsavedChanges(true);
       toast.success(
         `Recipient list loaded: ${csvData.students.length} students from ${
@@ -1614,12 +1590,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       const errorMessage =
         error.message ||
         "Failed to process CSV file. Please verify the format and try again.";
-
-      setCSVValidationStatus({
-        isValid: false,
-        message: errorMessage,
-        recordCount: 0,
-      });
 
       toast.error(errorMessage, { duration: 6000 });
     }
@@ -1724,30 +1694,16 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           );
           const errorData = await response.json().catch(() => ({}));
           console.error(`[Frontend] Error response:`, errorData);
-          setCertificateValidationStatus({
-            isValid: false,
-            message:
-              errorData.message ||
-              `Template validation failed (${response.status})`,
-          });
           return false;
         }
 
         const data = await response.json();
 
         if (data.success && data.data) {
-          setCertificateValidationStatus({
-            isValid: data.data.isValid,
-            message: data.data.message || "Certificate template is valid",
-          });
           return data.data.isValid;
         }
       } catch (error) {
         console.error("Certificate validation error:", error);
-        setCertificateValidationStatus({
-          isValid: false,
-          message: `Validation error: ${error.message}`,
-        });
         return false;
       }
       return false;
@@ -1824,6 +1780,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     });
   };
 
+  // Calculate validation states for components
+  const allQuestions = [
+    ...questions,
+    ...sections.flatMap((s) => s.questions || []),
+  ];
+
   // Handle form publishing
   const handlePublish = async () => {
     if (
@@ -1837,16 +1799,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     // Load recipients and certificate link state from FormSessionManager for consistency
     const selectedStudents = FormSessionManager.loadStudentAssignments() || [];
     const transientCSVData = FormSessionManager.loadTransientCSVData();
-    const hasCSVRecipients =
-      (transientCSVData &&
-        transientCSVData.students &&
-        transientCSVData.students.length > 0) ||
-      (uploadedCSVData &&
-        uploadedCSVData.students &&
-        uploadedCSVData.students.length > 0);
-    const hasStudents =
-      Array.isArray(selectedStudents) && selectedStudents.length > 0;
-    const hasDates = Boolean(eventStartDate) && Boolean(eventEndDate);
 
     // Enhanced validation with specific error messages
     const validationErrors = [];
@@ -1854,43 +1806,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     // Step 1: Form content validation
     if (allQuestions.length === 0) {
       validationErrors.push("Please add at least one question to your form");
-    }
-
-    // Step 2: Event dates validation
-    if (!hasDates) {
-      validationErrors.push("Please set both event start date and end date");
-    } else {
-      const startDate = new Date(eventStartDate);
-      const endDate = new Date(eventEndDate);
-      if (startDate >= endDate) {
-        validationErrors.push("Event end date must be after start date");
-      }
-    }
-
-    // Step 3: Recipient validation
-    if (!hasCSVRecipients && !hasStudents) {
-      validationErrors.push(
-        "Please upload a valid CSV recipient list or assign students to this form"
-      );
-    } else if (hasCSVRecipients && !csvValidationStatus.isValid) {
-      validationErrors.push(
-        `CSV validation error: ${csvValidationStatus.message}`
-      );
-    }
-
-    // Step 4: Certificate validation (use normalized state)
-    // Check if certificate is linked - use the state flag as the primary indicator
-    // since it's set when certificate linking is successful
-    const finalHasCertificate = isCertificateLinked;
-
-    if (!finalHasCertificate) {
-      validationErrors.push(
-        "Please link a certificate template before publishing"
-      );
-    } else if (!certificateValidationStatus.isValid) {
-      validationErrors.push(
-        `Certificate validation error: ${certificateValidationStatus.message}`
-      );
     }
 
     // Display validation errors
@@ -2244,25 +2159,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     return <PSASLayout>{successContent}</PSASLayout>;
   }
 
-  // Calculate validation states for components
-  const allQuestions = [
-    ...questions,
-    ...sections.flatMap((s) => s.questions || []),
-  ];
-  const hasQuestions = allQuestions.length > 0;
-  const hasDates = Boolean(eventStartDate) && Boolean(eventEndDate);
-  const hasStudents =
-    Array.isArray(assignedStudents) && assignedStudents.length > 0;
-
   const content = (
     <>
-      {/* Certificate Status Widget - Floating status indicator */}
-      <CertificateStatusWidget
-        isCertificateLinked={isCertificateLinked}
-        linkedCertificateId={linkedCertificateId}
-        certificateValidationStatus={certificateValidationStatus}
-      />
-
       <div className="bg-gray-100 min-h-screen">
         <div className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
@@ -2271,7 +2169,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 onClick={handleBackClick}
                 className="text-gray-700 hover:text-black mr-4"
               >
-                <Plus size={24} className="rotate-45" />
+                <ChevronLeft size={24} />
               </button>
               <div className="flex items-center gap-2">
                 <button
@@ -2689,27 +2587,27 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             );
           })}
 
-          {/* Inline Certificate Panel with Smart Suggestions */}
-          <InlineCertificatePanel
-            isCertificateLinked={isCertificateLinked}
-            linkedCertificateId={linkedCertificateId}
-            certificateValidationStatus={certificateValidationStatus}
-            formTitle={formTitle}
-            questions={questions}
-            sections={sections}
-          />
-
-          {/* Enhanced Publish Area with Certificate Validation Feedback */}
-          <EnhancedPublishArea
-            isPublishing={isPublishing}
-            isCertificateLinked={isCertificateLinked}
-            certificateValidationStatus={certificateValidationStatus}
-            csvValidationStatus={csvValidationStatus}
-            hasStudents={hasStudents}
-            hasQuestions={hasQuestions}
-            hasDates={hasDates}
-            onPublish={handlePublish}
-          />
+          {/* Certificate Link Button */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={() => {
+                // Navigate to certificate linking page
+                const formId =
+                  currentFormId || FormSessionManager.getCurrentFormId();
+                const queryParams = new URLSearchParams();
+                queryParams.set("from", "evaluation");
+                queryParams.set("formId", formId);
+                navigate(`/psas/certificates?${queryParams.toString()}`);
+              }}
+              className={`px-6 py-3 font-semibold text-white rounded-lg transition-colors ${
+                isCertificateLinked
+                  ? "bg-[#0C2A92] hover:bg-[#0B2590]"
+                  : "bg-[#5F6368] hover:bg-[#4F5358]"
+              }`}
+            >
+              {isCertificateLinked ? "Certificate Linked" : "Link Certificate"}
+            </button>
+          </div>
 
           {/* Mobile: bottom-fixed FAB toolbar targeting active section */}
           <div className="md:hidden fixed bottom-6 right-6 z-30">

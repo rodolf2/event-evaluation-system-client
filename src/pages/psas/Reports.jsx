@@ -158,6 +158,67 @@ const Reports = () => {
     return () => clearInterval(interval);
   }, [view, fetchReports]);
 
+  const fetchReportById = async (formId) => {
+    try {
+      // Fetch analytics data for this specific form
+      const response = await fetch(`/api/analytics/form/${formId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch analytics data");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        // Create a dynamic report object from the analytics data
+        const dynamicReport = {
+          id: formId,
+          formId: formId,
+          title: `Event Analytics Report - ${
+            result.data.formInfo?.title || result.data.formTitle || "Form"
+          }`,
+          eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
+          lastUpdated: new Date().toISOString(),
+          analyticsData: result.data,
+          isDynamic: true,
+        };
+
+        setSelectedReport(dynamicReport);
+        setView("dashboard");
+      }
+    } catch (error) {
+      console.error("Failed to fetch report data:", error);
+      setError(error.message);
+    }
+  };
+
+  // Check URL for formId and handle direct report access
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const formIdFromUrl = urlParams.get("formId");
+
+    // Also check path parameters
+    const pathParts = window.location.pathname.split("/");
+    const reportIndex = pathParts.findIndex((part) => part === "reports");
+    const formIdFromPath =
+      reportIndex !== -1 && pathParts[reportIndex + 1]
+        ? pathParts[reportIndex + 1]
+        : null;
+
+    const finalFormId = formIdFromUrl || formIdFromPath;
+
+    if (finalFormId && /^[0-9a-fA-F]{24}$/.test(finalFormId)) {
+      // If we have a formId in URL, fetch it directly
+      fetchReportById(finalFormId);
+    }
+  }, [window.location.pathname, window.location.search]);
+
   useEffect(() => {
     if (view === "list") {
       fetchReports();

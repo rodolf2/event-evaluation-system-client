@@ -291,6 +291,8 @@ const CompleteReport = ({ report, onBack }) => {
       (d) => d.name === String(previousYear)
     )?.value || 0;
 
+  const maxResponseCount = Math.max(currentYearData, previousYearData, 1);
+
   // Helper to get sentiment data
   const sentiment = qualitativeData?.sentimentBreakdown || {
     positive: { percentage: 0 },
@@ -590,8 +592,13 @@ const CompleteReport = ({ report, onBack }) => {
                       Total Responses
                     </div>
                     <div
-                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs"
-                      style={{ width: "100%" }}
+                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs transition-all duration-500"
+                      style={{
+                        width: `${
+                          (previousYearData / maxResponseCount) * 100
+                        }%`,
+                        minWidth: "2rem",
+                      }}
                     >
                       {previousYearData}
                     </div>
@@ -613,8 +620,11 @@ const CompleteReport = ({ report, onBack }) => {
                       Total Responses
                     </div>
                     <div
-                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs"
-                      style={{ width: "100%" }}
+                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs transition-all duration-500"
+                      style={{
+                        width: `${(currentYearData / maxResponseCount) * 100}%`,
+                        minWidth: "2rem",
+                      }}
                     >
                       {currentYearData}
                     </div>
