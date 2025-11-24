@@ -257,9 +257,7 @@ const CompleteReport = ({ report, onBack }) => {
             <h3 className="text-2xl font-bold mb-2">
               {report?.title || "EVENT EVALUATION REPORT"}
             </h3>
-            <p className="text-xl font-bold">
-              EVALUATION RESULT
-            </p>
+            <p className="text-xl font-bold">EVALUATION RESULT</p>
             <p className="text-lg">College Level</p>
             <h4 className="text-xl font-bold mt-6">{title}</h4>
             {showLiveIndicator && lastUpdated && (
@@ -809,6 +807,10 @@ const CompleteReport = ({ report, onBack }) => {
 
           {/* Detailed Comments - Each type on its own page */}
           <SectionWrapper title="Qualitative Comments - Positive">
+            <p className="text-gray-600 mb-6 text-center">
+              These are the positive comments comprising the{" "}
+              {sentiment.positive?.percentage || 0}% from the report summary
+            </p>
             <CommentSection
               title="Positive Comments"
               comments={qualitativeData?.categorizedComments?.positive || []}
@@ -818,6 +820,10 @@ const CompleteReport = ({ report, onBack }) => {
           </SectionWrapper>
 
           <SectionWrapper title="Qualitative Comments - Neutral">
+            <p className="text-gray-600 mb-6 text-center">
+              These are the neutral comments comprising the{" "}
+              {sentiment.neutral?.percentage || 0}% from the report summary
+            </p>
             <CommentSection
               title="Neutral Comments"
               comments={qualitativeData?.categorizedComments?.neutral || []}
@@ -827,6 +833,10 @@ const CompleteReport = ({ report, onBack }) => {
           </SectionWrapper>
 
           <SectionWrapper title="Qualitative Comments - Negative">
+            <p className="text-gray-600 mb-6 text-center">
+              These are the negative comments comprising the{" "}
+              {sentiment.negative?.percentage || 0}% from the report summary
+            </p>
             <CommentSection
               title="Negative Comments"
               comments={qualitativeData?.categorizedComments?.negative || []}
