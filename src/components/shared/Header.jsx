@@ -86,9 +86,17 @@ const Header = ({
     }
   };
 
-  const notificationLink = config.notificationPath
-    ? `/psas/notifications`
-    : `/participant/notifications`;
+  const getNotificationLink = () => {
+    // Check user role to determine correct notifications path
+    if (user?.role === 'club-officer') {
+      return '/club-officer/notifications';
+    }
+    return config.notificationPath
+      ? `/psas/notifications`
+      : `/participant/notifications`;
+  };
+
+  const notificationLink = getNotificationLink();
 
   return (
     <header

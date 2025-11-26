@@ -2,11 +2,13 @@ import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import ReportHeader from "./ReportHeader";
 import ReportDescription from "./ReportDescription";
 import ReportActions from "./ReportActions";
 import { ReportPageFooter } from "./ReportHeaderFooter";
 import { useDynamicReportData } from "../../hooks/useDynamicReportData";
+import { useAuth } from "../../contexts/useAuth";
 import {
   BarChart,
   Bar,
@@ -216,6 +218,7 @@ const CommentSection = ({
 const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
   const navigate = useNavigate();
   const { eventId } = useParams(); // Get eventId from URL if not provided as prop
+  const { user } = useAuth();
 
   const reportId = report?.formId || eventId;
 
@@ -238,7 +241,11 @@ const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
     if (isChildComponent) {
       onBack();
     } else {
-      navigate("/psas/reports");
+      // Navigate to appropriate reports page based on user role
+      const reportsPath = user?.role === 'club-officer'
+        ? '/club-officer/reports'
+        : '/psas/reports';
+      navigate(reportsPath);
     }
   };
 
@@ -864,9 +871,14 @@ const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
     </>
   );
 
-  // Only wrap with PSASLayout if accessed via direct routing (no props)
+  // Only wrap with layout if accessed via direct routing (no props)
   if (isChildComponent) {
     return content;
+  }
+
+  // Use appropriate layout based on user role
+  if (user?.role === 'club-officer') {
+    return <ClubOfficerLayout>{content}</ClubOfficerLayout>;
   }
 
   return <PSASLayout>{content}</PSASLayout>;

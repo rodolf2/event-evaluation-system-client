@@ -122,16 +122,20 @@ const CertificateStep = ({ onStepComplete, isActive }) => {
         return;
       }
 
-      const response = await fetch('/api/certificates/link', {
-        method: 'POST',
+      // Extract form ID from workflow ID (remove 'workflow_' prefix if present)
+      const formId = workflowId.replace('workflow_', '').replace('temp_', '');
+
+      const response = await fetch(`/api/forms/${formId}/draft`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          certificateId: selectedCertificate._id,
-          formId: workflowId,
-          type: 'evaluation'
+          linkedCertificateId: selectedCertificate._id,
+          linkedCertificateType: 'completion',
+          certificateTemplateName: selectedCertificate.title,
+          isCertificateLinked: true
         }),
       });
 
@@ -139,18 +143,18 @@ const CertificateStep = ({ onStepComplete, isActive }) => {
       if (data.success) {
         setIsLinked(true);
         setLinkedCertificate(selectedCertificate);
-        
+
         // Mark certificate as linked in localStorage
         const possibleKeys = [
           `certificateLinked_${workflowId}`,
           `certificateLinked_temp_${workflowId}`,
           `certificateLinked_${workflowId.replace('workflow_', 'temp_')}`
         ];
-        
+
         possibleKeys.forEach(key => {
           localStorage.setItem(key, "true");
         });
-        
+
         toast.success('Certificate linked successfully!');
       } else {
         toast.error(data.message || 'Failed to link certificate');
@@ -170,15 +174,25 @@ const CertificateStep = ({ onStepComplete, isActive }) => {
     setLoading(true);
     try {
       const workflowId = FormWorkflowManager.getCurrentWorkflowId();
-      
-      const response = await fetch('/api/certificates/unlink', {
-        method: 'POST',
+      if (!workflowId) {
+        toast.error('Unable to unlink certificate - workflow ID not found');
+        return;
+      }
+
+      // Extract form ID from workflow ID (remove 'workflow_' prefix if present)
+      const formId = workflowId.replace('workflow_', '').replace('temp_', '');
+
+      const response = await fetch(`/api/forms/${formId}/draft`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          formId: workflowId,
+          linkedCertificateId: null,
+          linkedCertificateType: null,
+          certificateTemplateName: null,
+          isCertificateLinked: false
         }),
       });
 
@@ -186,18 +200,18 @@ const CertificateStep = ({ onStepComplete, isActive }) => {
       if (data.success) {
         setIsLinked(false);
         setLinkedCertificate(null);
-        
+
         // Remove certificate linking flags
         const possibleKeys = [
           `certificateLinked_${workflowId}`,
           `certificateLinked_temp_${workflowId}`,
           `certificateLinked_${workflowId.replace('workflow_', 'temp_')}`
         ];
-        
+
         possibleKeys.forEach(key => {
           localStorage.removeItem(key);
         });
-        
+
         toast.success('Certificate unlinked successfully');
       } else {
         toast.error(data.message || 'Failed to unlink certificate');
@@ -220,8 +234,10 @@ const CertificateStep = ({ onStepComplete, isActive }) => {
     };
     FormWorkflowManager.saveStepData('certificate', stepData);
     
-    // Navigate to certificates page
-    navigate('/psas/certificates?from=workflow&returnTo=certificate');
+    // Navigate to certificates page based on user role
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const certificatesPath = user.role === 'club-officer' ? '/club-officer/certificates/make' : '/psas/certificates';
+    navigate(`${certificatesPath}?from=workflow&returnTo=certificate`);
   };
 
   // Handle next step

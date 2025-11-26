@@ -7,7 +7,7 @@ import { FormSessionManager } from "../../../utils/formSessionManager";
  * ImportCSVModal - CSV import system with secure in-memory handling
  * CRITICAL: CSV data is never persisted to localStorage
  */
-const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
+const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData, currentFormId }) => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -477,27 +477,28 @@ const ImportCSVModal = ({ isOpen, onClose, onFileUpload, uploadedCSVData }) => {
               </p>
             </div>
             <button
-             onClick={async () => {
-               // Ensure we have a persistent form session so CSV remains tied to this draft
-               let currentFormId = FormSessionManager.getCurrentFormId();
-               if (!currentFormId) {
-                 currentFormId = FormSessionManager.initializeFormSession();
-               }
+              onClick={async () => {
+                // Use the currentFormId passed as prop, fallback to FormSessionManager
+                let formId = currentFormId || FormSessionManager.getCurrentFormId();
+                if (!formId) {
+                  formId = FormSessionManager.initializeFormSession();
+                }
 
-               // Persist transient CSV payload into the current form session
-               // This is scoped to this form draft and cleared on successful publish via clearAllFormData.
-               try {
-                 FormSessionManager.saveTransientCSVData(uploadedData);
-               } catch (error) {
-                 console.warn("Could not store transient CSV data in session:", error);
-               }
+                // Persist transient CSV payload into the current form session
+                // This is scoped to this form draft and cleared on successful publish via clearAllFormData.
+                try {
+                  FormSessionManager.saveTransientCSVData(uploadedData);
+                } catch (error) {
+                  console.warn("Could not store transient CSV data in session:", error);
+                }
 
-               // Always navigate with the specific formId so StudentList can resolve eligibility correctly
-               const navigationUrl = `/psas/students?formId=${encodeURIComponent(
-                 currentFormId
-               )}&from=evaluation`;
-               navigate(navigationUrl);
-             }}
+                // Always navigate with the specific formId so StudentList can resolve eligibility correctly
+                // Use PSAS students page for both roles since student assignment is shared functionality
+                const navigationUrl = `/psas/students?formId=${encodeURIComponent(
+                  formId
+                )}&from=evaluation`;
+                navigate(navigationUrl);
+              }}
              className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold ml-4 hover:bg-blue-200 transition"
            >
              View

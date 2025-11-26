@@ -293,8 +293,10 @@ function Profile() {
   }
 
   const badgesLink =
-    user.role === "participant" || user.role === "club-officer"
+    user.role === "participant"
       ? "/participant/badges"
+      : user.role === "club-officer"
+      ? "/club-officer/badges"
       : null;
 
   // Use role-specific layout

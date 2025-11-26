@@ -1,27 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 
 function AuthCallback() {
-  const { saveToken } = useAuth();
+  const { saveToken, user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [tokenSaved, setTokenSaved] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get("token");
 
-    if (token) {
+    if (token && !tokenSaved) {
       saveToken(token);
-      // Add a small delay to ensure token is saved before redirecting
-      // Navigate to root which will use getHomeRoute() logic
+      setTokenSaved(true);
+    } else if (!token) {
+      navigate("/login");
+    }
+  }, [location, navigate, saveToken, tokenSaved]);
+
+  // Wait for user data to be loaded before navigating
+  useEffect(() => {
+    if (tokenSaved && !isLoading && user) {
+      // Small delay to ensure everything is settled
       setTimeout(() => {
         navigate("/");
       }, 100);
-    } else {
-      navigate("/login");
     }
-  }, [location, navigate, saveToken]);
+  }, [tokenSaved, isLoading, user, navigate]);
 
   return (
     <div

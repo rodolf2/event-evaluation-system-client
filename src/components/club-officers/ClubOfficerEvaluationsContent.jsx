@@ -42,7 +42,12 @@ function ClubOfficerEvaluationsContent() {
         });
         const data = await response.json();
         if (data.success) {
-          const mappedForms = data.data.map((form) => ({
+          // Handle both array and object response formats
+          const formsArray = Array.isArray(data.data)
+            ? data.data
+            : data.data.forms || [];
+
+          const mappedForms = formsArray.map((form) => ({
             id: form._id,
             title: form.title || `Evaluation Form ${form._id.slice(-6)}`,
             description: form.description,
@@ -465,8 +470,7 @@ function ClubOfficerEvaluationsContent() {
                 }`}
               />
               <p className="text-sm text-gray-500 mt-1">
-                Paste the URL of an existing Google Form to import its
-                questions
+                Paste the URL of an existing Google Form to import its questions
               </p>
             </div>
 

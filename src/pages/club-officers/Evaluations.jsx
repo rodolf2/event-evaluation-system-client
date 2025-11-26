@@ -1,45 +1,129 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/useAuth";
-import { SkeletonCard } from "../../components/shared/SkeletonLoader";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
+import {
+  SkeletonCard,
+  SkeletonText,
+} from "../../components/shared/SkeletonLoader";
+import { Search, ChevronRight, Check } from "lucide-react";
+import { useAuth } from "../../contexts/useAuth";
 
-function Evaluations() {
-  const { token } = useAuth();
+const Evaluations = () => {
+  const navigate = useNavigate();
   const [evaluations, setEvaluations] = useState([]);
+  const [filteredEvaluations, setFilteredEvaluations] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { token } = useAuth();
+
+  const fetchMyEvaluations = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch("/api/forms/my-evaluations", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch evaluations: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setEvaluations(data.success ? data.data.forms : []);
+    } catch (err) {
+      console.error("Error fetching evaluations:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    const fetchEvaluations = async () => {
-      if (!token) return;
+    fetchMyEvaluations();
+  }, [fetchMyEvaluations]);
 
-      try {
-        const response = await fetch("/api/forms/my-evaluations", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  useEffect(() => {
+    setFilteredEvaluations(
+      evaluations.filter((evaluation) =>
+        evaluation.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery, evaluations]);
 
-        if (response.ok) {
-          const data = await response.json();
-          setEvaluations(data.success ? data.data.forms : []);
-        }
-      } catch (error) {
-        console.error("Error fetching evaluations:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvaluations();
-  }, [token]);
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="space-y-4">
-          <SkeletonCard contentLines={3} />
-          <SkeletonCard contentLines={3} />
-          <SkeletonCard contentLines={3} />
+        <div className="bg-gray-100 min-h-screen pb-8">
+          <div className="max-w-full">
+            {/* Search and Filter Skeleton */}
+            <div className="flex items-center mb-8 gap-4">
+              <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="w-5 h-5 bg-gray-300 rounded animate-pulse"></div>
+                </div>
+                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
+              </div>
+              <div className="relative">
+                <div className="bg-gray-300 p-3 rounded-lg w-24 h-12 animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Evaluation Cards Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg shadow-md overflow-hidden"
+                >
+                  <div className="p-8 flex items-center h-full">
+                    <div className="grow space-y-4">
+                      <SkeletonText lines={1} width="large" height="h-8" />
+                      <div className="space-y-2">
+                        <SkeletonText lines={1} width="small" height="h-4" />
+                        <SkeletonText lines={1} width="medium" height="h-4" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <div className="w-6 h-6 bg-gray-300 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ClubOfficerLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <ClubOfficerLayout>
+        <div className="bg-gray-100 min-h-screen flex items-center justify-center">
+          <div className="text-red-600 text-center">
+            <p className="text-lg font-semibold">Error loading evaluations</p>
+            <p>{error}</p>
+            <button
+              onClick={fetchMyEvaluations}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </ClubOfficerLayout>
     );
@@ -47,56 +131,135 @@ function Evaluations() {
 
   return (
     <ClubOfficerLayout>
-      <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">My Evaluations</h2>
+      <div className="bg-gray-100 min-h-screen pb-8">
+        <div className="max-w-full">
+          <div className="flex items-center mb-8 gap-4">
+            <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full p-3 pl-10 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="relative">
+              <button className="bg-white p-3 rounded-lg border border-gray-300 flex items-center text-gray-700 w-full justify-center sm:w-auto">
+                <span className="w-3 h-3 bg-blue-600 mr-2 rounded-sm"></span>
+                <span>Event</span>
+              </button>
+            </div>
+          </div>
 
-          {evaluations.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No evaluations found</p>
-              <p className="text-gray-400 mt-2">You haven't participated in any evaluations yet.</p>
+          {filteredEvaluations.length === 0 ? (
+            <div className="text-center text-gray-500">
+              <p className="text-lg">No evaluations available at this time.</p>
+              <p className="text-sm">
+                Evaluations will appear here when assigned to you.
+              </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {evaluations.map((evaluation) => (
-                <div
-                  key={evaluation._id}
-                  className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        {evaluation.title}
-                      </h3>
-                      <p className="text-gray-600 mt-1">
-                        {evaluation.description}
-                      </p>
-                      <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                        <span>Status: {evaluation.status}</span>
-                        <span>Due: {new Date(evaluation.deadline).toLocaleDateString()}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredEvaluations.map((evaluation, index) => {
+                const isCompleted = evaluation.completed || false;
+                const now = new Date();
+                const startDate = evaluation.eventStartDate
+                  ? new Date(evaluation.eventStartDate)
+                  : null;
+                const endDate = evaluation.eventEndDate
+                  ? new Date(evaluation.eventEndDate)
+                  : null;
+
+                const isSameDay = (d1, d2) => {
+                  return (
+                    d1.getFullYear() === d2.getFullYear() &&
+                    d1.getMonth() === d2.getMonth() &&
+                    d1.getDate() === d2.getDate()
+                  );
+                };
+
+                const isUpcoming =
+                  startDate && now < startDate && !isSameDay(now, startDate);
+                const isExpired =
+                  endDate && now > endDate && !isSameDay(now, endDate);
+                const isAvailable = !isUpcoming && !isExpired && !isCompleted;
+
+                return (
+                  <div
+                    key={evaluation._id || index}
+                    className={`rounded-lg shadow-md transition-all duration-300 ${
+                      isCompleted
+                        ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
+                        : isExpired
+                        ? "bg-gray-400 opacity-75 cursor-not-allowed"
+                        : isUpcoming
+                        ? "bg-blue-400 opacity-75 cursor-not-allowed"
+                        : "bg-[linear-gradient(-0.15deg,#324BA3_38%,#002474_100%)] hover:shadow-lg cursor-pointer"
+                    }`}
+                    onClick={
+                      isAvailable
+                        ? () => navigate(`/evaluations/start/${evaluation._id}`)
+                        : undefined
+                    }
+                  >
+                    <div
+                      className={`rounded-r-lg ml-3 p-8 flex items-center h-full ${
+                        isCompleted ? "bg-green-50" : "bg-white"
+                      }`}
+                    >
+                      <div className="grow">
+                        <h3 className="font-bold text-2xl mb-4 text-gray-800">
+                          {evaluation.title}
+                        </h3>
+                        {isCompleted && (
+                          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            <Check className="h-4 w-4" />
+                            Completed
+                          </div>
+                        )}
+                        {isExpired && !isCompleted && (
+                          <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            Closed
+                          </div>
+                        )}
+                        {isUpcoming && !isCompleted && (
+                          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            Upcoming
+                          </div>
+                        )}
+                        <div className="text-sm text-gray-500 space-x-4">
+                          <span>
+                            Open: {formatDate(evaluation.eventStartDate)}
+                          </span>
+                          <span>
+                            Closes: {formatDate(evaluation.eventEndDate)}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className={`ml-4 ${
+                          isCompleted ? "text-green-500" : "text-gray-400"
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <Check className="h-6 w-6" />
+                        ) : (
+                          <ChevronRight className="h-6 w-6" />
+                        )}
                       </div>
                     </div>
-                    <div className="ml-4">
-                      {evaluation.status === "pending" && (
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                          Start Evaluation
-                        </button>
-                      )}
-                      {evaluation.status === "completed" && (
-                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                          Completed
-                        </span>
-                      )}
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
     </ClubOfficerLayout>
   );
-}
+};
 
 export default Evaluations;

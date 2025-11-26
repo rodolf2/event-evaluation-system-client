@@ -4,7 +4,7 @@ import EventAnalyticsContent from "../../components/shared/EventAnalyticsContent
 const EventAnalytics = () => {
   return (
     <ClubOfficerLayout>
-      <EventAnalyticsContent />
+      <EventAnalyticsContent basePath="/club-officer" />
     </ClubOfficerLayout>
   );
 };

@@ -1,45 +1,231 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/useAuth";
-import { SkeletonCard } from "../../components/shared/SkeletonLoader";
+import { useParams, useNavigate } from "react-router-dom";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
+import { SkeletonCard, SkeletonText, SkeletonBase } from "../../components/shared/SkeletonLoader";
+import { Search, Download, Eye } from "lucide-react";
+import { useAuth } from "../../contexts/useAuth";
+import toast from "react-hot-toast";
+import CertificateViewer from "../../components/participants/CertificateViewer";
 
-function Certificates() {
-  const { token } = useAuth();
+const Certificates = () => {
+  const { certificateId } = useParams();
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [showCertificateViewer, setShowCertificateViewer] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
 
   useEffect(() => {
     const fetchCertificates = async () => {
-      if (!token) return;
-
       try {
-        const response = await fetch("/api/certificates/my-certificates", {
+        if (!user || !user._id) return;
+
+        const response = await fetch(`/api/certificates/my`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          setCertificates(data.success ? data.data : []);
+        const data = await response.json();
+
+        if (data.success) {
+          setCertificates(data.data || []);
+        } else {
+          console.error("Failed to fetch certificates:", data.message);
         }
       } catch (error) {
         console.error("Error fetching certificates:", error);
+        toast.error("Failed to load certificates");
       } finally {
         setLoading(false);
       }
     };
 
     fetchCertificates();
-  }, [token]);
+  }, [user, token]);
+
+  // Handle direct certificate viewing
+  useEffect(() => {
+    if (certificateId && certificates.length > 0) {
+      const certificate = certificates.find(
+        (cert) => cert.certificateId === certificateId
+      );
+      if (certificate) {
+        setSelectedCertificate(certificate);
+        setShowCertificateViewer(true);
+      }
+    }
+  }, [certificateId, certificates]);
+
+  // State for certificate thumbnails
+  const [certificateThumbnails, setCertificateThumbnails] = useState({});
+
+  // Fetch certificate PDFs with authentication and create blob URLs
+  useEffect(() => {
+    const fetchCertificateThumbnails = async () => {
+      for (const cert of certificates) {
+        if (!certificateThumbnails[cert.certificateId]) {
+          try {
+            const response = await fetch(
+              `/api/certificates/download/${cert.certificateId}?inline=true`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (response.ok) {
+              const blob = await response.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              setCertificateThumbnails((prev) => ({
+                ...prev,
+                [cert.certificateId]: blobUrl,
+              }));
+            }
+          } catch (error) {
+            console.error(
+              `Error loading thumbnail for ${cert.certificateId}:`,
+              error
+            );
+          }
+        }
+      }
+    };
+
+    if (certificates.length > 0 && token) {
+      fetchCertificateThumbnails();
+    }
+
+    // Cleanup blob URLs on unmount
+    return () => {
+      Object.values(certificateThumbnails).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [certificates, token]);
+
+  const handleDownload = async (certificateId, certificate) => {
+    try {
+      const response = await fetch(
+        `/api/certificates/download/${certificateId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        // Use respondentName as fallback if userId is not populated
+        const userName =
+          certificate.userId?.name ||
+          certificate.respondentName ||
+          "Participant";
+        a.download = `Certificate_${
+          certificate.certificateId
+        }_${userName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        toast.error("Failed to download certificate");
+      }
+    } catch (error) {
+      console.error("Error downloading certificate:", error);
+      toast.error("Failed to download certificate");
+    }
+  };
+
+  const handleViewCertificate = (certificate) => {
+    setSelectedCertificate(certificate);
+    setShowCertificateViewer(true);
+  };
+
+  const handleCertificateViewerDone = () => {
+    setShowCertificateViewer(false);
+    setSelectedCertificate(null);
+    // If we came from a direct link, navigate back to certificates list
+    if (certificateId) {
+      navigate("/club-officer/certificates/my");
+    }
+  };
+
+  const filteredCertificates = certificates.filter((cert) => {
+    const matchesSearch =
+      cert.eventId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cert.certificateType?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "All" || cert.certificateType === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = [
+    "All",
+    ...new Set(
+      certificates.map((cert) => cert.certificateType).filter(Boolean)
+    ),
+  ];
+
+  // Show certificate viewer if requested
+  if (showCertificateViewer && selectedCertificate) {
+    return (
+      <ClubOfficerLayout>
+        <CertificateViewer
+          certificateId={selectedCertificate.certificateId}
+          onDownload={() =>
+            handleDownload(
+              selectedCertificate.certificateId,
+              selectedCertificate
+            )
+          }
+          onDone={handleCertificateViewerDone}
+        />
+      </ClubOfficerLayout>
+    );
+  }
 
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <SkeletonCard showImage={true} />
-          <SkeletonCard showImage={true} />
-          <SkeletonCard showImage={true} />
+        <div className="bg-gray-100 min-h-screen pb-8">
+          <div className="max-w-full px-4 md:px-8">
+            {/* Search and Filter Skeleton */}
+            <div className="flex items-center mb-8 gap-4">
+              <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="w-5 h-5 bg-gray-300 rounded animate-pulse"></div>
+                </div>
+                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
+              </div>
+              <div className="relative">
+                <div className="bg-gray-300 p-3 rounded-lg w-32 h-12 animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Certificate Cards Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-md p-4 text-center">
+                  <div className="relative bg-gray-50 rounded-md mb-4 overflow-hidden" style={{ aspectRatio: "1056/816" }}>
+                    <SkeletonBase className="w-full h-full" />
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-16 animate-pulse"></div>
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-20 animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </ClubOfficerLayout>
     );
@@ -47,37 +233,86 @@ function Certificates() {
 
   return (
     <ClubOfficerLayout>
-      <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">My Certificates</h2>
+      <div className="bg-gray-100 min-h-screen pb-8">
+        <div className="max-w-full px-4 md:px-8">
+          <div className="flex items-center mb-8 gap-4">
+            <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search Certificates"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full p-3 pl-10 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="bg-white p-3 rounded-lg border border-gray-300 flex items-center text-gray-700 w-full justify-center sm:w-auto appearance-none pr-8"
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-          {certificates.length === 0 ? (
+          {filteredCertificates.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No certificates found</p>
-              <p className="text-gray-400 mt-2">You haven't earned any certificates yet.</p>
+              <div className="text-gray-500 text-lg mb-2">
+                No certificates found
+              </div>
+              <div className="text-gray-400">
+                Complete evaluations to earn certificates
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {certificates.map((certificate) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {filteredCertificates.map((cert) => (
                 <div
-                  key={certificate._id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  key={cert._id}
+                  className="bg-white rounded-lg shadow-md p-4 text-center hover:shadow-lg transition-shadow duration-300"
                 >
-                  <div className="aspect-[4/3] bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
-                    <span className="text-gray-400">Certificate Preview</span>
+                  <div
+                    className="relative bg-gray-50 rounded-md mb-4 overflow-hidden flex items-center justify-center"
+                    style={{ aspectRatio: "1056/816" }}
+                  >
+                    {certificateThumbnails[cert.certificateId] ? (
+                      <embed
+                        src={`${
+                          certificateThumbnails[cert.certificateId]
+                        }#toolbar=0&navpanes=0&scrollbar=0`}
+                        type="application/pdf"
+                        className="w-full h-full"
+                        title={`Certificate preview for ${
+                          cert.eventId?.name || "Certificate"
+                        }`}
+                      />
+                    ) : (
+                      <SkeletonBase className="w-full h-full" />
+                    )}
                   </div>
-                  <h3 className="font-semibold text-gray-800 mb-2">
-                    {certificate.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">
-                    {certificate.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
-                      {new Date(certificate.issuedDate).toLocaleDateString()}
-                    </span>
-                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      View Certificate
+
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => handleViewCertificate(cert)}
+                      className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                    >
+                      <Eye size={14} />
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDownload(cert.certificateId, cert)}
+                      className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+                    >
+                      <Download size={14} />
+                      Download
                     </button>
                   </div>
                 </div>
@@ -88,6 +323,6 @@ function Certificates() {
       </div>
     </ClubOfficerLayout>
   );
-}
+};
 
 export default Certificates;

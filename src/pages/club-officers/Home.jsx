@@ -46,23 +46,43 @@ function Home() {
   const fetchThumbnails = useCallback(async () => {
     if (!token) return;
     try {
-      // Latest form ID
+      // Get latest form ID
       const formRes = await fetch("/api/forms/latest/id", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const formData = await formRes.json();
-      const formId = formData.success ? formData.data?.id : null;
+      let formId = null;
+      if (formRes.ok) {
+        const formData = await formRes.json();
+        formId = formData.success ? formData.data?.id : null;
+      } else if (formRes.status === 404) {
+        // No forms found - this is expected if no forms are published yet
+        formId = null;
+      } else {
+        console.warn(`Failed to fetch latest form: ${formRes.status}`);
+      }
 
-      // Latest certificate ID
+      // Get latest certificate ID
       const certRes = await fetch("/api/certificates/latest/id", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const certData = await certRes.json();
-      const certId = certData.success ? certData.data?.id : null;
+      let certId = null;
+      if (certRes.ok) {
+        const certData = await certRes.json();
+        certId = certData.success ? certData.data?.id : null;
+      } else if (certRes.status === 404) {
+        // No certificates found - this is expected if no certificates exist yet
+        certId = null;
+      } else {
+        console.warn(`Failed to fetch latest certificate: ${certRes.status}`);
+      }
 
-      const evalThumb = formId ? `/api/thumbnails/form-${formId}.png` : null;
+      // Add cache-busting timestamp to ensure fresh thumbnails
+      const timestamp = new Date().getTime();
+      const evalThumb = formId
+        ? `/api/thumbnails/form-${formId}.png?t=${timestamp}`
+        : null;
       const certThumb = certId
-        ? `/api/thumbnails/certificate-${certId}.png`
+        ? `/api/thumbnails/certificate-${certId}.png?t=${timestamp}`
         : null;
       setThumbnailUrls({ evaluations: evalThumb, certificates: certThumb });
     } catch (err) {
@@ -168,7 +188,7 @@ function Home() {
             </div>
           </div>
 
-          {/* Activity & Reminders Skeleton */}
+          {/* Recent Activity & Reminders Skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <SkeletonCard contentLines={4} />
@@ -208,7 +228,7 @@ function Home() {
               </div>
             </div>
 
-            {/* Activity & Reminders */}
+            {/* Recent Activity & Reminders */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <RecentActivity />

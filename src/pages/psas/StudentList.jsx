@@ -10,6 +10,7 @@ import {
   Plus,
 } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import ImportCSVModal from "../../components/psas/evaluations/ImportCSVModal";
 import { FormSessionManager } from "../../utils/formSessionManager";
 
@@ -82,6 +83,11 @@ const StudentList = () => {
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [showImportModal, setShowImportModal] = useState(false);
 
+  // Determine user role for layout selection
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isClubOfficer = user.role === 'club-officer';
+  const LayoutComponent = isClubOfficer ? ClubOfficerLayout : PSASLayout;
+
   // Handle CSV upload from ImportCSVModal:
   // For the "View" flow, ImportCSVModal already navigates here with a formId.
   // We do not persist CSV; we only expect server-side or session-backed recipients.
@@ -102,15 +108,19 @@ const StudentList = () => {
     const formIdFromUrl = urlParams.get("formId");
     const isNewForm = urlParams.get("newForm") === "true";
 
+    // Determine the correct form creation path based on user role
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const evaluationsPath = user.role === 'club-officer' ? '/club-officer/form-creation' : '/psas/evaluations';
+
     if (formIdFromUrl) {
       // Navigate to form creation interface with edit parameter
-      navigate(`/psas/evaluations?edit=${formIdFromUrl}`);
+      navigate(`${evaluationsPath}?edit=${formIdFromUrl}`);
     } else if (isNewForm) {
       // Navigate to form creation interface for new form
-      navigate("/psas/evaluations?view=create");
+      navigate(`${evaluationsPath}?view=create`);
     } else {
       // Fallback to form creation interface without edit parameter
-      navigate("/psas/evaluations");
+      navigate(evaluationsPath);
     }
   };
 
@@ -306,10 +316,19 @@ const StudentList = () => {
       FormSessionManager.preserveFormId();
 
       // Navigate back to form creation with recipients count
-      const navigationUrl = `/psas/evaluations?recipients=${selectedStudents.length}&formId=${finalFormId}&from=studentList`;
-      console.log("🧭 Navigating to:", navigationUrl);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-      navigate(navigationUrl);
+      if (user.role === 'club-officer') {
+        // Club-officers navigate to their form creation interface
+        const navigationUrl = `/club-officer/form-creation?recipients=${selectedStudents.length}&formId=${finalFormId}&from=studentList`;
+        console.log("🧭 Navigating club-officer to:", navigationUrl);
+        navigate(navigationUrl);
+      } else {
+        // PSAS navigate to their evaluations page with parameters
+        const navigationUrl = `/psas/evaluations?recipients=${selectedStudents.length}&formId=${finalFormId}&from=studentList`;
+        console.log("🧭 Navigating PSAS to:", navigationUrl);
+        navigate(navigationUrl);
+      }
     } catch (error) {
       console.error("🚨 Error assigning students to form:", error);
       alert(
@@ -327,16 +346,16 @@ const StudentList = () => {
 
   if (loading) {
     return (
-      <PSASLayout>
+      <LayoutComponent>
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
-      </PSASLayout>
+      </LayoutComponent>
     );
   }
 
   return (
-    <PSASLayout>
+    <LayoutComponent>
       <div className="p-4 sm:p-6 md:p-8 bg-gray-100 min-h-full">
         {/* Top Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
@@ -614,7 +633,7 @@ const StudentList = () => {
         onFileUpload={handleCSVUpload}
         uploadedCSVData={null}
       />
-    </PSASLayout>
+    </LayoutComponent>
   );
 };
 

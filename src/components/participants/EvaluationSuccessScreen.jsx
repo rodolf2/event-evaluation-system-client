@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 
 const EvaluationSuccessScreen = ({ formId, onViewCertificates, certificateData }) => {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [showCertificate, setShowCertificate] = useState(false);
   const [certificateAvailable, setCertificateAvailable] = useState(false);
   const [loadingCertificate, setLoadingCertificate] = useState(true);
@@ -62,8 +62,21 @@ const EvaluationSuccessScreen = ({ formId, onViewCertificates, certificateData }
   };
 
   const handleViewCertificateDirectly = () => {
-    // Navigate to direct certificate link
-    navigate("/participant/certificates");
+    // Navigate to appropriate certificates page based on user role
+    // Add fallback check in case user object isn't loaded yet
+    const userRole = user?.role;
+    let certificatesPath = '/participant/certificates'; // default
+
+    if (userRole === 'club-officer') {
+      certificatesPath = '/club-officer/certificates/my';
+    } else if (userRole === 'participant') {
+      certificatesPath = '/participant/certificates';
+    } else if (userRole === 'psas') {
+      certificatesPath = '/psas/certificates';
+    }
+
+    console.log('Navigating to certificates page:', certificatesPath, 'for user role:', userRole);
+    navigate(certificatesPath);
   };
 
   const handleDone = () => {
@@ -76,7 +89,20 @@ const EvaluationSuccessScreen = ({ formId, onViewCertificates, certificateData }
     if (onViewCertificates) {
       onViewCertificates();
     } else {
-      navigate("/participant/certificates");
+      // Navigate to appropriate certificates page based on user role
+      const userRole = user?.role;
+      let certificatesPath = '/participant/certificates'; // default
+
+      if (userRole === 'club-officer') {
+        certificatesPath = '/club-officer/certificates/my';
+      } else if (userRole === 'participant') {
+        certificatesPath = '/participant/certificates';
+      } else if (userRole === 'psas') {
+        certificatesPath = '/psas/certificates';
+      }
+
+      console.log('Navigating to certificates page:', certificatesPath, 'for user role:', userRole);
+      navigate(certificatesPath);
     }
   };
 

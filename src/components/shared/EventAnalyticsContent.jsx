@@ -24,7 +24,7 @@ ChartJS.register(
   BarElement
 );
 
-const EventAnalyticsContent = () => {
+const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -54,8 +54,13 @@ const EventAnalyticsContent = () => {
         const result = await response.json();
 
         if (result.success && result.data) {
+          // Handle both array and object response formats
+          const formsArray = Array.isArray(result.data)
+            ? result.data
+            : result.data.forms || [];
+
           // Filter to only published forms (since only they have responses)
-          const publishedForms = result.data.filter(
+          const publishedForms = formsArray.filter(
             (form) => form.status === "published"
           );
           setAvailableForms(publishedForms);
@@ -293,7 +298,7 @@ const EventAnalyticsContent = () => {
             You need to have at least one published form to view analytics.
           </p>
           <a
-            href="/psas/evaluations"
+            href={`${basePath}/evaluations`}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
           >
             Create New Evaluation
@@ -317,7 +322,7 @@ const EventAnalyticsContent = () => {
           </p>
           {availableForms.length > 0 && (
             <a
-              href="/psas/evaluations"
+              href={`${basePath}/evaluations`}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
             >
               Select Form
@@ -497,7 +502,7 @@ const EventAnalyticsContent = () => {
       if (result.success) {
         toast.success("Report generated successfully!", { id: toastId });
         // Navigate to reports page to see the generated report
-        navigate("/psas/reports");
+        navigate(`${basePath}/reports`);
       } else {
         toast.error(result.message || "Failed to generate report", {
           id: toastId,
@@ -510,7 +515,7 @@ const EventAnalyticsContent = () => {
   };
 
   const handleViewReport = () => {
-    navigate(`/psas/reports/${formId}`);
+    navigate(`${basePath}/reports/${formId}`);
   };
 
   return (

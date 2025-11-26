@@ -84,7 +84,10 @@ const Certificates = () => {
       FormSessionManager.ensurePersistentFormId(navigationFormId);
       FormSessionManager.preserveFormId();
 
-      navigate(`/psas/evaluations?edit=${navigationFormId}`);
+      const basePath = isClubOfficer
+        ? "/club-officer/form-creation"
+        : "/psas/create-form";
+      navigate(`${basePath}?formId=${navigationFormId}`);
       return;
     }
 
@@ -138,7 +141,10 @@ const Certificates = () => {
     // Persist formId and navigate back
     FormSessionManager.ensurePersistentFormId(navigationFormId);
     FormSessionManager.preserveFormId();
-    navigate(`/psas/evaluations?edit=${navigationFormId}`);
+    const basePath = isClubOfficer
+      ? "/club-officer/form-creation"
+      : "/psas/create-form";
+    navigate(`${basePath}?formId=${navigationFormId}`);
   };
 
   const handleBackToGallery = () => {

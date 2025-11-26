@@ -4,7 +4,7 @@ import EventAnalyticsContent from "../../components/shared/EventAnalyticsContent
 const EventAnalytics = () => {
   return (
     <PSASLayout>
-      <EventAnalyticsContent />
+      <EventAnalyticsContent basePath="/psas" />
     </PSASLayout>
   );
 };

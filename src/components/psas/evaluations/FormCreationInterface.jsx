@@ -23,6 +23,7 @@ import CertificateCustomizer from "../certificates/CertificateCustomizer";
 import { useAuth } from "../../../contexts/useAuth";
 import { FormSessionManager } from "../../../utils/formSessionManager";
 import PSASLayout from "../../psas/PSASLayout";
+import ClubOfficerLayout from "../../club-officers/ClubOfficerLayout";
 import toast from "react-hot-toast";
 
 // Helper to generate IDs
@@ -2080,14 +2081,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     }
   };
 
-  // Check if this component is being used as a child component (has onBack prop and other context)
-  // If used as child component, don't wrap with PSASLayout
-  // If accessed via direct routing, wrap with PSASLayout
-  // Preserve layout context across navigation to prevent layout breaking
-  const isChildComponent = onBack;
-
-  // Only preserve layout for child components, not for navigation returns
-  const shouldPreserveLayout = isChildComponent;
+  // Always use layout when accessed via direct routing (no props)
+  // But preserve layout for navigation returns (with onBack prop)
+  const shouldUseLayout = !onBack;
 
   if (showSuccessScreen) {
     const successContent = (
@@ -2145,18 +2141,24 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           if (onBack) {
             onBack();
           } else {
-            navigate("/psas/evaluations");
+            // Use role-based navigation
+            const evaluationsPath = user?.role === 'club-officer' ? '/club-officer/evaluations' : '/psas/evaluations';
+            navigate(evaluationsPath);
           }
         }}
       />
     );
 
-    // Only wrap with PSASLayout if accessed via direct routing (no props)
-    // Preserve layout context across navigation to prevent layout breaking
-    if (isChildComponent || shouldPreserveLayout) {
-      return successContent;
+    // Use appropriate layout for success screen based on user role
+    // For PSAS users, only apply layout when shouldUseLayout is true (direct access)
+    if (user?.role === 'psas' && shouldUseLayout) {
+      return <PSASLayout>{successContent}</PSASLayout>;
+    } else if (user?.role === 'club-officer' && shouldUseLayout) {
+      return <ClubOfficerLayout>{successContent}</ClubOfficerLayout>;
     }
-    return <PSASLayout>{successContent}</PSASLayout>;
+
+    // Return content directly for navigation returns (preserving parent layout)
+    return successContent;
   }
 
   const content = (
@@ -2259,6 +2261,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   }
 
                   // Navigate to student assignment page with the stable form id
+                  // Use PSAS students page for both roles since student assignment is shared functionality
                   const navigationUrl = `/psas/students?formId=${encodeURIComponent(
                     stableFormId
                   )}&from=evaluation`;
@@ -2591,13 +2594,19 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           <div className="flex justify-center mb-6">
             <button
               onClick={() => {
-                // Navigate to certificate linking page
+                // Navigate to certificate linking page based on user role
                 const formId =
                   currentFormId || FormSessionManager.getCurrentFormId();
                 const queryParams = new URLSearchParams();
                 queryParams.set("from", "evaluation");
                 queryParams.set("formId", formId);
-                navigate(`/psas/certificates?${queryParams.toString()}`);
+
+                // Determine the correct certificates path based on user role
+                const certificatesPath = user?.role === 'club-officer'
+                  ? '/club-officer/certificates/make'
+                  : '/psas/certificates';
+
+                navigate(`${certificatesPath}?${queryParams.toString()}`);
               }}
               className={`px-6 py-3 font-semibold text-white rounded-lg transition-colors ${
                 isCertificateLinked
@@ -2812,6 +2821,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               // Don't automatically close modal on file upload - let user decide when to close
             }}
             uploadedCSVData={uploadedCSVData}
+            currentFormId={currentFormId}
           />
 
           {/* Certificate Customizer Modal */}
@@ -2833,12 +2843,17 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     </>
   );
 
-  // Only wrap with PSASLayout if accessed via direct routing (no props)
-  // Preserve layout context across navigation to prevent layout breaking
-  if (isChildComponent || shouldPreserveLayout) {
-    return content;
+  // Use appropriate layout based on user role and access method
+  // PSAS users get PSASLayout only when accessed directly, not from evaluations page
+  // Club officers only get layout when accessed via direct routing
+  if (user?.role === 'psas' && shouldUseLayout) {
+    return <PSASLayout>{content}</PSASLayout>;
+  } else if (user?.role === 'club-officer' && shouldUseLayout) {
+    return <ClubOfficerLayout>{content}</ClubOfficerLayout>;
   }
-  return <PSASLayout>{content}</PSASLayout>;
+
+  // Return content directly for navigation returns (preserving parent layout)
+  return content;
 };
 
 export default FormCreationInterface;

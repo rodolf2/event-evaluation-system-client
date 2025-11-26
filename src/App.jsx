@@ -20,6 +20,7 @@ import ClubOfficerCertificates from "./pages/club-officers/Certificates";
 import ClubOfficerNotifications from "./pages/club-officers/Notifications";
 import ClubOfficerEventAnalytics from "./pages/club-officers/EventAnalytics";
 import ClubOfficerReports from "./pages/club-officers/Reports";
+import SurveyCreation from "./pages/club-officers/SurveyCreation";
 import ClubOfficerBadges from "./pages/club-officers/Badges";
 import ParticipantHome from "./pages/participants/Home";
 import ParticipantEvaluations from "./pages/participants/Evaluations";
@@ -33,6 +34,7 @@ import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
 import ClubOfficerLayout from "./components/club-officers/ClubOfficerLayout";
+import PSASLayout from "./components/psas/PSASLayout";
 import SchoolAdminLayout from "./components/school-admins/SchoolAdminLayout";
 import MisLayout from "./components/mis/MisLayout";
 import Profile from "./pages/Profile";
@@ -53,11 +55,11 @@ import NotificationPopup from "./components/shared/NotificationPopup";
 // Sample form data removed - now fetched dynamically by EvaluationForm component
 
 function App() {
-  const { user, token } = useAuth();
+  const { user, token, isLoading } = useAuth();
 
   const getHomeRoute = () => {
     if (!token) return "/login";
-    if (!user) return "/login";
+    if (!user) return "/login"; // Don't redirect during loading
 
     switch (user.role) {
       case "psas":
@@ -74,6 +76,24 @@ function App() {
         return "/login";
     }
   };
+
+  // Show loading screen during authentication
+  if (isLoading && token && !user) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "18px",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        Loading your account...
+      </div>
+    );
+  }
 
   // Protect routes based on role
   const isAuthorized = (allowedRole) => {
@@ -130,7 +150,11 @@ function App() {
             path="/psas/create-form"
             element={
               isAuthorized("psas") ? (
-                <FormCreationInterface onBack={() => window.history.back()} />
+                <PSASLayout>
+                  <FormCreationInterface
+                    onBack={() => (window.location.href = "/psas/evaluations")}
+                  />
+                </PSASLayout>
               ) : (
                 <Navigate to={getHomeRoute()} />
               )
@@ -239,7 +263,7 @@ function App() {
           <Route
             path="/psas/students"
             element={
-              isAuthorized("psas") ? (
+              isAuthorized("psas") || isAuthorized("club-officer") ? (
                 <StudentList />
               ) : (
                 <Navigate to={getHomeRoute()} />
@@ -282,9 +306,7 @@ function App() {
             path="/club-officer/evaluations/create"
             element={
               isAuthorized("club-officer") ? (
-                <ClubOfficerLayout>
-                  <ClubOfficerEvaluationsContent />
-                </ClubOfficerLayout>
+                <SurveyCreation />
               ) : (
                 <Navigate to={getHomeRoute()} />
               )
@@ -351,10 +373,37 @@ function App() {
             }
           />
           <Route
+            path="/club-officer/form-creation"
+            element={
+              isAuthorized("club-officer") ? (
+                <ClubOfficerLayout>
+                  <FormCreationInterface
+                    onBack={() =>
+                      (window.location.href =
+                        "/club-officer/evaluations/create")
+                    }
+                  />
+                </ClubOfficerLayout>
+              ) : (
+                <Navigate to={getHomeRoute()} />
+              )
+            }
+          />
+          <Route
             path="/club-officer/reports"
             element={
               isAuthorized("club-officer") ? (
                 <ClubOfficerReports />
+              ) : (
+                <Navigate to={getHomeRoute()} />
+              )
+            }
+          />
+          <Route
+            path="/club-officer/reports/:eventId"
+            element={
+              isAuthorized("club-officer") ? (
+                <CompleteReport />
               ) : (
                 <Navigate to={getHomeRoute()} />
               )
@@ -453,7 +502,7 @@ function App() {
           <Route
             path="/evaluations/start/:formId"
             element={
-              isAuthorized("participant") ? (
+              isAuthorized("participant") || isAuthorized("club-officer") ? (
                 <EvaluationStart />
               ) : (
                 <Navigate to={getHomeRoute()} />
@@ -463,7 +512,7 @@ function App() {
           <Route
             path="/evaluations/form/:formId"
             element={
-              isAuthorized("participant") ? (
+              isAuthorized("participant") || isAuthorized("club-officer") ? (
                 <EvaluationForm />
               ) : (
                 <Navigate to={getHomeRoute()} />
