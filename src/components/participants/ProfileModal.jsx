@@ -39,6 +39,8 @@ const ProfileModal = ({ isOpen, onClose, position }) => {
               ? "/psas/profile"
               : user?.role === "club-officer"
               ? "/club-officer/profile"
+              : user?.role === "school-admin"
+              ? "/school-admin/profile"
               : "/profile"
           }
           onClick={onClose} // Close modal on navigation

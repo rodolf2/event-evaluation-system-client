@@ -305,10 +305,12 @@ function Profile() {
       ? ParticipantLayout
       : user.role === "club-officer"
       ? ClubOfficerLayout
-      : PSASLayout;
+      : user.role === "psas"
+      ? PSASLayout
+      : null; // school-admin uses external layout
 
-  return (
-    <LayoutComponent>
+  const content = (
+    <>
       <div className="bg-gray-50 min-h-full">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
@@ -638,8 +640,18 @@ function Profile() {
         onSave={handleSaveProfilePicture}
         onRemove={handleRemoveProfilePicture}
       />
-    </LayoutComponent>
+    </>
   );
+
+  if (LayoutComponent) {
+    return (
+      <LayoutComponent>
+        {content}
+      </LayoutComponent>
+    );
+  } else {
+    return content;
+  }
 }
 
 export default Profile;

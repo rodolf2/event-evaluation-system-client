@@ -30,7 +30,8 @@ import ParticipantNotifications from "./pages/participants/Notifications";
 import EvaluationStart from "./pages/participants/EvaluationStart";
 import EvaluationForm from "./pages/evaluation/EvaluationForm";
 import SharedNotifications from "./pages/shared/Notifications";
-import SchoolAdminDashboard from "./pages/school-admins/Dashboard";
+import SchoolAdminHome from "./pages/school-admins/Home";
+import SchoolAdminReports from "./pages/school-admins/Reports";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
 import ClubOfficerLayout from "./components/club-officers/ClubOfficerLayout";
@@ -525,9 +526,17 @@ function App() {
             path="/school-admin/home"
             element={
               isAuthorized("school-admin") ? (
-                <SchoolAdminLayout>
-                  <SchoolAdminDashboard />
-                </SchoolAdminLayout>
+                <SchoolAdminHome />
+              ) : (
+                <Navigate to={getHomeRoute()} />
+              )
+            }
+          />
+          <Route
+            path="/school-admin/reports"
+            element={
+              isAuthorized("school-admin") ? (
+                <SchoolAdminReports />
               ) : (
                 <Navigate to={getHomeRoute()} />
               )
@@ -538,6 +547,18 @@ function App() {
             element={
               isAuthorized("school-admin") ? (
                 <SharedNotifications layout={SchoolAdminLayout} />
+              ) : (
+                <Navigate to={getHomeRoute()} />
+              )
+            }
+          />
+          <Route
+            path="/school-admin/profile"
+            element={
+              isAuthorized("school-admin") ? (
+                <SchoolAdminLayout>
+                  <Profile />
+                </SchoolAdminLayout>
               ) : (
                 <Navigate to={getHomeRoute()} />
               )

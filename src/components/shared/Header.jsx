@@ -91,6 +91,12 @@ const Header = ({
     if (user?.role === 'club-officer') {
       return '/club-officer/notifications';
     }
+    if (user?.role === 'school-admin') {
+      return '/school-admin/notifications';
+    }
+    if (user?.role === 'psas') {
+      return '/psas/notifications';
+    }
     return config.notificationPath
       ? `/psas/notifications`
       : `/participant/notifications`;
