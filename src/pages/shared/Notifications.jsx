@@ -336,7 +336,6 @@ const Notifications = ({ layout: LayoutComponent }) => {
               ? new Date(notification.createdAt).toLocaleString()
               : "",
             read: !!notification.isRead,
-            type: notification.type,
             relatedEntity: notification.relatedEntity,
           };
         });
