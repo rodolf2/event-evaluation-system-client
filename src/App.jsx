@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import "./App.css";
 import LoginPage from "./pages/LogIn";
+import GuestLogin from "./pages/GuestLogin";
 import Home from "./pages/psas/Home";
 import Evaluations from "./pages/psas/Evaluations";
 import Certificates from "./pages/psas/Certificates";
@@ -52,8 +53,11 @@ import FormCreationInterface from "./components/psas/evaluations/FormCreationInt
 import ClubOfficerEvaluationsContent from "./components/club-officers/ClubOfficerEvaluationsContent";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import NotificationPopup from "./components/shared/NotificationPopup";
+import { OnboardingProvider } from "./contexts/OnboardingContext.jsx";
+import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 
 // Sample form data removed - now fetched dynamically by EvaluationForm component
+import OnboardingWrapper from "./components/onboarding/OnboardingWrapper";
 
 function App() {
   const { user, token, isLoading } = useAuth();
@@ -73,6 +77,10 @@ function App() {
         return "/school-admin/home";
       case "mis":
         return "/mis";
+      case "evaluator":
+        return "/participant/home"; // Guest evaluators use participant interface
+      case "guest-speaker":
+        return "/participant/home"; // Guest speakers use participant interface
       default:
         return "/login";
     }
@@ -101,520 +109,546 @@ function App() {
     return user && user.role === allowedRole;
   };
 
+  // Check if user is a guest (evaluator or guest-speaker)
+  const isGuest = () => {
+    return user && (user.role === "evaluator" || user.role === "guest-speaker");
+  };
+
+  // Check if user can access participant routes (participant or guest users)
+  const canAccessParticipantRoutes = () => {
+    return isAuthorized("participant") || isGuest();
+  };
+
   // Role-based route protection is now handled directly in the Routes
 
   return (
     <NotificationProvider>
-      <Router>
-        <Toaster position="top-center" reverseOrder={false} />
-        <NotificationPopup />
-        <Routes>
-          {/* Public routes */}
-          <Route
-            path="/login"
-            element={token ? <Navigate to={getHomeRoute()} /> : <LoginPage />}
-          />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+      <OnboardingProvider>
+        <Router>
+          <Toaster position="top-center" reverseOrder={false} />
+          <NotificationPopup />
+          <OnboardingWrapper />
 
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to={getHomeRoute()} />} />
+          <Routes>
+            {/* Public routes */}
+            <Route
+              path="/login"
+              element={token ? <Navigate to={getHomeRoute()} /> : <LoginPage />}
+            />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route
+              path="/guest-login"
+              element={
+                token ? <Navigate to={getHomeRoute()} /> : <GuestLogin />
+              }
+            />
 
-          {/* PSAS routes */}
-          <Route
-            path="/psas/home"
-            element={
-              isAuthorized("psas") ? <Home /> : <Navigate to={getHomeRoute()} />
-            }
-          />
-          <Route path="/psas" element={<Navigate to="/psas/home" />} />
-          <Route
-            path="/psas/evaluations"
-            element={
-              isAuthorized("psas") ? (
-                <Evaluations />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/certificates"
-            element={
-              isAuthorized("psas") ? (
-                <Certificates />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/create-form"
-            element={
-              isAuthorized("psas") ? (
-                <PSASLayout>
-                  <FormCreationInterface
-                    onBack={() => (window.location.href = "/psas/evaluations")}
-                  />
-                </PSASLayout>
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/analytics"
-            element={
-              isAuthorized("psas") ? (
-                <EventAnalytics />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports"
-            element={
-              isAuthorized("psas") ? (
-                <Reports />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports/:eventId"
-            element={
-              isAuthorized("psas") ? (
-                <CompleteReport />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports/quantitative-ratings/:eventId"
-            element={
-              isAuthorized("psas") ? (
-                <QuantitativeRatings />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports/qualitative-comments/:eventId"
-            element={
-              isAuthorized("psas") ? (
-                <QualitativeComments />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports/positive-comments/:eventId"
-            element={
-              isAuthorized("psas") ? (
-                <PositiveComments />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports/negative-comments/:eventId"
-            element={
-              isAuthorized("psas") ? (
-                <NegativeComments />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports/neutral-comments/:eventId"
-            element={
-              isAuthorized("psas") ? (
-                <NeutralComments />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/reports/prepared-by"
-            element={
-              isAuthorized("psas") ? (
-                <ReportSharingPage />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/notifications"
-            element={
-              isAuthorized("psas") ? (
-                <Notifications />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/students"
-            element={
-              isAuthorized("psas") || isAuthorized("club-officer") ? (
-                <StudentList />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/psas/profile"
-            element={
-              isAuthorized("psas") ? (
-                <Profile />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
+            {/* Root redirect */}
+            <Route path="/" element={<Navigate to={getHomeRoute()} />} />
 
-          {/* Club Officer routes */}
-          <Route
-            path="/club-officer/home"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerHome />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/evaluations"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerEvaluations />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/evaluations/create"
-            element={
-              isAuthorized("club-officer") ? (
-                <SurveyCreation />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/evaluations/my"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerEvaluations />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/certificates"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerCertificates />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/certificates/make"
-            element={
-              isAuthorized("club-officer") ? (
-                <Certificates />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/certificates/my"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerCertificates />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/badges"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerBadges />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/analytics"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerEventAnalytics />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/form-creation"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerLayout>
-                  <FormCreationInterface
-                    onBack={() =>
-                      (window.location.href =
-                        "/club-officer/evaluations/create")
-                    }
-                  />
-                </ClubOfficerLayout>
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/reports"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerReports />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/reports/:eventId"
-            element={
-              isAuthorized("club-officer") ? (
-                <CompleteReport />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer/notifications"
-            element={
-              isAuthorized("club-officer") ? (
-                <ClubOfficerNotifications />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/club-officer"
-            element={<Navigate to="/club-officer/home" />}
-          />
-          <Route
-            path="/club-officer/profile"
-            element={
-              isAuthorized("club-officer") ? (
-                <Profile />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-
-          {/* Participant routes */}
-          <Route
-            path="/participant/home"
-            element={
-              isAuthorized("participant") ? (
-                <ParticipantHome />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/participant"
-            element={<Navigate to="/participant/home" />}
-          />
-          <Route
-            path="/participant/evaluations"
-            element={
-              isAuthorized("participant") ? (
-                <ParticipantEvaluations />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/participant/certificates"
-            element={
-              isAuthorized("participant") ? (
-                <ParticipantCertificates />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/participant/certificate/:certificateId"
-            element={
-              isAuthorized("participant") ? (
-                <ParticipantCertificates />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/participant/badges"
-            element={
-              isAuthorized("participant") ? (
-                <ParticipantBadges />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/participant/notifications"
-            element={
-              isAuthorized("participant") ? (
-                <ParticipantNotifications />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/evaluations/start/:formId"
-            element={
-              isAuthorized("participant") || isAuthorized("club-officer") ? (
-                <EvaluationStart />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/evaluations/form/:formId"
-            element={
-              isAuthorized("participant") || isAuthorized("club-officer") ? (
-                <EvaluationForm />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-
-          {/* School Admin routes */}
-          <Route
-            path="/school-admin/home"
-            element={
-              isAuthorized("school-admin") ? (
-                <SchoolAdminHome />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/school-admin/reports"
-            element={
-              isAuthorized("school-admin") ? (
-                <SchoolAdminReports />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/school-admin/notifications"
-            element={
-              isAuthorized("school-admin") ? (
-                <SharedNotifications layout={SchoolAdminLayout} />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/school-admin/profile"
-            element={
-              isAuthorized("school-admin") ? (
-                <SchoolAdminLayout>
+            {/* PSAS routes */}
+            <Route
+              path="/psas/home"
+              element={
+                isAuthorized("psas") ? (
+                  <Home />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route path="/psas" element={<Navigate to="/psas/home" />} />
+            <Route
+              path="/psas/evaluations"
+              element={
+                isAuthorized("psas") ? (
+                  <Evaluations />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/certificates"
+              element={
+                isAuthorized("psas") ? (
+                  <Certificates />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/create-form"
+              element={
+                isAuthorized("psas") ? (
+                  <PSASLayout>
+                    <FormCreationInterface
+                      onBack={() =>
+                        (window.location.href = "/psas/evaluations")
+                      }
+                    />
+                  </PSASLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/analytics"
+              element={
+                isAuthorized("psas") ? (
+                  <EventAnalytics />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports"
+              element={
+                isAuthorized("psas") ? (
+                  <Reports />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports/:eventId"
+              element={
+                isAuthorized("psas") ? (
+                  <CompleteReport />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports/quantitative-ratings/:eventId"
+              element={
+                isAuthorized("psas") ? (
+                  <QuantitativeRatings />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports/qualitative-comments/:eventId"
+              element={
+                isAuthorized("psas") ? (
+                  <QualitativeComments />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports/positive-comments/:eventId"
+              element={
+                isAuthorized("psas") ? (
+                  <PositiveComments />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports/negative-comments/:eventId"
+              element={
+                isAuthorized("psas") ? (
+                  <NegativeComments />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports/neutral-comments/:eventId"
+              element={
+                isAuthorized("psas") ? (
+                  <NeutralComments />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/reports/prepared-by"
+              element={
+                isAuthorized("psas") ? (
+                  <ReportSharingPage />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/notifications"
+              element={
+                isAuthorized("psas") ? (
+                  <Notifications />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/students"
+              element={
+                isAuthorized("psas") || isAuthorized("club-officer") ? (
+                  <StudentList />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/psas/profile"
+              element={
+                isAuthorized("psas") ? (
                   <Profile />
-                </SchoolAdminLayout>
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/school-admin"
-            element={<Navigate to="/school-admin/home" />}
-          />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
 
-          {/* MIS routes */}
-          <Route
-            path="/mis"
-            element={
-              isAuthorized("mis") ? (
-                <MisLayout>
-                  <MisDashboard />
-                </MisLayout>
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/mis/notifications"
-            element={
-              isAuthorized("mis") ? (
-                <SharedNotifications layout={MisLayout} />
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
-          <Route
-            path="/mis/user-management"
-            element={
-              isAuthorized("mis") ? (
-                <MisLayout>
-                  <UserManagement />
-                </MisLayout>
-              ) : (
-                <Navigate to={getHomeRoute()} />
-              )
-            }
-          />
+            {/* Club Officer routes */}
+            <Route
+              path="/club-officer/home"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerHome />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/evaluations"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerEvaluations />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/evaluations/create"
+              element={
+                isAuthorized("club-officer") ? (
+                  <SurveyCreation />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/evaluations/my"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerEvaluations />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/certificates"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerCertificates />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/certificates/make"
+              element={
+                isAuthorized("club-officer") ? (
+                  <Certificates />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/certificates/my"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerCertificates />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/badges"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerBadges />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/analytics"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerEventAnalytics />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/form-creation"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerLayout>
+                    <FormCreationInterface
+                      onBack={() =>
+                        (window.location.href =
+                          "/club-officer/evaluations/create")
+                      }
+                    />
+                  </ClubOfficerLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/reports"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerReports />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/reports/:eventId"
+              element={
+                isAuthorized("club-officer") ? (
+                  <CompleteReport />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer/notifications"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ClubOfficerNotifications />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-officer"
+              element={<Navigate to="/club-officer/home" />}
+            />
+            <Route
+              path="/club-officer/profile"
+              element={
+                isAuthorized("club-officer") ? (
+                  <Profile />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
 
-          {/* Profile route - accessible to all authenticated users */}
-          <Route
-            path="/profile"
-            element={token ? <Profile /> : <Navigate to="/login" />}
-          />
+            {/* Participant routes */}
+            <Route
+              path="/participant/home"
+              element={
+                canAccessParticipantRoutes() ? (
+                  <ParticipantHome />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/participant"
+              element={<Navigate to="/participant/home" />}
+            />
+            <Route
+              path="/participant/evaluations"
+              element={
+                canAccessParticipantRoutes() ? (
+                  <ParticipantEvaluations />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/participant/certificates"
+              element={
+                canAccessParticipantRoutes() ? (
+                  <ParticipantCertificates />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/participant/certificate/:certificateId"
+              element={
+                canAccessParticipantRoutes() ? (
+                  <ParticipantCertificates />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/participant/badges"
+              element={
+                canAccessParticipantRoutes() ? (
+                  <ParticipantBadges />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/participant/notifications"
+              element={
+                canAccessParticipantRoutes() ? (
+                  <ParticipantNotifications />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/evaluations/start/:formId"
+              element={
+                canAccessParticipantRoutes() || isAuthorized("club-officer") ? (
+                  <EvaluationStart />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/evaluations/form/:formId"
+              element={
+                canAccessParticipantRoutes() || isAuthorized("club-officer") ? (
+                  <EvaluationForm />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
 
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to={getHomeRoute()} />} />
-        </Routes>
-      </Router>
+            {/* School Admin routes */}
+            <Route
+              path="/school-admin/home"
+              element={
+                isAuthorized("school-admin") ? (
+                  <SchoolAdminHome />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/school-admin/reports"
+              element={
+                isAuthorized("school-admin") ? (
+                  <SchoolAdminReports />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/school-admin/notifications"
+              element={
+                isAuthorized("school-admin") ? (
+                  <SharedNotifications layout={SchoolAdminLayout} />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/school-admin/profile"
+              element={
+                isAuthorized("school-admin") ? (
+                  <SchoolAdminLayout>
+                    <Profile />
+                  </SchoolAdminLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/school-admin"
+              element={<Navigate to="/school-admin/home" />}
+            />
+
+            {/* MIS routes */}
+            <Route
+              path="/mis"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <MisDashboard />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/notifications"
+              element={
+                isAuthorized("mis") ? (
+                  <SharedNotifications layout={MisLayout} />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/user-management"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <UserManagement />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+
+            {/* Profile route - accessible to all authenticated users */}
+            <Route
+              path="/profile"
+              element={token ? <Profile /> : <Navigate to="/login" />}
+            />
+
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to={getHomeRoute()} />} />
+          </Routes>
+        </Router>
+      </OnboardingProvider>
     </NotificationProvider>
   );
 }

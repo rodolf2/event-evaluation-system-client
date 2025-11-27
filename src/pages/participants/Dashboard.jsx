@@ -5,7 +5,10 @@ import CalendarWidget from "../../components/participants/CalendarWidget";
 import RecentActivity from "../../components/participants/RecentActivity";
 import Reminders from "../../components/participants/Reminders";
 import ReminderModal from "../../components/participants/ReminderModal";
-import { SkeletonCard, SkeletonDashboardCard } from "../../components/shared/SkeletonLoader";
+import {
+  SkeletonCard,
+  SkeletonDashboardCard,
+} from "../../components/shared/SkeletonLoader";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -53,9 +56,13 @@ function ParticipantDashboard() {
       const certData = await certRes.json();
       const certId = certData.success ? certData.data?.id : null;
 
-      const evalThumb = formId ? `/api/thumbnails/form-${formId}.png` : null;
+      // Add cache-busting timestamp to ensure fresh thumbnails
+      const timestamp = new Date().getTime();
+      const evalThumb = formId
+        ? `/api/thumbnails/form-${formId}.png?t=${timestamp}&token=${token}`
+        : null;
       const certThumb = certId
-        ? `/api/thumbnails/certificate-${certId}.png`
+        ? `/api/thumbnails/certificate-${certId}.png?t=${timestamp}&token=${token}`
         : null;
       setThumbnailUrls({ evaluations: evalThumb, certificates: certThumb });
     } catch (err) {
@@ -128,7 +135,11 @@ function ParticipantDashboard() {
               <SkeletonDashboardCard />
               <SkeletonDashboardCard />
             </div>
-            <SkeletonCard showImage={false} showTitle={true} showContent={false} />
+            <SkeletonCard
+              showImage={false}
+              showTitle={true}
+              showContent={false}
+            />
           </div>
 
           {/* Activity & Reminders Skeleton */}

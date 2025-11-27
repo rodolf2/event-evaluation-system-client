@@ -1,6 +1,14 @@
+import { useNavigate } from "react-router-dom";
+
 function LoginPage() {
+  const navigate = useNavigate();
+
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = "http://localhost:5000/api/auth/google";
+  };
+
+  const handleGuestMode = () => {
+    navigate("/guest-login");
   };
 
   return (
@@ -24,7 +32,10 @@ function LoginPage() {
           </p>
 
           {/* Google Sign-In Button */}
-          <button onClick={handleGoogleLogin} className="w-full border flex items-center justify-center py-3 rounded-md hover:bg-gray-100 bg-white text-gray-700 font-medium transition">
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full border flex items-center justify-center py-3 rounded-md hover:bg-gray-100 bg-white text-gray-700 font-medium transition"
+          >
             <img
               src="src/assets/logo/google-logo.png"
               alt="Google"
@@ -58,7 +69,10 @@ function LoginPage() {
                 An Intuitive and Engaging Event Evaluation System for La Verdad
                 Christian College – Apalit, Pampanga
               </p>
-              <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+              <button
+                onClick={handleGuestMode}
+                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105"
+              >
                 Go to Guest Mode
               </button>
             </div>

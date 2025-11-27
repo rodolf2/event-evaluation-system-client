@@ -6,7 +6,10 @@ import RecentActivity from "../../components/psas/RecentActivity";
 import Reminders from "../../components/psas/Reminders";
 import ReminderModal from "../../components/psas/ReminderModal";
 import ProfileSection from "../../components/psas/ProfileSection";
-import { SkeletonCard, SkeletonDashboardCard } from "../../components/shared/SkeletonLoader";
+import {
+  SkeletonCard,
+  SkeletonDashboardCard,
+} from "../../components/shared/SkeletonLoader";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -80,10 +83,10 @@ function Home() {
       // Add cache-busting timestamp to ensure fresh thumbnail
       const timestamp = new Date().getTime();
       const analyticsThumb = formId
-        ? `/api/thumbnails/analytics-${formId}.png?t=${timestamp}`
+        ? `/api/thumbnails/analytics-${formId}.png?t=${timestamp}&token=${token}`
         : null;
       const reportsThumb = formId
-        ? `/api/thumbnails/form-${formId}.png?t=${timestamp}`
+        ? `/api/thumbnails/form-${formId}.png?t=${timestamp}&token=${token}`
         : null;
       setThumbnailUrls({ analytics: analyticsThumb, reports: reportsThumb });
     } catch (err) {
@@ -168,11 +171,19 @@ function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:auto-rows-min">
             {/* Profile Section - spans 2 columns, 1 row */}
             <div className="lg:col-span-2">
-              <SkeletonCard showImage={false} showTitle={false} contentLines={6} />
+              <SkeletonCard
+                showImage={false}
+                showTitle={false}
+                contentLines={6}
+              />
             </div>
             {/* Calendar - spans 1 column, 2 rows */}
             <div className="lg:row-span-2">
-              <SkeletonCard showImage={false} showTitle={true} showContent={false} />
+              <SkeletonCard
+                showImage={false}
+                showTitle={true}
+                showContent={false}
+              />
             </div>
             {/* Cards - spans 2 columns, positioned in second row */}
             <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">

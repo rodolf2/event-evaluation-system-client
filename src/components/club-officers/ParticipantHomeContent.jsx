@@ -5,7 +5,12 @@ import RecentActivity from "../participants/RecentActivity";
 import Reminders from "../participants/Reminders";
 import ReminderModal from "../participants/ReminderModal";
 import ProfileSection from "../participants/ProfileSection";
-import { SkeletonGrid, SkeletonDashboardCard, SkeletonCard, SkeletonText } from "../shared/SkeletonLoader";
+import {
+  SkeletonGrid,
+  SkeletonDashboardCard,
+  SkeletonCard,
+  SkeletonText,
+} from "../shared/SkeletonLoader";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -140,11 +145,19 @@ function ParticipantHomeContent() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:auto-rows-min">
             {/* Profile Section - spans 2 columns, 1 row */}
             <div className="lg:col-span-2">
-              <SkeletonCard showImage={false} showTitle={false} contentLines={6} />
+              <SkeletonCard
+                showImage={false}
+                showTitle={false}
+                contentLines={6}
+              />
             </div>
             {/* Calendar - spans 1 column, 2 rows */}
             <div className="lg:row-span-2">
-              <SkeletonCard showImage={false} showTitle={true} showContent={false} />
+              <SkeletonCard
+                showImage={false}
+                showTitle={true}
+                showContent={false}
+              />
             </div>
             {/* Cards - spans 2 columns, positioned in second row */}
             <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">

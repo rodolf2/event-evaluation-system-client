@@ -79,10 +79,10 @@ function Home() {
       // Add cache-busting timestamp to ensure fresh thumbnails
       const timestamp = new Date().getTime();
       const evalThumb = formId
-        ? `/api/thumbnails/form-${formId}.png?t=${timestamp}`
+        ? `/api/thumbnails/form-${formId}.png?t=${timestamp}&token=${token}`
         : null;
       const certThumb = certId
-        ? `/api/thumbnails/certificate-${certId}.png?t=${timestamp}`
+        ? `/api/thumbnails/certificate-${certId}.png?t=${timestamp}&token=${token}`
         : null;
       setThumbnailUrls({ evaluations: evalThumb, certificates: certThumb });
     } catch (err) {

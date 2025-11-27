@@ -46,6 +46,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [sections, setSections] = useState([]);
   const [eventStartDate, setEventStartDate] = useState("");
   const [eventEndDate, setEventEndDate] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [formTitle, setFormTitle] = useState("Untitled Form");
   const [formDescription, setFormDescription] = useState("Form Description");
@@ -125,6 +126,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setUploadedCSVData(null);
       setEventStartDate("");
       setEventEndDate("");
+      setVerificationCode("");
       setCurrentFormId(null);
       setIsCertificateLinked(false);
       setHasUnsavedChanges(false);
@@ -169,6 +171,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       uploadedLinks,
       eventStartDate,
       eventEndDate,
+      verificationCode,
       currentFormId,
       isCertificateLinked,
       linkedCertificateId,
@@ -184,6 +187,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     uploadedLinks,
     eventStartDate,
     eventEndDate,
+    verificationCode,
     currentFormId,
     isCertificateLinked,
     linkedCertificateId,
@@ -212,6 +216,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         uploadedLinks,
         eventStartDate,
         eventEndDate,
+        verificationCode,
         currentFormId,
         isCertificateLinked,
         linkedCertificateId,
@@ -249,6 +254,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     uploadedLinks,
     eventStartDate,
     eventEndDate,
+    verificationCode,
     currentFormId,
     isCertificateLinked,
     linkedCertificateId,
@@ -275,6 +281,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setUploadedLinks(snapshot.uploadedLinks);
       setEventStartDate(snapshot.eventStartDate);
       setEventEndDate(snapshot.eventEndDate);
+      setVerificationCode(snapshot.verificationCode || "");
       setCurrentFormId(snapshot.currentFormId);
       setIsCertificateLinked(snapshot.isCertificateLinked);
       setLinkedCertificateId(snapshot.linkedCertificateId);
@@ -301,6 +308,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setUploadedLinks(snapshot.uploadedLinks);
       setEventStartDate(snapshot.eventStartDate);
       setEventEndDate(snapshot.eventEndDate);
+      setVerificationCode(snapshot.verificationCode || "");
       setCurrentFormId(snapshot.currentFormId);
       setIsCertificateLinked(snapshot.isCertificateLinked);
       setLinkedCertificateId(snapshot.linkedCertificateId);
@@ -2126,6 +2134,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           setUploadedCSVData(null);
           setEventStartDate("");
           setEventEndDate("");
+          setVerificationCode("");
           setCurrentFormId(null);
           setIsCertificateLinked(false);
           setHasUnsavedChanges(false);
@@ -2699,6 +2708,22 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                       min={eventStartDate}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Verification Code (for Guest Login)
+                    </label>
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      placeholder="e.g., EVENT2025, CLUBMEET01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      This code will be used by guests to access the evaluation form
+                    </p>
                   </div>
                 </div>
 
