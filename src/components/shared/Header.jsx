@@ -2,6 +2,7 @@ import { Bell, ChevronDown, ChevronUp, Menu } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { api } from "../../api";
 
 const Header = ({
   onMenuClick,
@@ -22,7 +23,7 @@ const Header = ({
     try {
       if (!token) return;
 
-      const response = await fetch("/api/notifications/stats", {
+      const response = await fetch(`${api.baseURL}/api/notifications/stats`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -141,7 +142,7 @@ const Header = ({
             onClick={handleProfileClick}
           >
             <img
-              src={user?.profilePicture || "/src/assets/users/user1.jpg"}
+              src={user?.profilePicture || "https://via.placeholder.com/32x32?text=U"}
               alt="User"
               className="w-8 h-8 rounded-full object-cover"
             />

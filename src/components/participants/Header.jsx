@@ -60,7 +60,7 @@ const Header = ({ onMenuClick, onProfileClick }) => {
             onClick={handleProfileClick}
           >
             <img
-              src={user?.profilePicture || "/src/assets/users/user1.jpg"}
+              src={user?.profilePicture || "https://via.placeholder.com/32x32?text=U"}
               alt="User"
               className="w-8 h-8 rounded-full object-cover"
             />

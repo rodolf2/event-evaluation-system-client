@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import toast from "react-hot-toast";
+import { api } from "../api";
+import logo from "../assets/logo/LOGO.png";
+import bgImage from "../assets/background-image/LV2.jpg";
 
 function GuestLogin() {
   const navigate = useNavigate();
@@ -32,15 +34,12 @@ function GuestLogin() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/guest",
-        {
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-          verificationCode: formData.verificationCode,
-        }
-      );
+      const response = await api.post("/api/auth/guest", {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        verificationCode: formData.verificationCode,
+      });
 
       if (response.data.success) {
         // Store token
@@ -77,7 +76,7 @@ function GuestLogin() {
         <div className="flex flex-col items-center w-full max-w-xs sm:max-w-sm md:max-w-md h-full justify-center">
           {/* Logo */}
           <img
-            src="src/assets/logo/LOGO.png"
+            src={logo}
             alt="School Logo"
             className="w-16 h-16 sm:w-20 sm:h-20 mb-4"
           />
@@ -177,7 +176,7 @@ function GuestLogin() {
         <div className="relative w-full h-full min-h-[50vh] lg:min-h-0 rounded-2xl overflow-hidden flex items-center justify-center">
           {/* Background Image */}
           <img
-            src="src/assets/background-image/LV2.jpg"
+            src={bgImage}
             alt="La Verdad Christian College Background"
             className="w-full h-full object-cover"
           />
