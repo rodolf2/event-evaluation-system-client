@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Download, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
+import { api } from "../../api";
 
 const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
   const { token } = useAuth();
@@ -19,7 +20,7 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
       setLoading(true);
 
       // First, try to get the certificate details
-      const certResponse = await fetch(`/api/certificates/${certificateId}`, {
+      const certResponse = await fetch(`${api.baseURL}/api/certificates/${certificateId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -32,7 +33,7 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
         }
       } else {
         // Fallback: get from user certificates list if direct fetch fails
-        const listResponse = await fetch("/api/certificates/my", {
+        const listResponse = await fetch(`${api.baseURL}/api/certificates/my`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -63,7 +64,7 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
   const fetchCertificateImage = async (certificateId) => {
     try {
       const response = await fetch(
-        `/api/certificates/download/${certificateId}?inline=true`,
+        `${api.baseURL}/api/certificates/download/${certificateId}?inline=true`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -86,7 +87,7 @@ const CertificateViewer = ({ certificateId, onDownload, onDone }) => {
 
     try {
       const response = await fetch(
-        `/api/certificates/download/${selectedCertificate.certificateId}`,
+        `${api.baseURL}/api/certificates/download/${selectedCertificate.certificateId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
