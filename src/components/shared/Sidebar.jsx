@@ -48,7 +48,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   const { menuItems = [], logo = {} } = config;
 
   const defaultLogo = {
-    src: "/src/assets/logo/LOGO.png",
+    src: "/assets/logo/LOGO.png",
     alt: "Logo",
     text: {
       main: "La Verdad",

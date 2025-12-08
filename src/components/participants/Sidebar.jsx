@@ -69,7 +69,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Logo and Text */}
       <div className="flex items-center gap-3 mb-8 w-full pl-6">
         <img
-          src="/src/assets/logo/LOGO.png"
+          src="/assets/logo/LOGO.png"
           alt="Logo"
           className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${
             isOpen ? "w-16 h-16" : "w-12 h-12"

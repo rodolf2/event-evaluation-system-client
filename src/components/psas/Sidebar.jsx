@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           } flex items-center justify-center`}
         >
           <img
-            src="/src/assets/logo/LOGO.png"
+            src="/assets/logo/LOGO.png"
             alt="Logo"
             className="w-full h-full rounded-full object-cover"
           />

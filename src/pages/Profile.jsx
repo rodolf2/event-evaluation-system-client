@@ -323,7 +323,7 @@ function Profile() {
             <div className="bg-white rounded-xl shadow-md p-6 text-center">
               <div className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto mb-4">
                 <img
-                  src={user.profilePicture || "/src/assets/users/user1.jpg"}
+                  src={user.profilePicture || "/assets/users/user1.jpg"}
                   alt="Profile"
                   className="w-full h-full rounded-lg object-cover border-4 border-white shadow-sm"
                 />
@@ -636,7 +636,7 @@ function Profile() {
             window.location.reload();
           }
         }}
-        currentImage={user.profilePicture || "/src/assets/users/user1.jpg"}
+        currentImage={user.profilePicture || "/assets/users/user1.jpg"}
         onSave={handleSaveProfilePicture}
         onRemove={handleRemoveProfilePicture}
       />
@@ -644,11 +644,7 @@ function Profile() {
   );
 
   if (LayoutComponent) {
-    return (
-      <LayoutComponent>
-        {content}
-      </LayoutComponent>
-    );
+    return <LayoutComponent>{content}</LayoutComponent>;
   } else {
     return content;
   }
