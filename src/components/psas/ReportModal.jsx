@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Download, Star } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -6,6 +6,7 @@ const ReportModal = ({ report, onClose }) => {
   const [detailedReport, setDetailedReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const apiUrl = import.meta.env.VITE_BASE_API_URL;
 
   const fetchDetailedReport = useCallback(async () => {
     if (!report) return;
@@ -13,7 +14,7 @@ const ReportModal = ({ report, onClose }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`http://localhost:5000/api/events/${report.id}/report`);
+      const response = await fetch(`${apiUrl}/api/events/${report.id}/report`);
       if (!response.ok) {
         throw new Error('Failed to fetch detailed report');
       }

@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
-
 function LoginPage() {
+  const apiUrl = import.meta.env.VITE_BASE_API_URL;
   const navigate = useNavigate();
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   const handleGuestMode = () => {

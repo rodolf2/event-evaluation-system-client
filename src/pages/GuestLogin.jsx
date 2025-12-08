@@ -4,6 +4,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 function GuestLogin() {
+  const apiUrl= import.meta.env.VITE_BASE_API_URL;
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -33,7 +34,7 @@ function GuestLogin() {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/auth/guest",
+        `${apiUrl}/api/auth/guest`,
         {
           name: formData.name,
           email: formData.email,
