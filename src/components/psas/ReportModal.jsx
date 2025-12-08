@@ -6,7 +6,7 @@ const ReportModal = ({ report, onClose }) => {
   const [detailedReport, setDetailedReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const apiUrl = import.meta.env.VITE_BASE_API_URL;
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
   const fetchDetailedReport = useCallback(async () => {
     if (!report) return;

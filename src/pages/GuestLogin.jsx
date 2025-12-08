@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { api } from "../api";
 
 function GuestLogin() {
-  const apiUrl= import.meta.env.VITE_BASE_API_URL;
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
