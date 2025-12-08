@@ -53,7 +53,7 @@ const CalendarWidget = ({
   const handleNext = () => setMonth(month.add(1, "month"));
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 h-full flex flex-col">
+    <div className="bg-white rounded-xl shadow p-4 h-80 flex flex-col">
       <div className="flex justify-between items-center mb-2">
         <button onClick={handlePrev}>
           <ChevronLeft className="w-5 h-5 text-gray-600" />

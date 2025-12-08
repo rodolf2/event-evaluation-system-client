@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { api } from "../api";
 
 function GuestLogin() {
+  const apiUrl= import.meta.env.VITE_BASE_API_URL;
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -32,12 +33,15 @@ function GuestLogin() {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/api/auth/guest", {
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        verificationCode: formData.verificationCode,
-      });
+      const response = await api.post(
+        `${apiUrl}/api/auth/guest`,
+        {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          verificationCode: formData.verificationCode,
+        }
+      );
 
       if (response.data.success) {
         // Store token
