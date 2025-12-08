@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 function LoginPage() {
-  const apiUrl = import.meta.env.VITE_BASE_API_URL;
+  const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
 
   const handleGoogleLogin = () => {
