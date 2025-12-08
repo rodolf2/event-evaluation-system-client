@@ -18,7 +18,7 @@ function LoginPage() {
         <div className="flex flex-col items-center w-full max-w-xs sm:max-w-sm md:max-w-md h-full justify-center">
           {/* Logo */}
           <img
-            src="src/assets/logo/LOGO.png"
+            src="/assets/logo/LOGO.png"
             alt="School Logo"
             className="w-16 h-16 sm:w-20 sm:h-20 mb-4"
           />
@@ -37,7 +37,7 @@ function LoginPage() {
             className="w-full border flex items-center justify-center py-3 rounded-md hover:bg-gray-100 bg-white text-gray-700 font-medium transition"
           >
             <img
-              src="src/assets/logo/google-logo.png"
+              src="/assets/logo/google-logo.png"
               alt="Google"
               className="w-5 h-5 mr-3"
             />
@@ -51,7 +51,7 @@ function LoginPage() {
         <div className="relative w-full h-full min-h-[50vh] lg:min-h-0 rounded-2xl overflow-hidden flex items-center justify-center">
           {/* Background Image */}
           <img
-            src="src/assets/background-image/LV2.jpg"
+            src="/assets/background-image/LV2.jpg"
             alt="La Verdad Christian College Background"
             className="w-full h-full object-cover"
           />
