@@ -19,7 +19,9 @@ const ProfileModal = ({ isOpen, onClose, position }) => {
     >
       <div className="flex items-center gap-3 px-4 pb-4 border-b border-gray-200">
         <img
-          src={user?.profilePicture || "https://via.placeholder.com/48x48?text=U"}
+          src={
+            user?.profilePicture || "https://via.placeholder.com/48x48?text=U"
+          }
           alt="User"
           className="w-12 h-12 rounded-full object-cover"
         />
@@ -39,6 +41,8 @@ const ProfileModal = ({ isOpen, onClose, position }) => {
               ? "/psas/profile"
               : user?.role === "club-officer"
               ? "/club-officer/profile"
+              : user?.role === "mis"
+              ? "/mis/profile"
               : user?.role === "school-admin"
               ? "/school-admin/profile"
               : "/profile"

@@ -1,25 +1,50 @@
-import { useState, useEffect, useRef } from 'react';
-import { Bell, X, ChevronRight } from 'lucide-react';
-import { useNotifications } from '../../contexts/useNotifications';
-import { useAuth } from '../../contexts/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from "react";
+import { Bell, X, ChevronRight } from "lucide-react";
+import { useNotifications } from "../../contexts/useNotifications";
+import { useAuth } from "../../contexts/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const NotificationPopup = () => {
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
-  const [shownNotifications, setShownNotifications] = useState(new Set());
   const [reminderDetails, setReminderDetails] = useState(null);
   const timeoutRef = useRef(null);
 
-  // Get the latest unread notification that hasn't been shown yet
-  const latestUnreadNotification = notifications
-    .filter(n => !n.read && !shownNotifications.has(n.id))
-    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  // Persist shown notifications in localStorage to prevent re-showing on refresh
+  const getShownNotifications = () => {
+    try {
+      const stored = localStorage.getItem("shownNotificationPopups");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  };
 
-  // Track notification IDs to detect new ones
-  const currentUnreadIds = useRef(new Set());
+  const saveShownNotification = (notificationId) => {
+    try {
+      const shown = getShownNotifications();
+      shown.add(notificationId);
+      // Keep only last 100 to prevent localStorage bloat
+      const shownArray = [...shown].slice(-100);
+      localStorage.setItem(
+        "shownNotificationPopups",
+        JSON.stringify(shownArray)
+      );
+    } catch (e) {
+      console.error("Error saving shown notification:", e);
+    }
+  };
+
+  // Get the latest unread notification that hasn't been shown yet (popup-wise)
+  const latestUnreadNotification = notifications
+    .filter((n) => {
+      if (n.read) return false;
+      const shown = getShownNotifications();
+      return !shown.has(n.id);
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 
   // Fetch reminder details when notification is a reminder
   useEffect(() => {
@@ -56,22 +81,6 @@ const NotificationPopup = () => {
     fetchReminderDetails();
   }, [latestUnreadNotification, token]);
 
-  useEffect(() => {
-    const newUnreadIds = new Set(notifications.filter(n => !n.read).map(n => n.id));
-    const previousUnreadIds = currentUnreadIds.current;
-
-    // Check if there are new notifications
-    const hasNewNotifications = [...newUnreadIds].some(id => !previousUnreadIds.has(id));
-
-    if (hasNewNotifications) {
-      // Reset shown notifications for new ones
-      setShownNotifications(new Set());
-      setReminderDetails(null); // Reset reminder details for new notifications
-    }
-
-    currentUnreadIds.current = newUnreadIds;
-  }, [notifications]);
-
   // Show popup when there's a new unread notification
   useEffect(() => {
     if (latestUnreadNotification && !isVisible) {
@@ -81,8 +90,8 @@ const NotificationPopup = () => {
         // Auto-hide after 8 seconds
         timeoutRef.current = setTimeout(() => {
           setIsVisible(false);
-          // Mark as shown so it won't appear again
-          setShownNotifications(prev => new Set([...prev, latestUnreadNotification.id]));
+          // Mark as shown so it won't appear again (persisted to localStorage)
+          saveShownNotification(latestUnreadNotification.id);
         }, 8000);
       }, 1000);
       return () => clearTimeout(showTimer);
@@ -103,7 +112,7 @@ const NotificationPopup = () => {
       clearTimeout(timeoutRef.current);
     }
     if (latestUnreadNotification) {
-      setShownNotifications(prev => new Set([...prev, latestUnreadNotification.id]));
+      saveShownNotification(latestUnreadNotification.id);
     }
     setIsVisible(false);
   };
@@ -114,19 +123,19 @@ const NotificationPopup = () => {
     }
     if (latestUnreadNotification) {
       markAsRead(latestUnreadNotification.id);
-      setShownNotifications(prev => new Set([...prev, latestUnreadNotification.id]));
+      saveShownNotification(latestUnreadNotification.id);
       setIsVisible(false);
 
       // Navigate to notifications page based on role
       const notificationRoutes = {
-        psas: '/psas/notifications',
-        'club-officer': '/club-officer/notifications',
-        participant: '/participant/notifications',
-        'school-admin': '/school-admin/notifications',
-        mis: '/mis/notifications',
+        psas: "/psas/notifications",
+        "club-officer": "/club-officer/notifications",
+        participant: "/participant/notifications",
+        "school-admin": "/school-admin/notifications",
+        mis: "/mis/notifications",
       };
 
-      const route = notificationRoutes[user?.role] || '/notifications';
+      const route = notificationRoutes[user?.role] || "/notifications";
       navigate(route);
     }
   };
@@ -139,7 +148,7 @@ const NotificationPopup = () => {
     <div className="fixed top-20 right-4 z-50 max-w-sm">
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 animate-in slide-in-from-right-2 duration-300">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <Bell className="w-6 h-6 text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
@@ -155,7 +164,7 @@ const NotificationPopup = () => {
           </div>
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X className="w-4 h-4 text-gray-400" />
           </button>

@@ -21,10 +21,7 @@ import {
   AlignVerticalJustifyStart,
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
-  ArrowLeft,
-  Save,
-  Eye,
-  Edit3,
+  ChevronLeft,
   Plus,
   Sliders,
   X,
@@ -1352,19 +1349,6 @@ const CertificateEditor = ({
 
     return (
       <div className="space-y-4">
-        {/* Preview Mode Header */}
-        {isPreviewMode && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-            <div className="flex items-center gap-2 text-blue-800">
-              <Eye size={16} />
-              <span className="font-medium text-sm">Preview Mode</span>
-            </div>
-            <p className="text-xs text-blue-600 mt-1">
-              You can edit this template. Click "Done" to apply it.
-            </p>
-          </div>
-        )}
-
         <div>
           <h4 className="font-semibold text-gray-700 mb-2">
             Certificate Size (Landscape Only)
@@ -1675,11 +1659,27 @@ const CertificateEditor = ({
   };
 
   return (
-    <div className="w-full h-screen bg-transparent font-sans overflow-hidden">
-      <div className="flex flex-col lg:flex-row h-full w-full overflow-hidden">
+    <div
+      className="w-full h-screen bg-transparent font-sans overflow-hidden"
+      style={{ overflowX: "hidden" }}
+    >
+      <div
+        className="flex flex-col lg:flex-row h-full w-full overflow-hidden"
+        style={{ overflowX: "hidden" }}
+      >
         {/* Left Sidebar - Elements Panel */}
         {showPanels && !isMobile && (
-          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 overflow-y-auto">
+          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 overflow-y-auto max-h-screen">
+            {/* Back to Gallery button - only in preview mode */}
+            {isPreviewMode && (
+              <button
+                onClick={handleBackToGallery}
+                className="flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors mb-2"
+                title="Back to Gallery"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
             <ElementsPanel
               onAddText={addText}
               onAddImage={handleImageUpload}
@@ -1696,7 +1696,7 @@ const CertificateEditor = ({
 
         {/* Main Canvas Area */}
         <div
-          className={`flex-1 flex flex-col min-w-0 max-w-full overflow-hidden lg:overflow-auto lg:min-h-0 ${
+          className={`flex-1 flex flex-col min-w-0 max-w-full overflow-hidden overflow-x-hidden ${
             isMobile ? "pb-16" : ""
           }`}
         >
@@ -1709,52 +1709,18 @@ const CertificateEditor = ({
             />
           </div>
 
-          {/* Action Bar - Preview Mode Controls */}
-          {isPreviewMode && (
-            <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 text-blue-800">
-                    <Edit3 size={18} />
-                    <span className="font-medium">
-                      {selectedTemplate
-                        ? `Editing: ${selectedTemplate.name}`
-                        : "Editing Template"}
-                    </span>
-                  </div>
-                  {selectedTemplate?.description && (
-                    <span className="text-sm text-blue-600">
-                      {selectedTemplate.description}
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleBackToGallery}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    <ArrowLeft size={16} />
-                    Back to Gallery
-                  </button>
-                  <button
-                    onClick={handleSaveAndReturn}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    <Save size={16} />
-                    Done - Use This Template
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Canvas Container */}
-          <div className="flex-1 overflow-hidden flex items-center justify-center bg-gray-100 p-4 mx-auto">
+          <div
+            className={`flex-1 flex items-start justify-center bg-gray-100 overflow-hidden overflow-x-hidden ${
+              isMobile ? "p-2 pt-2" : "p-2 pt-2"
+            }`}
+          >
             <div
               ref={canvasContainerRef}
-              className="bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 relative w-full h-full max-w-full max-h-full"
+              className="bg-white shadow-2xl rounded-2xl relative max-w-full max-h-full overflow-hidden"
+              style={{ width: "fit-content", height: "fit-content" }}
             >
-              <canvas ref={canvasRef} className="w-full h-full" />
+              <canvas ref={canvasRef} />
 
               {/* Snap Lines Overlay */}
               {snapLines.length > 0 && fabricCanvas.current && (
@@ -1817,16 +1783,19 @@ const CertificateEditor = ({
 
         {/* Right Sidebar - Properties Panel */}
         {showPanels && !isMobile && (
-          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-t lg:border-l lg:border-t-0 shrink-0 overflow-hidden">
+          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-t lg:border-l lg:border-t-0 shrink-0 overflow-hidden max-h-screen">
             <div className="flex-1 min-h-0 overflow-y-auto">
               <div className="flex items-center justify-between mb-3 sticky top-0 z-30 bg-white pb-2">
                 <h3 className="text-sm font-semibold text-gray-700">
                   Properties
                 </h3>
-                {/* Legacy Done button for evaluation flow */}
-                {isFromEvaluation && (onDone || onSave) && (
+                {/* Done button - appears in preview mode or evaluation flow */}
+                {(isPreviewMode ||
+                  (isFromEvaluation && (onDone || onSave))) && (
                   <button
-                    onClick={onSave || onDone}
+                    onClick={
+                      isPreviewMode ? handleSaveAndReturn : onSave || onDone
+                    }
                     className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-sm transition-colors"
                   >
                     Done
@@ -1835,7 +1804,7 @@ const CertificateEditor = ({
               </div>
               <PropertiesPanel />
             </div>
-            <div className="shrink-0 pt-2">
+            <div className="shrink-0 pb-35">
               <button
                 onClick={clearCanvas}
                 className="w-full px-4 py-2 bg-white border border-gray-300 text-sm text-gray-700 rounded-md hover:bg-gray-100 text-center transition-colors"

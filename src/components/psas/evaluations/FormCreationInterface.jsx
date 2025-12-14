@@ -15,6 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { LuUndo, LuRedo } from "react-icons/lu";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/style.css";
 import Question from "./Question";
 import Section from "./Section";
 import ImportCSVModal from "./ImportCSVModal";
@@ -2151,7 +2153,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             onBack();
           } else {
             // Use role-based navigation
-            const evaluationsPath = user?.role === 'club-officer' ? '/club-officer/evaluations' : '/psas/evaluations';
+            const evaluationsPath =
+              user?.role === "club-officer"
+                ? "/club-officer/evaluations"
+                : "/psas/evaluations";
             navigate(evaluationsPath);
           }
         }}
@@ -2160,9 +2165,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
     // Use appropriate layout for success screen based on user role
     // For PSAS users, only apply layout when shouldUseLayout is true (direct access)
-    if (user?.role === 'psas' && shouldUseLayout) {
+    if (user?.role === "psas" && shouldUseLayout) {
       return <PSASLayout>{successContent}</PSASLayout>;
-    } else if (user?.role === 'club-officer' && shouldUseLayout) {
+    } else if (user?.role === "club-officer" && shouldUseLayout) {
       return <ClubOfficerLayout>{successContent}</ClubOfficerLayout>;
     }
 
@@ -2183,12 +2188,128 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 <ChevronLeft size={24} />
               </button>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowDatePicker(!showDatePicker)}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Set Event Dates
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors bg-white"
+                  >
+                    {eventStartDate && eventEndDate
+                      ? `${new Date(eventStartDate).toLocaleDateString(
+                          "en-US",
+                          { month: "short", day: "numeric" }
+                        )} - ${new Date(eventEndDate).toLocaleDateString(
+                          "en-US",
+                          { month: "short", day: "numeric", year: "numeric" }
+                        )}`
+                      : "Set Event Dates"}
+                  </button>
+
+                  {/* Dropdown Calendar */}
+                  {showDatePicker && (
+                    <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
+                      <style>
+                        {`
+                          .custom-calendar .rdp-nav {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            width: 100%;
+                          }
+                          .custom-calendar .rdp-month_caption {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            flex: 1;
+                          }
+                          .custom-calendar .rdp-caption_label {
+                            font-weight: 600;
+                            font-size: 1rem;
+                          }
+                          .custom-calendar .rdp-day {
+                            border-radius: 6px;
+                          }
+                          .custom-calendar .rdp-day_button {
+                            border-radius: 6px;
+                          }
+                          .custom-calendar .rdp-selected .rdp-day_button,
+                          .custom-calendar .rdp-range_start .rdp-day_button,
+                          .custom-calendar .rdp-range_end .rdp-day_button {
+                            background-color: #1F3463 !important;
+                            color: white !important;
+                            border-radius: 6px;
+                          }
+                          .custom-calendar .rdp-range_middle .rdp-day_button {
+                            background-color: #EBF1FF !important;
+                            color: #1F3463 !important;
+                            border-radius: 0;
+                          }
+                          .custom-calendar .rdp-range_start .rdp-day_button {
+                            border-radius: 6px 0 0 6px;
+                          }
+                          .custom-calendar .rdp-range_end .rdp-day_button {
+                            border-radius: 0 6px 6px 0;
+                          }
+                        `}
+                      </style>
+                      <div className="custom-calendar">
+                        <DayPicker
+                          mode="range"
+                          selected={{
+                            from: eventStartDate
+                              ? new Date(eventStartDate)
+                              : undefined,
+                            to: eventEndDate
+                              ? new Date(eventEndDate)
+                              : undefined,
+                          }}
+                          onSelect={(range) => {
+                            // Helper to format date in local timezone (YYYY-MM-DD)
+                            const formatLocalDate = (date) => {
+                              const year = date.getFullYear();
+                              const month = String(
+                                date.getMonth() + 1
+                              ).padStart(2, "0");
+                              const day = String(date.getDate()).padStart(
+                                2,
+                                "0"
+                              );
+                              return `${year}-${month}-${day}`;
+                            };
+
+                            if (range?.from) {
+                              setEventStartDate(formatLocalDate(range.from));
+                            } else {
+                              setEventStartDate("");
+                            }
+                            if (range?.to) {
+                              setEventEndDate(formatLocalDate(range.to));
+                            } else {
+                              setEventEndDate("");
+                            }
+                          }}
+                          numberOfMonths={1}
+                          showOutsideDays
+                          style={{
+                            "--rdp-accent-color": "#1e3a5f",
+                            "--rdp-accent-background-color": "#1e3a5f",
+                            "--rdp-range_middle-background-color":
+                              "rgba(30, 58, 95, 0.2)",
+                          }}
+                        />
+                      </div>
+
+                      {/* Close button */}
+                      <div className="flex justify-end mt-4">
+                        <button
+                          onClick={() => setShowDatePicker(false)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {isCertificateLinked && currentFormId && (
                   <button
                     onClick={() => setShowCertificateCustomizer(true)}
@@ -2287,7 +2408,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   className={`px-6 py-2 font-semibold rounded-md transition ${
                     isPublishing
                       ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-[#0C2A92] text-white hover:bg-blue-700"
                   }`}
                 >
                   {/* Always show consistent label as requested (no Loading.../Publishing...) */}
@@ -2353,7 +2474,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                     setFormTitle(value || "Untitled Form");
                     setHasUnsavedChanges(true);
                   }}
-                  className="text-3xl sm:text-5xl font-bold w-full border-none outline-none mb-2 text-center placeholder:text-gray-400 bg-transparent"
+                  className="text-3xl sm:text-5xl font-bold w-full border-none outline-none mb-2 text-center placeholder:text-black bg-transparent"
                 />
                 <textarea
                   value={
@@ -2367,7 +2488,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                     setFormDescription(value || "Form Description");
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-gray-400 bg-transparent"
+                  className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-black bg-transparent"
                   rows={1}
                 />
 
@@ -2611,9 +2732,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 queryParams.set("formId", formId);
 
                 // Determine the correct certificates path based on user role
-                const certificatesPath = user?.role === 'club-officer'
-                  ? '/club-officer/certificates/make'
-                  : '/psas/certificates';
+                const certificatesPath =
+                  user?.role === "club-officer"
+                    ? "/club-officer/certificates/make"
+                    : "/psas/certificates";
 
                 navigate(`${certificatesPath}?${queryParams.toString()}`);
               }}
@@ -2667,86 +2789,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               />
             </button>
           </div>
-
-          {/* Event Date Range Modal */}
-          {showDatePicker && (
-            <div className="fixed inset-0 bg-[#F1F0F0]/50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Set Event Dates
-                  </h3>
-                  <button
-                    onClick={() => setShowDatePicker(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event Start Date
-                    </label>
-                    <input
-                      type="date"
-                      value={eventStartDate}
-                      onChange={(e) => setEventStartDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event End Date
-                    </label>
-                    <input
-                      type="date"
-                      value={eventEndDate}
-                      onChange={(e) => setEventEndDate(e.target.value)}
-                      min={eventStartDate}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Verification Code (for Guest Login)
-                    </label>
-                    <input
-                      type="text"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
-                      placeholder="e.g., EVENT2025, CLUBMEET01"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      This code will be used by guests to access the evaluation form
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 justify-end mt-6">
-                  <button
-                    onClick={() => {
-                      setEventStartDate("");
-                      setEventEndDate("");
-                    }}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    onClick={() => setShowDatePicker(false)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  >
-                    Done
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Upload Modal - Removed since functionality moved to ImportCSVModal */}
 
@@ -2871,9 +2913,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   // Use appropriate layout based on user role and access method
   // PSAS users get PSASLayout only when accessed directly, not from evaluations page
   // Club officers only get layout when accessed via direct routing
-  if (user?.role === 'psas' && shouldUseLayout) {
+  if (user?.role === "psas" && shouldUseLayout) {
     return <PSASLayout>{content}</PSASLayout>;
-  } else if (user?.role === 'club-officer' && shouldUseLayout) {
+  } else if (user?.role === "club-officer" && shouldUseLayout) {
     return <ClubOfficerLayout>{content}</ClubOfficerLayout>;
   }
 

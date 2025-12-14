@@ -1,7 +1,24 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-hot-toast";
+
 function LoginPage() {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check for error parameter in URL (e.g., account_inactive)
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "account_inactive") {
+      toast.error(
+        "Your account has been deactivated. Please contact an administrator.",
+        { duration: 5000 }
+      );
+      // Clean up the URL
+      window.history.replaceState({}, document.title, "/login");
+    }
+  }, [searchParams]);
 
   const handleGoogleLogin = () => {
     window.location.href = `${apiUrl}/api/auth/google`;

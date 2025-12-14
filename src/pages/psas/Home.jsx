@@ -6,6 +6,7 @@ import RecentActivity from "../../components/psas/RecentActivity";
 import Reminders from "../../components/psas/Reminders";
 import ReminderModal from "../../components/psas/ReminderModal";
 import ProfileSection from "../../components/psas/ProfileSection";
+import GuestAccessManagement from "../../components/psas/GuestAccessManagement";
 import {
   SkeletonCard,
   SkeletonDashboardCard,
@@ -227,6 +228,11 @@ function Home() {
                 />
               </div>
             </div>
+
+            {/* Guest Access Management - Full width */}
+            {/* <div className="mt-6">
+              <GuestAccessManagement />
+            </div> */}
 
             {/* Activity & Reminders */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

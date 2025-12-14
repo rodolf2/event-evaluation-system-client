@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import { useAuth } from "../../contexts/useAuth";
+import toast from "react-hot-toast";
 
 const NotificationItem = ({
   notification,
@@ -292,7 +293,6 @@ const Notifications = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionMessage, setActionMessage] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalNotifications, setTotalNotifications] = useState(0);
@@ -413,7 +413,6 @@ const Notifications = () => {
     if (selected.length === 0) return;
 
     setActionLoading(true);
-    setActionMessage("");
 
     try {
       const response = await fetch("/api/notifications/read-multiple", {
@@ -442,12 +441,9 @@ const Notifications = () => {
         );
 
         setSelected([]);
-        setActionMessage(
+        toast.success(
           `${result.message || selected.length} notifications marked as read`
         );
-
-        // Clear message after 3 seconds
-        setTimeout(() => setActionMessage(""), 3000);
       } else {
         throw new Error(
           result.message || "Failed to mark notifications as read"
@@ -455,10 +451,7 @@ const Notifications = () => {
       }
     } catch (error) {
       console.error("Error marking notifications as read:", error);
-      setActionMessage("Failed to mark notifications as read");
-
-      // Clear error message after 3 seconds
-      setTimeout(() => setActionMessage(""), 3000);
+      toast.error("Failed to mark notifications as read");
     } finally {
       setActionLoading(false);
     }
@@ -477,7 +470,6 @@ const Notifications = () => {
     }
 
     setActionLoading(true);
-    setActionMessage("");
 
     try {
       const response = await fetch("/api/notifications/multiple", {
@@ -507,23 +499,17 @@ const Notifications = () => {
         );
 
         setSelected([]);
-        setActionMessage(
+        toast.success(
           `${
             result.message || selected.length
           } notifications deleted successfully`
         );
-
-        // Clear message after 3 seconds
-        setTimeout(() => setActionMessage(""), 3000);
       } else {
         throw new Error(result.message || "Failed to delete notifications");
       }
     } catch (error) {
       console.error("Error deleting notifications:", error);
-      setActionMessage(error.message || "Failed to delete notifications");
-
-      // Clear error message after 3 seconds
-      setTimeout(() => setActionMessage(""), 3000);
+      toast.error(error.message || "Failed to delete notifications");
     } finally {
       setActionLoading(false);
     }
@@ -531,7 +517,6 @@ const Notifications = () => {
 
   const handleMarkSingleAsRead = async (notificationId) => {
     setActionLoading(true);
-    setActionMessage("");
 
     try {
       const response = await fetch(
@@ -560,8 +545,7 @@ const Notifications = () => {
           )
         );
 
-        setActionMessage("Notification marked as read");
-        setTimeout(() => setActionMessage(""), 3000);
+        toast.success("Notification marked as read");
       } else {
         throw new Error(
           result.message || "Failed to mark notification as read"
@@ -569,8 +553,7 @@ const Notifications = () => {
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      setActionMessage("Failed to mark notification as read");
-      setTimeout(() => setActionMessage(""), 3000);
+      toast.error("Failed to mark notification as read");
     } finally {
       setActionLoading(false);
     }
@@ -587,7 +570,6 @@ const Notifications = () => {
     }
 
     setActionLoading(true);
-    setActionMessage("");
 
     try {
       const response = await fetch(`/api/notifications/${notificationId}`, {
@@ -614,15 +596,13 @@ const Notifications = () => {
           prev.filter((notification) => notification.id !== notificationId)
         );
 
-        setActionMessage("Notification deleted successfully");
-        setTimeout(() => setActionMessage(""), 3000);
+        toast.success("Notification deleted successfully");
       } else {
         throw new Error(result.message || "Failed to delete notification");
       }
     } catch (error) {
       console.error("Error deleting notification:", error);
-      setActionMessage(error.message || "Failed to delete notification");
-      setTimeout(() => setActionMessage(""), 3000);
+      toast.error(error.message || "Failed to delete notification");
     } finally {
       setActionLoading(false);
     }
@@ -675,20 +655,6 @@ const Notifications = () => {
           />
         ) : (
           <>
-            {/* Action Message */}
-            {actionMessage && (
-              <div
-                className={`mb-4 p-3 rounded-lg ${
-                  actionMessage.includes("Failed") ||
-                  actionMessage.includes("Error")
-                    ? "bg-red-100 text-red-700 border border-red-200"
-                    : "bg-green-100 text-green-700 border border-green-200"
-                }`}
-              >
-                {actionMessage}
-              </div>
-            )}
-
             {/* Top Bar */}
             <div className="flex justify-between items-center mb-4">
               <div className="relative w-1/3">

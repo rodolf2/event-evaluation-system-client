@@ -53,12 +53,12 @@ const CalendarWidget = ({
   const handleNext = () => setMonth(month.add(1, "month"));
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 h-80 flex flex-col">
-      <div className="flex justify-between items-center mb-2">
+    <div className="bg-white rounded-xl shadow p-4 h-90 flex flex-col overflow-hidden">
+      <div className="flex justify-between items-center mb-4">
         <button onClick={handlePrev}>
           <ChevronLeft className="w-5 h-5 text-gray-600" />
         </button>
-        <h2 className="font-semibold text-gray-700 text-sm">
+        <h2 className="font-bold text-gray-800 text-lg">
           {month.format("MMMM YYYY")}
         </h2>
         <button onClick={handleNext}>
@@ -66,13 +66,20 @@ const CalendarWidget = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-xs text-gray-600">
+      {/* Day headers row */}
+      <div className="grid grid-cols-7 text-center text-xs text-gray-600 mb-2">
         {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-          <div key={day} className="font-semibold">
+          <div
+            key={day}
+            className="font-semibold flex items-center justify-center"
+          >
             {day}
           </div>
         ))}
+      </div>
 
+      {/* Dates grid */}
+      <div className="grid grid-cols-7 text-center text-xs text-gray-600 flex-1 gap-y-1">
         {[...Array(startDay)].map((_, i) => (
           <div key={`empty-${i}`}></div>
         ))}
@@ -123,10 +130,10 @@ const CalendarWidget = ({
             <div
               key={day}
               onClick={handleDayClick}
-              className="relative p-1 cursor-pointer group"
+              className="relative flex items-center justify-center cursor-pointer group"
             >
               <div
-                className={`rounded-full p-1.5 flex items-center justify-center text-xs
+                className={`rounded-lg w-8 h-8 flex items-center justify-center text-xs
                   ${
                     isStartOrEndDate
                       ? "bg-[#1F3463] text-white font-bold"

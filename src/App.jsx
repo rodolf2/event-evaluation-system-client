@@ -8,6 +8,8 @@ import {
 import "./App.css";
 import LoginPage from "./pages/LogIn";
 import GuestLogin from "./pages/GuestLogin";
+import GuestAccessPage from "./pages/GuestAccessPage";
+import GuestAccessHandler from "./pages/GuestAccessHandler";
 import Home from "./pages/psas/Home";
 import Evaluations from "./pages/psas/Evaluations";
 import Certificates from "./pages/psas/Certificates";
@@ -40,6 +42,8 @@ import PSASLayout from "./components/psas/PSASLayout";
 import SchoolAdminLayout from "./components/school-admins/SchoolAdminLayout";
 import MisLayout from "./components/mis/MisLayout";
 import Profile from "./pages/Profile";
+import Settings from "./pages/mis/Settings";
+import MisReports from "./pages/mis/MisReports";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./contexts/useAuth";
 import QuantitativeRatings from "./pages/reports/QuantitativeRatings";
@@ -141,6 +145,10 @@ function App() {
               element={
                 token ? <Navigate to={getHomeRoute()} /> : <GuestLogin />
               }
+            />
+            <Route
+              path="/guest-access-handler"
+              element={<GuestAccessHandler />}
             />
 
             {/* Root redirect */}
@@ -468,6 +476,14 @@ function App() {
               }
             />
 
+            {/* Guest Access Route - for guest speakers viewing reports */}
+            <Route
+              path="/guest-access"
+              element={
+                token ? <GuestAccessPage /> : <Navigate to="/guest-login" />
+              }
+            />
+
             {/* Participant routes */}
             <Route
               path="/participant/home"
@@ -631,6 +647,42 @@ function App() {
                 isAuthorized("mis") ? (
                   <MisLayout>
                     <UserManagement />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/settings/*"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <Settings />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/reports"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <MisReports />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/profile"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <Profile />
                   </MisLayout>
                 ) : (
                   <Navigate to={getHomeRoute()} />
