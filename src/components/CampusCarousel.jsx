@@ -37,52 +37,47 @@ export default function CampusCarousel() {
 
   return (
     <div className="relative flex justify-center items-center mt-16 overflow-hidden">
-      <div className="flex justify-center items-center h-[380px] relative w-full max-w-6xl">
+      <div className="flex justify-center items-center h-[320px] md:h-[400px] lg:h-[450px] relative w-full max-w-7xl">
         <div className="relative flex justify-center items-center w-full h-full">
           {images.map((img, index) => {
             const position = getPosition(index);
 
-            let translateX = "0%";
-            let scale = "scale-100";
-            let opacity = "opacity-100";
-            let zIndex = "z-10";
-            let width = "w-[550px]";
-            let height = "h-[350px]";
+            // Use only transform for animations (GPU accelerated)
+            let transform = "translate3d(0, 0, 0) scale(1)";
+            let opacity = 1;
+            let zIndex = 10;
             let cursor = "cursor-default";
 
             if (position === "left") {
-              translateX = "-105%";
-              scale = "scale-90";
-              opacity = "opacity-60";
-              zIndex = "z-0";
-              width = "w-[450px]";
-              height = "h-[280px]";
+              transform = "translate3d(-95%, 0, 0) scale(0.85)";
+              opacity = 0.6;
+              zIndex = 0;
               cursor = "cursor-pointer";
             } else if (position === "right") {
-              translateX = "105%";
-              scale = "scale-90";
-              opacity = "opacity-60";
-              zIndex = "z-0";
-              width = "w-[450px]";
-              height = "h-[280px]";
+              transform = "translate3d(95%, 0, 0) scale(0.85)";
+              opacity = 0.6;
+              zIndex = 0;
               cursor = "cursor-pointer";
             } else if (position === "hidden") {
-              opacity = "opacity-0";
-              zIndex = "z-0";
+              opacity = 0;
+              zIndex = 0;
             }
 
             return (
               <div
                 key={index}
-                className={`absolute transition-all duration-700 ease-out ${zIndex} ${cursor}`}
+                className={`absolute ${cursor}`}
                 style={{
-                  transform: `translateX(${translateX})`,
+                  transform,
+                  opacity,
+                  zIndex,
+                  transition:
+                    "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                  willChange: "transform, opacity",
                 }}
                 onClick={() => handleImageClick(index)}
               >
-                <div
-                  className={`relative ${width} ${height} rounded-2xl overflow-hidden shadow-lg transition-all duration-700 ease-out ${scale} ${opacity}`}
-                >
+                <div className="relative w-[450px] h-[290px] md:w-[550px] md:h-[360px] lg:w-[620px] lg:h-[400px] rounded-2xl overflow-hidden shadow-lg">
                   <img
                     src={img}
                     alt={`Campus ${index + 1}`}
