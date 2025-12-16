@@ -8,6 +8,27 @@ function AuthCallback() {
   const navigate = useNavigate();
   const [tokenSaved, setTokenSaved] = useState(false);
 
+  // Get home route based on user role
+  const getHomeRoute = (userRole) => {
+    switch (userRole) {
+      case "psas":
+        return "/psas/home";
+      case "club-officer":
+        return "/club-officer/home";
+      case "participant":
+        return "/participant/home";
+      case "school-admin":
+        return "/school-admin/home";
+      case "mis":
+        return "/mis";
+      case "evaluator":
+      case "guest-speaker":
+        return "/participant/home";
+      default:
+        return "/login";
+    }
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get("token");
@@ -23,9 +44,9 @@ function AuthCallback() {
   // Wait for user data to be loaded before navigating
   useEffect(() => {
     if (tokenSaved && !isLoading && user) {
-      // Small delay to ensure everything is settled
+      // Navigate to role-based home route
       setTimeout(() => {
-        navigate("/");
+        navigate(getHomeRoute(user.role));
       }, 100);
     }
   }, [tokenSaved, isLoading, user, navigate]);
