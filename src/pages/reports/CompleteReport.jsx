@@ -215,7 +215,12 @@ const CommentSection = ({
   );
 };
 
-const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
+const CompleteReport = ({
+  report,
+  onBack,
+  isGeneratedReport = false,
+  isGuestView = false,
+}) => {
   const navigate = useNavigate();
   const { eventId } = useParams(); // Get eventId from URL if not provided as prop
   const { user } = useAuth();
@@ -233,18 +238,19 @@ const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
     refreshData,
   } = useDynamicReportData(reportId);
 
-  // If rendered as child component (with props), don't use PSASLayout
+  // If rendered as child component (with props) or as guest view, don't use PSASLayout
   // If accessed via direct routing (no props), use PSASLayout
-  const isChildComponent = report && onBack;
+  const isChildComponent = (report && onBack) || isGuestView;
 
   const handleBackClick = () => {
     if (isChildComponent) {
       onBack();
     } else {
       // Navigate to appropriate reports page based on user role
-      const reportsPath = user?.role === 'club-officer'
-        ? '/club-officer/reports'
-        : '/psas/reports';
+      const reportsPath =
+        user?.role === "club-officer"
+          ? "/club-officer/reports"
+          : "/psas/reports";
       navigate(reportsPath);
     }
   };
@@ -564,11 +570,13 @@ const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
 
   const content = (
     <>
-      <ReportActions
-        onBackClick={handleBackClick}
-        eventId={eventId}
-        isGeneratedReport={isGeneratedReport}
-      />
+      {!isGuestView && (
+        <ReportActions
+          onBackClick={handleBackClick}
+          eventId={eventId}
+          isGeneratedReport={isGeneratedReport}
+        />
+      )}
       <div className="bg-gray-100 min-h-screen report-print-content print:block p-8">
         <div className="container mx-auto max-w-5xl">
           {error && (
@@ -645,79 +653,256 @@ const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
               </div>
             </div>
 
-            {/* Rating Distribution Pie Chart */}
-            <div className="mb-8">
-              <h5 className="text-lg font-bold mb-1">
-                1. How clearly were the examples explained?
-              </h5>
-              <p className="text-sm text-gray-500 mb-8">
-                {quantitativeData?.metrics?.totalResponses || 0} responses
-              </p>
+            {/* Per-Question Visualizations */}
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : !qualitativeData?.questionBreakdown ||
+              qualitativeData.questionBreakdown.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-gray-500">
+                <p>No question data available</p>
+              </div>
+            ) : (
+              <div className="space-y-12">
+                {qualitativeData.questionBreakdown.map((question, idx) => (
+                  <div
+                    key={question.questionId || idx}
+                    className="border-b border-gray-200 pb-8 last:border-0"
+                  >
+                    <h5 className="text-lg font-bold mb-1">
+                      {idx + 1}. {question.questionTitle}
+                    </h5>
+                    <p className="text-sm text-gray-500 mb-6">
+                      {question.responseCount} responses
+                    </p>
 
-              {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : !quantitativeData?.charts?.ratingDistribution ||
-                quantitativeData.charts.ratingDistribution.length === 0 ? (
-                <div className="flex items-center justify-center h-64 text-gray-500">
-                  <p>No rating distribution data available</p>
-                </div>
-              ) : (
-                <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                  <div className="w-64 h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={quantitativeData.charts.ratingDistribution}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={0}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          labelLine={false}
-                          label={({ percent }) =>
-                            percent > 0.05
-                              ? `${(percent * 100).toFixed(0)}%`
-                              : ""
-                          }
-                        >
-                          {quantitativeData.charts.ratingDistribution.map(
-                            (entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={COLORS[index % COLORS.length]}
-                              />
-                            )
-                          )}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Custom Legend */}
-                  <div className="space-y-3">
-                    {quantitativeData.charts.ratingDistribution.map(
-                      (entry, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <div
-                            className="w-4 h-4 rounded-full"
-                            style={{
-                              backgroundColor: COLORS[index % COLORS.length],
-                            }}
-                          ></div>
-                          <span className="text-sm font-medium text-gray-700">
-                            {entry.name}
-                          </span>
+                    {/* Scale Question - Rating Distribution */}
+                    {question.questionType === "scale" &&
+                      question.ratingDistribution && (
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                          <div className="w-48 h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={question.ratingDistribution.filter(
+                                    (d) => d.count > 0
+                                  )}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={0}
+                                  outerRadius={80}
+                                  fill="#8884d8"
+                                  dataKey="count"
+                                  labelLine={false}
+                                  label={({ percent }) =>
+                                    percent > 0.05
+                                      ? `${(percent * 100).toFixed(0)}%`
+                                      : ""
+                                  }
+                                >
+                                  {question.ratingDistribution.map(
+                                    (entry, index) => (
+                                      <Cell
+                                        key={`cell-${index}`}
+                                        fill={COLORS[index % COLORS.length]}
+                                      />
+                                    )
+                                  )}
+                                </Pie>
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2">
+                            {question.ratingDistribution.map((entry, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3"
+                              >
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      COLORS[index % COLORS.length],
+                                  }}
+                                ></div>
+                                <span className="text-sm text-gray-700">
+                                  {entry.name}: {entry.count} ({entry.value}%)
+                                </span>
+                              </div>
+                            ))}
+                            <p className="text-sm font-medium text-gray-800 mt-2">
+                              Average:{" "}
+                              {question.averageRating?.toFixed(2) || "N/A"} / 5
+                            </p>
+                          </div>
                         </div>
-                      )
-                    )}
+                      )}
+
+                    {/* Text Question - Sentiment Breakdown */}
+                    {(question.questionType === "paragraph" ||
+                      question.questionType === "short_answer") &&
+                      question.sentimentBreakdown && (
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                          <div className="w-48 h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    {
+                                      name: "Positive",
+                                      value:
+                                        question.sentimentBreakdown.positive
+                                          ?.count || 0,
+                                      color: "#3B82F6",
+                                    },
+                                    {
+                                      name: "Neutral",
+                                      value:
+                                        question.sentimentBreakdown.neutral
+                                          ?.count || 0,
+                                      color: "#9CA3AF",
+                                    },
+                                    {
+                                      name: "Negative",
+                                      value:
+                                        question.sentimentBreakdown.negative
+                                          ?.count || 0,
+                                      color: "#EF4444",
+                                    },
+                                  ].filter((d) => d.value > 0)}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={0}
+                                  outerRadius={80}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  labelLine={false}
+                                  label={({ percent }) =>
+                                    percent > 0.05
+                                      ? `${(percent * 100).toFixed(0)}%`
+                                      : ""
+                                  }
+                                >
+                                  {[
+                                    { color: "#3B82F6" },
+                                    { color: "#9CA3AF" },
+                                    { color: "#EF4444" },
+                                  ].map((entry, index) => (
+                                    <Cell
+                                      key={`cell-${index}`}
+                                      fill={entry.color}
+                                    />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                              <span className="text-sm text-gray-700">
+                                Positive:{" "}
+                                {question.sentimentBreakdown.positive?.count ||
+                                  0}{" "}
+                                (
+                                {question.sentimentBreakdown.positive
+                                  ?.percentage || 0}
+                                %)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                              <span className="text-sm text-gray-700">
+                                Neutral:{" "}
+                                {question.sentimentBreakdown.neutral?.count ||
+                                  0}{" "}
+                                (
+                                {question.sentimentBreakdown.neutral
+                                  ?.percentage || 0}
+                                %)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <span className="text-sm text-gray-700">
+                                Negative:{" "}
+                                {question.sentimentBreakdown.negative?.count ||
+                                  0}{" "}
+                                (
+                                {question.sentimentBreakdown.negative
+                                  ?.percentage || 0}
+                                %)
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Multiple Choice - Option Distribution */}
+                    {question.questionType === "multiple_choice" &&
+                      question.optionDistribution && (
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                          <div className="w-48 h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={question.optionDistribution.filter(
+                                    (d) => d.count > 0
+                                  )}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={0}
+                                  outerRadius={80}
+                                  fill="#8884d8"
+                                  dataKey="count"
+                                  labelLine={false}
+                                  label={({ percent }) =>
+                                    percent > 0.05
+                                      ? `${(percent * 100).toFixed(0)}%`
+                                      : ""
+                                  }
+                                >
+                                  {question.optionDistribution.map(
+                                    (entry, index) => (
+                                      <Cell
+                                        key={`cell-${index}`}
+                                        fill={COLORS[index % COLORS.length]}
+                                      />
+                                    )
+                                  )}
+                                </Pie>
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-2">
+                            {question.optionDistribution.map((entry, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3"
+                              >
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      COLORS[index % COLORS.length],
+                                  }}
+                                ></div>
+                                <span className="text-sm text-gray-700">
+                                  {entry.name}: {entry.count} ({entry.value}%)
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </SectionWrapper>
 
           {/* Qualitative Comments Section */}
@@ -872,12 +1057,13 @@ const CompleteReport = ({ report, onBack, isGeneratedReport = false }) => {
   );
 
   // Only wrap with layout if accessed via direct routing (no props)
-  if (isChildComponent) {
+  // Guest view should never have a layout wrapper
+  if (isChildComponent || isGuestView) {
     return content;
   }
 
   // Use appropriate layout based on user role
-  if (user?.role === 'club-officer') {
+  if (user?.role === "club-officer") {
     return <ClubOfficerLayout>{content}</ClubOfficerLayout>;
   }
 

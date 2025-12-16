@@ -6,6 +6,7 @@ import {
   Database,
   Clock,
   Users,
+  UserPlus,
   Lock,
   Cog,
 } from "lucide-react";
@@ -15,6 +16,7 @@ function SettingsPage() {
 
   // Determine active tab based on current path
   const getActiveTab = () => {
+    if (location.pathname.includes("/settings/guest")) return "guest";
     if (location.pathname.includes("/settings/security")) return "security";
     if (location.pathname.includes("/settings/notifications"))
       return "notifications";
@@ -33,6 +35,13 @@ function SettingsPage() {
       icon: <Cog className="w-5 h-5" />,
       label: "General Settings",
       description: "System-wide configuration and preferences",
+    },
+    {
+      id: "guest",
+      path: "/mis/settings/guest",
+      icon: <UserPlus className="w-5 h-5" />,
+      label: "Guest Access",
+      description: "Guest evaluator and speaker account settings",
     },
     {
       id: "security",

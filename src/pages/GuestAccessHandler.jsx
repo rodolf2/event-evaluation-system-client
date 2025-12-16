@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { validateGuestToken } from "../api/guestApi";
+import GuestAccessPage from "./GuestAccessPage";
 
 const GuestAccessHandler = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
-  const navigate = useNavigate();
+  const [isValidated, setIsValidated] = useState(false);
   const [searchParams] = useSearchParams();
+
+  const urlToken = searchParams.get("token");
 
   useEffect(() => {
     // Check for token in URL or localStorage
-    const urlToken = searchParams.get("token");
     const storedToken = localStorage.getItem("guestToken");
 
     const tokenToValidate = urlToken || storedToken;
@@ -34,12 +36,8 @@ const GuestAccessHandler = () => {
       localStorage.setItem("guestToken", token);
       localStorage.setItem("guestAccess", JSON.stringify(response));
 
-      // Redirect based on role
-      if (response.role === "speaker") {
-        navigate("/guest/reports");
-      } else if (response.role === "evaluator") {
-        navigate(`/guest/evaluation?formId=${response.reference_id}`);
-      }
+      // Mark as validated - will render GuestAccessPage
+      setIsValidated(true);
     } catch (err) {
       // Clear any stored token if validation fails
       localStorage.removeItem("guestToken");
@@ -73,6 +71,11 @@ const GuestAccessHandler = () => {
         </div>
       </div>
     );
+  }
+
+  // If validated, render the GuestAccessPage directly
+  if (isValidated && urlToken) {
+    return <GuestAccessPage />;
   }
 
   return (

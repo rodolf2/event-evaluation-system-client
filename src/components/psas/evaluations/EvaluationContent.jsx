@@ -1,13 +1,8 @@
-import React, { useState } from "react";
-import {
-  Search,
-  Filter,
-  MoreVertical,
-  Trash2,
-  Edit,
-} from "lucide-react";
+import { useState } from "react";
+import { Search, Filter, MoreVertical, Trash2, Users } from "lucide-react";
 import uploadIcon from "../../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
+import EvaluatorShareModal from "../../shared/EvaluatorShareModal";
 
 const EvaluationContent = ({
   searchTerm,
@@ -17,7 +12,7 @@ const EvaluationContent = ({
   evaluationForms,
   onCreateNew,
   onShowUploadModal,
-  onDeleteForm
+  onDeleteForm,
 }) => {
   return (
     <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
@@ -109,7 +104,11 @@ const EvaluationContent = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {evaluationForms.map((form) => (
-              <RecentEvaluationCard key={form.id} form={form} onDeleteForm={onDeleteForm} />
+              <RecentEvaluationCard
+                key={form.id}
+                form={form}
+                onDeleteForm={onDeleteForm}
+              />
             ))}
           </div>
         </div>
@@ -120,15 +119,16 @@ const EvaluationContent = ({
 
 const RecentEvaluationCard = ({ form, onDeleteForm }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const handleCardClick = (e) => {
     // Don't navigate if clicking on menu items
-    if (e.target.closest('.menu-button')) {
+    if (e.target.closest(".menu-button")) {
       return;
     }
-    
+
     // Store the form ID to edit and navigate to create form view
-    localStorage.setItem('editFormId', form.id);
+    localStorage.setItem("editFormId", form.id);
     window.location.href = `/psas/evaluations?view=create&edit=${form.id}`;
   };
 
@@ -146,100 +146,129 @@ const RecentEvaluationCard = ({ form, onDeleteForm }) => {
   };
 
   return (
-    <div
-      className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col"
-      onClick={handleCardClick}
-    >
-      <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
-        <div className="text-center mb-4 shrink-0 relative">
-          <h2 className="text-2xl font-bold text-gray-800 line-clamp-2">{form.title}</h2>
-          <p className="text-gray-500 text-sm line-clamp-2">{form.description}</p>
-          
-          {/* Menu button */}
-          <div className="absolute top-0 right-0">
-            <button
-              onClick={toggleMenu}
-              className="menu-button p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-              title="Actions"
-            >
-              <MoreVertical size={20} />
-            </button>
-            
-            {showMenu && (
-              <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
-                <button
-                  onClick={handleDelete}
-                  className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
-                >
-                  <Trash2 size={16} />
-                  Delete Form
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Fixed preview section */}
-        <div className="grow">
-          <div className="flex justify-between items-center mb-4">
-            <input
-              type="text"
-              placeholder="Sample question..."
-              className="w-full pr-6 py-3 text-sm border border-gray-300 rounded-lg bg-gray-50"
-              disabled
-              value="Sample question preview"
-            />
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <input
-                type="radio"
-                name={`option-${form.id}`}
-                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                disabled
-              />
-              <label className="ml-3 text-gray-700 text-sm">Option 1</label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="radio"
-                name={`option-${form.id}`}
-                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                disabled
-              />
-              <label className="ml-3 text-gray-700 text-sm">Option 2</label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="radio"
-                name={`option-${form.id}`}
-                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                disabled
-              />
-              <label className="ml-3 text-gray-700 text-sm">Option 3</label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Fixed footer */}
+    <>
       <div
-        className="p-4 rounded-b-lg shrink-0"
-        style={{
-          background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-        }}
+        className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col"
+        onClick={handleCardClick}
       >
-        <h3 className="text-lg font-bold text-white line-clamp-1">{form.title}</h3>
-        <div className="mt-2 text-sm text-white/80 flex items-center justify-between">
-          <div>
-            <span>{form.responses} responses</span>
-            <span className="mx-2">•</span>
-            <span>{form.status}</span>
+        <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
+          <div className="text-center mb-4 shrink-0 relative">
+            <h2 className="text-2xl font-bold text-gray-800 line-clamp-2">
+              {form.title}
+            </h2>
+            <p className="text-gray-500 text-sm line-clamp-2">
+              {form.description}
+            </p>
+
+            {/* Menu button */}
+            <div className="absolute top-0 right-0">
+              <button
+                onClick={toggleMenu}
+                className="menu-button p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                title="Actions"
+              >
+                <MoreVertical size={20} />
+              </button>
+
+              {showMenu && (
+                <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
+                  {form.status === "published" && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowShareModal(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                    >
+                      <Users size={16} />
+                      Share with Evaluators
+                    </button>
+                  )}
+                  <button
+                    onClick={handleDelete}
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <Trash2 size={16} />
+                    Delete Form
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <span className="text-xs">{form.createdAt}</span>
+
+          {/* Fixed preview section */}
+          <div className="grow">
+            <div className="flex justify-between items-center mb-4">
+              <input
+                type="text"
+                placeholder="Sample question..."
+                className="w-full pr-6 py-3 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                disabled
+                value="Sample question preview"
+              />
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  name={`option-${form.id}`}
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  disabled
+                />
+                <label className="ml-3 text-gray-700 text-sm">Option 1</label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  name={`option-${form.id}`}
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  disabled
+                />
+                <label className="ml-3 text-gray-700 text-sm">Option 2</label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  name={`option-${form.id}`}
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  disabled
+                />
+                <label className="ml-3 text-gray-700 text-sm">Option 3</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fixed footer */}
+        <div
+          className="p-4 rounded-b-lg shrink-0"
+          style={{
+            background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+          }}
+        >
+          <h3 className="text-lg font-bold text-white line-clamp-1">
+            {form.title}
+          </h3>
+          <div className="mt-2 text-sm text-white/80 flex items-center justify-between">
+            <div>
+              <span>{form.responses} responses</span>
+              <span className="mx-2">•</span>
+              <span>{form.status}</span>
+            </div>
+            <span className="text-xs">{form.createdAt}</span>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Evaluator Share Modal */}
+      <EvaluatorShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        formId={form.id}
+        formTitle={form.title}
+      />
+    </>
   );
 };
 

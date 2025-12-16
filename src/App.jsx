@@ -9,6 +9,7 @@ import "./App.css";
 import LoginPage from "./pages/LogIn";
 import GuestLogin from "./pages/GuestLogin";
 import GuestAccessPage from "./pages/GuestAccessPage";
+import GuestEvaluatePage from "./pages/GuestEvaluatePage";
 import GuestAccessHandler from "./pages/GuestAccessHandler";
 import Home from "./pages/psas/Home";
 import Evaluations from "./pages/psas/Evaluations";
@@ -62,6 +63,8 @@ import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 
 // Sample form data removed - now fetched dynamically by EvaluationForm component
 import OnboardingWrapper from "./components/onboarding/OnboardingWrapper";
+import GuestSettings from "./pages/mis/GuestSettings";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
   const { user, token, isLoading } = useAuth();
@@ -150,10 +153,8 @@ function App() {
               path="/guest-access-handler"
               element={<GuestAccessHandler />}
             />
-
             {/* Root redirect */}
-            <Route path="/" element={<Navigate to={getHomeRoute()} />} />
-
+            <Route path="/" element={<LandingPage />} />
             {/* PSAS routes */}
             <Route
               path="/psas/home"
@@ -322,7 +323,6 @@ function App() {
                 )
               }
             />
-
             {/* Club Officer routes */}
             <Route
               path="/club-officer/home"
@@ -475,7 +475,6 @@ function App() {
                 )
               }
             />
-
             {/* Guest Access Route - for guest speakers viewing reports */}
             <Route
               path="/guest-access"
@@ -483,7 +482,10 @@ function App() {
                 token ? <GuestAccessPage /> : <Navigate to="/guest-login" />
               }
             />
-
+            {/* Public guest access route - uses token query param for authentication */}
+            <Route path="/guest/access" element={<GuestAccessHandler />} />
+            {/* Guest evaluator route - public access via token */}
+            <Route path="/guest/evaluate" element={<GuestEvaluatePage />} />
             {/* Participant routes */}
             <Route
               path="/participant/home"
@@ -569,7 +571,6 @@ function App() {
                 )
               }
             />
-
             {/* School Admin routes */}
             <Route
               path="/school-admin/home"
@@ -617,7 +618,6 @@ function App() {
               path="/school-admin"
               element={<Navigate to="/school-admin/home" />}
             />
-
             {/* MIS routes */}
             <Route
               path="/mis"
@@ -653,8 +653,9 @@ function App() {
                 )
               }
             />
+
             <Route
-              path="/mis/settings/*"
+              path="/mis/settings"
               element={
                 isAuthorized("mis") ? (
                   <MisLayout>
@@ -664,7 +665,10 @@ function App() {
                   <Navigate to={getHomeRoute()} />
                 )
               }
-            />
+            >
+              <Route path="guest" element={<GuestSettings />} />
+              <Route index element={<Navigate to="guest" />} />
+            </Route>
             <Route
               path="/mis/reports"
               element={
@@ -689,13 +693,11 @@ function App() {
                 )
               }
             />
-
             {/* Profile route - accessible to all authenticated users */}
             <Route
               path="/profile"
               element={token ? <Profile /> : <Navigate to="/login" />}
             />
-
             {/* Catch all route */}
             <Route path="*" element={<Navigate to={getHomeRoute()} />} />
           </Routes>

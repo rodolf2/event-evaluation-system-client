@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Share2 } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
+import GuestShareModal from "../../components/psas/GuestShareModal";
 import QuantitativeRatings from "../reports/QuantitativeRatings";
 import QualitativeComments from "../reports/QualitativeComments";
 import PositiveComments from "../reports/PositiveComments";
@@ -70,6 +71,7 @@ const Reports = () => {
 
   const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [showGuestShareModal, setShowGuestShareModal] = useState(false);
 
   const [filters] = useState({
     startDate: "",
@@ -389,11 +391,28 @@ const Reports = () => {
       )}
 
       {view === "dashboard" && selectedReport && (
-        <CompleteReport
-          report={selectedReport}
-          onBack={handleBackToList}
-          isGeneratedReport={!selectedReport.isDynamic}
-        />
+        <>
+          <div className="absolute top-4 right-4 z-10">
+            <button
+              onClick={() => setShowGuestShareModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#1F3463] text-white rounded-lg hover:bg-[#2d4a8c] transition-colors shadow-md"
+            >
+              <Share2 className="w-4 h-4" />
+              Share with Guest
+            </button>
+          </div>
+          <CompleteReport
+            report={selectedReport}
+            onBack={handleBackToList}
+            isGeneratedReport={!selectedReport.isDynamic}
+          />
+          <GuestShareModal
+            isOpen={showGuestShareModal}
+            onClose={() => setShowGuestShareModal(false)}
+            reportId={selectedReport.formId || selectedReport.id}
+            reportTitle={selectedReport.title}
+          />
+        </>
       )}
       {view === "qualitative" && selectedReport && (
         <QualitativeComments
