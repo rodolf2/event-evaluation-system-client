@@ -18,11 +18,10 @@ const NotificationItem = ({
   onDelete,
   actionLoading,
   isAllSelected,
-  onClick,
 }) => {
   return (
     <div
-      onClick={onClick}
+      onClick={() => onSelect(notification.id)}
       className={`flex items-start sm:items-center p-3 sm:p-4 border-t border-gray-200 cursor-pointer ${
         isAllSelected
           ? "bg-[#E1E8FD]" // All Selected state color
