@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Share2 } from "lucide-react";
+import { Search, Filter, Share2, Send } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
 import GuestShareModal from "../../components/psas/GuestShareModal";
@@ -125,7 +125,21 @@ const Reports = () => {
         const result = await response.json();
 
         if (result.success) {
-          setReports(result.data.reports);
+          const timestamp = new Date().getTime();
+          const withToken = (thumb) => {
+            if (!thumb || !token) return thumb;
+            const hasQuery = thumb.includes("?");
+            return `${thumb}${hasQuery ? "&" : "?"}token=${encodeURIComponent(
+              token
+            )}&t=${timestamp}`;
+          };
+
+          const reportsWithThumbs = (result.data.reports || []).map((r) => ({
+            ...r,
+            thumbnail: withToken(r.thumbnail),
+          }));
+
+          setReports(reportsWithThumbs);
           setTotal(result.data.pagination.total);
           setTotalPages(result.data.pagination.pages);
         } else {
@@ -392,19 +406,11 @@ const Reports = () => {
 
       {view === "dashboard" && selectedReport && (
         <>
-          <div className="absolute top-4 right-4 z-10">
-            <button
-              onClick={() => setShowGuestShareModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1F3463] text-white rounded-lg hover:bg-[#2d4a8c] transition-colors shadow-md"
-            >
-              <Share2 className="w-4 h-4" />
-              Share with Guest
-            </button>
-          </div>
           <CompleteReport
             report={selectedReport}
             onBack={handleBackToList}
             isGeneratedReport={!selectedReport.isDynamic}
+            onShareGuest={() => setShowGuestShareModal(true)}
           />
           <GuestShareModal
             isOpen={showGuestShareModal}

@@ -133,7 +133,7 @@ function App() {
       <OnboardingProvider>
         <Router>
           <Toaster position="top-center" reverseOrder={false} />
-          <NotificationPopup />
+          {token && user && <NotificationPopup />}
           <OnboardingWrapper />
 
           <Routes>

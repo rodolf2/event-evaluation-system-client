@@ -1,7 +1,14 @@
+import React from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
-import { Download, Printer, UserPlus, ArrowLeft } from "lucide-react";
+import { Download, Printer, UserPlus, ArrowLeft, Send } from "lucide-react";
 
-const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
+const ReportActions = ({
+  onBackClick,
+  eventId,
+  isGeneratedReport = false,
+  onShareGuest,
+}) => {
   const navigate = useNavigate();
 
   const handlePrint = () => {
@@ -10,22 +17,146 @@ const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
 
   const handleDownload = async () => {
     try {
-      // Find the entire report container (including headers and footers)
+      const loadingToast = document.createElement("div");
+      loadingToast.innerHTML = "Preparing PDF Report... (Please wait)";
+      loadingToast.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.8); color: white; padding: 20px;
+        border-radius: 8px; z-index: 9999;
+      `;
+      document.body.appendChild(loadingToast);
+
+      // Wait for animations to finish (crucial for Charts)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Find the entire report container
       const reportElement = document.querySelector(
         ".container.mx-auto.max-w-5xl"
       );
       if (!reportElement) {
+        document.body.removeChild(loadingToast);
         alert("Report content not found. Please try again.");
         return;
       }
 
-      // Get the form data to include the title
-      const formData = JSON.parse(
-        sessionStorage.getItem("currentFormData") || "{}"
-      );
-      const reportTitle = formData.title || "Evaluation Report";
+      // --- Header/Footer Extraction for Every Page ---
+      let headerTemplate = "";
+      let footerTemplate = "";
 
-      // Extract all CSS styles from the page
+      // Find header image and create template
+      const headerImg = reportElement.querySelector(
+        'img[alt="La Verdad Christian College Header"]'
+      );
+      if (headerImg) {
+        try {
+          const response = await fetch(headerImg.src);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          const base64 = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          // Scale up by 1.33 to counteract Puppeteer's 0.75x template scaling
+          headerTemplate = `
+            <div style="width: 100%; height: 100%; margin: 0; padding: 0; transform: scale(1.33); transform-origin: top left;">
+              <img src="${base64}" style="width: 75%; height: auto; display: block;" />
+            </div>`;
+        } catch (e) {
+          console.warn("Failed to process header image", e);
+        }
+      }
+
+      // Find footer image and create template
+      const footerImg = reportElement.querySelector('img[alt="Report Footer"]');
+      if (footerImg) {
+        try {
+          const response = await fetch(footerImg.src);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          const base64 = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          // Scale up by 1.33 to counteract Puppeteer's 0.75x template scaling
+          footerTemplate = `
+            <div style="width: 100%; height: 100%; margin: 0; padding: 0; transform: scale(1.33); transform-origin: bottom left;">
+              <img src="${base64}" style="width: 75%; height: auto; display: block;" />
+            </div>`;
+        } catch (e) {
+          console.warn("Failed to process footer image", e);
+        }
+      }
+
+      // --- Cloning and Content Preparation ---
+      const clone = reportElement.cloneNode(true);
+
+      // Remove header/footer from content to avoid duplication (they're now in templates)
+      const cloneHeaders = clone.querySelectorAll(
+        'img[alt="La Verdad Christian College Header"]'
+      );
+      cloneHeaders.forEach((header) => {
+        const parent = header.parentElement;
+        if (
+          parent &&
+          parent.tagName === "DIV" &&
+          parent.children.length === 1
+        ) {
+          parent.remove();
+        } else {
+          header.remove();
+        }
+      });
+
+      const cloneFooters = clone.querySelectorAll('img[alt="Report Footer"]');
+      cloneFooters.forEach((footer) => {
+        const parent = footer.parentElement;
+        if (
+          parent &&
+          parent.tagName === "DIV" &&
+          parent.children.length === 1
+        ) {
+          parent.remove();
+        } else {
+          footer.remove();
+        }
+      });
+
+      // Rasterize SVGs (Charts)
+      // User Note: Removed manual rasterization as Puppeteer works better with static SVGs.
+      // const originalSvgs = reportElement.querySelectorAll("svg"); ...
+
+      // Convert remaining standard images (like static embedded ones)
+      const images = clone.querySelectorAll("img");
+      const imagePromises = Array.from(images).map(async (img) => {
+        try {
+          if (img.src.startsWith("data:")) return;
+
+          const response = await fetch(img.src, {
+            mode: "cors",
+            credentials: "same-origin",
+          });
+          if (!response.ok) throw new Error("Fetch failed");
+
+          const blob = await response.blob();
+          const reader = new FileReader();
+          await new Promise((resolve, reject) => {
+            reader.onloadend = () => {
+              img.src = reader.result;
+              resolve();
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch {
+          // Fallback to absolute URL
+          if (img.src.startsWith("/")) {
+            img.src = `${window.location.origin}${img.src}`;
+          }
+        }
+      });
+      await Promise.all(imagePromises);
+
+      // Styles
       const styles = Array.from(document.styleSheets)
         .map((styleSheet) => {
           try {
@@ -33,96 +164,43 @@ const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
               .map((rule) => rule.cssText)
               .join("\n");
           } catch {
-            // Handle cross-origin stylesheets
             return "";
           }
         })
         .filter((style) => style.trim().length > 0)
         .join("\n");
 
-      // Extract the HTML content
-      let htmlContent = reportElement.innerHTML;
+      const formData = JSON.parse(
+        sessionStorage.getItem("currentFormData") || "{}"
+      );
+      const reportTitle = formData.title || "Evaluation Report";
 
-      // Convert images to base64 data URLs
-      const images = reportElement.querySelectorAll("img");
-      const imagePromises = Array.from(images).map(async (img) => {
-        try {
-          // Create a canvas to draw the image and get its data URL
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-
-          // Wait for image to load if it's not already loaded
-          if (!img.complete) {
-            await new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
-              // Set a timeout in case image never loads
-              setTimeout(reject, 5000);
-            });
-          }
-
-          // Set canvas dimensions
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
-
-          // Draw image to canvas
-          ctx.drawImage(img, 0, 0);
-
-          // Get data URL
-          const dataUrl = canvas.toDataURL("image/png");
-
-          // Replace the src in the HTML content
-          htmlContent = htmlContent.replace(
-            new RegExp(img.src.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
-            dataUrl
-          );
-
-          return Promise.resolve();
-        } catch (error) {
-          console.warn("Failed to convert image to base64:", img.src, error);
-          return Promise.resolve();
-        }
-      });
-
-      // Wait for all images to be converted
-      await Promise.all(imagePromises);
-
-      // Create complete HTML with styles
       const completeHTML = `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="UTF-8">
+            <base href="${window.location.origin}/">
             <title>${reportTitle}</title>
             <style>
               ${styles}
+              img { max-width: 100% !important; }
+              /* Add padding to body to act as page margins for the text content */
+              body { padding: 0 40px; }
+              /* Hide screen-only elements */
+              .print\\:hidden { display: none !important; }
             </style>
           </head>
           <body>
             <div class="report-print-content">
-              ${htmlContent}
+              ${clone.innerHTML}
             </div>
           </body>
         </html>
       `;
 
-      // Show loading message
-      const loadingToast = document.createElement("div");
       loadingToast.innerHTML = "Downloading PDF...";
-      loadingToast.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 20px;
-        border-radius: 8px;
-        z-index: 9999;
-      `;
-      document.body.appendChild(loadingToast);
 
-      // Send complete HTML with styles to server for PDF generation
       const response = await fetch(`/api/reports/${eventId}/generate-pdf`, {
         method: "POST",
         headers: {
@@ -132,10 +210,11 @@ const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
         body: JSON.stringify({
           html: completeHTML,
           title: reportTitle,
+          headerTemplate, // Pass templates
+          footerTemplate,
         }),
       });
 
-      // Remove loading message
       document.body.removeChild(loadingToast);
 
       if (!response.ok) {
@@ -143,7 +222,6 @@ const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
         throw new Error(errorData.message || "Failed to generate PDF");
       }
 
-      // Create blob from response and trigger download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -158,7 +236,9 @@ const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
       document.body.removeChild(a);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
+      const toast = document.querySelector("div[style*='z-index: 9999']");
+      if (toast) document.body.removeChild(toast);
+      alert("Failed to download PDF. Please check console for details.");
     }
   };
 
@@ -213,6 +293,15 @@ const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
           <ArrowLeft size={20} className="text-gray-600" />
         </button>
         <div className="flex items-center space-x-4">
+          {onShareGuest && (
+            <button
+              onClick={onShareGuest}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              title="Share with guest"
+            >
+              <Send size={20} className="text-gray-600" />
+            </button>
+          )}
           <button
             onClick={handleShowPreparedBy}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -247,6 +336,13 @@ const ReportActions = ({ onBackClick, eventId, isGeneratedReport = false }) => {
       </div>
     </div>
   );
+};
+
+ReportActions.propTypes = {
+  onBackClick: PropTypes.func.isRequired,
+  eventId: PropTypes.string.isRequired,
+  isGeneratedReport: PropTypes.bool,
+  onShareGuest: PropTypes.func,
 };
 
 export default ReportActions;

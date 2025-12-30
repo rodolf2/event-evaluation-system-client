@@ -183,9 +183,6 @@ const LandingPage = () => {
             >
               Login
             </Link>
-            <button className="bg-blue-600 text-white px-3 lg:px-4 py-1 rounded-[8px] hover:bg-blue-700 transition-colors">
-              Guest Login
-            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -239,9 +236,6 @@ const LandingPage = () => {
                 >
                   Login
                 </Link>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-[8px] font-semibold">
-                  Guest Login
-                </button>
               </div>
             </nav>
           </div>
@@ -258,9 +252,12 @@ const LandingPage = () => {
           Christian College - Apalit, Pampanga, designed to streamline event
           feedback and turn student voices into campus progress.
         </p>
-        <button className="bg-[#2662D9] text-white px-5 md:px-6 py-2 md:py-3 rounded-[15px] hover:bg-blue-700 text-base md:text-[19px] font-semibold transition-colors">
+        <Link
+          to="/login"
+          className="inline-block bg-[#2662D9] text-white px-5 md:px-6 py-2 md:py-3 rounded-[15px] hover:bg-blue-700 text-base md:text-[19px] font-semibold transition-colors"
+        >
           Get Started
-        </button>
+        </Link>
 
         {/* Campus Carousel */}
         <CampusCarousel />
@@ -307,42 +304,59 @@ const LandingPage = () => {
           Frequently Asked Questions
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-7xl mx-auto items-start">
-          {faqs.map((faq, i) => (
-            <div
-              key={i}
-              className={`break-inside-avoid rounded-[15px] md:rounded-[20px] shadow transition-colors duration-300 overflow-hidden ${
-                openIndex === i
-                  ? "bg-[#1F3463] text-white"
-                  : "bg-[#1F3463] text-white hover:bg-blue-800 cursor-pointer"
-              }`}
-              onClick={() => setOpenIndex(openIndex === i ? null : i)}
-            >
-              {/* Header Row */}
-              <div className="flex items-center justify-between p-4 md:p-5 min-h-[70px] md:min-h-[80px]">
-                <div className="flex items-center gap-3 md:gap-4 pr-3 md:pr-4">
-                  <div className="font-bold rounded-[5px] w-7 h-7 md:w-8 md:h-8 flex items-center justify-center shrink-0 text-[#1F3463] bg-white text-sm md:text-base">
-                    {i + 1}
-                  </div>
-                  <p className="font-medium leading-snug text-sm md:text-base">
-                    {faq.question}
-                  </p>
-                </div>
-                <ChevronDown
-                  className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${
-                    openIndex === i ? "rotate-180" : ""
+        <div className="max-w-7xl mx-auto">
+          <div className="columns-1 md:columns-2 gap-4 md:gap-6">
+            {/* Reorder: odd indices first (0,2,4,6,8), then even indices (1,3,5,7,9) for left-right layout */}
+            {[...faqs.map((faq, i) => ({ faq, originalIndex: i }))]
+              .sort((a, b) => {
+                // Odd original indices (1,3,5...) go first in DOM = left column
+                // Even original indices (0,2,4...) go second in DOM = right column
+                const aIsOdd = a.originalIndex % 2 === 0;
+                const bIsOdd = b.originalIndex % 2 === 0;
+                if (aIsOdd && !bIsOdd) return -1;
+                if (!aIsOdd && bIsOdd) return 1;
+                return a.originalIndex - b.originalIndex;
+              })
+              .map(({ faq, originalIndex }) => (
+                <div
+                  key={originalIndex}
+                  className={`break-inside-avoid mb-4 md:mb-6 rounded-[15px] md:rounded-[20px] shadow transition-colors duration-300 overflow-hidden ${
+                    openIndex === originalIndex
+                      ? "bg-[#1F3463] text-white"
+                      : "bg-[#1F3463] text-white hover:bg-blue-800 cursor-pointer"
                   }`}
-                />
-              </div>
+                  onClick={() =>
+                    setOpenIndex(
+                      openIndex === originalIndex ? null : originalIndex
+                    )
+                  }
+                >
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between p-4 md:p-5 min-h-[70px] md:min-h-[80px]">
+                    <div className="flex items-center gap-3 md:gap-4 pr-3 md:pr-4">
+                      <div className="font-bold rounded-[5px] w-7 h-7 md:w-8 md:h-8 flex items-center justify-center shrink-0 text-[#1F3463] bg-white text-sm md:text-base">
+                        {originalIndex + 1}
+                      </div>
+                      <p className="font-medium leading-snug text-sm md:text-base">
+                        {faq.question}
+                      </p>
+                    </div>
+                    <ChevronDown
+                      className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${
+                        openIndex === originalIndex ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
 
-              {/* Answer Section */}
-              {openIndex === i && (
-                <div className="px-4 md:px-5 pb-4 md:pb-5 text-xs md:text-sm">
-                  {faq.answer}
+                  {/* Answer Section */}
+                  {openIndex === originalIndex && (
+                    <div className="px-4 md:px-5 pb-4 md:pb-5 text-xs md:text-sm">
+                      {faq.answer}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              ))}
+          </div>
         </div>
       </section>
 

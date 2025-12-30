@@ -61,13 +61,14 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Mobile Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-6 right-6 text-white lg:hidden p-2"
+        className="absolute top-4 right-4 text-white lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors z-10"
+        aria-label="Close menu"
       >
         <X className="w-6 h-6" />
       </button>
 
       {/* Logo and Text */}
-      <div className="flex items-center gap-3 mb-8 w-full pl-6">
+      <div className="flex items-center gap-3 mb-8 w-full px-6 pr-14 lg:pr-6">
         <img
           src="/assets/logo/LOGO.png"
           alt="Logo"

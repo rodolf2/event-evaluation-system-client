@@ -1,15 +1,17 @@
-import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 function LoginPage() {
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState(null);
 
-  // Check for error parameter in URL (e.g., account_inactive)
+  // Check for error parameter in URL (e.g., account_inactive, session_expired, access_denied)
   useEffect(() => {
     const error = searchParams.get("error");
+    const message = searchParams.get("message");
+
     if (error === "account_inactive") {
       toast.error(
         "Your account has been deactivated. Please contact an administrator.",
@@ -17,15 +19,34 @@ function LoginPage() {
       );
       // Clean up the URL
       window.history.replaceState({}, document.title, "/login");
+    } else if (error === "session_expired") {
+      setSessionExpiredMessage(
+        "Your session has timed out due to inactivity. Please sign in again."
+      );
+      toast.error("Session timed out. Please sign in again.", {
+        duration: 5000,
+      });
+      // Clean up the URL
+      window.history.replaceState({}, document.title, "/login");
+    } else if (error === "access_denied") {
+      const errorMessage = message
+        ? decodeURIComponent(message)
+        : "Access denied. You are not authorized to access this system.";
+      toast.error(errorMessage, { duration: 8000 });
+      setSessionExpiredMessage(errorMessage);
+      // Clean up the URL
+      window.history.replaceState({}, document.title, "/login");
+    } else if (error === "oauth_error") {
+      toast.error(
+        "An error occurred during authentication. Please try again.",
+        { duration: 5000 }
+      );
+      window.history.replaceState({}, document.title, "/login");
     }
   }, [searchParams]);
 
   const handleGoogleLogin = () => {
     window.location.href = `${apiUrl}/api/auth/google`;
-  };
-
-  const handleGuestMode = () => {
-    navigate("/guest-login");
   };
 
   return (
@@ -39,6 +60,15 @@ function LoginPage() {
             alt="School Logo"
             className="w-16 h-16 sm:w-20 sm:h-20 mb-4"
           />
+
+          {/* Session Expired Message */}
+          {sessionExpiredMessage && (
+            <div className="w-full mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-amber-800 text-sm text-center font-medium">
+                ⏱️ {sessionExpiredMessage}
+              </p>
+            </div>
+          )}
 
           {/* Welcome Text */}
           <h1 className="text-xl sm:text-2xl font-bold mb-2 text-center">
@@ -86,12 +116,6 @@ function LoginPage() {
                 An Intuitive and Engaging Event Evaluation System for La Verdad
                 Christian College – Apalit, Pampanga
               </p>
-              <button
-                onClick={handleGuestMode}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105"
-              >
-                Go to Guest Mode
-              </button>
             </div>
           </div>
         </div>

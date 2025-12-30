@@ -53,7 +53,7 @@ const DynamicBarChart = ({ data, title, subtitle, loading = false }) => {
           <XAxis type="number" />
           <YAxis type="category" dataKey="name" width={100} />
           <Tooltip />
-          <Bar dataKey="value" fill="#3B82F6" />
+          <Bar dataKey="value" fill="#3B82F6" isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -94,6 +94,7 @@ const DynamicPieChart = ({ data, title, subtitle, loading = false }) => {
             fill="#8884d8"
             dataKey="value"
             label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+            isAnimationActive={false}
           >
             {data.map((entry, index) => (
               <Cell
@@ -220,6 +221,7 @@ const CompleteReport = ({
   onBack,
   isGeneratedReport = false,
   isGuestView = false,
+  onShareGuest,
 }) => {
   const navigate = useNavigate();
   const { eventId } = useParams(); // Get eventId from URL if not provided as prop
@@ -274,15 +276,6 @@ const CompleteReport = ({
             <p className="text-xl font-bold">EVALUATION RESULT</p>
             <p className="text-lg">College Level</p>
             <h4 className="text-xl font-bold mt-6">{title}</h4>
-            {showLiveIndicator && lastUpdated && (
-              <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>
-                  Live Data - Last updated:{" "}
-                  {new Date(lastUpdated).toLocaleTimeString()}
-                </span>
-              </div>
-            )}
           </div>
           {children}
         </div>
@@ -575,6 +568,7 @@ const CompleteReport = ({
           onBackClick={handleBackClick}
           eventId={eventId}
           isGeneratedReport={isGeneratedReport}
+          onShareGuest={onShareGuest}
         />
       )}
       <div className="bg-gray-100 min-h-screen report-print-content print:block p-8">
@@ -700,6 +694,7 @@ const CompleteReport = ({
                                       ? `${(percent * 100).toFixed(0)}%`
                                       : ""
                                   }
+                                  isAnimationActive={false}
                                 >
                                   {question.ratingDistribution.map(
                                     (entry, index) => (
@@ -784,6 +779,7 @@ const CompleteReport = ({
                                       ? `${(percent * 100).toFixed(0)}%`
                                       : ""
                                   }
+                                  isAnimationActive={false}
                                 >
                                   {[
                                     { color: "#3B82F6" },

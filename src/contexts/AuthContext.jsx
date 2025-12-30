@@ -1,5 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AuthContext } from "./AuthContextDefinition";
+import { toast } from "react-hot-toast";
+
+// Session timeout configuration
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 1 minutes
+const CHECK_INTERVAL_MS = 60 * 1000; // Check every 60 seconds
+const ACTIVITY_KEY = "lastActivityTime";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -13,6 +19,7 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem("user");
     return savedToken && !savedUser;
   });
+  const sessionCheckIntervalRef = useRef(null);
 
   const fetchUser = useCallback(async () => {
     if (!token) {
@@ -73,6 +80,39 @@ export const AuthProvider = ({ children }) => {
     }
   }, [fetchUser]);
 
+  // Session timeout helper functions
+  const updateActivityTime = useCallback(() => {
+    localStorage.setItem(ACTIVITY_KEY, Date.now().toString());
+  }, []);
+
+  const checkSessionExpiry = useCallback(() => {
+    const lastActivity = localStorage.getItem(ACTIVITY_KEY);
+    if (!lastActivity) return false;
+
+    const elapsed = Date.now() - parseInt(lastActivity, 10);
+    return elapsed > SESSION_TIMEOUT_MS;
+  }, []);
+
+  const handleSessionExpired = useCallback(() => {
+    if (sessionCheckIntervalRef.current) {
+      clearInterval(sessionCheckIntervalRef.current);
+      sessionCheckIntervalRef.current = null;
+    }
+    localStorage.removeItem(ACTIVITY_KEY);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setToken(null);
+    setUser(null);
+    toast.error(
+      "Your session has expired due to inactivity. Please log in again.",
+      {
+        duration: 5000,
+      }
+    );
+    // Redirect to login with session expired message
+    window.location.href = "/login?error=session_expired";
+  }, []);
+
   useEffect(() => {
     if (token && !user) {
       // Add a timeout to ensure we don't get stuck in loading state
@@ -90,6 +130,86 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token, user, refreshUserData]);
 
+  // Session timeout effect - only active when user is logged in
+  useEffect(() => {
+    if (!token || !user) {
+      // Clear interval if user logs out
+      if (sessionCheckIntervalRef.current) {
+        clearInterval(sessionCheckIntervalRef.current);
+        sessionCheckIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Initialize activity time on login
+    if (!localStorage.getItem(ACTIVITY_KEY)) {
+      updateActivityTime();
+    }
+
+    // Check if session already expired (e.g., on page reload)
+    if (checkSessionExpiry()) {
+      handleSessionExpired();
+      return;
+    }
+
+    // Activity event listeners
+    const activityEvents = [
+      "mousemove",
+      "keydown",
+      "click",
+      "scroll",
+      "touchstart",
+    ];
+
+    const handleActivity = () => {
+      updateActivityTime();
+    };
+
+    // Throttle activity updates to avoid excessive localStorage writes
+    let activityThrottleTimeout = null;
+    const throttledHandleActivity = () => {
+      if (activityThrottleTimeout) return;
+      activityThrottleTimeout = setTimeout(() => {
+        handleActivity();
+        activityThrottleTimeout = null;
+      }, 1000); // Update at most once per second
+    };
+
+    // Add activity listeners
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, throttledHandleActivity, {
+        passive: true,
+      });
+    });
+
+    // Periodic session check
+    sessionCheckIntervalRef.current = setInterval(() => {
+      if (checkSessionExpiry()) {
+        handleSessionExpired();
+      }
+    }, CHECK_INTERVAL_MS);
+
+    // Cleanup
+    return () => {
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, throttledHandleActivity);
+      });
+      if (activityThrottleTimeout) {
+        clearTimeout(activityThrottleTimeout);
+      }
+      if (sessionCheckIntervalRef.current) {
+        clearInterval(sessionCheckIntervalRef.current);
+        sessionCheckIntervalRef.current = null;
+      }
+    };
+  }, [
+    token,
+    user,
+    updateActivityTime,
+    checkSessionExpiry,
+    handleSessionExpired,
+  ]);
+
   const saveToken = (userToken) => {
     if (!userToken) {
       removeToken();
@@ -103,6 +223,11 @@ export const AuthProvider = ({ children }) => {
   const removeToken = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem(ACTIVITY_KEY);
+    if (sessionCheckIntervalRef.current) {
+      clearInterval(sessionCheckIntervalRef.current);
+      sessionCheckIntervalRef.current = null;
+    }
     setToken(null);
     setUser(null);
   };
