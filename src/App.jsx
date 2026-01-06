@@ -38,6 +38,7 @@ import SchoolAdminHome from "./pages/school-admins/Home";
 import SchoolAdminReports from "./pages/school-admins/Reports";
 import MisDashboard from "./pages/mis/Dashboard";
 import UserManagement from "./pages/mis/UserManagement";
+import UserRoles from "./pages/mis/UserRoles";
 import ClubOfficerLayout from "./components/club-officers/ClubOfficerLayout";
 import PSASLayout from "./components/psas/PSASLayout";
 import SchoolAdminLayout from "./components/school-admins/SchoolAdminLayout";
@@ -64,10 +65,19 @@ import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 // Sample form data removed - now fetched dynamically by EvaluationForm component
 import OnboardingWrapper from "./components/onboarding/OnboardingWrapper";
 import GuestSettings from "./pages/mis/GuestSettings";
+import GeneralSettings from "./pages/mis/settings/GeneralSettings";
+import SecuritySettings from "./pages/mis/settings/SecuritySettings";
+import AuditLogs from "./pages/mis/AuditLogs";
+import UserStatistics from "./pages/mis/UserStatistics";
+import SystemHealth from "./pages/mis/SystemHealth";
+import SecurityOversight from "./pages/mis/SecurityOversight";
 import LandingPage from "./pages/LandingPage";
+import NotFound from "./pages/NotFound";
+
+import MaintenanceOverlay from "./components/shared/MaintenanceOverlay";
 
 function App() {
-  const { user, token, isLoading } = useAuth();
+  const { user, token, isLoading, systemStatus } = useAuth();
 
   const getHomeRoute = () => {
     if (!token) return "/login";
@@ -92,6 +102,11 @@ function App() {
         return "/login";
     }
   };
+
+  // Show system maintenance/lockdown overlay
+  if (systemStatus?.active) {
+    return <MaintenanceOverlay status={systemStatus} />;
+  }
 
   // Show loading screen during authentication
   if (isLoading && token && !user) {
@@ -653,6 +668,18 @@ function App() {
                 )
               }
             />
+            <Route
+              path="/mis/user-roles"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <UserRoles />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
 
             <Route
               path="/mis/settings"
@@ -665,16 +692,61 @@ function App() {
                   <Navigate to={getHomeRoute()} />
                 )
               }
-            >
-              <Route path="guest" element={<GuestSettings />} />
-              <Route index element={<Navigate to="guest" />} />
-            </Route>
+            />
+            <Route
+              path="/mis/security-oversight"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <SecurityOversight />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
             <Route
               path="/mis/reports"
               element={
                 isAuthorized("mis") ? (
                   <MisLayout>
                     <MisReports />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/audit-logs"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <AuditLogs />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/user-statistics"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <UserStatistics />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/system-health"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <SystemHealth />
                   </MisLayout>
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -698,8 +770,8 @@ function App() {
               path="/profile"
               element={token ? <Profile /> : <Navigate to="/login" />}
             />
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to={getHomeRoute()} />} />
+            {/* Catch all route - 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
       </OnboardingProvider>

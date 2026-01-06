@@ -8,14 +8,23 @@ const ReportActions = ({
   eventId,
   isGeneratedReport = false,
   onShareGuest,
+  loading = false,
 }) => {
   const navigate = useNavigate();
 
   const handlePrint = () => {
+    if (loading) {
+      alert("Please wait for report to finish loading");
+      return;
+    }
     window.print();
   };
 
   const handleDownload = async () => {
+    if (loading) {
+      alert("Please wait for report to finish loading");
+      return;
+    }
     try {
       const loadingToast = document.createElement("div");
       loadingToast.innerHTML = "Preparing PDF Report... (Please wait)";
@@ -43,87 +52,242 @@ const ReportActions = ({
       let headerTemplate = "";
       let footerTemplate = "";
 
-      // Find header image and create template
-      const headerImg = reportElement.querySelector(
-        'img[alt="La Verdad Christian College Header"]'
-      );
-      if (headerImg) {
+      // Import html2canvas for capturing HTML components
+      const html2canvas = (await import("html2canvas")).default;
+
+      // Find header element (now an HTML component, not an image)
+      // Find header element (now an HTML component, not an image)
+      // Using ID for more reliable selection
+      const headerElement =
+        reportElement.querySelector("#report-header") ||
+        reportElement
+          .querySelector('img[alt="La Verdad Christian College Logo"]')
+          ?.closest(".w-full.rounded-t-lg");
+
+      if (headerElement) {
         try {
-          const response = await fetch(headerImg.src);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          const base64 = await new Promise((resolve) => {
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
+          console.log("Found header element, capturing...");
+          // Capture the HTML header as an image using html2canvas
+          const headerCanvas = await html2canvas(headerElement, {
+            backgroundColor: "#1e3a5f", // Force background color to match gradient start
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
           });
+          const headerBase64 = headerCanvas.toDataURL("image/png");
+          console.log("Header captured, length:", headerBase64.length);
+
           // Scale up by 1.33 to counteract Puppeteer's 0.75x template scaling
           headerTemplate = `
+            <style>body, html { margin: 0; padding: 0; }</style>
             <div style="width: 100%; height: 100%; margin: 0; padding: 0; transform: scale(1.33); transform-origin: top left;">
-              <img src="${base64}" style="width: 75%; height: auto; display: block;" />
+              <img src="${headerBase64}" style="width: 75%; height: auto; display: block;" />
             </div>`;
         } catch (e) {
-          console.warn("Failed to process header image", e);
+          console.error("Failed to process header", e);
         }
+      } else {
+        console.warn("Header element not found using selectors");
       }
 
-      // Find footer image and create template
-      const footerImg = reportElement.querySelector('img[alt="Report Footer"]');
-      if (footerImg) {
+      // Find footer element (now an HTML component, not an image)
+      const footerElement =
+        reportElement.querySelector("#report-footer") ||
+        reportElement
+          .querySelector('a[href="mailto:info@laverdad.edu.ph"]')
+          ?.closest(".w-full.rounded-b-lg");
+
+      if (footerElement) {
         try {
-          const response = await fetch(footerImg.src);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          const base64 = await new Promise((resolve) => {
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
+          console.log("Found footer element, capturing...");
+          // Capture the HTML footer as an image using html2canvas
+          const footerCanvas = await html2canvas(footerElement, {
+            backgroundColor: "#1a365d", // Force background color
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
           });
+          const footerBase64 = footerCanvas.toDataURL("image/png");
+          console.log("Footer captured, length:", footerBase64.length);
+
           // Scale up by 1.33 to counteract Puppeteer's 0.75x template scaling
           footerTemplate = `
+            <style>body, html { margin: 0; padding: 0; }</style>
             <div style="width: 100%; height: 100%; margin: 0; padding: 0; transform: scale(1.33); transform-origin: bottom left;">
-              <img src="${base64}" style="width: 75%; height: auto; display: block;" />
+              <img src="${footerBase64}" style="width: 75%; height: auto; display: block;" />
             </div>`;
         } catch (e) {
-          console.warn("Failed to process footer image", e);
+          console.error("Failed to process footer", e);
         }
+      } else {
+        console.warn("Footer element not found using selectors");
       }
 
       // --- Cloning and Content Preparation ---
       const clone = reportElement.cloneNode(true);
 
-      // Remove header/footer from content to avoid duplication (they're now in templates)
-      const cloneHeaders = clone.querySelectorAll(
-        'img[alt="La Verdad Christian College Header"]'
+      // Remove header/footer blocks from content to avoid duplication (they're now in templates)
+      // Remove entire header block (includes ReportHeader, ReportDescription, and title)
+      const headerBlock = clone.querySelector("#report-header-block");
+      if (headerBlock) headerBlock.remove();
+
+      // Also remove individual header elements if they exist elsewhere
+      const headersToRemove = clone.querySelectorAll("#report-header");
+      headersToRemove.forEach((el) => el.remove());
+
+      // Remove entire footer block
+      const footerBlock = clone.querySelector("#report-footer-block");
+      if (footerBlock) footerBlock.remove();
+
+      // Also remove individual footer elements if they exist elsewhere
+      const footersToRemove = clone.querySelectorAll("#report-footer");
+      footersToRemove.forEach((el) => el.remove());
+
+      // Fallback for legacy headers/footers
+      const legacyHeaders = clone.querySelectorAll(
+        'img[alt="La Verdad Christian College Logo"], img[alt="La Verdad Christian College Header"]'
       );
-      cloneHeaders.forEach((header) => {
-        const parent = header.parentElement;
-        if (
-          parent &&
-          parent.tagName === "DIV" &&
-          parent.children.length === 1
-        ) {
-          parent.remove();
-        } else {
-          header.remove();
-        }
+      legacyHeaders.forEach((img) => {
+        const wrapper =
+          img.closest(".w-full.rounded-t-lg") || img.closest(".w-full");
+        if (wrapper) wrapper.remove();
       });
 
-      const cloneFooters = clone.querySelectorAll('img[alt="Report Footer"]');
-      cloneFooters.forEach((footer) => {
-        const parent = footer.parentElement;
-        if (
-          parent &&
-          parent.tagName === "DIV" &&
-          parent.children.length === 1
-        ) {
-          parent.remove();
-        } else {
-          footer.remove();
-        }
+      const legacyFooters = clone.querySelectorAll(
+        'a[href="mailto:info@laverdad.edu.ph"], img[alt="Report Footer"]'
+      );
+      legacyFooters.forEach((el) => {
+        const wrapper =
+          el.closest(".w-full.rounded-b-lg") || el.closest(".w-full");
+        if (wrapper) wrapper.remove();
       });
 
-      // Rasterize SVGs (Charts)
-      // User Note: Removed manual rasterization as Puppeteer works better with static SVGs.
-      // const originalSvgs = reportElement.querySelectorAll("svg"); ...
+      // Rasterize Charts using html2canvas - More reliable for Recharts
+      // Find all chart containers with multiple selectors for better coverage
+      const chartSelectors =
+        ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']";
+      const chartContainers = reportElement.querySelectorAll(chartSelectors);
+      const cloneChartContainers = clone.querySelectorAll(chartSelectors);
+
+      console.log("Found chart containers:", chartContainers.length);
+      console.log("Found clone chart containers:", cloneChartContainers.length);
+
+      // Log each found container for debugging
+      chartContainers.forEach((c, i) => {
+        console.log(
+          `Chart ${i}:`,
+          c.className,
+          "dimensions:",
+          c.offsetWidth,
+          "x",
+          c.offsetHeight
+        );
+      });
+
+      // Also target SVG elements directly as fallback
+      const svgElements = reportElement.querySelectorAll(
+        "svg.recharts-surface"
+      );
+      const cloneSvgs = clone.querySelectorAll("svg.recharts-surface");
+
+      console.log("Found SVG elements:", svgElements.length);
+
+      // html2canvas is already imported above for header/footer capture
+
+      // Filter to only process .recharts-wrapper elements (top-level chart containers)
+      const wrapperContainers = Array.from(chartContainers).filter((c) =>
+        c.classList.contains("recharts-wrapper")
+      );
+      const cloneWrapperContainers = Array.from(cloneChartContainers).filter(
+        (c) => c.classList.contains("recharts-wrapper")
+      );
+
+      const chartPromises = wrapperContainers.map(async (container, index) => {
+        try {
+          const cloneContainer = cloneWrapperContainers[index];
+          if (!cloneContainer) return;
+
+          // Capture the chart container as an image
+          const canvas = await html2canvas(container, {
+            backgroundColor: "#ffffff",
+            scale: 2, // Higher quality
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
+          });
+
+          // Convert to data URL
+          const pngDataUrl = canvas.toDataURL("image/png");
+
+          // Create replacement image
+          const replacement = document.createElement("img");
+          replacement.src = pngDataUrl;
+          replacement.style.width = `${container.offsetWidth}px`;
+          replacement.style.height = `${container.offsetHeight}px`;
+          replacement.style.display = "block";
+          replacement.style.maxWidth = "100%";
+
+          // Replace the chart container in the clone
+          if (cloneContainer.parentNode) {
+            cloneContainer.parentNode.replaceChild(replacement, cloneContainer);
+          }
+        } catch (err) {
+          console.warn("Error capturing chart with html2canvas:", err);
+
+          // Fallback: try to capture just the SVG
+          if (svgElements[index] && cloneSvgs[index]) {
+            try {
+              const svg = svgElements[index];
+              const cloneSvg = cloneSvgs[index];
+              const svgRect = svg.getBoundingClientRect();
+              const width = svgRect.width || 400;
+              const height = svgRect.height || 300;
+
+              // Create a canvas and draw the SVG
+              const svgData = new XMLSerializer().serializeToString(svg);
+              const svgBlob = new Blob([svgData], {
+                type: "image/svg+xml;charset=utf-8",
+              });
+              const url = URL.createObjectURL(svgBlob);
+
+              const img = new Image();
+              await new Promise((resolve) => {
+                img.onload = () => {
+                  const canvas = document.createElement("canvas");
+                  canvas.width = width * 2;
+                  canvas.height = height * 2;
+                  const ctx = canvas.getContext("2d");
+                  ctx.scale(2, 2);
+                  ctx.fillStyle = "white";
+                  ctx.fillRect(0, 0, width, height);
+                  ctx.drawImage(img, 0, 0, width, height);
+
+                  const replacement = document.createElement("img");
+                  replacement.src = canvas.toDataURL("image/png");
+                  replacement.style.width = `${width}px`;
+                  replacement.style.height = `${height}px`;
+
+                  if (cloneSvg.parentNode) {
+                    cloneSvg.parentNode.replaceChild(replacement, cloneSvg);
+                  }
+                  URL.revokeObjectURL(url);
+                  resolve();
+                };
+                img.onerror = () => {
+                  URL.revokeObjectURL(url);
+                  resolve();
+                };
+                img.src = url;
+              });
+            } catch (svgErr) {
+              console.warn("SVG fallback also failed:", svgErr);
+            }
+          }
+        }
+      });
+      await Promise.all(chartPromises);
 
       // Convert remaining standard images (like static embedded ones)
       const images = clone.querySelectorAll("img");
@@ -305,20 +469,26 @@ const ReportActions = ({
           <button
             onClick={handleShowPreparedBy}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            title="View Prepared By"
+            title="Share Report"
           >
             <UserPlus size={20} className="text-gray-600" />
           </button>
           <button
             onClick={handlePrint}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            disabled={loading}
+            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             title="Print report"
           >
             <Printer size={20} className="text-gray-600" />
           </button>
           <button
             onClick={handleDownload}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            disabled={loading}
+            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             title="Download as PDF"
           >
             <Download size={20} className="text-gray-600" />
@@ -343,6 +513,7 @@ ReportActions.propTypes = {
   eventId: PropTypes.string.isRequired,
   isGeneratedReport: PropTypes.bool,
   onShareGuest: PropTypes.func,
+  loading: PropTypes.bool,
 };
 
 export default ReportActions;

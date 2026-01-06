@@ -1,7 +1,15 @@
-import { useState } from "react";
-import { Save, AlertTriangle, Info, CheckCircle } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../../contexts/useAuth";
+import {
+  Save,
+  AlertTriangle,
+  Info,
+  CheckCircle,
+  RefreshCw,
+} from "lucide-react";
 
 function GeneralSettings() {
+  const { token } = useAuth();
   const [settings, setSettings] = useState({
     systemName: "EventStream Evaluation System",
     institutionName: "La Verdad Christian College - Apalit",
@@ -16,8 +24,37 @@ function GeneralSettings() {
     showTutorials: true,
   });
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
+
+  const fetchSettings = useCallback(async () => {
+    if (!token) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/settings/general", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setSettings({
+          ...data.data,
+          maxUploadSize: String(data.data.maxUploadSize || 10),
+          sessionTimeout: String(data.data.sessionTimeout || 30),
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching general settings:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -33,24 +70,48 @@ function GeneralSettings() {
     setSaveStatus(null);
 
     try {
-      // Simulate API call
-      console.log("Saving settings:", settings);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setSaveStatus({
-        type: "success",
-        message: "Settings saved successfully!",
+      const response = await fetch("/api/settings/general", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...settings,
+          maxUploadSize: Number(settings.maxUploadSize),
+          sessionTimeout: Number(settings.sessionTimeout),
+        }),
       });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSaveStatus({
+          type: "success",
+          message: "Settings saved successfully!",
+        });
+      } else {
+        throw new Error(data.message || "Failed to save settings");
+      }
     } catch (error) {
       console.error("Error saving settings:", error);
       setSaveStatus({
         type: "error",
-        message: "Failed to save settings. Please try again.",
+        message: error.message || "Failed to save settings. Please try again.",
       });
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-950 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading settings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

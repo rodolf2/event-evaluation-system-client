@@ -1,18 +1,20 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-console.log('API_BASE_URL:', API_BASE_URL); // Debug log
+console.log("API_BASE_URL:", API_BASE_URL); // Debug log
 
 export const api = {
   baseURL: API_BASE_URL,
 
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
+    const { headers: customHeaders, ...restOptions } = options;
     const config = {
+      ...restOptions,
       headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
+        "Content-Type": "application/json",
+        ...customHeaders,
       },
-      ...options,
     };
 
     const response = await fetch(url, config);
@@ -20,7 +22,10 @@ export const api = {
   },
 
   async get(endpoint, options = {}) {
-    const response = await this.request(endpoint, { ...options, method: 'GET' });
+    const response = await this.request(endpoint, {
+      ...options,
+      method: "GET",
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -30,7 +35,7 @@ export const api = {
   async post(endpoint, data, options = {}) {
     const response = await this.request(endpoint, {
       ...options,
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
     if (!response.ok) {
@@ -42,7 +47,7 @@ export const api = {
   async put(endpoint, data, options = {}) {
     const response = await this.request(endpoint, {
       ...options,
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
     if (!response.ok) {
@@ -54,7 +59,7 @@ export const api = {
   async delete(endpoint, data, options = {}) {
     const response = await this.request(endpoint, {
       ...options,
-      method: 'DELETE',
+      method: "DELETE",
       body: data ? JSON.stringify(data) : undefined,
     });
     if (!response.ok) {

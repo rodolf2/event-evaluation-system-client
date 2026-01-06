@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Share2, Send } from "lucide-react";
+import { Search, Share2, Send } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
 import GuestShareModal from "../../components/psas/GuestShareModal";
@@ -233,10 +233,6 @@ const Reports = () => {
     }
   }, [fetchReports, view]);
 
-  const handleSort = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  };
-
   const handleSelectReport = (report) => {
     setSelectedReport(report);
     setView("dashboard");
@@ -318,24 +314,46 @@ const Reports = () => {
       {view === "list" && (
         <div className="p-8 bg-gray-100 min-h-full">
           {/* Search and Sort Bar */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative max-w-md">
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="relative max-w-md flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
             </div>
-            <button
-              onClick={handleSort}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition"
-            >
-              <Filter className="w-4 h-4" />
-              Sort
-            </button>
+
+            <div className="relative">
+              <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
+                <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="bg-transparent py-2 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm"
+                >
+                  <option value="desc">Latest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
+                <div className="absolute right-3 pointer-events-none">
+                  <svg
+                    className="h-4 w-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Reports Grid */}

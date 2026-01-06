@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../../contexts/useAuth";
 import {
   Save,
   Shield,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 function SecuritySettings() {
+  const { token } = useAuth();
   const [settings, setSettings] = useState({
     jwtExpiration: "7d",
     passwordMinLength: "8",
@@ -25,8 +27,41 @@ function SecuritySettings() {
     corsAllowedOrigins: "http://localhost:5173,https://eventstream.lvcc.edu.ph",
   });
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
+
+  const fetchSettings = useCallback(async () => {
+    if (!token) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/settings/security", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setSettings({
+          ...data.data,
+          passwordMinLength: String(data.data.passwordMinLength || 8),
+          maxFailedAttempts: String(data.data.maxFailedAttempts || 5),
+          accountLockoutDuration: String(
+            data.data.accountLockoutDuration || 15
+          ),
+          apiRateLimit: String(data.data.apiRateLimit || 100),
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching security settings:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -42,24 +77,52 @@ function SecuritySettings() {
     setSaveStatus(null);
 
     try {
-      // Simulate API call
-      console.log("Saving security settings:", settings);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setSaveStatus({
-        type: "success",
-        message: "Security settings saved successfully!",
+      const response = await fetch("/api/settings/security", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...settings,
+          passwordMinLength: Number(settings.passwordMinLength),
+          maxFailedAttempts: Number(settings.maxFailedAttempts),
+          accountLockoutDuration: Number(settings.accountLockoutDuration),
+          apiRateLimit: Number(settings.apiRateLimit),
+        }),
       });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSaveStatus({
+          type: "success",
+          message: "Security settings saved successfully!",
+        });
+      } else {
+        throw new Error(data.message || "Failed to save settings");
+      }
     } catch (error) {
       console.error("Error saving security settings:", error);
       setSaveStatus({
         type: "error",
-        message: "Failed to save security settings. Please try again.",
+        message:
+          error.message ||
+          "Failed to save security settings. Please try again.",
       });
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-950 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading security settings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -19,10 +19,20 @@ const NotificationItem = ({
   onDelete,
   actionLoading,
   isAllSelected,
+  onClick,
 }) => {
+  const handleItemClick = () => {
+    // If onClick is provided, it's for viewing details
+    if (onClick) {
+      onClick();
+    } else {
+      onSelect(notification.id);
+    }
+  };
+
   return (
     <div
-      onClick={() => onSelect(notification.id)}
+      onClick={handleItemClick}
       className={`flex items-start sm:items-center p-3 sm:p-4 border-t border-gray-200 cursor-pointer ${
         isAllSelected
           ? "bg-[#E1E8FD]"
@@ -95,7 +105,7 @@ const NotificationItem = ({
 const NotificationDetail = ({ notification, onBack }) => {
   const [reminder, setReminder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   useEffect(() => {
     const fetchReminderDetails = async () => {
@@ -201,7 +211,7 @@ const NotificationDetail = ({ notification, onBack }) => {
 
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Hi, {notification.from || "User"}!
+          Hi, {user?.name || "User"}!
         </h1>
         <p className="text-xl text-gray-600">
           You have just created a notification reminder for {formattedDate}.
@@ -239,7 +249,7 @@ const NotificationDetail = ({ notification, onBack }) => {
         <div className="bg-white rounded-2xl shadow-lg w-full md:w-96 border border-gray-100 relative">
           <div className="bg-[#1E3A8A] p-4 flex items-center relative rounded-t-2xl">
             {/* Triangle Pointer */}
-            <div className="absolute left-[-10px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-10px border-t-transparent border-r-10px border-r-[#1E3A8A] border-b-10px border-b-transparent"></div>
+            <div className="absolute left-[-10px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-[#1E3A8A] border-b-[10px] border-b-transparent"></div>
             <span className="text-white font-bold text-lg ml-2">Reminder</span>
           </div>
           <div className="p-6">

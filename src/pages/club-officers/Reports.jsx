@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Filter } from "lucide-react";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import { useAuth } from "../../contexts/useAuth";
+import GuestShareModal from "../../components/psas/GuestShareModal";
 import QuantitativeRatings from "../reports/QuantitativeRatings";
 import QualitativeComments from "../reports/QualitativeComments";
 import PositiveComments from "../reports/PositiveComments";
@@ -13,16 +14,23 @@ import {
   SkeletonText,
 } from "../../components/shared/SkeletonLoader";
 
-const ReportCard = ({ report, onSelect }) => {
+const ReportCard = ({ report, onSelect, token }) => {
+  // Build thumbnail URL with auth token
+  const getThumbnailUrl = () => {
+    if (!report.thumbnail) {
+      return "https://placehold.co/800x450/1e3a8a/ffffff?text=Generating+Thumbnail...";
+    }
+    // Append token to thumbnail URL for authentication
+    const separator = report.thumbnail.includes("?") ? "&" : "?";
+    return `${report.thumbnail}${separator}token=${token}`;
+  };
+
   return (
     <div className="bg-[#EEEEF0] hover:bg-[#DEDFE0] rounded-lg shadow-sm overflow-hidden p-4 transition-colors duration-200">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden group relative">
         <div className="relative">
           <img
-            src={
-              report.thumbnail ||
-              "https://placehold.co/800x450/1e3a8a/ffffff?text=Generating+Thumbnail..."
-            }
+            src={getThumbnailUrl()}
             alt={report.title}
             className="w-full h-48 object-cover"
             onLoad={() => {
@@ -62,13 +70,23 @@ const ReportCard = ({ report, onSelect }) => {
 const Reports = () => {
   const [reports, setReports] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
 
+  // Debounce search input update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [showGuestShareModal, setShowGuestShareModal] = useState(false);
 
   const [filters] = useState({
     startDate: "",
@@ -93,7 +111,9 @@ const Reports = () => {
   const fetchReports = useCallback(
     async (searchParams = {}) => {
       try {
-        setLoading(true);
+        if (reports.length === 0) {
+          setLoading(true);
+        }
         setError(null);
 
         // Build query parameters
@@ -135,7 +155,7 @@ const Reports = () => {
         setLoading(false);
       }
     },
-    [token, searchQuery, filters, limit, page]
+    [token, searchQuery, filters, limit, page, reports.length]
   );
 
   // Auto-refresh every 30 seconds
@@ -216,10 +236,6 @@ const Reports = () => {
     }
   }, [fetchReports, view]);
 
-  const handleSort = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  };
-
   const handleSelectReport = (report) => {
     setSelectedReport(report);
     setView("dashboard");
@@ -230,16 +246,14 @@ const Reports = () => {
     setSelectedReport(null);
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    setPage(1);
-  };
-
   const sortedReports = [...reports].sort((a, b) => {
+    const dateA = a.eventDate ? new Date(a.eventDate) : new Date(0);
+    const dateB = b.eventDate ? new Date(b.eventDate) : new Date(0);
+
     if (sortOrder === "asc") {
-      return new Date(a.eventDate) - new Date(b.eventDate);
+      return dateA - dateB;
     }
-    return new Date(b.eventDate) - new Date(a.eventDate);
+    return dateB - dateA;
   });
 
   if (loading && reports.length === 0) {
@@ -302,23 +316,45 @@ const Reports = () => {
         <div className="p-8 bg-gray-100 min-h-full">
           {/* Search and Sort Bar */}
           <div className="flex items-center gap-4 mb-6">
-            <div className="relative max-w-md">
+            <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
             </div>
-            <button
-              onClick={handleSort}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition"
-            >
-              <Filter className="w-4 h-4" />
-              Sort
-            </button>
+
+            <div className="relative">
+              <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-green-500">
+                <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="bg-transparent py-2 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm"
+                >
+                  <option value="desc">Latest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
+                <div className="absolute right-3 pointer-events-none">
+                  <svg
+                    className="h-4 w-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Reports Grid */}
@@ -340,6 +376,7 @@ const Reports = () => {
                       key={`${report.id}-${index}`}
                       report={report}
                       onSelect={handleSelectReport}
+                      token={token}
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
@@ -388,11 +425,20 @@ const Reports = () => {
       )}
 
       {view === "dashboard" && selectedReport && (
-        <CompleteReport
-          report={selectedReport}
-          onBack={handleBackToList}
-          isGeneratedReport={!selectedReport.isDynamic}
-        />
+        <>
+          <CompleteReport
+            report={selectedReport}
+            onBack={handleBackToList}
+            isGeneratedReport={!selectedReport.isDynamic}
+            onShareGuest={() => setShowGuestShareModal(true)}
+          />
+          <GuestShareModal
+            isOpen={showGuestShareModal}
+            onClose={() => setShowGuestShareModal(false)}
+            reportId={selectedReport.formId || selectedReport.id}
+            reportTitle={selectedReport.title}
+          />
+        </>
       )}
       {view === "qualitative" && selectedReport && (
         <QualitativeComments

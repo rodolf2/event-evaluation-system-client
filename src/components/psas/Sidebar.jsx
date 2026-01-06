@@ -47,7 +47,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       >
         <div
           className={`rounded-full bg-white p-1 shrink-0 transition-all duration-300 ease-in-out ${
-            isOpen ? "w-20 h-20" : "w-12 h-12"
+            isOpen ? "w-14 h-14 lg:w-20 lg:h-20" : "w-12 h-12"
           } flex items-center justify-center`}
         >
           <img

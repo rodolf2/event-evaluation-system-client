@@ -1,13 +1,13 @@
-import HomeIcon from "../../assets/icons/home-icon.svg";
-import ReportsIcon from "../../assets/icons/report-icon.svg";
-import AnalyticsIcon from "../../assets/icons/analytics-icon.svg";
-import UserIcon from "../../assets/icons/profile-icon.svg";
-import SettingsIcon from "../../assets/icons/upload-icon.svg";
+import { LayoutGrid, Users, Settings, FileText, Lock } from "lucide-react";
 
 export const headerConfig = {
   pageTitles: {
     "/mis": "MIS Dashboard",
     "/mis/user-management": "User Management",
+    "/mis/user-roles": "User Roles",
+    "/mis/audit-logs": "Audit Logs",
+    "/mis/settings": "System Configuration",
+    "/mis/security-oversight": "Security Oversight",
     "/mis/notifications": "Notifications",
     "/profile": "My Account",
   },
@@ -18,18 +18,29 @@ export const headerConfig = {
 export const sidebarConfig = {
   homePath: "/mis",
   menuItems: [
-    { icon: HomeIcon, label: "Dashboard", path: "/mis" },
-    { icon: UserIcon, label: "User Management", path: "/mis/user-management" },
+    { iconComponent: LayoutGrid, label: "Dashboard", path: "/mis" },
     {
-      icon: SettingsIcon,
-      label: "System Settings",
-      path: "/mis/settings",
+      iconComponent: Users,
+      label: "User & Roles",
+      path: "/mis/user-provisioning",
       subItems: [
-        { label: "General Settings", path: "/mis/settings/general" },
-        { label: "Security Settings", path: "/mis/settings/security" },
+        { label: "User Management", path: "/mis/user-management" },
+        { label: "User Roles", path: "/mis/user-roles" },
       ],
     },
-    { icon: ReportsIcon, label: "System Reports", path: "/mis/reports" },
+    {
+      iconComponent: Settings,
+      label: "System Config",
+      path: "/mis/settings",
+    },
+    // Section divider
+    { type: "divider", label: "SECURITY & LOGS" },
+    { iconComponent: FileText, label: "Audit Logs", path: "/mis/audit-logs" },
+    {
+      iconComponent: Lock,
+      label: "Security Oversight",
+      path: "/mis/security-oversight",
+    },
   ],
 };
 

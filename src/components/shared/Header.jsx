@@ -89,14 +89,17 @@ const Header = ({
 
   const getNotificationLink = () => {
     // Check user role to determine correct notifications path
-    if (user?.role === 'club-officer') {
-      return '/club-officer/notifications';
+    if (user?.role === "club-officer") {
+      return "/club-officer/notifications";
     }
-    if (user?.role === 'school-admin') {
-      return '/school-admin/notifications';
+    if (user?.role === "school-admin") {
+      return "/school-admin/notifications";
     }
-    if (user?.role === 'psas') {
-      return '/psas/notifications';
+    if (user?.role === "psas") {
+      return "/psas/notifications";
+    }
+    if (user?.role === "mis") {
+      return "/mis/notifications";
     }
     return config.notificationPath
       ? `/psas/notifications`
@@ -142,7 +145,10 @@ const Header = ({
             onClick={handleProfileClick}
           >
             <img
-              src={user?.profilePicture || "https://via.placeholder.com/32x32?text=U"}
+              src={
+                user?.profilePicture ||
+                "https://via.placeholder.com/32x32?text=U"
+              }
               alt="User"
               className="w-8 h-8 rounded-full object-cover"
             />

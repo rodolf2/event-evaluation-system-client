@@ -573,7 +573,7 @@ function Profile() {
                   </h2>
                   <Link
                     to={badgesLink}
-                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold"
+                    className="inline-flex items-center text-[#7E7E7E] hover:underline font-semibold"
                   >
                     View My Badges <ChevronRight className="w-5 h-5 ml-1" />
                   </Link>

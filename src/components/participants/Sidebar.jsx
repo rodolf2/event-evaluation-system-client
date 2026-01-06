@@ -73,7 +73,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           src="/assets/logo/LOGO.png"
           alt="Logo"
           className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${
-            isOpen ? "w-16 h-16" : "w-12 h-12"
+            isOpen ? "w-12 h-12 lg:w-16 lg:h-16" : "w-12 h-12"
           }`}
         />
         {isOpen && (

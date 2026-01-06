@@ -13,6 +13,7 @@ const Evaluations = () => {
   const [evaluations, setEvaluations] = useState([]);
   const [filteredEvaluations, setFilteredEvaluations] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
@@ -47,12 +48,17 @@ const Evaluations = () => {
   }, [fetchMyEvaluations]);
 
   useEffect(() => {
-    setFilteredEvaluations(
-      evaluations.filter((evaluation) =>
-        evaluation.title.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    const filtered = evaluations.filter((evaluation) =>
+      evaluation.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, evaluations]);
+    // Sort by eventStartDate
+    const sorted = [...filtered].sort((a, b) => {
+      const dateA = new Date(a.eventStartDate || 0);
+      const dateB = new Date(b.eventStartDate || 0);
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+    setFilteredEvaluations(sorted);
+  }, [searchQuery, evaluations, sortOrder]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -147,10 +153,32 @@ const Evaluations = () => {
               />
             </div>
             <div className="relative">
-              <button className="bg-white p-3 rounded-lg border border-gray-300 flex items-center text-gray-700 w-full justify-center sm:w-auto">
-                <span className="w-3 h-3 bg-blue-600 mr-2 rounded-sm"></span>
-                <span>Event</span>
-              </button>
+              <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-green-500">
+                <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="bg-transparent py-3 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm"
+                >
+                  <option value="desc">Latest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
+                <div className="absolute right-3 pointer-events-none">
+                  <svg
+                    className="h-4 w-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 

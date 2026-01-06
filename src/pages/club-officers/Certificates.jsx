@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
-import { SkeletonCard, SkeletonText, SkeletonBase } from "../../components/shared/SkeletonLoader";
+import {
+  SkeletonCard,
+  SkeletonText,
+  SkeletonBase,
+} from "../../components/shared/SkeletonLoader";
 import { Search, Download, Eye } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
@@ -14,9 +18,18 @@ const Certificates = () => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchInput, setSearchInput] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [showCertificateViewer, setShowCertificateViewer] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     const fetchCertificates = async () => {
@@ -159,21 +172,22 @@ const Certificates = () => {
     }
   };
 
-  const filteredCertificates = certificates.filter((cert) => {
-    const matchesSearch =
-      cert.eventId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.certificateType?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "All" || cert.certificateType === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredCertificates = certificates
+    .filter((cert) => {
+      const eventName = cert.eventId?.name || "";
+      const certType = cert.certificateType || "";
 
-  const categories = [
-    "All",
-    ...new Set(
-      certificates.map((cert) => cert.certificateType).filter(Boolean)
-    ),
-  ];
+      const matchesSearch =
+        eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        certType.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.issuedDate || 0);
+      const dateB = new Date(b.issuedDate || 0);
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
 
   // Show certificate viewer if requested
   if (showCertificateViewer && selectedCertificate) {
@@ -214,8 +228,14 @@ const Certificates = () => {
             {/* Certificate Cards Grid Skeleton */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md p-4 text-center">
-                  <div className="relative bg-gray-50 rounded-md mb-4 overflow-hidden" style={{ aspectRatio: "1056/816" }}>
+                <div
+                  key={index}
+                  className="bg-white rounded-lg shadow-md p-4 text-center"
+                >
+                  <div
+                    className="relative bg-gray-50 rounded-md mb-4 overflow-hidden"
+                    style={{ aspectRatio: "1056/816" }}
+                  >
                     <SkeletonBase className="w-full h-full" />
                   </div>
                   <div className="flex gap-2 justify-center">
@@ -234,7 +254,7 @@ const Certificates = () => {
   return (
     <ClubOfficerLayout>
       <div className="bg-gray-100 min-h-screen pb-8">
-        <div className="max-w-full px-4 md:px-8">
+        <div className="max-w-full">
           <div className="flex items-center mb-8 gap-4">
             <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -242,24 +262,39 @@ const Certificates = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search Certificates"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full p-3 pl-10 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="relative">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-white p-3 rounded-lg border border-gray-300 flex items-center text-gray-700 w-full justify-center sm:w-auto appearance-none pr-8"
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-green-500">
+                <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="bg-transparent py-3 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm"
+                >
+                  <option value="desc">Latest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
+                <div className="absolute right-3 pointer-events-none">
+                  <svg
+                    className="h-4 w-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 

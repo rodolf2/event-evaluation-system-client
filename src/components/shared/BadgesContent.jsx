@@ -1,6 +1,101 @@
 import React, { useState, useEffect } from "react";
 import { SkeletonText } from "./SkeletonLoader";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
+
+// Badge Modal Component for unlocked badges
+const BadgeModal = ({ badge, onClose }) => {
+  if (!badge) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#F4F4F5]/60"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in fade-in zoom-in duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 left-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
+
+        {/* Badge Image */}
+        <div className="flex justify-center mb-6">
+          <img
+            src={badge.icon}
+            alt={badge.name}
+            className="w-40 h-40 object-contain drop-shadow-lg"
+          />
+        </div>
+
+        {/* Badge Name */}
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-3">
+          {badge.name}
+        </h2>
+
+        {/* Congratulatory Text */}
+        <p className="text-center text-gray-600 leading-relaxed">
+          Congratulations on your achievement!
+          <br />
+          Continue to answer evaluation forms to unlock your next badge.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Locked Badge Modal Component
+const LockedBadgeModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#F4F4F5]/60"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-in fade-in zoom-in duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 left-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
+
+        {/* Lock Icon */}
+        <div className="flex justify-center mb-6">
+          <img
+            src="/assets/icons/lock.svg"
+            alt="Locked"
+            className="w-24 h-24 object-contain"
+          />
+        </div>
+
+        {/* Title */}
+        <h2 className="text-xl font-bold text-center text-gray-800 mb-3">
+          Complete More Evaluations!
+        </h2>
+
+        {/* Message */}
+        <p className="text-center text-gray-600 text-sm leading-relaxed">
+          This badge is still locked!
+          <br />
+          In order for you to unlock this badge, you need to meet the exact
+          number of completed evaluations to obtain it.
+        </p>
+      </div>
+    </div>
+  );
+};
 
 // Import all badge images
 import BronzeBadge from "../../assets/badges/BRONZE.png";
@@ -45,7 +140,8 @@ const BadgesContent = () => {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [_selectedBadge, setSelectedBadge] = useState(null);
+  const [selectedBadge, setSelectedBadge] = useState(null);
+  const [showLockedModal, setShowLockedModal] = useState(false);
 
   // Map theme to appropriate border color
   const getBorderColor = (theme) => {
@@ -255,89 +351,125 @@ const BadgesContent = () => {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen pb-8">
-      <div className="max-w-full">
-        <div className="relative flex justify-end mb-6">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="bg-white p-3 rounded-lg border border-gray-300 flex items-center text-gray-700 z-20"
-          >
-            <span className="w-3 h-3 bg-blue-600 mr-2 rounded-sm"></span>
-            <span>{selectedFilter}</span>
-            <ChevronDown
-              className={`h-5 w-5 text-gray-400 ml-2 transition-transform duration-300 ${
-                isFilterOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-          {isFilterOpen && (
-            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-30">
-              <ul>
-                <li
-                  onClick={() => handleFilterChange("All")}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                >
-                  All
-                </li>
-                <li
-                  onClick={() => handleFilterChange("Acquired Badges")}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                >
-                  Acquired Badges
-                </li>
-                <li
-                  onClick={() => handleFilterChange("Not Acquired")}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                >
-                  Not Acquired
-                </li>
-              </ul>
+    <>
+      {/* Badge Modal */}
+      <BadgeModal
+        badge={selectedBadge}
+        onClose={() => setSelectedBadge(null)}
+      />
+
+      {/* Locked Badge Modal */}
+      <LockedBadgeModal
+        isOpen={showLockedModal}
+        onClose={() => setShowLockedModal(false)}
+      />
+
+      <div className="bg-gray-100 min-h-screen pb-8">
+        <div className="max-w-full">
+          <div className="relative flex justify-end mb-6">
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="bg-white p-3 rounded-lg border border-gray-300 flex items-center text-gray-700 z-20"
+            >
+              <span className="w-3 h-3 bg-blue-600 mr-2 rounded-sm"></span>
+              <span>{selectedFilter}</span>
+              <ChevronDown
+                className={`h-5 w-5 text-gray-400 ml-2 transition-transform duration-300 ${
+                  isFilterOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {isFilterOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-30">
+                <ul>
+                  <li
+                    onClick={() => handleFilterChange("All")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    All
+                  </li>
+                  <li
+                    onClick={() => handleFilterChange("Acquired Badges")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Acquired Badges
+                  </li>
+                  <li
+                    onClick={() => handleFilterChange("Not Acquired")}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Not Acquired
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+          {filteredBadges.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                <span className="text-4xl">🏆</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                {selectedFilter === "Acquired Badges"
+                  ? "No Badges Earned Yet"
+                  : "All Badges Unlocked!"}
+              </h3>
+              <p className="text-gray-500 max-w-md">
+                {selectedFilter === "Acquired Badges"
+                  ? "Complete evaluation forms to start earning badges. Each badge represents your progress and dedication!"
+                  : "Congratulations! You've unlocked every badge available."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {filteredBadges.map((badge, index) => {
+                const handleBadgeClick = () => {
+                  if (badge.unlocked) {
+                    setSelectedBadge(badge);
+                  } else {
+                    setShowLockedModal(true);
+                  }
+                };
+
+                return (
+                  <div
+                    key={index}
+                    onClick={handleBadgeClick}
+                    className={`rounded-lg p-4 text-center transition-all duration-300 cursor-pointer select-none border-2 ${
+                      badge.unlocked
+                        ? `bg-white shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${getBorderColor(
+                            badge.theme
+                          )}`
+                        : "bg-[#B7B7B8] border-gray-400"
+                    } ${
+                      badge.highlighted && selectedFilter === "All"
+                        ? "shadow-lg"
+                        : ""
+                    }`}
+                  >
+                    <img
+                      src={badge.icon}
+                      alt={badge.name}
+                      className={`w-20 h-20 mx-auto mb-3 rounded-full border-2 transition-transform duration-200 ${
+                        badge.unlocked
+                          ? `border-opacity-70 ${getBorderColor(badge.theme)}`
+                          : "border-gray-400"
+                      } ${badge.unlocked ? "" : "filter grayscale"} ${
+                        badge.unlocked ? "hover:rotate-12" : ""
+                      }`}
+                    />
+                    <h3 className="font-semibold text-gray-800">
+                      {badge.name}
+                    </h3>
+                    <p className="text-sm text-gray-500">{badge.progress}</p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {filteredBadges.map((badge, index) => {
-            const handleBadgeClick = () => {
-              if (badge.unlocked) {
-                setSelectedBadge(badge);
-              }
-            };
-
-            return (
-              <div
-                key={index}
-                onClick={handleBadgeClick}
-                className={`rounded-lg p-4 text-center transition-all duration-300 cursor-pointer select-none border-2 ${
-                  badge.unlocked
-                    ? `bg-white shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${getBorderColor(
-                        badge.theme
-                      )}`
-                    : "bg-[#B7B7B8] cursor-not-allowed border-gray-400"
-                } ${
-                  badge.highlighted && selectedFilter === "All"
-                    ? "shadow-lg"
-                    : ""
-                }`}
-              >
-                <img
-                  src={badge.icon}
-                  alt={badge.name}
-                  className={`w-20 h-20 mx-auto mb-3 rounded-full border-2 transition-transform duration-200 ${
-                    badge.unlocked
-                      ? `border-opacity-70 ${getBorderColor(badge.theme)}`
-                      : "border-gray-400"
-                  } ${badge.unlocked ? "" : "filter grayscale"} ${
-                    badge.unlocked ? "hover:rotate-12" : ""
-                  }`}
-                />
-                <h3 className="font-semibold text-gray-800">{badge.name}</h3>
-                <p className="text-sm text-gray-500">{badge.progress}</p>
-              </div>
-            );
-          })}
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 

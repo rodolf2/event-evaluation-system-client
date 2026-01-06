@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Search, Filter, MoreVertical, Trash2, Users } from "lucide-react";
+import {
+  Search,
+  Filter,
+  MoreVertical,
+  Trash2,
+  Users,
+  RotateCcw,
+} from "lucide-react";
 import uploadIcon from "../../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
 import EvaluatorShareModal from "../../shared/EvaluatorShareModal";
@@ -13,6 +20,7 @@ const EvaluationContent = ({
   onCreateNew,
   onShowUploadModal,
   onDeleteForm,
+  onReopenForm,
 }) => {
   return (
     <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
@@ -108,6 +116,7 @@ const EvaluationContent = ({
                 key={form.id}
                 form={form}
                 onDeleteForm={onDeleteForm}
+                onReopenForm={onReopenForm}
               />
             ))}
           </div>
@@ -117,7 +126,7 @@ const EvaluationContent = ({
   );
 };
 
-const RecentEvaluationCard = ({ form, onDeleteForm }) => {
+const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
@@ -130,6 +139,14 @@ const RecentEvaluationCard = ({ form, onDeleteForm }) => {
     // Store the form ID to edit and navigate to create form view
     localStorage.setItem("editFormId", form.id);
     window.location.href = `/psas/evaluations?view=create&edit=${form.id}`;
+  };
+
+  const handleReopen = (e) => {
+    e.stopPropagation(); // Prevent card click
+    if (window.confirm(`Are you sure you want to reopen "${form.title}"?`)) {
+      onReopenForm(form.id);
+    }
+    setShowMenu(false);
   };
 
   const handleDelete = (e) => {
@@ -183,6 +200,15 @@ const RecentEvaluationCard = ({ form, onDeleteForm }) => {
                     >
                       <Users size={16} />
                       Share with Evaluators
+                    </button>
+                  )}
+                  {form.status === "closed" && (
+                    <button
+                      onClick={handleReopen}
+                      className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
+                    >
+                      <RotateCcw size={16} />
+                      Reopen Form
                     </button>
                   )}
                   <button

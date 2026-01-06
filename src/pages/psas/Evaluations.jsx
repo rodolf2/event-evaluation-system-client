@@ -44,7 +44,9 @@ const Evaluations = () => {
         const data = await response.json();
         if (data.success) {
           // Handle both old format (array) and new format (object with forms property)
-          const formsArray = Array.isArray(data.data) ? data.data : data.data.forms || [];
+          const formsArray = Array.isArray(data.data)
+            ? data.data
+            : data.data.forms || [];
           const mappedForms = formsArray.map((form) => ({
             id: form._id,
             title: form.title || `Evaluation Form ${form._id.slice(-6)}`,
@@ -166,6 +168,36 @@ const Evaluations = () => {
     } catch (error) {
       console.error("Error deleting form:", error);
       toast.error("Failed to delete form");
+    }
+  };
+
+  const handleReopenForm = async (formId) => {
+    try {
+      const response = await fetch(`/api/forms/${formId}/reopen`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the form locally
+        setEvaluationForms((prev) =>
+          prev.map((form) =>
+            form.id === formId
+              ? { ...form, status: "published" } // Ideally get new end date too
+              : form
+          )
+        );
+        toast.success("Form reopened successfully");
+      } else {
+        toast.error(data.message || "Failed to reopen form");
+      }
+    } catch (error) {
+      console.error("Error reopening form:", error);
+      toast.error("An error occurred while reopening the form");
     }
   };
 
@@ -449,6 +481,7 @@ const Evaluations = () => {
             onCreateNew={handleCreateNew}
             onShowUploadModal={handleShowUploadModal}
             onDeleteForm={handleDeleteForm}
+            onReopenForm={handleReopenForm}
           />
         )}
 

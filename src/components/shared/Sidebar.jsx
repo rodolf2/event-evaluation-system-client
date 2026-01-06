@@ -114,7 +114,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
           src={logoConfig.src}
           alt={logoConfig.alt}
           className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${
-            isOpen ? "w-16 h-16" : "w-12 h-12"
+            isOpen ? "w-12 h-12 lg:w-16 lg:h-16" : "w-12 h-12"
           }`}
         />
         {isOpen && (
@@ -130,75 +130,94 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
 
       {/* Navigation */}
       <nav className="flex flex-col space-y-2 w-full">
-        {menuItems.map((item) => (
-          <div
-            key={item.path}
-            className="relative"
-            onMouseEnter={() => handleMouseEnter(item.path)}
-            onMouseLeave={handleMouseLeave}
-          >
-            <SidebarItem
-              src={item.icon}
-              label={item.label}
-              isOpen={isOpen}
-              isActive={getIsActive(item, currentPath, config.homePath)}
-              hasSubItems={!!item.subItems}
-              isExpanded={expandedItems[item.path]}
-              onClick={() => {
-                if (item.subItems) {
-                  if (isOpen) {
-                    toggleExpanded(item.path);
-                  }
-                } else {
-                  navigate(item.path);
-                  if (window.innerWidth < 1024) {
-                    onClose();
-                  }
-                }
-              }}
-            />
-            {/* Sub-items (Accordion Style - When Open) */}
-            {item.subItems && isOpen && expandedItems[item.path] && (
-              <div className="ml-4 mt-1 space-y-1">
-                {item.subItems.map((subItem) => (
-                  <SubMenuItem
-                    key={subItem.path}
-                    label={subItem.label}
-                    isActive={currentPath === subItem.path}
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent parent onClick from firing
-                      navigate(subItem.path);
-                      if (window.innerWidth < 1024) {
-                        onClose();
-                      }
-                    }}
-                  />
-                ))}
+        {menuItems.map((item, index) => {
+          // Handle section dividers
+          if (item.type === "divider") {
+            return (
+              <div key={`divider-${index}`} className="pt-4 pb-2">
+                {isOpen && (
+                  <span className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    {item.label}
+                  </span>
+                )}
+                {!isOpen && <hr className="border-gray-200 mx-2" />}
               </div>
-            )}
+            );
+          }
 
-            {/* Sub-items (Floating Style - When Closed) */}
-            {item.subItems && !isOpen && hoveredItem === item.path && (
-              <div className="absolute left-full top-0 ml-2 w-48 bg-[#1F3463] rounded-lg shadow-xl py-2 z-50 border border-gray-700">
-                <div className="px-4 py-2 border-b border-gray-700 mb-2">
-                  <span className="font-semibold text-white">{item.label}</span>
+          return (
+            <div
+              key={item.path}
+              className="relative"
+              onMouseEnter={() => handleMouseEnter(item.path)}
+              onMouseLeave={handleMouseLeave}
+            >
+              <SidebarItem
+                src={item.icon}
+                icon={item.iconComponent}
+                label={item.label}
+                isOpen={isOpen}
+                isActive={getIsActive(item, currentPath, config.homePath)}
+                hasSubItems={!!item.subItems}
+                isExpanded={expandedItems[item.path]}
+                onClick={() => {
+                  if (item.subItems) {
+                    if (isOpen) {
+                      toggleExpanded(item.path);
+                    }
+                  } else {
+                    navigate(item.path);
+                    if (window.innerWidth < 1024) {
+                      onClose();
+                    }
+                  }
+                }}
+              />
+              {/* Sub-items (Accordion Style - When Open) */}
+              {item.subItems && isOpen && expandedItems[item.path] && (
+                <div className="ml-4 mt-1 space-y-1">
+                  {item.subItems.map((subItem) => (
+                    <SubMenuItem
+                      key={subItem.path}
+                      label={subItem.label}
+                      isActive={currentPath === subItem.path}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent parent onClick from firing
+                        navigate(subItem.path);
+                        if (window.innerWidth < 1024) {
+                          onClose();
+                        }
+                      }}
+                    />
+                  ))}
                 </div>
-                {item.subItems.map((subItem) => (
-                  <SubMenuItem
-                    key={subItem.path}
-                    label={subItem.label}
-                    isActive={currentPath === subItem.path}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(subItem.path);
-                      setHoveredItem(null);
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+
+              {/* Sub-items (Floating Style - When Closed) */}
+              {item.subItems && !isOpen && hoveredItem === item.path && (
+                <div className="absolute left-full top-0 ml-2 w-48 bg-[#1F3463] rounded-lg shadow-xl py-2 z-50 border border-gray-700">
+                  <div className="px-4 py-2 border-b border-gray-700 mb-2">
+                    <span className="font-semibold text-white">
+                      {item.label}
+                    </span>
+                  </div>
+                  {item.subItems.map((subItem) => (
+                    <SubMenuItem
+                      key={subItem.path}
+                      label={subItem.label}
+                      isActive={currentPath === subItem.path}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(subItem.path);
+                        setHoveredItem(null);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
     </aside>
   );
@@ -206,6 +225,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
 
 const SidebarItem = ({
   src,
+  icon: IconComponent,
   label,
   isOpen,
   isActive,
@@ -231,15 +251,23 @@ const SidebarItem = ({
     >
       {/* Icon */}
       <div className={`relative ${isOpen ? "" : "mx-auto"}`}>
-        <img
-          src={src}
-          alt={label}
-          className={`w-6 h-6 transition-all ${
-            isActive
-              ? "brightness-0" // This will make the icon #1F3463 when parent has white background
-              : "brightness-0 invert" // This will make the icon white when inactive
-          }`}
-        />
+        {IconComponent ? (
+          <IconComponent
+            className={`w-6 h-6 transition-all ${
+              isActive ? "text-[#1F3463]" : "text-white"
+            }`}
+          />
+        ) : (
+          <img
+            src={src}
+            alt={label}
+            className={`w-6 h-6 transition-all ${
+              isActive
+                ? "brightness-0" // This will make the icon #1F3463 when parent has white background
+                : "brightness-0 invert" // This will make the icon white when inactive
+            }`}
+          />
+        )}
       </div>
 
       {/* Text */}

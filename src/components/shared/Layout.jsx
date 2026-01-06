@@ -50,11 +50,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
   }, []);
 
   return (
-    <div
-      className={`flex min-h-screen bg-gray-100 relative ${
-        isMobile ? "items-center justify-center" : ""
-      }`}
-    >
+    <div className="flex min-h-screen bg-gray-100 relative">
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={toggleSidebar}

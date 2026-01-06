@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
+import { useAuth } from "../../contexts/useAuth";
 import api from "../../api";
 import toast from "react-hot-toast";
 
@@ -26,6 +27,7 @@ const ReportSharingPage = () => {
   console.log("🚀 ReportSharingPage component is rendering!");
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -61,7 +63,8 @@ const ReportSharingPage = () => {
       try {
         setLoadingPersonnel(true);
         const res = await api.get(
-          `${API_ENDPOINTS.PERSONNEL}?limit=500&sortBy=name&sortOrder=asc`
+          `${API_ENDPOINTS.PERSONNEL}?limit=500&sortBy=name&sortOrder=asc`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (mounted) {
@@ -152,15 +155,19 @@ const ReportSharingPage = () => {
       setIsSharing(true);
 
       // Call API to share report
-      await api.post(API_ENDPOINTS.REPORT_SHARE(reportId), {
-        schoolAdmins: selectedPersonnel.map((p) => ({
-          personnelId: p.id,
-          name: p.name,
-          email: p.email,
-          department: p.department,
-          position: p.position,
-        })),
-      });
+      await api.post(
+        API_ENDPOINTS.REPORT_SHARE(reportId),
+        {
+          schoolAdmins: selectedPersonnel.map((p) => ({
+            personnelId: p.id,
+            name: p.name,
+            email: p.email,
+            department: p.department,
+            position: p.position,
+          })),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       toast.success(
         `Report shared with ${selected.length} school administrator(s)`
@@ -232,9 +239,11 @@ const ReportSharingPage = () => {
 
     try {
       setIsAdding(true);
-      const res = await api.post(API_ENDPOINTS.PERSONNEL, {
-        ...newPerson,
-      });
+      const res = await api.post(
+        API_ENDPOINTS.PERSONNEL,
+        { ...newPerson },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       // Standardize success check logic
       if (res.success !== false) {
@@ -276,9 +285,11 @@ const ReportSharingPage = () => {
 
     try {
       setIsEditing(true);
-      const res = await api.put(`${API_ENDPOINTS.PERSONNEL}/${personId}`, {
-        ...editDraft,
-      });
+      const res = await api.put(
+        `${API_ENDPOINTS.PERSONNEL}/${personId}`,
+        { ...editDraft },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       // Standardize success check logic
       if (res.success !== false) {
@@ -304,7 +315,9 @@ const ReportSharingPage = () => {
     if (!window.confirm("Delete this personnel?")) return;
     try {
       setIsDeleting(true);
-      await api.delete(`${API_ENDPOINTS.PERSONNEL}/${personId}`);
+      await api.delete(`${API_ENDPOINTS.PERSONNEL}/${personId}`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success("Personnel deleted");
       setPersonnel((prev) => prev.filter((p) => p.id !== personId));
       setSelected((prev) => prev.filter((id) => id !== personId));

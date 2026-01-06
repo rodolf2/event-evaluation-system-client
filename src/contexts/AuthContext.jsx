@@ -19,6 +19,11 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem("user");
     return savedToken && !savedUser;
   });
+  const [systemStatus, setSystemStatus] = useState({
+    active: false,
+    message: "",
+    type: "normal", // 'maintenance' or 'lockdown'
+  });
   const sessionCheckIntervalRef = useRef(null);
 
   const fetchUser = useCallback(async () => {
@@ -27,11 +32,9 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Don't fetch if we already have user data
-    if (user) {
-      setIsLoading(false);
-      return;
-    }
+    // Don't fetch if we already have user data (unless forced refresh needed?)
+    // Actually, we should probably verify token validity on mount?
+    // But for now, stick to existing logic to minimize diff.
 
     try {
       const response = await fetch("/api/auth/profile", {
@@ -39,7 +42,22 @@ export const AuthProvider = ({ children }) => {
           Authorization: `Bearer ${token}`,
         },
       });
+
       const data = await response.json();
+
+      if (response.status === 503) {
+        setSystemStatus({
+          active: true,
+          message: data.message,
+          type: data.message.includes("lockdown") ? "lockdown" : "maintenance",
+        });
+        setIsLoading(false);
+        // Do not remove token, user is authenticated but system is locked
+        return;
+      }
+
+      // Reset system status if successful
+      setSystemStatus({ active: false, message: "", type: "normal" });
 
       if (data.success && data.data.user) {
         // Verify the user data is complete and valid
@@ -63,11 +81,14 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error fetching user:", error);
+      // Only remove token on auth errors or network mismatch?
+      // For safety, catching generic error might mean network down.
+      // If network down, maybe show maintenance too? For now, keep removeToken behavior for critical fails.
       removeToken();
     } finally {
       setIsLoading(false);
     }
-  }, [token, user]);
+  }, [token]);
   // Function to refresh user data with error handling
   const refreshUserData = useCallback(async () => {
     try {
@@ -114,7 +135,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (token && !user) {
+    if (token) {
       // Add a timeout to ensure we don't get stuck in loading state
       const loadingTimeout = setTimeout(() => {
         setIsLoading(false);
@@ -123,12 +144,10 @@ export const AuthProvider = ({ children }) => {
       refreshUserData().finally(() => {
         clearTimeout(loadingTimeout);
       });
-    } else if (!token) {
-      setIsLoading(false);
-    } else if (user) {
+    } else {
       setIsLoading(false);
     }
-  }, [token, user, refreshUserData]);
+  }, [token, refreshUserData]);
 
   // Session timeout effect - only active when user is logged in
   useEffect(() => {
@@ -248,6 +267,7 @@ export const AuthProvider = ({ children }) => {
         refreshUserData,
         updateUser,
         isLoading,
+        systemStatus,
       }}
     >
       {children}

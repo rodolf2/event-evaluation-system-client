@@ -259,29 +259,11 @@ const CompleteReport = ({
 
   const SectionWrapper = ({ title, children, showLiveIndicator = false }) => (
     <div className="section-page mb-8">
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        {/* Report Header */}
-        <ReportHeader />
-
-        {/* Report Description */}
-        <ReportDescription
-          title={formData?.title || "Sample Event Evaluation Report"}
-        />
-
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold mb-2">
-              {formData?.title || "EVENT EVALUATION REPORT"}
-            </h3>
-            <p className="text-xl font-bold">EVALUATION RESULT</p>
-            <p className="text-lg">College Level</p>
-            <h4 className="text-xl font-bold mt-6">{title}</h4>
-          </div>
-          {children}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden p-8">
+        <div className="text-center mb-8">
+          <h4 className="text-lg font-bold">{title}</h4>
         </div>
-
-        {/* Report Footer */}
-        <ReportPageFooter />
+        {children}
       </div>
     </div>
   );
@@ -566,9 +548,10 @@ const CompleteReport = ({
       {!isGuestView && (
         <ReportActions
           onBackClick={handleBackClick}
-          eventId={eventId}
+          eventId={reportId}
           isGeneratedReport={isGeneratedReport}
           onShareGuest={onShareGuest}
+          loading={loading}
         />
       )}
       <div className="bg-gray-100 min-h-screen report-print-content print:block p-8">
@@ -586,6 +569,24 @@ const CompleteReport = ({
               </button>
             </div>
           )}
+
+          {/* Report Header and Description - appears only once at top */}
+          <div
+            id="report-header-block"
+            className="bg-white rounded-lg shadow-sm overflow-hidden mb-8"
+          >
+            <ReportHeader />
+            <ReportDescription
+              title={formData?.title || "Sample Event Evaluation Report"}
+            />
+            <div className="p-8 text-center">
+              <h3 className="text-xl font-bold mb-2">
+                {formData?.title || "EVENT EVALUATION REPORT"}
+              </h3>
+              <p className="text-lg font-bold">EVALUATION RESULT</p>
+              <p className="text-base">College Level</p>
+            </div>
+          </div>
 
           {/* Quantitative Ratings Section */}
           <SectionWrapper title="Quantitative Ratings" showLiveIndicator={true}>
@@ -676,7 +677,7 @@ const CompleteReport = ({
                       question.ratingDistribution && (
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                           <div className="w-48 h-48">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height={192}>
                               <PieChart>
                                 <Pie
                                   data={question.ratingDistribution.filter(
@@ -741,7 +742,7 @@ const CompleteReport = ({
                       question.sentimentBreakdown && (
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                           <div className="w-48 h-48">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height={192}>
                               <PieChart>
                                 <Pie
                                   data={[
@@ -842,7 +843,7 @@ const CompleteReport = ({
                       question.optionDistribution && (
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                           <div className="w-48 h-48">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height={192}>
                               <PieChart>
                                 <Pie
                                   data={question.optionDistribution.filter(
@@ -860,6 +861,7 @@ const CompleteReport = ({
                                       ? `${(percent * 100).toFixed(0)}%`
                                       : ""
                                   }
+                                  isAnimationActive={false}
                                 >
                                   {question.optionDistribution.map(
                                     (entry, index) => (
@@ -915,7 +917,7 @@ const CompleteReport = ({
                     <p>No sentiment data available</p>
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={256}>
                     <PieChart>
                       <Pie
                         data={sentimentData}
@@ -929,6 +931,7 @@ const CompleteReport = ({
                         label={({ percent }) =>
                           `${(percent * 100).toFixed(0)}%`
                         }
+                        isAnimationActive={false}
                       >
                         {sentimentData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1047,6 +1050,14 @@ const CompleteReport = ({
               type="negative"
             />
           </SectionWrapper>
+
+          {/* Report Footer - appears only once at bottom */}
+          <div
+            id="report-footer-block"
+            className="bg-white rounded-lg shadow-sm overflow-hidden"
+          >
+            <ReportPageFooter />
+          </div>
         </div>
       </div>
     </>
