@@ -6,11 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Plus,
-  Edit,
-  Trash2,
-  Save,
-  X,
 } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
@@ -19,7 +14,7 @@ import toast from "react-hot-toast";
 
 // API endpoints constants
 const API_ENDPOINTS = {
-  PERSONNEL: "/api/personnel",
+  SCHOOL_ADMINS: "/api/reports/school-admins",
   REPORT_SHARE: (reportId) => `/api/reports/${reportId}/share`,
 };
 
@@ -35,69 +30,54 @@ const ReportSharingPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [selected, setSelected] = useState([]);
   const [isSharing, setIsSharing] = useState(false);
-  const [personnel, setPersonnel] = useState([]);
-  const [loadingPersonnel, setLoadingPersonnel] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editDraft, setEditDraft] = useState({
-    name: "",
-    email: "",
-    department: "",
-    position: "",
-  });
-  const [newPerson, setNewPerson] = useState({
-    name: "",
-    email: "",
-    department: "",
-    position: "",
-  });
-  const [isAdding, setIsAdding] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
-  // Load personnel from API (school-admin role)
+  // Load school admins from API
   useEffect(() => {
     let mounted = true;
 
-    const fetchPersonnel = async () => {
+    const fetchSchoolAdmins = async () => {
       try {
-        setLoadingPersonnel(true);
-        const res = await api.get(
-          `${API_ENDPOINTS.PERSONNEL}?limit=500&sortBy=name&sortOrder=asc`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        setLoadingUsers(true);
+        const res = await api.get(API_ENDPOINTS.SCHOOL_ADMINS, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (mounted) {
-          // Normalize personnel data to use consistent ID field
-          const apiData = res.data?.personnel || [];
+          // api.get() returns JSON directly (not wrapped in .data)
+          const usersArray = res.users || [];
 
-          const normalizedPersonnel = apiData.map((p) => ({
-            ...p,
-            id: p._id || p.id, // Ensure we have a consistent id field
+          // Map the users, preserving actual department/position values from backend
+          const fetchedUsers = usersArray.map((u) => ({
+            id: u._id || u.id,
+            name: u.name || u.email,
+            email: u.email,
+            department: u.department, // Use actual value from backend
+            position: u.position, // Use actual value from backend
+            role: u.role,
           }));
 
-          setPersonnel(normalizedPersonnel);
+          setUsers(fetchedUsers);
         }
       } catch (error) {
-        console.error("Error fetching personnel:", error);
+        console.error("Error fetching school admins:", error);
         if (mounted) {
-          toast.error(
-            error.response?.data?.message || "Unable to load personnel"
-          );
+          toast.error("Unable to load school administrators");
         }
       } finally {
         if (mounted) {
-          setLoadingPersonnel(false);
+          setLoadingUsers(false);
         }
       }
     };
 
-    fetchPersonnel();
+    fetchSchoolAdmins();
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [token]);
 
   // Get reportId/eventId from location state or URL params
   const reportId =
@@ -117,17 +97,11 @@ const ReportSharingPage = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      const allFilteredIds = filteredPersonnel.map((p) => p.id);
+      const allFilteredIds = filteredUsers.map((u) => u.id);
       setSelected(allFilteredIds);
     } else {
       setSelected([]);
     }
-  };
-
-  // Validate email format
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
   };
 
   // Validate rows per page selection
@@ -148,8 +122,8 @@ const ReportSharingPage = () => {
       return;
     }
 
-    // Get full personnel details for selected IDs
-    const selectedPersonnel = personnel.filter((p) => selected.includes(p.id));
+    // Get full user details for selected IDs
+    const selectedUsers = users.filter((u) => selected.includes(u.id));
 
     try {
       setIsSharing(true);
@@ -158,12 +132,12 @@ const ReportSharingPage = () => {
       await api.post(
         API_ENDPOINTS.REPORT_SHARE(reportId),
         {
-          schoolAdmins: selectedPersonnel.map((p) => ({
-            personnelId: p.id,
-            name: p.name,
-            email: p.email,
-            department: p.department,
-            position: p.position,
+          schoolAdmins: selectedUsers.map((u) => ({
+            personnelId: u.id,
+            name: u.name,
+            email: u.email,
+            department: u.department,
+            position: u.position,
           })),
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -182,154 +156,37 @@ const ReportSharingPage = () => {
   };
 
   const departments = useMemo(() => {
-    return [
-      ...new Set(personnel.map((p) => p.department).filter(Boolean)),
-    ].sort();
-  }, [personnel]);
+    return [...new Set(users.map((u) => u.department).filter(Boolean))].sort();
+  }, [users]);
 
-  const filteredPersonnel = useMemo(() => {
-    return personnel.filter((person) => {
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
       const matchesSearch =
         !searchQuery ||
-        person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        person.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        person.position.toLowerCase().includes(searchQuery.toLowerCase());
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.position &&
+          user.position.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesDepartment =
-        !departmentFilter || person.department === departmentFilter;
+        !departmentFilter || user.department === departmentFilter;
 
       return matchesSearch && matchesDepartment;
     });
-  }, [personnel, searchQuery, departmentFilter]);
+  }, [users, searchQuery, departmentFilter]);
 
-  const totalPages = Math.ceil(filteredPersonnel.length / rowsPerPage);
-  const paginatedPersonnel = useMemo(() => {
+  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
+  const paginatedUsers = useMemo(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
-    const result = filteredPersonnel.slice(startIndex, endIndex);
-    console.log("Paginated Personnel:", result); // Debug: Log paginated data
-    console.log("Loading state:", loadingPersonnel); // Debug: Log loading state
-    console.log("Filtered count:", filteredPersonnel.length); // Debug: Log filtered count
+    const result = filteredUsers.slice(startIndex, endIndex);
+    console.log("Paginated Users:", result); // Debug: Log paginated data
+    console.log("Loading state:", loadingUsers); // Debug: Log loading state
+    console.log("Filtered count:", filteredUsers.length); // Debug: Log filtered count
     return result;
-  }, [filteredPersonnel, currentPage, rowsPerPage]);
+  }, [filteredUsers, currentPage, rowsPerPage, loadingUsers]);
 
-  const resetEdit = () => {
-    setEditingId(null);
-    setEditDraft({ name: "", email: "", department: "", position: "" });
-  };
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-
-    // Validate inputs
-    if (!newPerson.name.trim()) {
-      toast.error("Name is required");
-      return;
-    }
-
-    if (!newPerson.email.trim()) {
-      toast.error("Email is required");
-      return;
-    }
-
-    if (!isValidEmail(newPerson.email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    try {
-      setIsAdding(true);
-      const res = await api.post(
-        API_ENDPOINTS.PERSONNEL,
-        { ...newPerson },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Standardize success check logic
-      if (res.success !== false) {
-        toast.success("Personnel added");
-        // Normalize the new personnel data
-        const normalizedPersonnel = {
-          ...res.data.personnel,
-          id: res.data.personnel._id || res.data.personnel.id,
-        };
-        setPersonnel((prev) => [...prev, normalizedPersonnel]);
-        setNewPerson({ name: "", email: "", department: "", position: "" });
-      } else {
-        toast.error(res.message || "Failed to add personnel");
-      }
-    } catch (error) {
-      console.error("Add personnel error:", error);
-      toast.error(error.response?.data?.message || "Failed to add personnel");
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
-  const handleEditSave = async (personId) => {
-    // Validate inputs
-    if (!editDraft.name.trim()) {
-      toast.error("Name is required");
-      return;
-    }
-
-    if (!editDraft.email.trim()) {
-      toast.error("Email is required");
-      return;
-    }
-
-    if (!isValidEmail(editDraft.email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    try {
-      setIsEditing(true);
-      const res = await api.put(
-        `${API_ENDPOINTS.PERSONNEL}/${personId}`,
-        { ...editDraft },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Standardize success check logic
-      if (res.success !== false) {
-        toast.success("Personnel updated");
-        setPersonnel((prev) =>
-          prev.map((p) => (p.id === personId ? { ...p, ...editDraft } : p))
-        );
-        resetEdit();
-      } else {
-        toast.error(res.message || "Failed to update personnel");
-      }
-    } catch (error) {
-      console.error("Update personnel error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to update personnel"
-      );
-    } finally {
-      setIsEditing(false);
-    }
-  };
-
-  const handleDelete = async (personId) => {
-    if (!window.confirm("Delete this personnel?")) return;
-    try {
-      setIsDeleting(true);
-      await api.delete(`${API_ENDPOINTS.PERSONNEL}/${personId}`, null, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success("Personnel deleted");
-      setPersonnel((prev) => prev.filter((p) => p.id !== personId));
-      setSelected((prev) => prev.filter((id) => id !== personId));
-    } catch (error) {
-      console.error("Delete personnel error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to delete personnel"
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  // Note: Edit and delete functionality removed - users should be managed from User Management page
 
   return (
     <PSASLayout>
@@ -410,130 +267,6 @@ const ReportSharingPage = () => {
           )}
         </div>
 
-        {/* Add Personnel Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 bg-[#F4F4F5]/60 flex items-center justify-center z-40 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Add New Personnel
-                </h3>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                  aria-label="Close modal"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <form onSubmit={handleAdd} className="p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter full name"
-                    value={newPerson.name}
-                    onChange={(e) =>
-                      setNewPerson((p) => ({ ...p, name: e.target.value }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="Enter email address"
-                    value={newPerson.email}
-                    onChange={(e) =>
-                      setNewPerson((p) => ({ ...p, email: e.target.value }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter department"
-                    value={newPerson.department}
-                    onChange={(e) =>
-                      setNewPerson((p) => ({
-                        ...p,
-                        department: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Position
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter position"
-                    value={newPerson.position}
-                    onChange={(e) =>
-                      setNewPerson((p) => ({ ...p, position: e.target.value }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="flex gap-3 justify-end pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isAdding || loadingPersonnel}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {isAdding ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Adding...
-                      </>
-                    ) : (
-                      "Add Personnel"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Add Personnel Button */}
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Manage Personnel
-            </h3>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              aria-label="Add new personnel"
-            >
-              <Plus className="w-5 h-5" />
-              Add Personnel
-            </button>
-          </div>
-        </div>
-
         {/* Personnel Table */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           {/* Table Header */}
@@ -541,8 +274,7 @@ const ReportSharingPage = () => {
             <input
               type="checkbox"
               checked={
-                selected.length > 0 &&
-                selected.length === filteredPersonnel.length
+                selected.length > 0 && selected.length === filteredUsers.length
               }
               onChange={handleSelectAll}
               className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
@@ -555,22 +287,17 @@ const ReportSharingPage = () => {
 
           {/* Table Body */}
           <div>
-            {loadingPersonnel ? (
-              <div className="p-8 text-center text-gray-500">
-                Loading... (personnel: {personnel.length}, filtered:{" "}
-                {filteredPersonnel.length}, paginated:{" "}
-                {paginatedPersonnel.length})
-              </div>
-            ) : paginatedPersonnel.length > 0 ? (
-              paginatedPersonnel.map((person) => {
+            {loadingUsers ? (
+              <div className="p-8 text-center text-gray-500">Loading...</div>
+            ) : paginatedUsers.length > 0 ? (
+              paginatedUsers.map((person) => {
                 const personId = person.id;
-                const isRowEditing = editingId === personId;
                 return (
                   <div
                     key={personId}
                     onClick={() => handleSelect(personId)}
                     className="grid items-center p-3 border-t border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer
-                              grid-cols-[auto_1fr] md:grid-cols-[auto_1.5fr_2.5fr_2fr_2fr_auto] gap-x-4 gap-y-1"
+                              grid-cols-[auto_1fr] md:grid-cols-[auto_1.5fr_2.5fr_2fr_2fr] gap-x-4 gap-y-1"
                   >
                     <input
                       type="checkbox"
@@ -580,218 +307,49 @@ const ReportSharingPage = () => {
                       className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mt-1 md:mt-0"
                     />
 
+                    {/* Mobile View */}
                     <div className="md:hidden flex flex-col">
-                      {editingId === personId ? (
-                        <>
-                          <input
-                            className="border rounded px-2 py-1 mb-1"
-                            value={editDraft.name}
-                            onChange={(e) =>
-                              setEditDraft((d) => ({
-                                ...d,
-                                name: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="border rounded px-2 py-1 mb-1"
-                            value={editDraft.email}
-                            onChange={(e) =>
-                              setEditDraft((d) => ({
-                                ...d,
-                                email: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="border rounded px-2 py-1 mb-1"
-                            value={editDraft.department}
-                            onChange={(e) =>
-                              setEditDraft((d) => ({
-                                ...d,
-                                department: e.target.value,
-                              }))
-                            }
-                          />
-                          <input
-                            className="border rounded px-2 py-1"
-                            value={editDraft.position}
-                            onChange={(e) =>
-                              setEditDraft((d) => ({
-                                ...d,
-                                position: e.target.value,
-                              }))
-                            }
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <span className="font-medium text-gray-800">
-                            {person.name || "No name"}
-                          </span>
-                          <span className="text-sm text-gray-600 break-all">
-                            Email: {person.email}
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            Department: {person.department}
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            Position: {person.position}
-                          </span>
-                        </>
-                      )}
+                      <span className="font-medium text-gray-800">
+                        {person.name || "No name"}
+                      </span>
+                      <span className="text-sm text-gray-600 break-all">
+                        Email: {person.email}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        Department: {person.department || "N/A"}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        Position: {person.position || "N/A"}
+                      </span>
                     </div>
 
+                    {/* Desktop View */}
                     <div className="hidden md:block">
-                      {isRowEditing ? (
-                        <input
-                          className="w-full border rounded px-2 py-1"
-                          value={editDraft.name}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({
-                              ...d,
-                              name: e.target.value,
-                            }))
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className="font-medium text-gray-800">
-                          {person.name || "No name"}
-                        </span>
-                      )}
+                      <span className="font-medium text-gray-800">
+                        {person.name || "No name"}
+                      </span>
                     </div>
                     <div className="hidden md:block">
-                      {isRowEditing ? (
-                        <input
-                          className="w-full border rounded px-2 py-1"
-                          value={editDraft.email}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({
-                              ...d,
-                              email: e.target.value,
-                            }))
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className="text-gray-600 break-all">
-                          {person.email}
-                        </span>
-                      )}
+                      <span className="text-gray-600 break-all">
+                        {person.email}
+                      </span>
                     </div>
                     <div className="hidden md:block">
-                      {isRowEditing ? (
-                        <input
-                          className="w-full border rounded px-2 py-1"
-                          value={editDraft.department}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({
-                              ...d,
-                              department: e.target.value,
-                            }))
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className="text-gray-600">
-                          {person.department}
-                        </span>
-                      )}
+                      <span className="text-gray-600">
+                        {person.department || "N/A"}
+                      </span>
                     </div>
                     <div className="hidden md:block">
-                      {isRowEditing ? (
-                        <input
-                          className="w-full border rounded px-2 py-1"
-                          value={editDraft.position}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({
-                              ...d,
-                              position: e.target.value,
-                            }))
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className="text-gray-600">{person.position}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 justify-end">
-                      {editingId === personId ? (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditSave(personId);
-                            }}
-                            disabled={isEditing}
-                            className="flex items-center gap-2 px-3 py-1 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label="Save changes"
-                          >
-                            {isEditing ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                Saving...
-                              </>
-                            ) : (
-                              <>
-                                <Save className="w-4 h-4" />
-                                Save
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              resetEdit();
-                            }}
-                            className="flex items-center gap-2 px-3 py-1 text-gray-600 hover:bg-gray-50 rounded"
-                            aria-label="Cancel editing"
-                          >
-                            <X className="w-4 h-4" />
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingId(personId);
-                              setEditDraft({
-                                name: person.name || "",
-                                email: person.email || "",
-                                department: person.department || "",
-                                position: person.position || "",
-                              });
-                            }}
-                            className="flex items-center gap-2 px-3 py-1 text-blue-600 hover:bg-blue-50 rounded"
-                            aria-label={`Edit ${person.name}`}
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(personId);
-                            }}
-                            disabled={isDeleting}
-                            className="flex items-center gap-2 px-3 py-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label={`Delete ${person.name}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </button>
-                        </>
-                      )}
+                      <span className="text-gray-600">
+                        {person.position || "N/A"}
+                      </span>
                     </div>
                   </div>
                 );
               })
             ) : (
               <div className="p-8 text-center text-gray-500">
-                No personnel match your search criteria.
+                No users match your search criteria.
               </div>
             )}
           </div>
@@ -818,7 +376,7 @@ const ReportSharingPage = () => {
               <option value={50}>50</option>
             </select>
             <span className="text-gray-700">
-              out of {filteredPersonnel.length} rows
+              out of {filteredUsers.length} rows
             </span>
           </div>
 

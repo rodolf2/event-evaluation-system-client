@@ -27,7 +27,6 @@ function Settings() {
   const [showChangeLog, setShowChangeLog] = useState(false);
 
   // Global Parameters state
-  const [guestTokenExpiration, setGuestTokenExpiration] = useState(72);
   const [anonymousEvaluationMode, setAnonymousEvaluationMode] = useState(true);
 
   // System Modes state
@@ -70,9 +69,6 @@ function Settings() {
       if (settingsData.success) {
         const s = settingsData.data;
         // Map settings
-        if (s.guestSettings?.defaultExpirationDays) {
-          setGuestTokenExpiration(s.guestSettings.defaultExpirationDays * 24);
-        }
         if (s.generalSettings) {
           setAnonymousEvaluationMode(
             s.generalSettings.anonymousEvaluation ?? true
@@ -120,9 +116,6 @@ function Settings() {
     setIsSaving(true);
     try {
       const updates = {
-        guestSettings: {
-          defaultExpirationDays: guestTokenExpiration / 24,
-        },
         generalSettings: {
           anonymousEvaluation: anonymousEvaluationMode,
           maintenanceMode: maintenanceMode,
@@ -277,31 +270,6 @@ function Settings() {
           </p>
 
           <div className="space-y-6">
-            {/* Guest Token Expiration */}
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-gray-700">
-                  Token Availability (Hours)
-                </div>
-                <div className="text-sm text-gray-500">
-                  Set hours for token availability (48h - 168h).
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={guestTokenExpiration}
-                  onChange={(e) =>
-                    setGuestTokenExpiration(Number(e.target.value))
-                  }
-                  min={48}
-                  max={168}
-                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-gray-500">hours</span>
-              </div>
-            </div>
-
             {/* Anonymous Evaluation Mode */}
             <div className="flex items-center justify-between">
               <div>

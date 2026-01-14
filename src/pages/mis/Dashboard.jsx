@@ -155,11 +155,7 @@ function MisDashboard() {
                 <CalendarWidget openModal={openModal} reminders={reminders} />
               </div>
               {/* Cards - spans 2 columns, positioned in second row */}
-              {/* Quick Actions - spans 2 columns, positioned in second row */}
-              <div className="lg:col-span-2 space-y-3">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Quick Actions
-                </h3>
+              <div className="lg:col-span-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <DashboardCard
                     title="User Roles"

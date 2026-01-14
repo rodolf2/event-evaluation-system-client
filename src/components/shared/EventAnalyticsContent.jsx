@@ -32,6 +32,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   const [formId, setFormId] = useState(null);
   const [availableForms, setAvailableForms] = useState([]);
   const [formsLoading, setFormsLoading] = useState(true);
+  const [sortOption, setSortOption] = useState("newest");
 
   // Fetch available forms for the current user
   useEffect(() => {
@@ -518,31 +519,71 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
     navigate(`${basePath}/reports/${formId}`);
   };
 
+  // Sort forms based on selected option
+  const sortedForms = [...availableForms].sort((a, b) => {
+    switch (sortOption) {
+      case "newest":
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      case "oldest":
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      case "title-asc":
+        return a.title.localeCompare(b.title);
+      case "title-desc":
+        return b.title.localeCompare(a.title);
+      default:
+        return 0;
+    }
+  });
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         {/* Form Selector */}
         {availableForms.length > 0 && (
-          <div className="flex items-center gap-4">
-            <label
-              htmlFor="form-select"
-              className="text-sm font-medium text-gray-700"
-            >
-              Select Form:
-            </label>
-            <select
-              id="form-select"
-              value={formId || ""}
-              onChange={(e) => setFormId(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              {availableForms.map((form) => (
-                <option key={form._id} value={form._id}>
-                  {form.title}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="form-select"
+                className="text-sm font-medium text-gray-700 whitespace-nowrap"
+              >
+                Select Form:
+              </label>
+              <select
+                id="form-select"
+                value={formId || ""}
+                onChange={(e) => setFormId(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white max-w-[300px]"
+              >
+                {sortedForms.map((form) => (
+                  <option key={form._id} value={form._id}>
+                    {form.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Sort Dropdown - show when there are multiple forms */}
+            {availableForms.length >= 2 && (
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="sort-select"
+                  className="text-sm font-medium text-gray-500 whitespace-nowrap"
+                >
+                  Sort by:
+                </label>
+                <select
+                  id="sort-select"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="title-asc">Title (A-Z)</option>
+                  <option value="title-desc">Title (Z-A)</option>
+                </select>
+              </div>
+            )}
           </div>
         )}
       </div>

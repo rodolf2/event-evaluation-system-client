@@ -117,7 +117,7 @@ const CertificateGallery = ({
   return (
     <div className="w-full flex flex-col min-h-[70vh]">
       <div className="shrink-0 mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
           Create a certificate
         </h2>
         <div className="mb-6 sm:mb-8">

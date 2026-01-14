@@ -7,7 +7,7 @@ const GuestShareModal = ({ isOpen, onClose, reportId, reportTitle }) => {
   const { token } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [expirationDays, setExpirationDays] = useState(7);
+  const [expirationDays, setExpirationDays] = useState(48);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedToken, setGeneratedToken] = useState(null);
   const [existingTokens, setExistingTokens] = useState([]);
@@ -127,7 +127,7 @@ const GuestShareModal = ({ isOpen, onClose, reportId, reportTitle }) => {
   const resetForm = () => {
     setEmail("");
     setName("");
-    setExpirationDays(7);
+    setExpirationDays(48);
     setGeneratedToken(null);
   };
 
@@ -274,7 +274,7 @@ const GuestShareModal = ({ isOpen, onClose, reportId, reportTitle }) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       <Clock className="w-4 h-4 inline mr-1" />
-                      Access Duration
+                      Access Duration (Hours)
                     </label>
                     <select
                       value={expirationDays}
@@ -283,11 +283,12 @@ const GuestShareModal = ({ isOpen, onClose, reportId, reportTitle }) => {
                       }
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#1F3463] focus:border-transparent"
                     >
-                      <option value={7}>7 days</option>
-                      <option value={14}>14 days</option>
-                      <option value={30}>30 days</option>
-                      <option value={60}>60 days</option>
-                      <option value={90}>90 days</option>
+                      <option value={48}>48 hours</option>
+                      <option value={72}>72 hours</option>
+                      <option value={96}>96 hours</option>
+                      <option value={120}>120 hours</option>
+                      <option value={144}>144 hours</option>
+                      <option value={168}>168 hours (7 days)</option>
                     </select>
                   </div>
 

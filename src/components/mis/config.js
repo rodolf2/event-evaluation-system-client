@@ -33,8 +33,6 @@ export const sidebarConfig = {
       label: "System Config",
       path: "/mis/settings",
     },
-    // Section divider
-    { type: "divider", label: "SECURITY & LOGS" },
     { iconComponent: FileText, label: "Audit Logs", path: "/mis/audit-logs" },
     {
       iconComponent: Lock,

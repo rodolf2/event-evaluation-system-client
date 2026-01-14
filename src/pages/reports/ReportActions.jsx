@@ -35,8 +35,15 @@ const ReportActions = ({
       `;
       document.body.appendChild(loadingToast);
 
-      // Wait for animations to finish (crucial for Charts)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Wait for animations to finish and charts to fully render
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // Ensure charts are visible and have dimensions before capture
+      const allCharts = document.querySelectorAll(".print-chart-container");
+      allCharts.forEach((container) => {
+        container.style.visibility = "visible";
+        container.style.opacity = "1";
+      });
 
       // Find the entire report container
       const reportElement = document.querySelector(
@@ -48,131 +55,235 @@ const ReportActions = ({
         return;
       }
 
-      // --- Header/Footer Extraction for Every Page ---
-      let headerTemplate = "";
-      let footerTemplate = "";
+      // --- Create Header and Footer Templates for Puppeteer ---
+      // These will appear on EVERY page of the PDF
+      // Font size must be specified in px and styles must be inline
 
-      // Import html2canvas for capturing HTML components
+      // Get form data first (needed for report title in header)
+      const formData = JSON.parse(
+        sessionStorage.getItem("currentFormData") || "{}"
+      );
+      const reportTitle = formData.title || "Evaluation Report";
+
+      // First, convert the logo to base64 for embedding in the header
+      let logoBase64 = "";
+      try {
+        const logoImg = document.querySelector("#report-header img");
+        if (logoImg && logoImg.complete) {
+          const canvas = document.createElement("canvas");
+          canvas.width = 60;
+          canvas.height = 60;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "white";
+          ctx.beginPath();
+          ctx.arc(30, 30, 30, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.drawImage(logoImg, 2, 2, 56, 56);
+          logoBase64 = canvas.toDataURL("image/png");
+        }
+      } catch (e) {
+        console.warn("Could not convert logo to base64:", e);
+      }
+
+      // Header template - appears at top of every page (matching website design exactly)
+      const headerTemplate = `
+        <div style="width: 100%; margin: 0; padding: 0; font-family: 'Times New Roman', Times, serif; position: relative;">
+          <div style="
+            width: 100%;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);
+            position: relative;
+          ">
+            <!-- Decorative left pattern -->
+            <div style="
+              position: absolute;
+              left: 0;
+              top: 0;
+              height: 100%;
+              width: 64px;
+              opacity: 0.3;
+              background:
+                repeating-linear-gradient(
+                  45deg,
+                  transparent,
+                  transparent 10px,
+                  rgba(59, 130, 246, 0.3) 10px,
+                  rgba(59, 130, 246, 0.3) 20px
+                );
+            "></div>
+
+            <!-- Right gold accent bar -->
+            <div style="
+              position: absolute;
+              right: 0;
+              top: 0;
+              height: 100%;
+              width: 32px;
+              background: linear-gradient(180deg, #d4a84b 0%, #c9a227 50%, #d4a84b 100%);
+              box-shadow: -2px 0 8px rgba(0,0,0,0.3);
+            "></div>
+
+            <div style="display: flex; align-items: center; padding: 16px 32px; padding-right: 64px;">
+              <!-- Logo -->
+              <div style="flex-shrink: 0; margin-right: 24px;">
+                <div style="
+                  width: 80px;
+                  height: 80px;
+                  border-radius: 50%;
+                  overflow: hidden;
+                  background: white;
+                  border: 2px solid #eab308;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                ">
+                  ${
+                    logoBase64
+                      ? `<img src="${logoBase64}" alt="La Verdad Christian College Logo" style="width: 100%; height: 100%; object-contain; padding: 4px;" />`
+                      : `
+                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10px; font-weight: bold; color: #1e3a8a; padding: 8px;">
+                      LVCC
+                    </div>
+                  `
+                  }
+                </div>
+              </div>
+
+              <!-- School Name -->
+              <div style="flex-grow: 1;">
+                <div style="color: #d4a84b; font-size: 20px; font-weight: bold; letter-spacing: 0.05em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); font-family: 'Times New Roman', Times, serif;">
+                  LA VERDAD
+                </div>
+                <div style="color: #d4a84b; font-size: 16px; font-weight: 600; letter-spacing: 0.1em; font-family: 'Times New Roman', Times, serif;">
+                  CHRISTIAN COLLEGE, INC.
+                </div>
+                <div style="color: #e0e0e0; font-size: 12px; font-style: italic; margin-top: 4px; font-family: 'Times New Roman', Times, serif;">
+                  Apalit, Pampanga
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom border line -->
+            <div style="
+              height: 4px;
+              width: 100%;
+              background: linear-gradient(90deg, transparent 0%, #d4a84b 10%, #d4a84b 90%, transparent 100%);
+            "></div>
+          </div>
+
+          <!-- Form Title - appears below header on each page -->
+          <div style="
+            width: 100%;
+            background: white;
+            padding: 8px 32px;
+            border-bottom: 1px solid #e5e7eb;
+            font-family: 'Times New Roman', Times, serif;
+          ">
+            <div style="color: #1e3a8a; font-size: 14px; font-weight: bold; text-align: center;">
+              ${reportTitle}
+            </div>
+          </div>
+
+          <!-- Report Description - appears below title on each page -->
+          <div style="
+            width: 100%;
+            background: white;
+            padding: 8px 32px;
+            border-bottom: 1px solid #e5e7eb;
+            font-family: 'Times New Roman', Times, serif;
+          ">
+            <div style="color: #4b5563; font-size: 11px; text-align: center; line-height: 1.4;">
+              This evaluation report serves as a guide for the institution to acknowledge the impact of the said event on the welfare and enjoyment of the students at La Verdad Christian College – Apalit, Pampanga.
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Footer template - appears at bottom of every page
+      const footerTemplate = `
+        <div style="width: 100%; margin: 0; padding: 0; font-family: 'Times New Roman', Times, serif;">
+          <div style="
+            width: 100%;
+            background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);
+            border-top: 2px solid #d4a84b;
+            padding: 6px 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+            <div style="
+              width: 6px;
+              height: 100%;
+              position: absolute;
+              left: 0;
+              top: 0;
+              background: linear-gradient(180deg, #d4a84b 0%, #c9a227 50%, #d4a84b 100%);
+            "></div>
+            <div style="display: flex; align-items: center; gap: 15px; font-size: 9px;">
+              <span style="color: #e0e0e0; letter-spacing: 0.02em;">
+                MacArthur Highway, Sampaloc, Apalit, Pampanga 2016
+              </span>
+              <span style="color: #d4a84b;">|</span>
+              <span style="color: #e0e0e0; letter-spacing: 0.02em;">
+                info@laverdad.edu.ph
+              </span>
+              <span style="color: #d4a84b;">|</span>
+              <span style="color: #e0e0e0; font-size: 8px;">
+                Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Import html2canvas for capturing HTML components (used for charts only now)
       const html2canvas = (await import("html2canvas")).default;
-
-      // Find header element (now an HTML component, not an image)
-      // Find header element (now an HTML component, not an image)
-      // Using ID for more reliable selection
-      const headerElement =
-        reportElement.querySelector("#report-header") ||
-        reportElement
-          .querySelector('img[alt="La Verdad Christian College Logo"]')
-          ?.closest(".w-full.rounded-t-lg");
-
-      if (headerElement) {
-        try {
-          console.log("Found header element, capturing...");
-          // Capture the HTML header as an image using html2canvas
-          const headerCanvas = await html2canvas(headerElement, {
-            backgroundColor: "#1e3a5f", // Force background color to match gradient start
-            scale: 2,
-            logging: false,
-            useCORS: true,
-            allowTaint: true,
-          });
-          const headerBase64 = headerCanvas.toDataURL("image/png");
-          console.log("Header captured, length:", headerBase64.length);
-
-          // Scale up by 1.33 to counteract Puppeteer's 0.75x template scaling
-          headerTemplate = `
-            <style>body, html { margin: 0; padding: 0; }</style>
-            <div style="width: 100%; height: 100%; margin: 0; padding: 0; transform: scale(1.33); transform-origin: top left;">
-              <img src="${headerBase64}" style="width: 75%; height: auto; display: block;" />
-            </div>`;
-        } catch (e) {
-          console.error("Failed to process header", e);
-        }
-      } else {
-        console.warn("Header element not found using selectors");
-      }
-
-      // Find footer element (now an HTML component, not an image)
-      const footerElement =
-        reportElement.querySelector("#report-footer") ||
-        reportElement
-          .querySelector('a[href="mailto:info@laverdad.edu.ph"]')
-          ?.closest(".w-full.rounded-b-lg");
-
-      if (footerElement) {
-        try {
-          console.log("Found footer element, capturing...");
-          // Capture the HTML footer as an image using html2canvas
-          const footerCanvas = await html2canvas(footerElement, {
-            backgroundColor: "#1a365d", // Force background color
-            scale: 2,
-            logging: false,
-            useCORS: true,
-            allowTaint: true,
-          });
-          const footerBase64 = footerCanvas.toDataURL("image/png");
-          console.log("Footer captured, length:", footerBase64.length);
-
-          // Scale up by 1.33 to counteract Puppeteer's 0.75x template scaling
-          footerTemplate = `
-            <style>body, html { margin: 0; padding: 0; }</style>
-            <div style="width: 100%; height: 100%; margin: 0; padding: 0; transform: scale(1.33); transform-origin: bottom left;">
-              <img src="${footerBase64}" style="width: 75%; height: auto; display: block;" />
-            </div>`;
-        } catch (e) {
-          console.error("Failed to process footer", e);
-        }
-      } else {
-        console.warn("Footer element not found using selectors");
-      }
 
       // --- Cloning and Content Preparation ---
       const clone = reportElement.cloneNode(true);
 
-      // Remove header/footer blocks from content to avoid duplication (they're now in templates)
-      // Remove entire header block (includes ReportHeader, ReportDescription, and title)
+      // Remove in-content header and footer since they now appear via Puppeteer templates on every page
       const headerBlock = clone.querySelector("#report-header-block");
-      if (headerBlock) headerBlock.remove();
-
-      // Also remove individual header elements if they exist elsewhere
-      const headersToRemove = clone.querySelectorAll("#report-header");
-      headersToRemove.forEach((el) => el.remove());
-
-      // Remove entire footer block
       const footerBlock = clone.querySelector("#report-footer-block");
+      if (headerBlock) headerBlock.remove();
       if (footerBlock) footerBlock.remove();
-
-      // Also remove individual footer elements if they exist elsewhere
-      const footersToRemove = clone.querySelectorAll("#report-footer");
-      footersToRemove.forEach((el) => el.remove());
-
-      // Fallback for legacy headers/footers
-      const legacyHeaders = clone.querySelectorAll(
-        'img[alt="La Verdad Christian College Logo"], img[alt="La Verdad Christian College Header"]'
-      );
-      legacyHeaders.forEach((img) => {
-        const wrapper =
-          img.closest(".w-full.rounded-t-lg") || img.closest(".w-full");
-        if (wrapper) wrapper.remove();
-      });
-
-      const legacyFooters = clone.querySelectorAll(
-        'a[href="mailto:info@laverdad.edu.ph"], img[alt="Report Footer"]'
-      );
-      legacyFooters.forEach((el) => {
-        const wrapper =
-          el.closest(".w-full.rounded-b-lg") || el.closest(".w-full");
-        if (wrapper) wrapper.remove();
-      });
 
       // Rasterize Charts using html2canvas - More reliable for Recharts
       // Find all chart containers with multiple selectors for better coverage
-      const chartSelectors =
-        ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']";
-      const chartContainers = reportElement.querySelectorAll(chartSelectors);
-      const cloneChartContainers = clone.querySelectorAll(chartSelectors);
+      // We need to capture the parent div that contains the ResponsiveContainer
+      // Recharts renders: div.recharts-wrapper > svg.recharts-surface
+
+      // First, try to find chart containers by our explicit print-chart-container class
+      const printChartContainers = reportElement.querySelectorAll(
+        ".print-chart-container"
+      );
+      const clonePrintChartContainers = clone.querySelectorAll(
+        ".print-chart-container"
+      );
+
+      console.log(
+        "Found print-chart-container elements:",
+        printChartContainers.length
+      );
+
+      // If we found print-chart-container elements, use those directly
+      let chartContainers = [];
+      let cloneChartContainers = [];
+
+      if (printChartContainers.length > 0) {
+        chartContainers = Array.from(printChartContainers);
+        cloneChartContainers = Array.from(clonePrintChartContainers);
+      } else {
+        // Fallback: find any recharts-related elements
+        const rechartsContainers = reportElement.querySelectorAll(
+          ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']"
+        );
+        const cloneRechartsContainers = clone.querySelectorAll(
+          ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']"
+        );
+        chartContainers = Array.from(rechartsContainers);
+        cloneChartContainers = Array.from(cloneRechartsContainers);
+      }
 
       console.log("Found chart containers:", chartContainers.length);
-      console.log("Found clone chart containers:", cloneChartContainers.length);
 
       // Log each found container for debugging
       chartContainers.forEach((c, i) => {
@@ -188,105 +299,147 @@ const ReportActions = ({
 
       // Also target SVG elements directly as fallback
       const svgElements = reportElement.querySelectorAll(
-        "svg.recharts-surface"
+        "svg.recharts-surface, svg[class*='recharts']"
       );
-      const cloneSvgs = clone.querySelectorAll("svg.recharts-surface");
+      const cloneSvgs = clone.querySelectorAll(
+        "svg.recharts-surface, svg[class*='recharts']"
+      );
 
       console.log("Found SVG elements:", svgElements.length);
 
-      // html2canvas is already imported above for header/footer capture
-
-      // Filter to only process .recharts-wrapper elements (top-level chart containers)
-      const wrapperContainers = Array.from(chartContainers).filter((c) =>
-        c.classList.contains("recharts-wrapper")
-      );
-      const cloneWrapperContainers = Array.from(cloneChartContainers).filter(
-        (c) => c.classList.contains("recharts-wrapper")
-      );
-
-      const chartPromises = wrapperContainers.map(async (container, index) => {
+      // Create a map of original container to its clone for accurate replacement
+      const chartMap = new Map();
+      // This includes recharts-responsive-container which wraps the actual chart
+      const getClassName = (el) => {
         try {
-          const cloneContainer = cloneWrapperContainers[index];
-          if (!cloneContainer) return;
+          return String(el.className);
+        } catch {
+          return "";
+        }
+      };
 
-          // Capture the chart container as an image
-          const canvas = await html2canvas(container, {
-            backgroundColor: "#ffffff",
-            scale: 2, // Higher quality
-            logging: false,
-            useCORS: true,
-            allowTaint: true,
-          });
+      const allChartContainers = chartContainers.filter((c) => {
+        // Check for various Recharts container classes
+        const className = getClassName(c);
+        return (
+          (c.classList && c.classList.contains("recharts-wrapper")) ||
+          (c.classList &&
+            c.classList.contains("recharts-responsive-container")) ||
+          className.includes("recharts")
+        );
+      });
 
-          // Convert to data URL
-          const pngDataUrl = canvas.toDataURL("image/png");
+      const allCloneChartContainers = cloneChartContainers.filter((c) => {
+        const className = getClassName(c);
+        return (
+          (c.classList && c.classList.contains("recharts-wrapper")) ||
+          (c.classList &&
+            c.classList.contains("recharts-responsive-container")) ||
+          className.includes("recharts")
+        );
+      });
 
-          // Create replacement image
-          const replacement = document.createElement("img");
-          replacement.src = pngDataUrl;
-          replacement.style.width = `${container.offsetWidth}px`;
-          replacement.style.height = `${container.offsetHeight}px`;
-          replacement.style.display = "block";
-          replacement.style.maxWidth = "100%";
+      // Create a map of original container to its clone for accurate replacement
+      allChartContainers.forEach((container, idx) => {
+        const cloneContainer = allCloneChartContainers[idx];
+        if (container && cloneContainer) {
+          chartMap.set(container, cloneContainer);
+        }
+      });
 
-          // Replace the chart container in the clone
-          if (cloneContainer.parentNode) {
-            cloneContainer.parentNode.replaceChild(replacement, cloneContainer);
-          }
-        } catch (err) {
-          console.warn("Error capturing chart with html2canvas:", err);
+      const chartPromises = Array.from(chartMap.entries()).map(
+        async ([container, cloneContainer, svgElement, cloneSvg]) => {
+          try {
+            if (!cloneContainer) return;
 
-          // Fallback: try to capture just the SVG
-          if (svgElements[index] && cloneSvgs[index]) {
-            try {
-              const svg = svgElements[index];
-              const cloneSvg = cloneSvgs[index];
-              const svgRect = svg.getBoundingClientRect();
-              const width = svgRect.width || 400;
-              const height = svgRect.height || 300;
+            // Get the actual dimensions from the container
+            const width = container.offsetWidth || 400;
+            const height = container.offsetHeight || 300;
 
-              // Create a canvas and draw the SVG
-              const svgData = new XMLSerializer().serializeToString(svg);
-              const svgBlob = new Blob([svgData], {
-                type: "image/svg+xml;charset=utf-8",
-              });
-              const url = URL.createObjectURL(svgBlob);
+            // Capture the chart container as an image
+            const canvas = await html2canvas(container, {
+              backgroundColor: "#ffffff",
+              scale: 2, // Higher quality
+              logging: false,
+              useCORS: true,
+              allowTaint: true,
+            });
 
-              const img = new Image();
-              await new Promise((resolve) => {
-                img.onload = () => {
-                  const canvas = document.createElement("canvas");
-                  canvas.width = width * 2;
-                  canvas.height = height * 2;
-                  const ctx = canvas.getContext("2d");
-                  ctx.scale(2, 2);
-                  ctx.fillStyle = "white";
-                  ctx.fillRect(0, 0, width, height);
-                  ctx.drawImage(img, 0, 0, width, height);
+            // Convert to data URL
+            const pngDataUrl = canvas.toDataURL("image/png");
 
-                  const replacement = document.createElement("img");
-                  replacement.src = canvas.toDataURL("image/png");
-                  replacement.style.width = `${width}px`;
-                  replacement.style.height = `${height}px`;
+            // Create replacement image
+            const replacement = document.createElement("img");
+            replacement.src = pngDataUrl;
+            replacement.style.width = `${width}px`;
+            replacement.style.height = `${height}px`;
+            replacement.style.display = "block";
+            replacement.style.maxWidth = "100%";
 
-                  if (cloneSvg.parentNode) {
-                    cloneSvg.parentNode.replaceChild(replacement, cloneSvg);
-                  }
-                  URL.revokeObjectURL(url);
-                  resolve();
-                };
-                img.onerror = () => {
-                  URL.revokeObjectURL(url);
-                  resolve();
-                };
-                img.src = url;
-              });
-            } catch (svgErr) {
-              console.warn("SVG fallback also failed:", svgErr);
+            // Replace the chart container in the clone
+            if (cloneContainer.parentNode) {
+              cloneContainer.parentNode.replaceChild(
+                replacement,
+                cloneContainer
+              );
+            }
+          } catch (err) {
+            console.warn("Error capturing chart with html2canvas:", err);
+
+            // Fallback: try to capture just the SVG
+            const svgIndex = Array.from(chartContainers).indexOf(container);
+            if (svgElements[svgIndex] && cloneSvgs[svgIndex]) {
+              try {
+                const svg = svgElement;
+                const svgRect = svg.getBoundingClientRect();
+                const svgWidth = svgRect.width || 400;
+                const svgHeight = svgRect.height || 300;
+
+                // Create a canvas and draw the SVG
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const svgBlob = new Blob([svgData], {
+                  type: "image/svg+xml;charset=utf-8",
+                });
+                const url = URL.createObjectURL(svgBlob);
+
+                const img = new Image();
+                await new Promise((resolve) => {
+                  img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = svgWidth * 2;
+                    canvas.height = svgHeight * 2;
+                    const ctx = canvas.getContext("2d");
+                    ctx.scale(2, 2);
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, svgWidth, svgHeight);
+                    ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+
+                    const replacement = document.createElement("img");
+                    replacement.src = canvas.toDataURL("image/png");
+                    replacement.style.width = `${svgWidth}px`;
+                    replacement.style.height = `${svgHeight}px`;
+                    replacement.style.display = "block";
+                    replacement.style.maxWidth = "100%";
+
+                    if (cloneSvg.parentNode) {
+                      cloneSvg.parentNode.replaceChild(replacement, cloneSvg);
+                    }
+                    URL.revokeObjectURL(url);
+                    resolve();
+                  };
+                  img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    resolve();
+                  };
+                  img.src = url;
+                });
+              } catch (svgErr) {
+                console.warn("SVG fallback also failed:", svgErr);
+              }
             }
           }
         }
-      });
+      );
       await Promise.all(chartPromises);
 
       // Convert remaining standard images (like static embedded ones)
@@ -334,11 +487,6 @@ const ReportActions = ({
         .filter((style) => style.trim().length > 0)
         .join("\n");
 
-      const formData = JSON.parse(
-        sessionStorage.getItem("currentFormData") || "{}"
-      );
-      const reportTitle = formData.title || "Evaluation Report";
-
       const completeHTML = `
         <!DOCTYPE html>
         <html>
@@ -349,10 +497,88 @@ const ReportActions = ({
             <style>
               ${styles}
               img { max-width: 100% !important; }
-              /* Add padding to body to act as page margins for the text content */
-              body { padding: 0 40px; }
+              /* Remove default margins */
+              body { margin: 0; padding: 0; }
               /* Hide screen-only elements */
               .print\\:hidden { display: none !important; }
+              /* Ensure charts are visible in print */
+              .recharts-wrapper { display: block !important; }
+              .recharts-responsive-container { display: block !important; width: 100% !important; }
+              .print-chart-container { page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px; }
+              /* Ensure SVG charts are visible */
+              svg.recharts-surface { display: block !important; }
+              /* Ensure chart parent containers have proper dimensions */
+              .recharts-wrapper svg { display: block !important; }
+              /* Fix for charts in pie charts */
+              .recharts-pie { display: block !important; }
+              .recharts-bar { display: block !important; }
+              /* Report content styling - padding for content area */
+              .report-print-content { padding: 10px 30px; }
+
+              /* ========================================
+                 ENHANCED PAGE BREAK & READABILITY RULES
+                 ======================================== */
+
+              /* Orphan/Widow Control */
+              p, li, span { orphans: 3; widows: 3; }
+
+              /* Individual comment items */
+              .comment-item {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                margin-bottom: 0.5rem;
+              }
+
+              /* Comment section container - allow breaks between comments */
+              .comment-section-container {
+                break-inside: auto;
+                page-break-inside: auto;
+              }
+
+              /* Question blocks - keep question with chart */
+              .question-block {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                margin-bottom: 1.5rem;
+              }
+
+              /* Section pages - force new page */
+              .section-page {
+                page-break-before: always;
+                break-before: page;
+              }
+              .section-page:first-child {
+                page-break-before: avoid;
+                break-before: auto;
+              }
+
+              /* Insights paragraphs */
+              .space-y-6 > p {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+
+              /* Keep headers with content */
+              h4, h5 {
+                page-break-after: avoid;
+                break-after: avoid;
+              }
+
+              /* Additional spacing improvements for print */
+              .mb-8 { margin-bottom: 1.5rem !important; }
+              .mb-6 { margin-bottom: 1rem !important; }
+              .mb-4 { margin-bottom: 0.75rem !important; }
+              .mb-2 { margin-bottom: 0.5rem !important; }
+              .mt-8 { margin-top: 1.5rem !important; }
+              .mt-6 { margin-top: 1rem !important; }
+              .mt-4 { margin-top: 0.75rem !important; }
+              .mt-2 { margin-top: 0.5rem !important; }
+
+              /* Better font for print */
+              body, p, li, span, div {
+                font-family: 'Times New Roman', Times, serif !important;
+                line-height: 1.5 !important;
+              }
             </style>
           </head>
           <body>
@@ -400,8 +626,11 @@ const ReportActions = ({
       document.body.removeChild(a);
     } catch (error) {
       console.error("Error generating PDF:", error);
+      // Safely remove loading toast if it exists
       const toast = document.querySelector("div[style*='z-index: 9999']");
-      if (toast) document.body.removeChild(toast);
+      if (toast && toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
       alert("Failed to download PDF. Please check console for details.");
     }
   };

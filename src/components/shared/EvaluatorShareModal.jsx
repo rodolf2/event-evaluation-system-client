@@ -5,7 +5,6 @@ import {
   Copy,
   Check,
   Send,
-  Clock,
   Users,
   Link2,
   CheckCircle2,
@@ -17,7 +16,6 @@ const EvaluatorShareModal = ({ isOpen, onClose, formId, formTitle }) => {
   const { token } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [expirationDays, setExpirationDays] = useState(7);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedToken, setGeneratedToken] = useState(null);
   const [existingTokens, setExistingTokens] = useState([]);
@@ -67,7 +65,6 @@ const EvaluatorShareModal = ({ isOpen, onClose, formId, formTitle }) => {
           email,
           name,
           formId,
-          expirationDays,
         }),
       });
 
@@ -140,7 +137,6 @@ const EvaluatorShareModal = ({ isOpen, onClose, formId, formTitle }) => {
   const resetForm = () => {
     setEmail("");
     setName("");
-    setExpirationDays(7);
     setGeneratedToken(null);
   };
 
@@ -309,26 +305,6 @@ const EvaluatorShareModal = ({ isOpen, onClose, formId, formTitle }) => {
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#1F3463] focus:border-transparent"
                       required
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Clock className="w-4 h-4 inline mr-1" />
-                      Access Duration
-                    </label>
-                    <select
-                      value={expirationDays}
-                      onChange={(e) =>
-                        setExpirationDays(Number(e.target.value))
-                      }
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#1F3463] focus:border-transparent"
-                    >
-                      <option value={7}>7 days</option>
-                      <option value={14}>14 days</option>
-                      <option value={30}>30 days</option>
-                      <option value={60}>60 days</option>
-                      <option value={90}>90 days</option>
-                    </select>
                   </div>
 
                   <button

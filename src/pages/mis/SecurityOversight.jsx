@@ -3,7 +3,6 @@ import { useAuth } from "../../contexts/useAuth";
 import {
   Shield,
   Lock,
-  Globe,
   Users,
   RefreshCw,
   Trash2,
@@ -30,9 +29,7 @@ function SecurityOversight() {
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
-  const [ipWhitelist, setIpWhitelist] = useState([]);
   const [domainWhitelist, setDomainWhitelist] = useState([]);
-  const [newIp, setNewIp] = useState("");
   const [newDomain, setNewDomain] = useState("");
   const [lockdownEnabled, setLockdownEnabled] = useState(false);
 
@@ -63,7 +60,6 @@ function SecurityOversight() {
       }
 
       if (settingsData.success) {
-        setIpWhitelist(settingsData.data.ipWhitelist || []);
         setDomainWhitelist(settingsData.data.domainWhitelist || []);
         setLockdownEnabled(settingsData.data.emergencyLockdown || false);
       }
@@ -155,7 +151,6 @@ function SecurityOversight() {
       });
       const data = await response.json();
       if (data.success) {
-        setIpWhitelist(data.data.ipWhitelist);
         setDomainWhitelist(data.data.domainWhitelist);
         return true;
       }
@@ -163,29 +158,6 @@ function SecurityOversight() {
     } catch (error) {
       console.error("Error updating settings:", error);
       return false;
-    }
-  };
-
-  const handleAddIp = async () => {
-    if (!newIp.trim()) return;
-    const newEntry = { ip: newIp, label: "Custom Rule" };
-    const updatedList = [...ipWhitelist, newEntry];
-
-    if (await handeUpdateSettings({ ipWhitelist: updatedList })) {
-      setNewIp("");
-      toast.success("IP added to whitelist");
-    } else {
-      toast.error("Failed to add IP");
-    }
-  };
-
-  const handleRemoveIp = async (id) => {
-    // Filter by _id if exists, else match by index or other prop if backend didn't assign yet (it should have)
-    const updatedList = ipWhitelist.filter((item) => item._id !== id);
-    if (await handeUpdateSettings({ ipWhitelist: updatedList })) {
-      toast.success("IP removed from whitelist");
-    } else {
-      toast.error("Failed to remove IP");
     }
   };
 
@@ -256,62 +228,52 @@ function SecurityOversight() {
         </div>
       </div>
 
-      {/* System Encryption & Compliance */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          System Encryption & Compliance
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Data at Rest */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Shield className="w-6 h-6 text-gray-600" />
-              </div>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                <Check className="w-3 h-3" />
-                Verified
-              </span>
-            </div>
-            <div className="text-sm text-gray-500">Data at Rest</div>
-            <div className="text-lg font-bold text-gray-800">
-              AES-256 Encrypted
-            </div>
-          </div>
+      {/* Email Domain Whitelist */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Lock className="w-5 h-5 text-gray-600" />
+          <h2 className="text-lg font-semibold text-gray-800">
+            Email Domain Whitelist
+          </h2>
+        </div>
 
-          {/* Data in Transit */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-gray-600" />
-              </div>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                <Check className="w-3 h-3" />
-                Verified
-              </span>
-            </div>
-            <div className="text-sm text-gray-500">Data in Transit</div>
-            <div className="text-lg font-bold text-gray-800">
-              TLS 1.3 / HTTPS
-            </div>
-          </div>
+        {/* Add Domain Input */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-6">
+          <input
+            type="text"
+            value={newDomain}
+            onChange={(e) => setNewDomain(e.target.value)}
+            placeholder="e.g., @laverdad.edu.ph"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleAddDomain}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+          >
+            <Plus className="w-4 h-4" />
+            Add Domain
+          </button>
+        </div>
 
-          {/* WAF Status */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Lock className="w-6 h-6 text-gray-600" />
+        {/* Domain List */}
+        <div className="space-y-3">
+          {domainWhitelist.map((item) => (
+            <div
+              key={item._id || item.id}
+              className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+            >
+              <div>
+                <div className="font-medium text-gray-800">{item.domain}</div>
+                <div className="text-sm text-gray-500">{item.label}</div>
               </div>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                <Check className="w-3 h-3" />
-                Active
-              </span>
+              <button
+                onClick={() => handleRemoveDomain(item._id || item.id)}
+                className="p-2 text-gray-400 hover:text-red-600 transition"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-            <div className="text-sm text-gray-500">WAF Status</div>
-            <div className="text-lg font-bold text-gray-800">
-              Blocking Threats
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -335,7 +297,51 @@ function SecurityOversight() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Card Layout */}
+        <div className="block lg:hidden">
+          {sessions.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {sessions.map((session) => (
+                <div key={session.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">
+                        {session.userName}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-sm">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            session.role === "Evaluator"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-purple-100 text-purple-700"
+                          }`}
+                        >
+                          {session.role}
+                        </span>
+                        <span className="text-gray-500">
+                          {session.lastAccess}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleRevokeSession(session.id)}
+                      className="text-red-600 hover:text-red-800 font-medium text-sm ml-2"
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-gray-500">
+              No active sessions found (Last 24h).
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table Layout */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -396,107 +402,6 @@ function SecurityOversight() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* IP and Domain Whitelists */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* IP Whitelist Management */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe className="w-5 h-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              IP Whitelist Management
-            </h2>
-          </div>
-
-          {/* Add IP Input */}
-          <div className="flex gap-2 mb-6">
-            <input
-              type="text"
-              value={newIp}
-              onChange={(e) => setNewIp(e.target.value)}
-              placeholder="e.g., 192.168.1.0/24"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleAddIp}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add IP
-            </button>
-          </div>
-
-          {/* IP List */}
-          <div className="space-y-3">
-            {ipWhitelist.map((item) => (
-              <div
-                key={item._id || item.id}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-              >
-                <div>
-                  <div className="font-medium text-gray-800">{item.ip}</div>
-                  <div className="text-sm text-gray-500">{item.label}</div>
-                </div>
-                <button
-                  onClick={() => handleRemoveIp(item._id || item.id)}
-                  className="p-2 text-gray-400 hover:text-red-600 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Email Domain Whitelist */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Lock className="w-5 h-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Email Domain Whitelist
-            </h2>
-          </div>
-
-          {/* Add Domain Input */}
-          <div className="flex gap-2 mb-6">
-            <input
-              type="text"
-              value={newDomain}
-              onChange={(e) => setNewDomain(e.target.value)}
-              placeholder="e.g., @laverdad.edu.ph"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleAddDomain}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add Domain
-            </button>
-          </div>
-
-          {/* Domain List */}
-          <div className="space-y-3">
-            {domainWhitelist.map((item) => (
-              <div
-                key={item._id || item.id}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-              >
-                <div>
-                  <div className="font-medium text-gray-800">{item.domain}</div>
-                  <div className="text-sm text-gray-500">{item.label}</div>
-                </div>
-                <button
-                  onClick={() => handleRemoveDomain(item._id || item.id)}
-                  className="p-2 text-gray-400 hover:text-red-600 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

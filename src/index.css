@@ -19,7 +19,7 @@
 
 /* Font utility classes */
 .font-tolkien {
-  font-family: "Tolkien" , cursive !important;
+  font-family: "Tolkien", cursive !important;
 }
 /* Hide native calendar icon in Webkit browsers */
 .hide-native-calendar-icon::-webkit-calendar-picker-indicator {
@@ -44,440 +44,462 @@
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
 
   /* Hide navigation elements for print */
   aside,
   header,
-  nav {
+  nav,
+  .print\:hidden {
     display: none !important;
   }
 
-  /* Ensure body has no margins */
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Make main content full width and visible */
-  main {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    position: static !important;
-  }
-
-  /* Ensure layout container is visible */
-  .flex.min-h-screen.bg-gray-100 {
-    display: block !important;
-    background: white !important;
-    min-height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .bg-gray-100 .container {
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .bg-gray-100 .bg-white {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Report header image */
-  .bg-gray-100 img {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-
-  /* Ensure text colors are visible */
-  .text-blue-900 {
-    color: #1e3a8a !important;
-  }
-
-  .text-gray-600 {
-    color: #4b5563 !important;
-  }
-
-  .text-gray-700 {
-    color: #374151 !important;
-  }
-
-  .text-gray-800 {
-    color: #1f2937 !important;
-  }
-
-  /* Background colors for sections */
-  .bg-blue-100 {
-    background-color: #dbeafe !important;
-    border: 1px solid #bfdbfe !important;
-  }
-
-  .bg-gray-100 {
-    background-color: #f3f4f6 !important;
-  }
-
-  .bg-green-100 {
-    background-color: #dcfce7 !important;
-  }
-
-  .bg-red-100 {
-    background-color: #fee2e2 !important;
-  }
-
-  .bg-yellow-100 {
-    background-color: #fef3c7 !important;
-  }
-
-  /* Comment boxes */
-  .bg-green-50 {
-    background-color: #f0fdf4 !important;
-    border-left: 4px solid #22c55e !important;
-  }
-
-  .bg-red-50 {
-    background-color: #fef2f2 !important;
-    border-left: 4px solid #ef4444 !important;
-  }
-
-  .bg-yellow-50 {
-    background-color: #fffbeb !important;
-    border-left: 4px solid #eab308 !important;
-  }
-
-  .bg-gray-50 {
-    background-color: #f9fafb !important;
-  }
-
-  /* Footer */
-  .bg-blue-900 {
-    background-color: #1e3a8a !important;
-    color: white !important;
-  }
-
-  /* Ensure proper page breaks */
-  .bg-gray-100 main {
-    page-break-inside: avoid;
-  }
-
-  /* Grid layout adjustments for print - stack charts vertically */
-  .grid {
-    display: block !important;
-  }
-
-  .grid > * {
-    display: block !important;
-    width: 100% !important;
-    margin-bottom: 2rem !important;
-  }
-
-  /* Ensure chart containers stack vertically in print */
-  .grid.grid-cols-1 > * {
-    margin-bottom: 2rem !important;
-  }
-
-  /* Prevent pie charts from being affected by grid rules */
-  .recharts-wrapper:has(.recharts-pie) {
-    display: block !important;
-    width: 100% !important;
-    height: 250px !important;
-  }
-
-  /* Hide hover effects and transitions */
-  .hover\:bg-blue-200:hover,
-  .hover\:bg-gray-200:hover,
-  .hover\:bg-green-200:hover,
-  .hover\:bg-red-200:hover,
-  .hover\:bg-yellow-200:hover {
-    background-color: inherit !important;
-  }
-
-  /* Remove cursor pointers */
-  .cursor-pointer {
-    cursor: default !important;
-  }
-
-  /* Ensure proper spacing */
-  .space-y-4 > * + * {
-    margin-top: 1rem !important;
-  }
-
-  .gap-8 {
-    gap: 2rem !important;
-  }
-
-  /* Print margins and force single page */
+  /* Basic Page Setup - Adjusted margins for better content fit */
   @page {
-    margin: 0.25in;
+    margin: 0.75in 0.5in; /* Top/Bottom: 0.75in, Left/Right: 0.5in */
     size: A4;
   }
 
-  /* Multi-page layout - each section on its own page */
+  body {
+    background: white !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important; /* Improved line spacing for readability */
+    color: #000 !important;
+    font-family: 'Times New Roman', Times, serif !important; /* More professional font */
+  }
+
+  /* Report Container - Better padding and spacing */
   .report-print-content {
-    height: auto !important;
-    position: relative !important;
-  }
-
-  /* Each section page should start on a new page */
-  .section-page {
-    page-break-before: always !important;
-    page-break-inside: avoid !important;
-    position: relative !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-
-  /* First section shouldn't break */
-  .report-print-content .section-page:first-child {
-    page-break-before: avoid !important;
-  }
-
-  /* Ensure section content fills the page */
-  .section-page .bg-white {
-    position: relative !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0.75in !important; /* Space for footer */
-  }
-
-  .section-page main {
-    padding: 0.25in !important;
-    padding-bottom: 0 !important; /* Footer handles its own spacing */
-  }
-
-  /* Position footer at bottom of content */
-  .section-page .bg-blue-900 {
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 0.75in !important; /* Fixed footer height */
-    margin-bottom: 0 !important;
-  }
-
-  /* Remove any extra spacing from containers */
-  .section-page .container {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-  }
-
-  .report-print-content .container {
+    background: white !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
     padding: 0 !important;
+    box-shadow: none !important;
   }
 
-  /* Reduce spacing for single page */
-  .report-print-content .space-y-4 > * + * {
-    margin-top: 0.5rem !important;
+  .container {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
-  .report-print-content .mb-8 {
+  /* Grid Layouts - Restore 2-column layout for charts with better spacing */
+  .grid {
+    display: grid !important;
+    gap: 1.5rem !important;
     margin-bottom: 1rem !important;
   }
 
-  .report-print-content .mb-4 {
-    margin-bottom: 0.5rem !important;
+  .grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
 
-  .report-print-content .mb-6 {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Background Colors - Clean up for print */
+  .bg-gray-100 {
+    background-color: white !important;
+  }
+
+  .bg-white {
+    background-color: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 15px !important; /* Better padding for content */
+  }
+
+  /* Typography Enhancements - STANDARD PROFESSIONAL SIZE with better spacing */
+  h1 {
+    font-size: 16pt !important;
+    line-height: 1.3 !important;
     margin-bottom: 0.75rem !important;
+    font-weight: bold !important;
   }
-
-  .report-print-content .mb-12 {
-    margin-bottom: 1.5rem !important;
+  h2 {
+    font-size: 14pt !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.6rem !important;
+    font-weight: bold !important;
   }
-
-  .report-print-content .py-8 {
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
+  h3 {
+    font-size: 13pt !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.5rem !important;
+    font-weight: bold !important;
   }
-
-  .report-print-content .p-8 {
-    padding: 1rem !important;
-  }
-
-  .report-print-content .py-4 {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
-  }
-
-  /* Smaller charts for single page - side by side */
-  .report-print-content .recharts-wrapper {
-    height: 150px !important;
-    width: 100% !important;
-  }
-
-  /* Ensure chart containers are properly sized */
-  .report-print-content .grid > * {
-    padding: 0.5rem !important;
-  }
-
-  /* Reduce font sizes for single page */
-  .report-print-content .text-5xl {
-    font-size: 1.5rem !important;
-  }
-
-  .report-print-content .text-2xl {
-    font-size: 1.25rem !important;
-  }
-
-  .report-print-content .text-xl {
-    font-size: 1.125rem !important;
-  }
-
-  .report-print-content .text-lg {
-    font-size: 1rem !important;
-  }
-
-  /* Compact comment boxes for single page */
-  .report-print-content .bg-green-50,
-  .report-print-content .bg-red-50,
-  .report-print-content .bg-yellow-50,
-  .report-print-content .bg-gray-50 {
-    padding: 0.5rem !important;
-    margin-bottom: 0.25rem !important;
-    border-left-width: 2px !important;
-  }
-
-  .report-print-content .p-4 {
-    padding: 0.5rem !important;
-  }
-
-  .report-print-content .p-8 {
-    padding: 0.75rem !important;
-  }
-
-  /* Charts and visualizations - ensure visibility */
-  .recharts-wrapper {
-    page-break-inside: avoid !important;
-    display: block !important;
-    visibility: visible !important;
-    width: 100% !important;
-    height: 250px !important;
-  }
-
-  /* Ensure all Recharts components are visible */
-  .recharts-surface,
-  .recharts-cartesian-grid,
-  .recharts-cartesian-axis,
-  .recharts-bar,
-  .recharts-line,
-  .recharts-area,
-  .recharts-pie,
-  .recharts-pie-sector,
-  .recharts-pie-label,
-  .recharts-legend,
-  .recharts-tooltip {
-    display: block !important;
-    visibility: visible !important;
-  }
-
-  .recharts-cartesian-axis-tick-value,
-  .recharts-legend-item-text,
-  .recharts-pie-label-text {
-    fill: #1f2937 !important;
-    font-size: 10px !important;
-    display: block !important;
-    visibility: visible !important;
-  }
-
-  /* Smaller chart titles and labels */
-  .report-print-content h5 {
-    font-size: 0.875rem !important;
-    margin-bottom: 0.25rem !important;
-  }
-
-  .report-print-content .text-sm {
-    font-size: 0.75rem !important;
-  }
-
-  .recharts-tooltip-wrapper {
-    display: none !important;
-  }
-
-  /* Force page breaks for better layout */
-  h3,
   h4 {
-    page-break-after: avoid;
+    font-size: 12pt !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.5rem !important;
+    font-weight: bold !important;
+  }
+  h5 {
+    font-size: 11pt !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.4rem !important;
+    font-weight: bold !important;
+  }
+  h6 {
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    margin-bottom: 0.3rem !important;
+    font-weight: bold !important;
   }
 
-  .rounded-lg {
-    border-radius: 0 !important;
+  .text-5xl {
+    font-size: 18pt !important;
+    line-height: 1.3 !important;
+  }
+  .text-4xl {
+    font-size: 16pt !important;
+    line-height: 1.3 !important;
+  }
+  .text-3xl {
+    font-size: 15pt !important;
+    line-height: 1.3 !important;
+  }
+  .text-2xl {
+    font-size: 14pt !important;
+    line-height: 1.3 !important;
+  }
+  .text-xl {
+    font-size: 13pt !important;
+    line-height: 1.3 !important;
+  }
+  .text-lg {
+    font-size: 12pt !important;
+    line-height: 1.3 !important;
+  }
+  .text-base {
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+  .text-sm {
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+  }
+  .text-xs {
+    font-size: 9pt !important;
+    line-height: 1.3 !important;
   }
 
-  /* Handle long content sections - allow page breaks within comments */
-  .section-page main .space-y-4 {
-    page-break-inside: auto;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #1e3a8a !important; /* Dark blue for headers */
+    page-break-after: avoid !important;
+    margin-top: 0.5rem !important;
   }
 
-  .section-page main .space-y-4 > * {
-    page-break-inside: avoid;
-    margin-bottom: 0.25rem !important;
+  p,
+  li,
+  span,
+  div {
+    color: #1f2937 !important; /* Dark gray for text */
+    margin-bottom: 0.5rem !important; /* Better paragraph spacing */
   }
 
-  /* If content is very long, allow breaking within the section */
-  .section-page main {
-    page-break-inside: auto;
+  /* Charts - FIXED PIXEL DIMENSIONS FOR PRINT with consistent sizing */
+  .print-chart-container {
+    width: 100% !important;
+    max-width: 400px !important;
+    height: auto !important;
+    min-height: 280px !important;
+    display: block !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 1.5rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
-  /* But keep individual comment boxes together */
+  /* Target wrapper inside our container - consistent size for all charts */
+  .print-chart-container .recharts-wrapper {
+    width: 100% !important;
+    max-width: 400px !important;
+    height: 250px !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  /* Fallback for other charts */
+  .recharts-wrapper {
+    display: block !important;
+    visibility: visible !important;
+    min-width: 300px !important;
+    min-height: 250px !important;
+  }
+
+  /* Ensure SVG contents are visible */
+  .recharts-surface {
+    overflow: visible !important;
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .recharts-layer {
+    display: block !important;
+  }
+
+  /* Ensure SVG contents are visible */
+  .recharts-wrapper svg {
+    overflow: visible !important;
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Comment Boxes - Better spacing and borders */
   .bg-green-50,
   .bg-red-50,
   .bg-yellow-50,
   .bg-gray-50 {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    border: 1px solid #e5e7eb !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    padding: 8px !important;
+    margin-bottom: 8px !important;
   }
 
-  /* Ensure SVG elements are visible */
-  svg {
-    display: block !important;
-    visibility: visible !important;
+  /* Page Breaks - Improved section spacing */
+  .section-page {
+    page-break-before: always !important;
+    page-break-inside: avoid !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .section-page:first-child {
+    page-break-before: avoid !important;
+    margin-top: 0 !important;
+  }
+
+  /* Explicitly handle breaks for chart sections */
+  .mb-16 {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* ========================================
+     ENHANCED PAGE BREAK & READABILITY RULES
+     ======================================== */
+
+  /* Orphan/Widow Control - Prevent single lines stranded at page boundaries */
+  p,
+  li,
+  span {
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* Individual comment items - prevent breaking in the middle of a comment */
+  .comment-item {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 0.75rem !important;
+    padding: 6px 0 !important;
+  }
+
+  /* Comment list containers - allow breaks between comments but not mid-comment */
+  .comment-list {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Question blocks - keep question title with its chart/data */
+  .question-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 1.5rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  /* For very long question blocks, allow intelligent breaks */
+  .question-block-flexible {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Keep titles/headers with following content */
+  .print-keep-with-next {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Content that should always start on a new page */
+  .print-page-break-before {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  /* Prevent page break right after this element */
+  .print-no-break-after {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Flex/Grid items in chart sections - keep together */
+  .print-chart-container,
+  .flex.flex-col.md\\:flex-row {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Rating legend items - keep together */
+  .space-y-2 > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Insights section - each insight paragraph should not break */
+  .space-y-6 > p {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 0.75rem !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Section wrappers with white background - nice boundary */
+  .bg-white.rounded-lg {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* For comment sections that may be very long - max height auto-break */
+  .comment-section-container {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Each comment in the list */
+  .comment-section-container .flex.gap-2 {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    padding-bottom: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Border separator between questions */
+  .border-b {
+    break-after: auto !important;
+    page-break-after: auto !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Footer */
+  .report-footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
     width: 100% !important;
-    height: 100% !important;
+    border-top: 1px solid #e5e7eb !important;
+    padding-top: 0.5rem !important;
+    font-size: 9pt !important;
   }
 
-  /* Specific chart container sizing */
-  .report-print-content .recharts-responsive-container {
+  /* Additional spacing improvements */
+  .mb-8 {
+    margin-bottom: 1.5rem !important;
+  }
+
+  .mb-6 {
+    margin-bottom: 1rem !important;
+  }
+
+  .mb-4 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .mb-2 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .mt-8 {
+    margin-top: 1.5rem !important;
+  }
+
+  .mt-6 {
+    margin-top: 1rem !important;
+  }
+
+  .mt-4 {
+    margin-top: 0.75rem !important;
+  }
+
+  .mt-2 {
+    margin-top: 0.5rem !important;
+  }
+
+  /* Table improvements */
+  table {
     width: 100% !important;
-    height: 250px !important;
-    display: block !important;
-    visibility: visible !important;
+    border-collapse: collapse !important;
+    margin-bottom: 1rem !important;
   }
 
-  /* Force chart rendering in print */
-  .recharts-wrapper svg {
-    display: block !important;
-    visibility: visible !important;
-    width: 100% !important;
-    height: 100% !important;
+  th, td {
+    padding: 6px 8px !important;
+    border: 1px solid #ddd !important;
+    text-align: left !important;
   }
 
-  /* Ensure chart paths and shapes are visible */
-  .recharts-wrapper svg path,
-  .recharts-wrapper svg rect,
-  .recharts-wrapper svg circle,
-  .recharts-wrapper svg line,
-  .recharts-wrapper svg text {
-    display: block !important;
-    visibility: visible !important;
+  th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold !important;
   }
 
-  /* Custom report elements */
-  .w-\[1150px\] {
-    width: 100% !important;
-    max-width: 100% !important;
+  /* List improvements */
+  ul, ol {
+    margin-bottom: 1rem !important;
+    padding-left: 1.5rem !important;
   }
 
-  /* Ensure large text is readable in print */
-  .text-5xl {
-    font-size: 2.5rem !important;
+  li {
+    margin-bottom: 0.25rem !important;
   }
 
-  .text-2xl {
-    font-size: 1.5rem !important;
+  /* Ensure proper spacing for section titles */
+  .text-center {
+    margin-bottom: 1rem !important;
+  }
+
+  /* Better handling of flex containers */
+  .flex {
+    display: flex !important;
+  }
+
+  .flex-col {
+    flex-direction: column !important;
+  }
+
+  .gap-2 {
+    gap: 0.5rem !important;
+  }
+
+  .gap-4 {
+    gap: 1rem !important;
+  }
+
+  .gap-6 {
+    gap: 1.5rem !important;
+  }
+
+  .gap-8 {
+    gap: 2rem !important;
   }
 }

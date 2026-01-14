@@ -65,7 +65,7 @@ const EvaluationContent = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto mt-5">
               <div className="text-center">
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                  Bank Form
+                  Blank Form
                 </h3>
               </div>
               <div className="text-center">
@@ -78,28 +78,28 @@ const EvaluationContent = ({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4 mb-7">
-            <h2 className="text-3xl font-bold text-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 mb-5">
+            <h2 className="text-3xl font-semibold text-gray-800">
               Recent Evaluations
             </h2>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
               <div className="flex-1 relative">
-                <Search className="w-6 h-6 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search evaluations..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
-              <div className="flex items-center gap-3">
-                <Filter className="w-6 h-6 text-gray-400" />
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-gray-400" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="newest">Newest</option>
                   <option value="oldest">Oldest</option>

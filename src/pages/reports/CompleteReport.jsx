@@ -43,7 +43,7 @@ const DynamicBarChart = ({ data, title, subtitle, loading = false }) => {
   }
 
   return (
-    <div>
+    <div className="print-chart-container">
       <h5 className="text-lg font-semibold text-center mb-2">{title}</h5>
       {subtitle && (
         <p className="text-center text-sm text-gray-500 mb-4">{subtitle}</p>
@@ -78,7 +78,7 @@ const DynamicPieChart = ({ data, title, subtitle, loading = false }) => {
   }
 
   return (
-    <div>
+    <div className="print-chart-container">
       <h5 className="text-lg font-semibold text-center mb-2">{title}</h5>
       {subtitle && (
         <p className="text-center text-sm text-gray-500 mb-4">{subtitle}</p>
@@ -197,14 +197,14 @@ const CommentSection = ({
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-2 comment-section-container">
         {(type === "neutral" ? comments : currentComments).map(
           (comment, index) => (
             <div
               key={
                 comment.id || (type === "neutral" ? index : startIndex + index)
               }
-              className="flex gap-2"
+              className="flex gap-2 comment-item"
             >
               <span className="text-gray-600 mt-1">•</span>
               <p className="text-gray-800 flex-1">{comment.comment}</p>
@@ -663,7 +663,7 @@ const CompleteReport = ({
                 {qualitativeData.questionBreakdown.map((question, idx) => (
                   <div
                     key={question.questionId || idx}
-                    className="border-b border-gray-200 pb-8 last:border-0"
+                    className="border-b border-gray-200 pb-8 last:border-0 question-block"
                   >
                     <h5 className="text-lg font-bold mb-1">
                       {idx + 1}. {question.questionTitle}
@@ -675,7 +675,7 @@ const CompleteReport = ({
                     {/* Scale Question - Rating Distribution */}
                     {question.questionType === "scale" &&
                       question.ratingDistribution && (
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
                           <div className="w-48 h-48">
                             <ResponsiveContainer width="100%" height={192}>
                               <PieChart>
@@ -740,7 +740,7 @@ const CompleteReport = ({
                     {(question.questionType === "paragraph" ||
                       question.questionType === "short_answer") &&
                       question.sentimentBreakdown && (
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
                           <div className="w-48 h-48">
                             <ResponsiveContainer width="100%" height={192}>
                               <PieChart>
@@ -841,7 +841,7 @@ const CompleteReport = ({
                     {/* Multiple Choice - Option Distribution */}
                     {question.questionType === "multiple_choice" &&
                       question.optionDistribution && (
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
                           <div className="w-48 h-48">
                             <ResponsiveContainer width="100%" height={192}>
                               <PieChart>
@@ -907,7 +907,7 @@ const CompleteReport = ({
           <SectionWrapper title="Qualitative Comments" showLiveIndicator={true}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-12">
               {/* Sentiment Pie Chart */}
-              <div className="h-64">
+              <div className="h-64 print-chart-container">
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

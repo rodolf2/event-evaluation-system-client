@@ -5,7 +5,6 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  AlertTriangle,
   Activity,
   Key,
   ChevronDown,
@@ -52,7 +51,6 @@ function AuditLogs() {
   });
   const [stats, setStats] = useState({
     totalEvents: 0,
-    suspiciousFlags: 0,
     roleChanges: 0,
     trend: 0,
   });
@@ -113,7 +111,6 @@ function AuditLogs() {
 
         setStats({
           totalEvents: current,
-          suspiciousFlags: data.data.severityBreakdown?.critical || 0,
           roleChanges: data.data.categoryBreakdown?.user || 0,
           trend: trend,
         });
@@ -264,8 +261,8 @@ function AuditLogs() {
         </div>
 
         {/* Stats Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
             <div key={i} className="bg-white rounded-lg shadow-md p-6">
               <SkeletonText lines={2} width="full" height="h-8" />
             </div>
@@ -306,7 +303,7 @@ function AuditLogs() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <span className="text-gray-600 text-sm">Total Events (24h)</span>
@@ -328,24 +325,6 @@ function AuditLogs() {
           >
             {stats.trend > 0 ? "↑" : stats.trend < 0 ? "↓" : "—"}{" "}
             {Math.abs(stats.trend)}% vs yesterday
-          </p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-sm">Suspicious Flags</span>
-            <AlertTriangle className="w-5 h-5 text-yellow-500" />
-          </div>
-          <div className="mt-2">
-            <span className="text-3xl font-bold text-gray-800">
-              {stats.suspiciousFlags}
-            </span>
-          </div>
-          <p className="text-xs text-orange-600 mt-1">
-            ↑{" "}
-            {stats.suspiciousFlags > 0
-              ? `${stats.suspiciousFlags} new alerts`
-              : "No new alerts"}
           </p>
         </div>
 
@@ -382,7 +361,7 @@ function AuditLogs() {
           </div>
 
           {/* Filter Dropdowns */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             {/* Event Type Dropdown */}
             <div className="relative">
               <select
@@ -439,7 +418,59 @@ function AuditLogs() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile Card Layout */}
+            <div className="block lg:hidden">
+              <div className="divide-y divide-gray-200">
+                {logs.map((log) => {
+                  const isSuspicious =
+                    log.severity === "critical" ||
+                    log.action?.includes("FAILED");
+                  return (
+                    <div
+                      key={log._id}
+                      className={`p-4 ${
+                        isSuspicious ? "bg-red-50" : "hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3 mb-2">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0 ${
+                            isSuspicious
+                              ? "bg-red-400"
+                              : log.userName
+                              ? "bg-blue-500"
+                              : "bg-gray-400"
+                          }`}
+                        >
+                          {isSuspicious
+                            ? "?"
+                            : (log.userName || "S")[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className={`font-medium ${
+                              isSuspicious ? "text-red-700" : "text-gray-900"
+                            }`}
+                          >
+                            {isSuspicious
+                              ? "Unknown"
+                              : log.userName || "System"}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {log.userRole || "User"} •{" "}
+                            {formatTimestamp(log.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="ml-11">{getActionDisplay(log)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -505,7 +536,6 @@ function AuditLogs() {
                                   : log.userName || "System"}
                               </div>
                               <div className="text-xs text-gray-500 font-mono">
-                                {/* Fallback Role Display if explicit role missing in logs, assuming Student as default for demo or N/A */}
                                 {log.userRole ? log.userRole : "User"}
                               </div>
                             </div>

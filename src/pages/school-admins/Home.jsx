@@ -218,6 +218,7 @@ function Home() {
                   image={thumbnailUrls.reports}
                   title="Event Reports"
                   buttonText="View Event Reports"
+                  link="/school-admin/reports"
                 />
               </div>
             </div>
