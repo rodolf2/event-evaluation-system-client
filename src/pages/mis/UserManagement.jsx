@@ -1,6 +1,16 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "../../contexts/useAuth";
-import { Mail, Check, Shield, X, UserPlus } from "lucide-react";
+import {
+  Mail,
+  Check,
+  Shield,
+  X,
+  UserPlus,
+  GraduationCap,
+  ClipboardList,
+  Users,
+  School,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import {
   SkeletonText,
@@ -10,31 +20,39 @@ import {
 // Role definitions with descriptions
 const ROLES = [
   {
-    id: "participant",
+    id: "student",
     name: "Student (Default)",
-    description: "Standard access to surveys, events, and own profile only.",
-    isDefault: true,
+    description: "Can respond to evaluations and view their own certificates.",
+    icon: GraduationCap,
+    color: "bg-blue-100 text-blue-700",
   },
   {
     id: "psas",
     name: "PSAS Staff",
-    description:
-      "Event operations, evaluation monitoring, and support workflows.",
-    isDefault: false,
+    description: "Can create events and manage student evaluations.",
+    icon: ClipboardList,
+    color: "bg-purple-100 text-purple-700",
+  },
+  {
+    id: "club-officer",
+    name: "Club Officer",
+    description: "Can manage club events and view club-specific reports.",
+    icon: Users,
+    color: "bg-green-100 text-green-700",
+  },
+  {
+    id: "senior-management",
+    name: "Senior Management",
+    description: "Can view all reports and analytics across departments.",
+    icon: School,
+    color: "bg-orange-100 text-orange-700",
   },
   {
     id: "mis",
-    name: "MIS Staff",
-    description:
-      "System configuration, user provisioning, and technical oversight.",
-    isDefault: false,
-  },
-  {
-    id: "school-admin",
-    name: "Senior Management",
-    description:
-      "Read-only access to high-level reports. Includes Program Heads and Assistant Principals.",
-    isDefault: false,
+    name: "MIS Administrator",
+    description: "Full system access including user management and settings.",
+    icon: Shield,
+    color: "bg-red-100 text-red-700",
   },
 ];
 
@@ -167,7 +185,7 @@ function UserManagement() {
   const [email, setEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState("participant");
   const [permissions, setPermissions] = useState(
-    DEFAULT_PERMISSIONS.participant
+    DEFAULT_PERMISSIONS.participant,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -222,7 +240,7 @@ function UserManagement() {
 
       if (data.success) {
         setSuccess(
-          `User ${email} has been provisioned with the ${selectedRole} role.`
+          `User ${email} has been provisioned with the ${selectedRole} role.`,
         );
         setEmail("");
         setSelectedRole("participant");
@@ -328,25 +346,32 @@ function UserManagement() {
         </div>
       </div>
 
-      {/* Email Input Card */}
+      {/* User Info Card */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          School Email Address
+          User Details
         </h2>
-        <div className="relative max-w-xl">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="e.g. student.name@school.edu"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
-          />
-          <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <div className="space-y-4 max-w-xl">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              School Email Address
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. student.name@school.edu"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+              />
+              <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              This email will be validated against Google SSO records during
+              onboarding.
+            </p>
+          </div>
         </div>
-        <p className="text-sm text-gray-500 mt-2">
-          This email will be validated against Google SSO records during
-          onboarding.
-        </p>
       </div>
 
       {/* Role Selection and Permissions Grid */}

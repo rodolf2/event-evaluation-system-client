@@ -26,8 +26,8 @@ const Certificates = () => {
 
   // Initialise state from URL parameters
   useEffect(() => {
-    const fromEval =
-      searchParams.get("from") === "evaluation" || !searchParams.get("from");
+    // Only set isFromEvaluation to true when explicitly coming from evaluation (certificate linking context)
+    const fromEval = searchParams.get("from") === "evaluation";
     const currentFormId = searchParams.get("formId");
     setIsFromEvaluation(fromEval);
     setFormId(currentFormId);
@@ -71,7 +71,7 @@ const Certificates = () => {
         });
         localStorage.setItem(
           `certificateTemplate_${navigationFormId}`,
-          payload
+          payload,
         );
         // Also keep a copy under the original formId for safety
         if (formId)
@@ -197,14 +197,14 @@ const Certificates = () => {
 
             {/* Choose a template section */}
             <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 lg:mb-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
                 <SkeletonText
                   lines={1}
                   width="large"
                   height="h-8"
                   className="bg-gray-300"
                 />
-                <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
                   <SkeletonBase className="w-48 h-10 rounded-lg bg-gray-300" />
                   <SkeletonBase className="w-32 h-10 rounded-lg bg-gray-300" />
                   <SkeletonBase className="w-32 h-10 rounded-lg bg-gray-300" />

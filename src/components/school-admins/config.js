@@ -1,21 +1,21 @@
- import HomeIcon from "../../assets/icons/home-icon.svg";
+import HomeIcon from "../../assets/icons/home-icon.svg";
 import ReportsIcon from "../../assets/icons/report-icon.svg";
 
 export const headerConfig = {
   pageTitles: {
-    "/school-admin/home": "Home",
-    "/school-admin/reports": "Reports",
-    "/school-admin/profile": "Profile",
+    "/senior-management/home": "Home",
+    "/senior-management/reports": "Reports",
+    "/senior-management/profile": "Profile",
   },
-  defaultTitle: "School Admin Portal",
-  notificationPath: "/school-admin/notifications",
+  defaultTitle: "Senior Management Portal",
+  notificationPath: "/senior-management/notifications",
 };
 
 export const sidebarConfig = {
-  homePath: "/school-admin/home",
+  homePath: "/senior-management/home",
   menuItems: [
-    { icon: HomeIcon, label: "Home", path: "/school-admin/home" },
-    { icon: ReportsIcon, label: "Reports", path: "/school-admin/reports" },
+    { icon: HomeIcon, label: "Home", path: "/senior-management/home" },
+    { icon: ReportsIcon, label: "Reports", path: "/senior-management/reports" },
   ],
 };
 

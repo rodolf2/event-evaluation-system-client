@@ -45,7 +45,7 @@ import SchoolAdminLayout from "./components/school-admins/SchoolAdminLayout";
 import MisLayout from "./components/mis/MisLayout";
 import Profile from "./pages/Profile";
 import Settings from "./pages/mis/Settings";
-import MisReports from "./pages/mis/MisReports";
+import MISSharedReports from "./pages/mis/MISSharedReports";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./contexts/useAuth";
 import QuantitativeRatings from "./pages/reports/QuantitativeRatings";
@@ -88,16 +88,16 @@ function App() {
         return "/psas/home";
       case "club-officer":
         return "/club-officer/home";
-      case "participant":
-        return "/participant/home"; // Always redirect to full path
-      case "school-admin":
-        return "/school-admin/home";
+      case "student":
+        return "/student/home"; // Always redirect to full path
+      case "senior-management":
+        return "/senior-management/home";
       case "mis":
         return "/mis";
       case "evaluator":
-        return "/participant/home"; // Guest evaluators use participant interface
+        return "/student/home"; // Guest evaluators use student interface
       case "guest-speaker":
-        return "/participant/home"; // Guest speakers use participant interface
+        return "/student/home"; // Guest speakers use student interface
       default:
         return "/login";
     }
@@ -136,9 +136,9 @@ function App() {
     return user && (user.role === "evaluator" || user.role === "guest-speaker");
   };
 
-  // Check if user can access participant routes (participant or guest users)
-  const canAccessParticipantRoutes = () => {
-    return isAuthorized("participant") || isGuest();
+  // Check if user can access student routes (student or guest users)
+  const canAccessStudentRoutes = () => {
+    return isAuthorized("student") || isGuest();
   };
 
   // Role-based route protection is now handled directly in the Routes
@@ -501,25 +501,22 @@ function App() {
             <Route path="/guest/access" element={<GuestAccessHandler />} />
             {/* Guest evaluator route - public access via token */}
             <Route path="/guest/evaluate" element={<GuestEvaluatePage />} />
-            {/* Participant routes */}
+            {/* Student routes */}
             <Route
-              path="/participant/home"
+              path="/student/home"
               element={
-                canAccessParticipantRoutes() ? (
+                canAccessStudentRoutes() ? (
                   <ParticipantHome />
                 ) : (
                   <Navigate to={getHomeRoute()} />
                 )
               }
             />
+            <Route path="/student" element={<Navigate to="/student/home" />} />
             <Route
-              path="/participant"
-              element={<Navigate to="/participant/home" />}
-            />
-            <Route
-              path="/participant/evaluations"
+              path="/student/evaluations"
               element={
-                canAccessParticipantRoutes() ? (
+                canAccessStudentRoutes() ? (
                   <ParticipantEvaluations />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -527,9 +524,9 @@ function App() {
               }
             />
             <Route
-              path="/participant/certificates"
+              path="/student/certificates"
               element={
-                canAccessParticipantRoutes() ? (
+                canAccessStudentRoutes() ? (
                   <ParticipantCertificates />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -537,9 +534,9 @@ function App() {
               }
             />
             <Route
-              path="/participant/certificate/:certificateId"
+              path="/student/certificate/:certificateId"
               element={
-                canAccessParticipantRoutes() ? (
+                canAccessStudentRoutes() ? (
                   <ParticipantCertificates />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -547,9 +544,9 @@ function App() {
               }
             />
             <Route
-              path="/participant/badges"
+              path="/student/badges"
               element={
-                canAccessParticipantRoutes() ? (
+                canAccessStudentRoutes() ? (
                   <ParticipantBadges />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -557,9 +554,9 @@ function App() {
               }
             />
             <Route
-              path="/participant/notifications"
+              path="/student/notifications"
               element={
-                canAccessParticipantRoutes() ? (
+                canAccessStudentRoutes() ? (
                   <ParticipantNotifications />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -569,7 +566,7 @@ function App() {
             <Route
               path="/evaluations/start/:formId"
               element={
-                canAccessParticipantRoutes() || isAuthorized("club-officer") ? (
+                canAccessStudentRoutes() || isAuthorized("club-officer") ? (
                   <EvaluationStart />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -579,18 +576,18 @@ function App() {
             <Route
               path="/evaluations/form/:formId"
               element={
-                canAccessParticipantRoutes() || isAuthorized("club-officer") ? (
+                canAccessStudentRoutes() || isAuthorized("club-officer") ? (
                   <EvaluationForm />
                 ) : (
                   <Navigate to={getHomeRoute()} />
                 )
               }
             />
-            {/* School Admin routes */}
+            {/* Senior Management routes */}
             <Route
-              path="/school-admin/home"
+              path="/senior-management/home"
               element={
-                isAuthorized("school-admin") ? (
+                isAuthorized("senior-management") ? (
                   <SchoolAdminHome />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -598,9 +595,9 @@ function App() {
               }
             />
             <Route
-              path="/school-admin/reports"
+              path="/senior-management/reports"
               element={
-                isAuthorized("school-admin") ? (
+                isAuthorized("senior-management") ? (
                   <SchoolAdminReports />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -608,9 +605,19 @@ function App() {
               }
             />
             <Route
-              path="/school-admin/notifications"
+              path="/senior-management/reports/:reportId"
               element={
-                isAuthorized("school-admin") ? (
+                isAuthorized("senior-management") ? (
+                  <SchoolAdminReports />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/senior-management/notifications"
+              element={
+                isAuthorized("senior-management") ? (
                   <SharedNotifications layout={SchoolAdminLayout} />
                 ) : (
                   <Navigate to={getHomeRoute()} />
@@ -618,9 +625,9 @@ function App() {
               }
             />
             <Route
-              path="/school-admin/profile"
+              path="/senior-management/profile"
               element={
-                isAuthorized("school-admin") ? (
+                isAuthorized("senior-management") ? (
                   <SchoolAdminLayout>
                     <Profile />
                   </SchoolAdminLayout>
@@ -630,8 +637,8 @@ function App() {
               }
             />
             <Route
-              path="/school-admin"
-              element={<Navigate to="/school-admin/home" />}
+              path="/senior-management"
+              element={<Navigate to="/senior-management/home" />}
             />
             {/* MIS routes */}
             <Route
@@ -709,9 +716,7 @@ function App() {
               path="/mis/reports"
               element={
                 isAuthorized("mis") ? (
-                  <MisLayout>
-                    <MisReports />
-                  </MisLayout>
+                  <MISSharedReports />
                 ) : (
                   <Navigate to={getHomeRoute()} />
                 )

@@ -1,4 +1,11 @@
-import { LayoutGrid, Users, Settings, FileText, Lock } from "lucide-react";
+import {
+  LayoutGrid,
+  Users,
+  Settings,
+  FileText,
+  Lock,
+  FileBarChart,
+} from "lucide-react";
 
 export const headerConfig = {
   pageTitles: {
@@ -9,13 +16,14 @@ export const headerConfig = {
     "/mis/settings": "System Configuration",
     "/mis/security-oversight": "Security Oversight",
     "/mis/notifications": "Notifications",
+    "/mis/reports": "Shared Reports",
     "/profile": "My Account",
   },
   defaultTitle: "MIS Dashboard",
   notificationPath: true, // uses /mis/notifications
 };
 
-export const sidebarConfig = {
+export const getSidebarConfig = (user) => ({
   homePath: "/mis",
   menuItems: [
     { iconComponent: LayoutGrid, label: "Dashboard", path: "/mis" },
@@ -39,12 +47,22 @@ export const sidebarConfig = {
       label: "Security Oversight",
       path: "/mis/security-oversight",
     },
+    // Conditionally add Reports if user has canViewReports permission
+    ...(user?.permissions?.canViewReports
+      ? [
+          {
+            iconComponent: FileBarChart,
+            label: "Reports",
+            path: "/mis/reports",
+          },
+        ]
+      : []),
   ],
-};
+});
 
-export const layoutConfig = {
+export const getLayoutConfig = (user) => ({
   showProfileSection: false,
   profileSectionPaths: [],
   headerConfig,
-  sidebarConfig,
-};
+  sidebarConfig: getSidebarConfig(user),
+});

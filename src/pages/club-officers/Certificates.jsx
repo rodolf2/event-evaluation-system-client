@@ -64,7 +64,7 @@ const Certificates = () => {
   useEffect(() => {
     if (certificateId && certificates.length > 0) {
       const certificate = certificates.find(
-        (cert) => cert.certificateId === certificateId
+        (cert) => cert.certificateId === certificateId,
       );
       if (certificate) {
         setSelectedCertificate(certificate);
@@ -88,7 +88,7 @@ const Certificates = () => {
                 headers: {
                   Authorization: `Bearer ${token}`,
                 },
-              }
+              },
             );
 
             if (response.ok) {
@@ -102,7 +102,7 @@ const Certificates = () => {
           } catch (error) {
             console.error(
               `Error loading thumbnail for ${cert.certificateId}:`,
-              error
+              error,
             );
           }
         }
@@ -129,7 +129,7 @@ const Certificates = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -198,7 +198,7 @@ const Certificates = () => {
           onDownload={() =>
             handleDownload(
               selectedCertificate.certificateId,
-              selectedCertificate
+              selectedCertificate,
             )
           }
           onDone={handleCertificateViewerDone}
@@ -254,8 +254,8 @@ const Certificates = () => {
   return (
     <ClubOfficerLayout>
       <div className="bg-gray-100 min-h-screen pb-8">
-        <div className="max-w-full">
-          <div className="flex items-center mb-8 gap-4">
+        <div className="max-w-full px-4 md:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center mb-8 gap-4">
             <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
@@ -268,7 +268,7 @@ const Certificates = () => {
                 className="w-full p-3 pl-10 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-green-500">
                 <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
                 <select

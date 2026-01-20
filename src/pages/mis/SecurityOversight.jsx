@@ -248,7 +248,7 @@ function SecurityOversight() {
           />
           <button
             onClick={handleAddDomain}
-            className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-900 text-white rounded-lg transition"
           >
             <Plus className="w-4 h-4" />
             Add Domain

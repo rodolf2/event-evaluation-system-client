@@ -209,7 +209,7 @@ const CommentSection = ({
               <span className="text-gray-600 mt-1">•</span>
               <p className="text-gray-800 flex-1">{comment.comment}</p>
             </div>
-          )
+          ),
         )}
       </div>
     </>
@@ -236,7 +236,6 @@ const CompleteReport = ({
     formData,
     loading,
     error,
-    lastUpdated,
     refreshData,
   } = useDynamicReportData(reportId);
 
@@ -257,7 +256,7 @@ const CompleteReport = ({
     }
   };
 
-  const SectionWrapper = ({ title, children, showLiveIndicator = false }) => (
+  const SectionWrapper = ({ title, children }) => (
     <div className="section-page mb-8">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden p-8">
         <div className="text-center mb-8">
@@ -273,14 +272,12 @@ const CompleteReport = ({
   const previousYear = currentYear - 1;
   const currentYearData =
     quantitativeData?.charts?.yearData?.find(
-      (d) => d.name === String(currentYear)
+      (d) => d.name === String(currentYear),
     )?.value || 0;
   const previousYearData =
     quantitativeData?.charts?.yearData?.find(
-      (d) => d.name === String(previousYear)
+      (d) => d.name === String(previousYear),
     )?.value || 0;
-
-  const maxResponseCount = Math.max(currentYearData, previousYearData, 1);
 
   // Helper to get sentiment data
   const sentiment = qualitativeData?.sentimentBreakdown || {
@@ -436,20 +433,20 @@ const CompleteReport = ({
     if (positivePercentage > 70) {
       insights.push(
         `★ Overall Event Success: With ${positivePercentage.toFixed(
-          0
-        )}% positive feedback from ${totalResponses} responses, the event was highly successful. This strong approval rate indicates excellent execution and participant satisfaction.`
+          0,
+        )}% positive feedback from ${totalResponses} responses, the event was highly successful. This strong approval rate indicates excellent execution and participant satisfaction.`,
       );
     } else if (positivePercentage >= 50) {
       insights.push(
         `★ Moderate Success: The event received ${positivePercentage.toFixed(
-          0
-        )}% positive feedback from ${totalResponses} responses. While generally well-received, there is room for improvement to achieve excellence.`
+          0,
+        )}% positive feedback from ${totalResponses} responses. While generally well-received, there is room for improvement to achieve excellence.`,
       );
     } else {
       insights.push(
         `★ Needs Significant Improvement: With only ${positivePercentage.toFixed(
-          0
-        )}% positive feedback from ${totalResponses} responses, substantial changes are needed for future events.`
+          0,
+        )}% positive feedback from ${totalResponses} responses, substantial changes are needed for future events.`,
       );
     }
 
@@ -457,7 +454,7 @@ const CompleteReport = ({
     if (positiveThemes.length > 0 && positiveComments.length > 0) {
       const strengthText = positiveThemes.slice(0, 3).join(", ");
       insights.push(
-        `• Strengths to Maintain: Participants particularly appreciated ${strengthText}. These elements received ${positiveComments.length} positive mentions and should be prioritized in future planning.`
+        `• Strengths to Maintain: Participants particularly appreciated ${strengthText}. These elements received ${positiveComments.length} positive mentions and should be prioritized in future planning.`,
       );
     }
 
@@ -467,37 +464,37 @@ const CompleteReport = ({
       const concernText = improvementAreas.join(", ");
 
       insights.push(
-        `• Areas Requiring Attention: ${negativeComments.length} responses highlighted concerns about ${concernText}. These areas should be prioritized for improvement.`
+        `• Areas Requiring Attention: ${negativeComments.length} responses highlighted concerns about ${concernText}. These areas should be prioritized for improvement.`,
       );
 
       // Specific recommendations based on themes
       if (
         improvementAreas.some((theme) =>
-          ["time consuming", "long", "boring"].includes(theme)
+          ["time consuming", "long", "boring"].includes(theme),
         )
       ) {
         insights.push(
-          `• Recommendation - Engagement: Consider reducing session duration, incorporating interactive activities, and adding breaks to maintain participant attention and energy levels.`
+          `• Recommendation - Engagement: Consider reducing session duration, incorporating interactive activities, and adding breaks to maintain participant attention and energy levels.`,
         );
       }
 
       if (
         improvementAreas.some((theme) =>
-          ["confusing", "unclear", "lacking"].includes(theme)
+          ["confusing", "unclear", "lacking"].includes(theme),
         )
       ) {
         insights.push(
-          `• Recommendation - Clarity: Improve communication of event objectives, provide clearer instructions, and ensure materials are well-organized and accessible.`
+          `• Recommendation - Clarity: Improve communication of event objectives, provide clearer instructions, and ensure materials are well-organized and accessible.`,
         );
       }
 
       if (
         improvementAreas.some((theme) =>
-          ["venue", "location", "space"].includes(theme)
+          ["venue", "location", "space"].includes(theme),
         )
       ) {
         insights.push(
-          `• Recommendation - Facilities: Review venue selection criteria, ensuring adequate space, comfort, and accessibility for all participants.`
+          `• Recommendation - Facilities: Review venue selection criteria, ensuring adequate space, comfort, and accessibility for all participants.`,
         );
       }
     }
@@ -506,8 +503,8 @@ const CompleteReport = ({
     if (neutralPercentage > 30) {
       insights.push(
         `• Neutral Feedback (${neutralPercentage.toFixed(
-          0
-        )}%): A significant portion of responses were neutral, suggesting the event met basic expectations but didn't exceed them. Focus on creating more memorable and impactful experiences.`
+          0,
+        )}%): A significant portion of responses were neutral, suggesting the event met basic expectations but didn't exceed them. Focus on creating more memorable and impactful experiences.`,
       );
     }
 
@@ -515,28 +512,28 @@ const CompleteReport = ({
     if (negativePercentage > 30) {
       insights.push(
         `⚠ Urgent Action Required: With ${negativePercentage.toFixed(
-          0
-        )}% negative feedback, conduct a comprehensive post-event review meeting with stakeholders to address systemic issues before the next event.`
+          0,
+        )}% negative feedback, conduct a comprehensive post-event review meeting with stakeholders to address systemic issues before the next event.`,
       );
     } else if (negativePercentage > 15) {
       insights.push(
         `• Improvement Opportunity: ${negativePercentage.toFixed(
-          0
-        )}% negative feedback indicates specific areas need attention. Gather follow-up feedback to understand root causes and implement targeted improvements.`
+          0,
+        )}% negative feedback indicates specific areas need attention. Gather follow-up feedback to understand root causes and implement targeted improvements.`,
       );
     }
 
     // Success recommendation
     if (positivePercentage > 70 && negativePercentage < 15) {
       insights.push(
-        `✓ Continue Current Approach: The high satisfaction rate indicates successful event planning and execution. Document current practices as a template for future events while remaining open to innovation.`
+        `✓ Continue Current Approach: The high satisfaction rate indicates successful event planning and execution. Document current practices as a template for future events while remaining open to innovation.`,
       );
     }
 
     // Default insight if no specific themes found
     if (insights.length === 0) {
       insights.push(
-        `Based on ${totalResponses} evaluation responses, continue monitoring participant feedback to identify areas for enhancement and maintain event quality. Consider implementing more detailed feedback mechanisms for future events.`
+        `Based on ${totalResponses} evaluation responses, continue monitoring participant feedback to identify areas for enhancement and maintain event quality. Consider implementing more detailed feedback mechanisms for future events.`,
       );
     }
 
@@ -590,60 +587,103 @@ const CompleteReport = ({
 
           {/* Quantitative Ratings Section */}
           <SectionWrapper title="Quantitative Ratings" showLiveIndicator={true}>
-            {/* Year Comparison */}
+            {/* Year Level Comparison - Previous vs Current Year */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
               {/* Previous Year */}
               <div>
                 <h5 className="font-bold text-lg mb-1">
-                  Higher Education Department {previousYear}
+                  Higher Education Department{" "}
+                  {quantitativeData?.charts?.yearLevelBreakdown?.previousYear
+                    ?.year || previousYear}
                 </h5>
                 <p className="text-sm text-gray-500 mb-4">
-                  {previousYearData} Responses
+                  {quantitativeData?.charts?.yearLevelBreakdown?.previousYear
+                    ?.total || previousYearData}{" "}
+                  Responses
                 </p>
-                {/* Mocking bars for visual similarity since we don't have year level breakdown yet */}
                 <div className="space-y-3">
-                  <div className="w-full bg-blue-100 rounded-r-full h-8 relative">
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-blue-800">
-                      Total Responses
+                  {quantitativeData?.charts?.yearLevelBreakdown?.previousYear
+                    ?.breakdown?.length > 0 ? (
+                    quantitativeData.charts.yearLevelBreakdown.previousYear.breakdown.map(
+                      (yearLevel, idx) => {
+                        const maxCount = Math.max(
+                          ...quantitativeData.charts.yearLevelBreakdown.previousYear.breakdown.map(
+                            (y) => y.count,
+                          ),
+                          1,
+                        );
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div
+                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                              style={{
+                                width: `${Math.max((yearLevel.count / maxCount) * 70, 20)}%`,
+                                minWidth: "100px",
+                              }}
+                            >
+                              {yearLevel.name}
+                            </div>
+                            <span className="text-gray-700 text-sm font-medium">
+                              {yearLevel.count}
+                            </span>
+                          </div>
+                        );
+                      },
+                    )
+                  ) : (
+                    <div className="text-gray-400 text-sm italic">
+                      No year level data available
                     </div>
-                    <div
-                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs transition-all duration-500"
-                      style={{
-                        width: `${
-                          (previousYearData / maxResponseCount) * 100
-                        }%`,
-                        minWidth: "2rem",
-                      }}
-                    >
-                      {previousYearData}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
               {/* Current Year */}
               <div>
                 <h5 className="font-bold text-lg mb-1">
-                  Higher Education Department {currentYear}
+                  Higher Education Department{" "}
+                  {quantitativeData?.charts?.yearLevelBreakdown?.currentYear
+                    ?.year || currentYear}
                 </h5>
                 <p className="text-sm text-gray-500 mb-4">
-                  {currentYearData} Responses
+                  {quantitativeData?.charts?.yearLevelBreakdown?.currentYear
+                    ?.total || currentYearData}{" "}
+                  Responses
                 </p>
                 <div className="space-y-3">
-                  <div className="w-full bg-blue-100 rounded-r-full h-8 relative">
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-blue-800">
-                      Total Responses
+                  {quantitativeData?.charts?.yearLevelBreakdown?.currentYear
+                    ?.breakdown?.length > 0 ? (
+                    quantitativeData.charts.yearLevelBreakdown.currentYear.breakdown.map(
+                      (yearLevel, idx) => {
+                        const maxCount = Math.max(
+                          ...quantitativeData.charts.yearLevelBreakdown.currentYear.breakdown.map(
+                            (y) => y.count,
+                          ),
+                          1,
+                        );
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div
+                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                              style={{
+                                width: `${Math.max((yearLevel.count / maxCount) * 70, 20)}%`,
+                                minWidth: "100px",
+                              }}
+                            >
+                              {yearLevel.name}
+                            </div>
+                            <span className="text-gray-700 text-sm font-medium">
+                              {yearLevel.count}
+                            </span>
+                          </div>
+                        );
+                      },
+                    )
+                  ) : (
+                    <div className="text-gray-400 text-sm italic">
+                      No year level data available
                     </div>
-                    <div
-                      className="bg-blue-600 h-8 rounded-r-full flex items-center justify-end px-2 text-white text-xs transition-all duration-500"
-                      style={{
-                        width: `${(currentYearData / maxResponseCount) * 100}%`,
-                        minWidth: "2rem",
-                      }}
-                    >
-                      {currentYearData}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -681,7 +721,7 @@ const CompleteReport = ({
                               <PieChart>
                                 <Pie
                                   data={question.ratingDistribution.filter(
-                                    (d) => d.count > 0
+                                    (d) => d.count > 0,
                                   )}
                                   cx="50%"
                                   cy="50%"
@@ -703,7 +743,7 @@ const CompleteReport = ({
                                         key={`cell-${index}`}
                                         fill={COLORS[index % COLORS.length]}
                                       />
-                                    )
+                                    ),
                                   )}
                                 </Pie>
                                 <Tooltip />
@@ -847,7 +887,7 @@ const CompleteReport = ({
                               <PieChart>
                                 <Pie
                                   data={question.optionDistribution.filter(
-                                    (d) => d.count > 0
+                                    (d) => d.count > 0,
                                   )}
                                   cx="50%"
                                   cy="50%"
@@ -869,7 +909,7 @@ const CompleteReport = ({
                                         key={`cell-${index}`}
                                         fill={COLORS[index % COLORS.length]}
                                       />
-                                    )
+                                    ),
                                   )}
                                 </Pie>
                                 <Tooltip />

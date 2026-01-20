@@ -17,20 +17,29 @@ export const headerConfig = {
   notificationPath: true, // uses /psas/notifications
 };
 
-export const sidebarConfig = {
+export const getSidebarConfig = (user) => ({
   homePath: "/psas/home",
   menuItems: [
     { icon: HomeIcon, label: "Home", path: "/psas/home" },
     { icon: EvaluationsIcon, label: "Evaluations", path: "/psas/evaluations" },
     { icon: CertificateIcon, label: "Certificate", path: "/psas/certificates" },
-    { icon: AnalyticsIcon, label: "Event Analytics", path: "/psas/analytics" },
-    { icon: ReportsIcon, label: "Report", path: "/psas/reports" },
+    // Conditionally add Analytics and Reports if user has permission
+    ...(user?.permissions?.canViewAnalyticsReports
+      ? [
+          {
+            icon: AnalyticsIcon,
+            label: "Event Analytics",
+            path: "/psas/analytics",
+          },
+          { icon: ReportsIcon, label: "Report", path: "/psas/reports" },
+        ]
+      : []),
   ],
-};
+});
 
-export const layoutConfig = {
+export const getLayoutConfig = (user) => ({
   showProfileSection: false,
   profileSectionPaths: ["/psas/home"],
   headerConfig,
-  sidebarConfig,
-};
+  sidebarConfig: getSidebarConfig(user),
+});

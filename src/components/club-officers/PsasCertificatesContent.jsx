@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import {
-  SkeletonCard,
-  SkeletonBase,
-  SkeletonText,
-} from "../shared/SkeletonLoader";
+import { SkeletonBase, SkeletonText } from "../shared/SkeletonLoader";
 import CertificateEditor from "../psas/certificates/CertificateEditor";
 import CertificateGallery from "../psas/certificates/CertificateGallery";
 import { FormSessionManager } from "../../utils/formSessionManager";
@@ -23,8 +19,7 @@ function PsasCertificatesContent() {
 
   // Initialise state from URL parameters
   useEffect(() => {
-    const fromEval =
-      searchParams.get("from") === "evaluation" || !searchParams.get("from");
+    const fromEval = searchParams.get("from") === "evaluation";
     const currentFormId = searchParams.get("formId");
     setIsFromEvaluation(fromEval);
     setFormId(currentFormId);
@@ -68,7 +63,7 @@ function PsasCertificatesContent() {
         });
         localStorage.setItem(
           `certificateTemplate_${navigationFormId}`,
-          payload
+          payload,
         );
         // Also keep a copy under the original formId for safety
         if (formId)
@@ -182,14 +177,14 @@ function PsasCertificatesContent() {
 
           {/* Choose a template section */}
           <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 lg:mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
               <SkeletonText
                 lines={1}
                 width="large"
                 height="h-8"
                 className="bg-gray-300"
               />
-              <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
                 <SkeletonBase className="w-48 h-10 rounded-lg bg-gray-300" />
                 <SkeletonBase className="w-32 h-10 rounded-lg bg-gray-300" />
                 <SkeletonBase className="w-32 h-10 rounded-lg bg-gray-300" />
@@ -241,10 +236,8 @@ function PsasCertificatesContent() {
     return (
       <CertificateEditor
         initialData={initialData}
-        selectedTemplate={selectedTemplate}
         isPreviewMode={isPreviewMode}
         isFromEvaluation={isFromEvaluation}
-        formId={formId}
         onSave={handleSaveTemplate}
         onBack={handleBackToGallery}
       />

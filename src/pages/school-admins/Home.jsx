@@ -54,12 +54,12 @@ function Home() {
             },
           });
           console.log(
-            `✅ Analytics data fetched for form ${formId}, thumbnail should be updated`
+            `✅ Analytics data fetched for form ${formId}, thumbnail should be updated`,
           );
         } catch (analyticsError) {
           console.error(
             "Error fetching analytics for thumbnail:",
-            analyticsError
+            analyticsError,
           );
           // Continue even if analytics fetch fails
         }
@@ -118,7 +118,7 @@ function Home() {
         console.error("Error adding reminder:", error);
       }
     },
-    [token, fetchReminders]
+    [token, fetchReminders],
   );
 
   const deleteReminder = useCallback(
@@ -137,7 +137,7 @@ function Home() {
         console.error("Error deleting reminder:", error);
       }
     },
-    [token, fetchReminders]
+    [token, fetchReminders],
   );
 
   const openModal = (date, position) => {
@@ -218,7 +218,7 @@ function Home() {
                   image={thumbnailUrls.reports}
                   title="Event Reports"
                   buttonText="View Event Reports"
-                  link="/school-admin/reports"
+                  link="/senior-management/reports"
                 />
               </div>
             </div>

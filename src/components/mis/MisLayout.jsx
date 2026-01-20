@@ -1,7 +1,11 @@
 import Layout from "../shared/Layout";
-import { layoutConfig } from "./config";
+import { getLayoutConfig } from "./config";
+import { useAuth } from "../../contexts/useAuth";
 
 function MisLayout({ children, isModalOpen, pageLoading = false }) {
+  const { user } = useAuth();
+  const layoutConfig = getLayoutConfig(user);
+
   return (
     <Layout
       children={children}

@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/useAuth";
 import {
   Search,
-  Download,
-  RefreshCw,
   Users,
   Clock,
   Building,
@@ -14,7 +12,6 @@ import {
   Trash2,
   X,
   UserCheck,
-  CheckCircle,
 } from "lucide-react";
 import {
   SkeletonTable,
@@ -25,7 +22,7 @@ import dayjs from "dayjs";
 
 // Role badge colors
 const ROLE_COLORS = {
-  participant: { bg: "bg-blue-100", text: "text-blue-700", label: "Student" },
+  student: { bg: "bg-blue-100", text: "text-blue-700", label: "Student" },
   "club-officer": {
     bg: "bg-orange-100",
     text: "text-orange-700",
@@ -33,7 +30,7 @@ const ROLE_COLORS = {
   },
   psas: { bg: "bg-purple-100", text: "text-purple-700", label: "PSAS Staff" },
   mis: { bg: "bg-red-100", text: "text-red-700", label: "MIS Staff" },
-  "school-admin": {
+  "senior-management": {
     bg: "bg-green-100",
     text: "text-green-700",
     label: "Senior Mgmt",
@@ -43,11 +40,11 @@ const ROLE_COLORS = {
 // Filter options
 const FILTER_OPTIONS = [
   { id: "all", label: "All Users" },
-  { id: "participant", label: "Students" },
+  { id: "student", label: "Students" },
   { id: "club-officer", label: "PSCOs" },
   { id: "psas", label: "Staff" },
   { id: "mis", label: "MIS Staff" },
-  { id: "school-admin", label: "Senior Mgmt" },
+  { id: "senior-management", label: "Senior Mgmt" },
 ];
 
 const PROGRAMS = [
@@ -73,95 +70,11 @@ function UserRoles() {
   // Modal States
   const [elevationModalOpen, setElevationModalOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedProgram, setSelectedProgram] = useState(PROGRAMS[0]);
   const [confirmAction, setConfirmAction] = useState(null); // 'ELEVATE', 'REMOVE_PSCO', 'DISABLE'
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
   const { token } = useAuth();
-
-  // Export to CSV function
-  const handleExportReport = useCallback(() => {
-    if (filteredUsers.length === 0) {
-      toast.error("No users to export");
-      return;
-    }
-
-    setIsExporting(true);
-    try {
-      // Define CSV headers
-      const headers = [
-        "Name",
-        "Email",
-        "Role",
-        "Status",
-        "Program",
-        "Last Login",
-        "Created At",
-        "Elevation Date",
-      ];
-
-      // Map users to CSV rows
-      const rows = filteredUsers.map((user) => [
-        user.name,
-        user.email,
-        ROLE_COLORS[user.role]?.label || user.role,
-        user.isActive ? "Active" : "Inactive",
-        user.program || "-",
-        user.lastLogin
-          ? dayjs(user.lastLogin).format("YYYY-MM-DD HH:mm")
-          : "Never",
-        dayjs(user.createdAt).format("YYYY-MM-DD"),
-        user.elevationDate
-          ? dayjs(user.elevationDate).format("YYYY-MM-DD")
-          : "-",
-      ]);
-
-      // Create CSV content
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) =>
-          row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-        ),
-      ].join("\n");
-
-      // Create and download file
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `user-roles-report-${dayjs().format("YYYY-MM-DD")}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast.success(`Exported ${filteredUsers.length} users to CSV`);
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export report");
-    } finally {
-      setIsExporting(false);
-    }
-  }, [filteredUsers]);
-
-  // Bulk Sync handler
-  const handleBulkSync = async () => {
-    setIsSyncing(true);
-    try {
-      // Refresh user data from the server
-      await fetchUsers();
-      toast.success("User data synchronized successfully");
-      setSyncModalOpen(false);
-    } catch (error) {
-      console.error("Sync error:", error);
-      toast.error("Failed to sync user data");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;
@@ -194,16 +107,16 @@ function UserRoles() {
   const updateStats = (userList) => {
     const totalUsers = userList.length;
     const activePSCOs = userList.filter(
-      (u) => u.role === "club-officer" && u.isActive
+      (u) => u.role === "club-officer" && u.isActive,
     ).length;
     const facultyStaff = userList.filter(
-      (u) => u.role === "psas" || u.role === "mis"
+      (u) => u.role === "psas" || u.role === "mis",
     ).length;
     const suspended = userList.filter((u) => !u.isActive).length;
 
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const newUsersWeek = userList.filter(
-      (u) => new Date(u.createdAt) > oneWeekAgo
+      (u) => new Date(u.createdAt) > oneWeekAgo,
     ).length;
 
     setStats({
@@ -231,7 +144,7 @@ function UserRoles() {
         (user) =>
           user.name.toLowerCase().includes(query) ||
           user.email.toLowerCase().includes(query) ||
-          user._id.toLowerCase().includes(query)
+          user._id.toLowerCase().includes(query),
       );
     }
     setFilteredUsers(filtered);
@@ -283,7 +196,7 @@ function UserRoles() {
       successMessage = `Elevated ${selectedUser.name} to PSCO (${selectedProgram})`;
     } else if (confirmAction === "REMOVE_PSCO") {
       payload = {
-        role: "participant",
+        role: "student",
         program: null,
         elevationDate: null,
       };
@@ -342,7 +255,7 @@ function UserRoles() {
   };
 
   const getRoleBadge = (user) => {
-    const roleConfig = ROLE_COLORS[user.role] || ROLE_COLORS.participant;
+    const roleConfig = ROLE_COLORS[user.role] || ROLE_COLORS.student;
     let label = roleConfig.label;
 
     return (
@@ -397,25 +310,6 @@ function UserRoles() {
               Manage system access, elevate PSCO roles, and synchronize
               accounts.
             </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <button
-              onClick={handleExportReport}
-              disabled={isExporting || filteredUsers.length === 0}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download
-                className={`w-4 h-4 ${isExporting ? "animate-pulse" : ""}`}
-              />
-              {isExporting ? "Exporting..." : "Export Report"}
-            </button>
-            <button
-              onClick={() => setSyncModalOpen(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-950 hover:bg-blue-900 text-white rounded-lg transition"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Bulk Sync (Google SSO)
-            </button>
           </div>
         </div>
       </div>
@@ -527,7 +421,7 @@ function UserRoles() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-2">
-                    {user.role === "participant" && user.isActive && (
+                    {user.role === "student" && user.isActive && (
                       <button
                         onClick={() => handleElevateClick(user)}
                         className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
@@ -545,7 +439,7 @@ function UserRoles() {
                         <ArrowDownCircle className="w-5 h-5" />
                       </button>
                     )}
-                    {(user.role === "participant" ||
+                    {(user.role === "student" ||
                       user.role === "club-officer") &&
                       user.isActive && (
                         <button
@@ -557,7 +451,7 @@ function UserRoles() {
                         </button>
                       )}
                     {!user.isActive &&
-                      (user.role === "participant" ||
+                      (user.role === "student" ||
                         user.role === "club-officer") && (
                         <button
                           onClick={() => handleEnableClick(user)}
@@ -654,7 +548,7 @@ function UserRoles() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      {user.role === "participant" && user.isActive && (
+                      {user.role === "student" && user.isActive && (
                         <>
                           <button
                             onClick={() => handleElevateClick(user)}
@@ -674,7 +568,7 @@ function UserRoles() {
                           <ArrowDownCircle className="w-5 h-5" />
                         </button>
                       )}
-                      {(user.role === "participant" ||
+                      {(user.role === "student" ||
                         user.role === "club-officer") &&
                         user.isActive && (
                           <button
@@ -686,7 +580,7 @@ function UserRoles() {
                           </button>
                         )}
                       {!user.isActive &&
-                        (user.role === "participant" ||
+                        (user.role === "student" ||
                           user.role === "club-officer") && (
                           <button
                             onClick={() => handleEnableClick(user)}
@@ -696,7 +590,7 @@ function UserRoles() {
                             <UserCheck className="w-5 h-5" />
                           </button>
                         )}
-                      {user.role !== "participant" &&
+                      {user.role !== "student" &&
                         user.role !== "club-officer" && (
                           <div className="text-gray-400 text-xs">-</div>
                         )}
@@ -843,83 +737,6 @@ function UserRoles() {
                   }`}
                 >
                   Confirm
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Sync Modal */}
-      {syncModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">
-                Bulk Sync (Google SSO)
-              </h3>
-              <button
-                onClick={() => setSyncModalOpen(false)}
-                className="text-white/80 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <RefreshCw className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-1">
-                    Synchronize User Data
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    This will refresh all user information from the database.
-                    Users who log in with Google SSO will have their profiles
-                    automatically updated with the latest Google account
-                    information.
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h5 className="text-sm font-medium text-gray-700 mb-2">
-                  What this sync does:
-                </h5>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    Refreshes user list from database
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    Updates user statistics
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    Reflects latest role changes
-                  </li>
-                </ul>
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setSyncModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                  disabled={isSyncing}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleBulkSync}
-                  disabled={isSyncing}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
-                  />
-                  {isSyncing ? "Syncing..." : "Sync Now"}
                 </button>
               </div>
             </div>

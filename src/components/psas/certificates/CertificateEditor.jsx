@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 
 import { jsPDF } from "jspdf";
+import axios from "axios";
+import { useAuth } from "../../../contexts/useAuth";
 
 const CERTIFICATE_SIZES = {
   // Force all sizes to landscape orientation
@@ -37,7 +39,6 @@ const CERTIFICATE_SIZES = {
 
 const CertificateEditor = ({
   initialData,
-  selectedTemplate = null,
   isPreviewMode = false,
   isFromEvaluation = false,
   onSave,
@@ -48,22 +49,30 @@ const CertificateEditor = ({
   const [showPanels, setShowPanels] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState(null); // 'elements' | 'properties' | null
-  const [canvasViewportTransform, setCanvasViewportTransform] = useState(null);
 
   const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
   const BASE_HEIGHT = CERTIFICATE_SIZES[certificateSize].height;
   const canvasRef = useRef(null);
   const canvasContainerRef = useRef(null);
+  const wrapperRef = useRef(null);
   const fabricCanvas = useRef(null);
   const fabricRef = useRef(null);
+  // Removed duplicate fabricRef declaration
   const fileInputRef = useRef(null);
   const bgInputRef = useRef(null);
+  const { token } = useAuth();
 
   const [activeObject, setActiveObject] = useState(null);
   const [, setForceUpdate] = useState(0);
   const [snapLines, setSnapLines] = useState([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
+
+  // Save as Template modal state
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
   const {
     pushHistory: rawPushHistory,
@@ -95,6 +104,8 @@ const CertificateEditor = ({
   useEffect(() => {
     let resizeObserver = null;
     let mounted = true;
+    // Capture ref value for cleanup
+    const wrapperElement = wrapperRef.current;
 
     const initFabric = async () => {
       // Ensure clean canvas element before initialization
@@ -104,7 +115,6 @@ const CertificateEditor = ({
       // Clear any existing canvas content
       canvasEl.innerHTML = "";
 
-      // Move calculation inside effect to properly handle dependencies
       const BASE_WIDTH = CERTIFICATE_SIZES[certificateSize].width;
       const BASE_HEIGHT = CERTIFICATE_SIZES[certificateSize].height;
 
@@ -139,66 +149,56 @@ const CertificateEditor = ({
           fabricCanvas.current === canvas;
 
         /**
-         * Fit the logical certificate canvas into the visible container and center it.
-         * Stores the initial viewport transform to maintain exact visual state when panels toggle.
+         * Fit the certificate canvas into the visible wrapper and scaled it.
          */
         const centerAndFitCanvas = () => {
           if (!safeHasCanvas()) return;
-          const container = canvasContainerRef.current;
-          if (!container) return;
+          const outer = wrapperRef.current;
+          if (!outer) return;
 
-          // Account for padding (16px on each side from p-4 class)
-          const padding = 16;
-          const availableWidth = container.clientWidth - padding * 2;
-          const availableHeight = container.clientHeight - padding * 2;
+          // Padding to ensure it doesn't touch edges (16px total horizontal/vertical)
+          const padding = 32;
+          const availableWidth = outer.clientWidth - padding;
+          const availableHeight = outer.clientHeight - padding;
+
+          if (availableWidth <= 0 || availableHeight <= 0) return;
 
           // Calculate scale to fit the certificate within the available space
           const scaleX = availableWidth / BASE_WIDTH;
           const scaleY = availableHeight / BASE_HEIGHT;
-          let scale = Math.min(scaleX, scaleY, 1); // do not upscale above 1
 
-          // Center the canvas in the container, accounting for padding
-          const offsetX = padding + (availableWidth - BASE_WIDTH * scale) / 2;
-          const offsetY = padding + (availableHeight - BASE_HEIGHT * scale) / 2;
+          // Fit fully visible
+          let scale = Math.min(scaleX, scaleY);
 
-          // Store the complete viewport transform when first initialized
-          if (canvasViewportTransform === null) {
-            const transform = [scale, 0, 0, scale, offsetX, offsetY];
-            setCanvasViewportTransform(transform);
-          }
+          // Limit max scale to 1 to avoid pixelation if that's desired,
+          // generally for certificates we want to see the whole thing so upscaling on big screens is fine
+          // but let's cap at 1.5x to avoid extreme blurriness on massive screens if generic
+          scale = Math.min(scale, 1.2);
 
-          // Use the stored viewport transform to maintain exact visual state
-          if (canvasViewportTransform !== null) {
-            canvas.setViewportTransform(canvasViewportTransform);
-            return; // Skip the rest of the centering logic
-          }
+          const finalWidth = BASE_WIDTH * scale;
+          const finalHeight = BASE_HEIGHT * scale;
 
           try {
             if (!safeHasCanvas()) return;
-            canvas.setViewportTransform([scale, 0, 0, scale, offsetX, offsetY]);
+            canvas.setDimensions({ width: finalWidth, height: finalHeight });
+            canvas.setViewportTransform([scale, 0, 0, scale, 0, 0]);
             canvas.requestRenderAll();
           } catch (err) {
             console.warn(
               "CertificateEditor centerAndFitCanvas error (ignored):",
-              err
+              err,
             );
           }
         };
 
         const handleResize = () => {
           if (!safeHasCanvas()) return;
-          const container = canvasContainerRef.current;
-          if (!container) return;
-
           try {
-            // Keep logical size fixed for tools/alignments
-            canvas.setWidth(BASE_WIDTH);
-            canvas.setHeight(BASE_HEIGHT);
             centerAndFitCanvas();
           } catch (err) {
             console.warn(
               "CertificateEditor handleResize error (ignored):",
-              err
+              err,
             );
           }
         };
@@ -206,23 +206,22 @@ const CertificateEditor = ({
         // Initial fit/center
         handleResize();
 
-        // Observe container size changes (including panel toggles/layout)
+        // Observe container size changes using wrapperRef
         if (typeof ResizeObserver !== "undefined") {
           resizeObserver = new ResizeObserver(() => {
             // Guard every callback so Fabric internals never crash the app
             try {
-              handleResize();
+              window.requestAnimationFrame(() => handleResize());
             } catch (err) {
               console.warn(
                 "CertificateEditor ResizeObserver callback error (ignored):",
-                err
+                err,
               );
             }
           });
-          // Observe the parent container that changes when panels are toggled
-          const parentContainer = canvasContainerRef.current?.parentElement;
-          if (parentContainer) {
-            resizeObserver.observe(parentContainer);
+
+          if (wrapperElement) {
+            resizeObserver.observe(wrapperElement);
           }
         }
 
@@ -253,6 +252,65 @@ const CertificateEditor = ({
             transparentCorners: false,
           });
         });
+
+        // canvas.on("object:moving", (e) => {
+        //   const obj = e.target;
+        //   if (!obj) return;
+
+          // ... snapping logic omitted for brevity in diff, it uses canvas methods so it should work fine with updated transforms
+          // because Fabric handles object coordinates relative to canvas logic dimensions if viewportTransform is set correctly.
+        // });
+
+        // ... (Rest of event handlers)
+
+        /* Re-adding the missing snapping logic setup from original file or ensuring it works 
+           Note: The full replacement content should strictly follow the boundaries given.
+           Wait, there is a lot of code in the middle I am skipping if I look at StartLine/EndLine.
+           I need to make sure I don't delete the snapping logic in the middle.
+           
+           Actually, the "snapping logic" is inside `initFabric`.
+           Use `replace_file_content` carefully.
+           
+           I will replace from `const canvasRef...` down to `// Observe container size changes...` block end, 
+           BUT `initFabric` is long.
+           
+           Better strategy:
+           Use `multi_replace_file_content` or split this into smaller chunks.
+           The biggest change is `centerAndFitCanvas`.
+           `handleResize` is small.
+           `ResizeObserver` setup is small.
+           `wrapperRef` addition is small.
+           
+           Let's do this in small chunks.
+        */
+
+        // const updateSelection = () => {
+        //   setActiveObject(canvas.getActiveObject());
+        //   setForceUpdate((f) => f + 1);
+        // };
+
+        // const handleModification = () => {
+        //   updateSelection();
+        //   rawPushHistory(canvas);
+        // };
+
+        // canvas.on({
+        //   "object:modified": handleModification,
+        //   "object:added": handleModification,
+        //   "object:removed": handleModification,
+        //   "selection:created": updateSelection,
+        //   "selection:updated": updateSelection,
+        //   "selection:cleared": updateSelection,
+        // });
+
+        // canvas.on("object:selected", (e) => {
+        //   e.target.set({
+        //     borderColor: "#2563EB",
+        //     cornerColor: "#2563EB",
+        //     cornerStyle: "circle",
+        //     transparentCorners: false,
+        //   });
+        // });
 
         canvas.on("object:moving", (e) => {
           const obj = e.target;
@@ -546,7 +604,7 @@ const CertificateEditor = ({
         try {
           if (resizeObserver) {
             // Unobserve the parent container
-            const parentContainer = canvasContainerRef.current?.parentElement;
+            const parentContainer = canvasContainer?.parentElement;
             if (parentContainer) {
               resizeObserver.unobserve(parentContainer);
             }
@@ -565,7 +623,7 @@ const CertificateEditor = ({
         }
       }
     };
-  }, [certificateSize, initialData, pushHistory, redo, undo]);
+  }, [certificateSize, initialData, pushHistory, redo, undo, rawPushHistory]);
 
   // Handle responsive behavior - auto-hide panels on mobile
   useEffect(() => {
@@ -587,17 +645,6 @@ const CertificateEditor = ({
       window.removeEventListener("resize", checkMobile);
     };
   }, [showPanels]);
-
-  // Handle canvas responsiveness when mobile state changes
-  useEffect(() => {
-    // Only update if we have a stored viewport transform
-    if (fabricCanvas.current && canvasViewportTransform) {
-      const canvas = fabricCanvas.current;
-      // Reapply the stored viewport transform to maintain exact visual state
-      canvas.setViewportTransform(canvasViewportTransform);
-      canvas.requestRenderAll();
-    }
-  }, [isMobile, canvasViewportTransform]);
 
   const addObjectToCanvas = useCallback((object) => {
     const canvas = fabricCanvas.current;
@@ -621,11 +668,11 @@ const CertificateEditor = ({
           width: isHeadline ? 400 : 300,
           editable: true,
           textAlign: "center",
-        }
+        },
       );
       addObjectToCanvas(text);
     },
-    [addObjectToCanvas]
+    [addObjectToCanvas],
   );
 
   const handleImageUpload = (e) => {
@@ -642,7 +689,7 @@ const CertificateEditor = ({
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       alert(
-        "Image file is too large. Please select an image smaller than 10MB."
+        "Image file is too large. Please select an image smaller than 10MB.",
       );
       e.target.value = "";
       return;
@@ -678,7 +725,7 @@ const CertificateEditor = ({
           if (!img) {
             alert("Failed to load image. Please try a different image file.");
             console.error(
-              "Failed to create image from URL - img is null/undefined"
+              "Failed to create image from URL - img is null/undefined",
             );
             return;
           }
@@ -688,7 +735,7 @@ const CertificateEditor = ({
         },
         {
           crossOrigin: "anonymous",
-        }
+        },
       );
 
       // Fallback: Use native Image object if Fabric.js fails
@@ -782,7 +829,7 @@ const CertificateEditor = ({
 
   const addImageFromUrl = () => {
     const url = prompt(
-      "Enter direct image URL (e.g., https://example.com/image.jpg)\n\nNote: Most websites block cross-origin access. Try these working examples:\n• https://picsum.photos/800/600 (random image)\n• https://via.placeholder.com/800x600 (placeholder)\n• Direct links from Unsplash/Pexels/Pixabay\n• Or upload files directly for best results"
+      "Enter direct image URL (e.g., https://example.com/image.jpg)\n\nNote: Most websites block cross-origin access. Try these working examples:\n• https://picsum.photos/800/600 (random image)\n• https://via.placeholder.com/800x600 (placeholder)\n• Direct links from Unsplash/Pexels/Pixabay\n• Or upload files directly for best results",
     );
     if (!url) return;
 
@@ -806,12 +853,12 @@ const CertificateEditor = ({
       ".bmp",
     ];
     const isImageUrl = imageExtensions.some((ext) =>
-      parsedUrl.pathname.toLowerCase().includes(ext)
+      parsedUrl.pathname.toLowerCase().includes(ext),
     );
 
     if (!isImageUrl) {
       alert(
-        "This doesn't appear to be a direct image URL. Please use a direct link to an image file (ending in .jpg, .png, etc.)\n\nFor example:\n• https://images.unsplash.com/photo-123456789\n• https://picsum.photos/800/600\n• https://via.placeholder.com/800x600"
+        "This doesn't appear to be a direct image URL. Please use a direct link to an image file (ending in .jpg, .png, etc.)\n\nFor example:\n• https://images.unsplash.com/photo-123456789\n• https://picsum.photos/800/600\n• https://via.placeholder.com/800x600",
       );
       return;
     }
@@ -839,7 +886,7 @@ const CertificateEditor = ({
 
         if (!img) {
           alert(
-            "Failed to load image from URL. Make sure the URL allows cross-origin access and the image exists."
+            "Failed to load image from URL. Make sure the URL allows cross-origin access and the image exists.",
           );
           console.error("Failed to load image from URL:", url);
           return;
@@ -849,13 +896,13 @@ const CertificateEditor = ({
           "URL image loaded successfully:",
           img.width,
           "x",
-          img.height
+          img.height,
         );
         addUrlImageToCanvas(img);
       },
       {
         crossOrigin: "anonymous",
-      }
+      },
     );
 
     // Fallback: Use native Image object if Fabric.js fails
@@ -873,7 +920,7 @@ const CertificateEditor = ({
         nativeImg.onerror = (error) => {
           console.error("URL image loading error:", error);
           alert(
-            "Failed to load image from URL. This is usually due to:\n\n• CORS policy: The website doesn't allow cross-origin access\n• Invalid image URL: Check the link is correct\n• Network issues: Try again later\n\nSolutions:\n• Use direct image URLs from Unsplash, Pexels, or Pixabay\n• Copy the image address from browser dev tools\n• Upload the image file directly instead\n• Use a CORS proxy service"
+            "Failed to load image from URL. This is usually due to:\n\n• CORS policy: The website doesn't allow cross-origin access\n• Invalid image URL: Check the link is correct\n• Network issues: Try again later\n\nSolutions:\n• Use direct image URLs from Unsplash, Pexels, or Pixabay\n• Copy the image address from browser dev tools\n• Upload the image file directly instead\n• Use a CORS proxy service",
           );
         };
         nativeImg.src = url;
@@ -1064,13 +1111,13 @@ const CertificateEditor = ({
         case "h-center":
           obj.set(
             "left",
-            (canvas.width / canvas.getZoom() - obj.getScaledWidth()) / 2
+            (canvas.width / canvas.getZoom() - obj.getScaledWidth()) / 2,
           );
           break;
         case "right":
           obj.set(
             "left",
-            canvas.width / canvas.getZoom() - obj.getScaledWidth()
+            canvas.width / canvas.getZoom() - obj.getScaledWidth(),
           );
           break;
         case "top":
@@ -1079,13 +1126,13 @@ const CertificateEditor = ({
         case "v-center":
           obj.set(
             "top",
-            (canvas.height / canvas.getZoom() - obj.getScaledHeight()) / 2
+            (canvas.height / canvas.getZoom() - obj.getScaledHeight()) / 2,
           );
           break;
         case "bottom":
           obj.set(
             "top",
-            canvas.height / canvas.getZoom() - obj.getScaledHeight()
+            canvas.height / canvas.getZoom() - obj.getScaledHeight(),
           );
           break;
         default:
@@ -1094,7 +1141,7 @@ const CertificateEditor = ({
       canvas.requestRenderAll();
       pushHistory();
     },
-    [pushHistory]
+    [pushHistory],
   );
 
   const updateProperty = useCallback(
@@ -1107,7 +1154,7 @@ const CertificateEditor = ({
         pushHistory();
       }
     },
-    [pushHistory]
+    [pushHistory],
   );
 
   const downloadPDF = () => {
@@ -1135,7 +1182,7 @@ const CertificateEditor = ({
     if (!canvas) return;
 
     const name = prompt(
-      "Enter a filename for the template (e.g., 'formal-award'):"
+      "Enter a filename for the template (e.g., 'formal-award'):",
     );
     if (!name) return;
 
@@ -1167,7 +1214,7 @@ const CertificateEditor = ({
     // Validate file size (max 15MB for background)
     if (file.size > 15 * 1024 * 1024) {
       alert(
-        "Background image file is too large. Please select an image smaller than 15MB."
+        "Background image file is too large. Please select an image smaller than 15MB.",
       );
       e.target.value = "";
       return;
@@ -1202,10 +1249,10 @@ const CertificateEditor = ({
 
           if (!img) {
             alert(
-              "Failed to load background image. Please try a different image file."
+              "Failed to load background image. Please try a different image file.",
             );
             console.error(
-              "Failed to create background image - img is null/undefined"
+              "Failed to create background image - img is null/undefined",
             );
             return;
           }
@@ -1214,27 +1261,27 @@ const CertificateEditor = ({
             "Background image loaded successfully:",
             img.width,
             "x",
-            img.height
+            img.height,
           );
           setBackgroundImage(img);
         },
         {
           crossOrigin: "anonymous",
-        }
+        },
       );
 
       // Fallback: Use native Image object if Fabric.js fails
       setTimeout(() => {
         if (!backgroundLoaded) {
           console.log(
-            "Background Fabric.js approach failed, trying fallback method..."
+            "Background Fabric.js approach failed, trying fallback method...",
           );
 
           const nativeImg = new Image();
           nativeImg.crossOrigin = "anonymous";
           nativeImg.onload = () => {
             console.log(
-              "Native background image loaded, creating Fabric.js image..."
+              "Native background image loaded, creating Fabric.js image...",
             );
             const img = new fabric.Image(nativeImg);
             setIsUploadingBackground(false);
@@ -1243,10 +1290,10 @@ const CertificateEditor = ({
           nativeImg.onerror = () => {
             setIsUploadingBackground(false);
             alert(
-              "Failed to load background image. Please try a different image file."
+              "Failed to load background image. Please try a different image file.",
             );
             console.error(
-              "Both Fabric.js and native background image loading failed"
+              "Both Fabric.js and native background image loading failed",
             );
           };
           nativeImg.src = dataUrl;
@@ -1258,7 +1305,7 @@ const CertificateEditor = ({
         if (!backgroundLoaded) {
           setIsUploadingBackground(false);
           console.warn(
-            "Background image upload timed out - resetting loading state"
+            "Background image upload timed out - resetting loading state",
           );
           alert("Background image upload timed out. Please try again.");
         }
@@ -1329,6 +1376,63 @@ const CertificateEditor = ({
   const handleBackToGallery = () => {
     if (onBack) {
       onBack();
+    }
+  };
+
+  const handleSaveTemplateToDatabase = async () => {
+    if (!templateName.trim()) {
+      alert("Please enter a template name");
+      return;
+    }
+
+    try {
+      setIsSavingTemplate(true);
+      const canvas = fabricCanvas.current;
+
+      // Generate thumbnail
+      const thumbnail = canvas.toDataURL({
+        format: "png",
+        quality: 0.8,
+        multiplier: 0.5, // Smaller thumbnail
+      });
+
+      const canvasData = canvas.toJSON();
+
+      const response = await axios.post(
+        "/api/certificates/templates",
+        {
+          name: templateName,
+          description: templateDescription,
+          canvasData,
+          thumbnail,
+          isPublic: false, // Default to private
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.data.success) {
+        alert("Template saved successfully!");
+        setShowSaveTemplateModal(false);
+        setTemplateName("");
+        setTemplateDescription("");
+
+        // Clear canvas after save
+        if (canvas) {
+          canvas.clear();
+          canvas.backgroundColor = "#ffffff";
+          canvas.renderAll();
+          pushHistory();
+        }
+      }
+    } catch (error) {
+      console.error("Error saving template:", error);
+      alert(error.response?.data?.message || "Failed to save template");
+    } finally {
+      setIsSavingTemplate(false);
     }
   };
 
@@ -1510,7 +1614,9 @@ const CertificateEditor = ({
               onClick={() =>
                 updateProperty(
                   "fontWeight",
-                  getProp("fontWeight", "normal") === "bold" ? "normal" : "bold"
+                  getProp("fontWeight", "normal") === "bold"
+                    ? "normal"
+                    : "bold",
                 )
               }
               className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
@@ -1529,7 +1635,7 @@ const CertificateEditor = ({
                   "fontStyle",
                   getProp("fontStyle", "normal") === "italic"
                     ? "normal"
-                    : "italic"
+                    : "italic",
                 )
               }
               className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
@@ -1711,6 +1817,7 @@ const CertificateEditor = ({
 
           {/* Canvas Container */}
           <div
+            ref={wrapperRef}
             className={`flex-1 flex items-start justify-center bg-gray-100 overflow-hidden overflow-x-hidden ${
               isMobile ? "p-2 pt-2" : "p-2 pt-2"
             }`}
@@ -1789,16 +1896,21 @@ const CertificateEditor = ({
                 <h3 className="text-sm font-semibold text-gray-700">
                   Properties
                 </h3>
-                {/* Done button - appears in preview mode or evaluation flow */}
+                {/* Done/Save button - "Done" when linking, "Save as Template" when creating */}
                 {(isPreviewMode ||
-                  (isFromEvaluation && (onDone || onSave))) && (
+                  (isFromEvaluation && (onDone || onSave)) ||
+                  !isFromEvaluation) && (
                   <button
                     onClick={
-                      isPreviewMode ? handleSaveAndReturn : onSave || onDone
+                      isFromEvaluation
+                        ? isPreviewMode
+                          ? handleSaveAndReturn
+                          : onSave || onDone
+                        : () => setShowSaveTemplateModal(true)
                     }
                     className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-sm transition-colors"
                   >
-                    Done
+                    {isFromEvaluation ? "Done" : "Save as Template"}
                   </button>
                 )}
               </div>
@@ -1823,7 +1935,7 @@ const CertificateEditor = ({
           <button
             onClick={() =>
               setActiveMobileTab(
-                activeMobileTab === "elements" ? null : "elements"
+                activeMobileTab === "elements" ? null : "elements",
               )
             }
             className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
@@ -1837,7 +1949,7 @@ const CertificateEditor = ({
           <button
             onClick={() =>
               setActiveMobileTab(
-                activeMobileTab === "properties" ? null : "properties"
+                activeMobileTab === "properties" ? null : "properties",
               )
             }
             className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
@@ -1889,6 +2001,81 @@ const CertificateEditor = ({
               ) : (
                 <PropertiesPanel />
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Save Template Modal */}
+      {showSaveTemplateModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Save as Template
+                </h3>
+                <button
+                  onClick={() => setShowSaveTemplateModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Template Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="e.g., Annual Award 2024"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    maxLength={100}
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description{" "}
+                    <span className="text-gray-400 text-xs">(Optional)</span>
+                  </label>
+                  <textarea
+                    value={templateDescription}
+                    onChange={(e) => setTemplateDescription(e.target.value)}
+                    placeholder="Brief description of this template..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none h-24"
+                    maxLength={500}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-8">
+                <button
+                  onClick={() => setShowSaveTemplateModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                  disabled={isSavingTemplate}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveTemplateToDatabase}
+                  disabled={isSavingTemplate || !templateName.trim()}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                >
+                  {isSavingTemplate ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Template"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

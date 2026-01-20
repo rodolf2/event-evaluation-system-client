@@ -92,8 +92,8 @@ const Header = ({
     if (user?.role === "club-officer") {
       return "/club-officer/notifications";
     }
-    if (user?.role === "school-admin") {
-      return "/school-admin/notifications";
+    if (user?.role === "senior-management") {
+      return "/senior-management/notifications";
     }
     if (user?.role === "psas") {
       return "/psas/notifications";
@@ -103,7 +103,7 @@ const Header = ({
     }
     return config.notificationPath
       ? `/psas/notifications`
-      : `/participant/notifications`;
+      : `/student/notifications`;
   };
 
   const notificationLink = getNotificationLink();

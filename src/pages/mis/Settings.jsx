@@ -246,7 +246,7 @@ function Settings() {
             <button
               onClick={handleSaveChanges}
               disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-600 text-white rounded-lg transition disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               {isSaving ? "Saving..." : "Save Changes"}

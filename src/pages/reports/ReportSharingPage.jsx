@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 
 // API endpoints constants
 const API_ENDPOINTS = {
-  SCHOOL_ADMINS: "/api/reports/school-admins",
+  SCHOOL_ADMINS: "/api/reports/senior-management",
   REPORT_SHARE: (reportId) => `/api/reports/${reportId}/share`,
 };
 
@@ -63,7 +63,7 @@ const ReportSharingPage = () => {
       } catch (error) {
         console.error("Error fetching school admins:", error);
         if (mounted) {
-          toast.error("Unable to load school administrators");
+          toast.error("Unable to load senior management");
         }
       } finally {
         if (mounted) {
@@ -85,13 +85,19 @@ const ReportSharingPage = () => {
     location.state?.eventId ||
     new URLSearchParams(location.search).get("reportId");
 
+  // Get report title for email notification
+  const reportTitle =
+    location.state?.reportTitle ||
+    location.state?.eventName ||
+    "Evaluation Report";
+
   const handleBackClick = () => {
     navigate(-1);
   };
 
   const handleSelect = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -112,7 +118,7 @@ const ReportSharingPage = () => {
 
   const handleDone = async () => {
     if (selected.length === 0) {
-      toast.error("Please select at least one school administrator");
+      toast.error("Please select at least one senior management member");
       return;
     }
 
@@ -139,12 +145,13 @@ const ReportSharingPage = () => {
             department: u.department,
             position: u.position,
           })),
+          reportTitle, // Include report title for email notification
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       toast.success(
-        `Report shared with ${selected.length} school administrator(s)`
+        `Report shared with ${selected.length} senior management member(s)`,
       );
       navigate(-1);
     } catch (error) {
@@ -209,8 +216,8 @@ const ReportSharingPage = () => {
             {isSharing
               ? "Sharing..."
               : selected.length > 0
-              ? `Done (${selected.length} selected)`
-              : "Done"}
+                ? `Done (${selected.length} selected)`
+                : "Done"}
           </button>
         </div>
 

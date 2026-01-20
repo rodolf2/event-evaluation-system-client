@@ -132,10 +132,7 @@ function Profile() {
 
   // Fetch badge data when component mounts
   useEffect(() => {
-    if (
-      (user?.role === "participant" || user?.role === "club-officer") &&
-      token
-    ) {
+    if ((user?.role === "student" || user?.role === "club-officer") && token) {
       fetchBadgeData();
     }
   }, [user, token]);
@@ -194,17 +191,17 @@ function Profile() {
   // Get role-based display text
   const getRoleDisplay = (role) => {
     const roleMap = {
-      participant: "Participant",
+      student: "Student",
       "club-officer": "Club Officer",
       psas: "PSAS Staff",
-      "school-admin": "School Administrator",
+      "senior-management": "Senior Management",
       mis: "MIS Staff",
     };
     return roleMap[role] || role;
   };
 
   const getAccessLevelDisplay = (role) => {
-    if (role === "mis" || role === "school-admin")
+    if (role === "mis" || role === "senior-management")
       return "Administrative Access";
     if (role === "psas") return "Staff Access";
     if (role === "club-officer") return "Officer Access";
@@ -293,21 +290,21 @@ function Profile() {
   }
 
   const badgesLink =
-    user.role === "participant"
-      ? "/participant/badges"
+    user.role === "student"
+      ? "/student/badges"
       : user.role === "club-officer"
-      ? "/club-officer/badges"
-      : null;
+        ? "/club-officer/badges"
+        : null;
 
   // Use role-specific layout
   const LayoutComponent =
-    user.role === "participant"
+    user.role === "student"
       ? ParticipantLayout
       : user.role === "club-officer"
-      ? ClubOfficerLayout
-      : user.role === "psas"
-      ? PSASLayout
-      : null; // school-admin uses external layout
+        ? ClubOfficerLayout
+        : user.role === "psas"
+          ? PSASLayout
+          : null; // senior-management uses external layout
 
   const content = (
     <>
@@ -377,7 +374,7 @@ function Profile() {
                     } catch (error) {
                       console.error(
                         "Error updating notification preference:",
-                        error
+                        error,
                       );
                       setMuteNotifications(!newValue);
                     }
@@ -403,7 +400,7 @@ function Profile() {
                     } catch (error) {
                       console.error(
                         "Error updating reminder preference:",
-                        error
+                        error,
                       );
                       setMuteReminders(!newValue);
                     }
@@ -481,7 +478,7 @@ function Profile() {
                 </div>
                 <div>
                   <label className="block text-gray-500 font-medium">
-                    {user.role === "participant" || user.role === "club-officer"
+                    {user.role === "student" || user.role === "club-officer"
                       ? "Club"
                       : "Department"}
                   </label>
@@ -497,8 +494,7 @@ function Profile() {
                       }
                       className="w-full p-2 border border-gray-300 rounded-lg mt-1"
                       placeholder={
-                        user.role === "participant" ||
-                        user.role === "club-officer"
+                        user.role === "student" || user.role === "club-officer"
                           ? "e.g., Student Council, Drama Club"
                           : "e.g., Student Affairs"
                       }
@@ -564,8 +560,8 @@ function Profile() {
               </div>
             </div>
 
-            {/* Evaluation Badges Card - Only show for participants and club officers */}
-            {(user.role === "participant" || user.role === "club-officer") && (
+            {/* Evaluation Badges Card - Only show for students and club officers */}
+            {(user.role === "student" || user.role === "club-officer") && (
               <div className="bg-white rounded-xl shadow-md px-8 py-12">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold text-gray-800">
@@ -595,7 +591,7 @@ function Profile() {
                             src={badge.icon}
                             alt={badge.name}
                             className={`w-16 h-16 rounded-full mb-2 border-2 ${getBorderColor(
-                              badge.theme
+                              badge.theme,
                             )}`}
                           />
                           <p className="text-sm font-medium text-gray-800">

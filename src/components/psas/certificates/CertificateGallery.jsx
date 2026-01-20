@@ -1,12 +1,14 @@
-import { Search } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Search, Trash2 } from "lucide-react";
+import plusIcon from "../../../assets/icons/plus.svg";
+import { useState, useMemo, useEffect } from "react";
+import axios from "axios";
+import { useAuth } from "../../../contexts/useAuth";
 import { templates } from "../../../templates";
 import {
   getAllTemplates,
   getTemplatesForEvent,
   EVENT_TEMPLATE_MAPPING,
 } from "../../../templates/eventTemplateMapping";
-import plusIcon from "../../../assets/icons/plus.svg";
 
 const CertificateGallery = ({
   onTemplateSelect,
@@ -14,14 +16,64 @@ const CertificateGallery = ({
   isFromEvaluation = false,
   eventName = null,
 }) => {
+  const { token } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedEventType, setSelectedEventType] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
+  const [customTemplates, setCustomTemplates] = useState([]);
+
+  // Fetch custom templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await axios.get("/api/certificates/templates", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.data.success && response.data.data.custom) {
+          setCustomTemplates(response.data.data.custom);
+        }
+      } catch (error) {
+        console.error("Error fetching templates:", error);
+      }
+    };
+
+    fetchTemplates();
+  }, [token]);
+
+  const handleDeleteTemplate = async (e, templateId) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this template?")) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/api/certificates/templates/${templateId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Remove from state
+      setCustomTemplates((prev) => prev.filter((t) => t.id !== templateId));
+
+      // If selected, deselect
+      if (selectedTemplate?.id === templateId) {
+        setSelectedTemplate(null);
+      }
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      alert("Failed to delete template");
+    }
+  };
+
   const allTemplates = useMemo(() => {
-    return templates || getAllTemplates();
-  }, []);
+    const builtIn = templates || getAllTemplates();
+    return [...customTemplates, ...builtIn];
+  }, [customTemplates]);
 
   // Get recommended templates for this event (if eventName provided)
   const recommendedTemplateIds = useMemo(() => {
@@ -42,13 +94,13 @@ const CertificateGallery = ({
           (template.description &&
             template.description
               .toLowerCase()
-              .includes(searchTerm.toLowerCase()))
+              .includes(searchTerm.toLowerCase())),
       );
     }
 
     if (selectedCategory !== "all") {
       filtered = filtered.filter(
-        (template) => template.category === selectedCategory
+        (template) => template.category === selectedCategory,
       );
     }
 
@@ -56,7 +108,7 @@ const CertificateGallery = ({
       const eventTemplates = EVENT_TEMPLATE_MAPPING[selectedEventType] || [];
       const eventTemplateIds = new Set(eventTemplates.map((t) => t.id));
       filtered = filtered.filter((template) =>
-        eventTemplateIds.has(template.id)
+        eventTemplateIds.has(template.id),
       );
     }
 
@@ -118,48 +170,54 @@ const CertificateGallery = ({
     <div className="w-full flex flex-col min-h-[70vh]">
       <div className="shrink-0 mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
-          Create a certificate
+          {isFromEvaluation
+            ? "Link a Certificate Template"
+            : "Create a certificate"}
         </h2>
-        <div className="mb-6 sm:mb-8">
-          <div
-            className="mb-6 sm:mb-8 text-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg relative"
-            style={{
-              background:
-                "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-            }}
-          >
-            <div className="flex justify-center px-4">
-              <div
-                className="bg-white rounded-xl shadow-lg p-6 sm:p-8 md:p-12 lg:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative z-10 w-full max-w-md sm:max-w-lg md:max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl"
-                onClick={onBlankCanvas}
-              >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center mx-auto mb-4 sm:mb-6 md:mb-8">
-                  <img
-                    src={plusIcon}
-                    alt="Plus"
-                    className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18"
-                  />
+
+        {/* Only show Blank Canvas option when NOT from evaluation (certificate linking context) */}
+        {!isFromEvaluation && (
+          <div className="mb-6 sm:mb-8">
+            <div
+              className="mb-6 sm:mb-8 text-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg relative"
+              style={{
+                background:
+                  "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+              }}
+            >
+              <div className="flex justify-center px-4">
+                <div
+                  className="bg-white rounded-xl shadow-lg p-6 sm:p-8 md:p-12 lg:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative z-10 w-full max-w-md sm:max-w-lg md:max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl"
+                  onClick={onBlankCanvas}
+                >
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center mx-auto mb-4 sm:mb-6 md:mb-8">
+                    <img
+                      src={plusIcon}
+                      alt="Plus"
+                      className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-center px-4">
+                <div className="text-center">
+                  <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">
+                    Blank Canvas
+                  </h3>
                 </div>
               </div>
             </div>
-
-            <div className="flex justify-center px-4">
-              <div className="text-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">
-                  Blank Canvas
-                </h3>
-              </div>
-            </div>
           </div>
-        </div>
+        )}
 
         {/* Template Selection */}
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 lg:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
               Choose a template
             </h2>
-            <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
               <div className="relative flex-1 min-w-[200px] sm:min-w-[240px]">
                 <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
@@ -221,13 +279,29 @@ const CertificateGallery = ({
                     </div>
                   )}
 
+                  {/* Delete button for custom templates */}
+                  {template.isOwner && (
+                    <button
+                      onClick={(e) => handleDeleteTemplate(e, template.id)}
+                      className="absolute top-2 right-2 p-1.5 bg-white/90 text-red-600 rounded-full shadow-sm hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all pointer-events-auto z-10"
+                      title="Delete Template"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {/* Category Badge */}
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium rounded-full uppercase tracking-wider z-10">
+                    {template.category || "General"}
+                  </div>
+
                   {/* Template Preview */}
                   <div className="bg-linear-to-br from-gray-100 to-gray-200 aspect-4/3 flex items-center justify-center overflow-hidden border border-gray-300 group-hover:border-blue-500 transition-all">
-                    {template.thumbnail ? (
+                    {template.thumbnail || template.preview ? (
                       <img
-                        src={template.thumbnail}
+                        src={template.thumbnail || template.preview}
                         alt={template.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <div className="text-gray-500 text-xs sm:text-sm p-3 sm:p-4 text-center">

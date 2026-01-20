@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/useAuth";
 import {
   Search,
-  Download,
   ChevronLeft,
   ChevronRight,
   Activity,
@@ -128,35 +127,6 @@ function AuditLogs() {
     fetchStats();
   }, [fetchStats]);
 
-  const handleExportCSV = async () => {
-    try {
-      const queryParams = new URLSearchParams();
-      if (filters.eventType) queryParams.append("category", filters.eventType);
-      if (filters.timeRange) queryParams.append("timeRange", filters.timeRange);
-
-      const response = await fetch(
-        `/api/mis/audit-logs/export?${queryParams}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      toast.success("CSV exported successfully");
-    } catch (error) {
-      console.error("Error exporting audit logs:", error);
-      toast.error("Failed to export CSV");
-    }
-  };
-
   const handleExportPDF = async () => {
     try {
       const queryParams = new URLSearchParams();
@@ -168,7 +138,7 @@ function AuditLogs() {
         `/api/mis/audit-logs/export?${queryParams}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -285,13 +255,6 @@ function AuditLogs() {
           </h1>
           <div className="flex items-center gap-3">
             <button
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-            >
-              <Download className="w-4 h-4" />
-              Export CSV
-            </button>
-            <button
               onClick={handleExportPDF}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
             >
@@ -319,8 +282,8 @@ function AuditLogs() {
               stats.trend > 0
                 ? "text-green-600"
                 : stats.trend < 0
-                ? "text-red-600"
-                : "text-gray-500"
+                  ? "text-red-600"
+                  : "text-gray-500"
             }`}
           >
             {stats.trend > 0 ? "↑" : stats.trend < 0 ? "↓" : "—"}{" "}
@@ -438,8 +401,8 @@ function AuditLogs() {
                             isSuspicious
                               ? "bg-red-400"
                               : log.userName
-                              ? "bg-blue-500"
-                              : "bg-gray-400"
+                                ? "bg-blue-500"
+                                : "bg-gray-400"
                           }`}
                         >
                           {isSuspicious
@@ -515,8 +478,8 @@ function AuditLogs() {
                                 isSuspicious
                                   ? "bg-red-400"
                                   : log.userName
-                                  ? "bg-blue-500"
-                                  : "bg-gray-400"
+                                    ? "bg-blue-500"
+                                    : "bg-gray-400"
                               }`}
                             >
                               {isSuspicious
