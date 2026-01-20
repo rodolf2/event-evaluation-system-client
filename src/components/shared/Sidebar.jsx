@@ -12,19 +12,19 @@ const getIsActive = (item, currentPath, homePath) => {
   // Check if any sub-item is active
   if (item.subItems) {
     return item.subItems.some((subItem) =>
-      currentPath.startsWith(subItem.path)
+      currentPath.startsWith(subItem.path),
     );
   }
 
   // Special case for evaluations - also highlight on evaluation form pages
   if (
-    item.path.includes("/participant/evaluations") ||
+    item.path.includes("/student/evaluations") ||
     item.label === "My Evaluations"
   ) {
     return (
       currentPath === item.path ||
       currentPath.startsWith("/evaluations/") ||
-      currentPath.startsWith("/participant/evaluations/")
+      currentPath.startsWith("/student/evaluations/")
     );
   }
 

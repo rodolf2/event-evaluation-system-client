@@ -109,7 +109,7 @@ function Home() {
         console.error("Error adding reminder:", error);
       }
     },
-    [token, fetchReminders]
+    [token, fetchReminders],
   );
 
   const deleteReminder = useCallback(
@@ -128,7 +128,7 @@ function Home() {
         console.error("Error deleting reminder:", error);
       }
     },
-    [token, fetchReminders]
+    [token, fetchReminders],
   );
 
   const openModal = (date, position) => {
@@ -198,13 +198,13 @@ function Home() {
                   image={thumbnailUrls.evaluations}
                   title="My Evaluations"
                   buttonText="Go to My Evaluations"
-                  link="/participant/evaluations"
+                  link="/student/evaluations"
                 />
                 <DashboardCard
                   image={thumbnailUrls.certificates}
                   title="My Certificates"
                   buttonText="View My Certificates"
-                  link="/participant/certificates"
+                  link="/student/certificates"
                 />
               </div>
             </div>

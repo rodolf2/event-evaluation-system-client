@@ -37,8 +37,8 @@ const NotificationItem = ({
         isAllSelected
           ? "bg-[#E1E8FD]" // All Selected state color
           : notification.read
-          ? "bg-[#FAFAFA]" // Read state color
-          : "bg-white" // Unread state color
+            ? "bg-[#FAFAFA]" // Read state color
+            : "bg-white" // Unread state color
       } hover:bg-gray-100 transition-colors`}
     >
       <input
@@ -59,8 +59,8 @@ const NotificationItem = ({
               isSelected
                 ? "text-gray-800"
                 : notification.read
-                ? "text-gray-700"
-                : "font-semibold text-gray-900"
+                  ? "text-gray-700"
+                  : "font-semibold text-gray-900"
             }`}
           >
             {notification.title}
@@ -132,7 +132,7 @@ const NotificationDetail = ({ notification, onBack }) => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
           if (response.ok) {
             const result = await response.json();
@@ -187,7 +187,7 @@ const NotificationDetail = ({ notification, onBack }) => {
           }`}
         >
           {i}
-        </div>
+        </div>,
       );
     }
 
@@ -195,7 +195,7 @@ const NotificationDetail = ({ notification, onBack }) => {
   };
 
   const { month, year, days } = renderCalendar(
-    reminder?.date || notification.date
+    reminder?.date || notification.date,
   );
   const reminderDate = new Date(reminder?.date || notification.date);
   const formattedDate = reminderDate.toLocaleDateString("en-US", {
@@ -361,7 +361,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
         // Sort client-side just in case, newest first
         transformedNotifications.sort(
-          (a, b) => new Date(b.date) - new Date(a.date)
+          (a, b) => new Date(b.date) - new Date(a.date),
         );
 
         setNotifications(transformedNotifications);
@@ -389,13 +389,15 @@ const Notifications = ({ layout: LayoutComponent }) => {
   const handleNotificationClick = (notification) => {
     // Determine the base path based on user role
     const rolePrefix =
-      user?.role === "participant"
-        ? "/participant"
+      user?.role === "student"
+        ? "/student"
         : user?.role === "club-officer"
-        ? "/club-officer"
-        : user?.role === "psas"
-        ? "/psas"
-        : "";
+          ? "/club-officer"
+          : user?.role === "psas"
+            ? "/psas"
+            : user?.role === "senior-management"
+              ? "/senior-management"
+              : "";
 
     if (notification.relatedEntity?.type === "reminder") {
       navigate(`${rolePrefix}/reminders`);
@@ -408,7 +410,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
   const handleSelect = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -447,17 +449,17 @@ const Notifications = ({ layout: LayoutComponent }) => {
           prev.map((notification) =>
             selected.includes(notification.id)
               ? { ...notification, read: true }
-              : notification
-          )
+              : notification,
+          ),
         );
 
         setSelected([]);
         toast.success(
-          `${result.message || selected.length} notifications marked as read`
+          `${result.message || selected.length} notifications marked as read`,
         );
       } else {
         throw new Error(
-          result.message || "Failed to mark notifications as read"
+          result.message || "Failed to mark notifications as read",
         );
       }
     } catch (error) {
@@ -474,7 +476,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
     // Confirm deletion
     if (
       !window.confirm(
-        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`
+        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`,
       )
     ) {
       return;
@@ -495,7 +497,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error(
-            "You do not have permission to delete these notifications"
+            "You do not have permission to delete these notifications",
           );
         }
         throw new Error("Failed to delete notifications");
@@ -506,14 +508,14 @@ const Notifications = ({ layout: LayoutComponent }) => {
       if (result.success) {
         // Remove deleted notifications from local state
         setNotifications((prev) =>
-          prev.filter((notification) => !selected.includes(notification.id))
+          prev.filter((notification) => !selected.includes(notification.id)),
         );
 
         setSelected([]);
         toast.success(
           `${
             result.message || selected.length
-          } notifications deleted successfully`
+          } notifications deleted successfully`,
         );
       } else {
         throw new Error(result.message || "Failed to delete notifications");
@@ -538,7 +540,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -552,14 +554,14 @@ const Notifications = ({ layout: LayoutComponent }) => {
           prev.map((notification) =>
             notification.id === notificationId
               ? { ...notification, read: true }
-              : notification
-          )
+              : notification,
+          ),
         );
 
         toast.success("Notification marked as read");
       } else {
         throw new Error(
-          result.message || "Failed to mark notification as read"
+          result.message || "Failed to mark notification as read",
         );
       }
     } catch (error) {
@@ -574,7 +576,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
     // Confirm deletion
     if (
       !window.confirm(
-        "Are you sure you want to delete this notification? This action cannot be undone."
+        "Are you sure you want to delete this notification? This action cannot be undone.",
       )
     ) {
       return;
@@ -594,7 +596,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error(
-            "You do not have permission to delete this notification"
+            "You do not have permission to delete this notification",
           );
         }
         throw new Error("Failed to delete notification");
@@ -604,7 +606,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
       if (result.success) {
         setNotifications((prev) =>
-          prev.filter((notification) => notification.id !== notificationId)
+          prev.filter((notification) => notification.id !== notificationId),
         );
 
         toast.success("Notification deleted successfully");
@@ -624,9 +626,9 @@ const Notifications = ({ layout: LayoutComponent }) => {
       notifications.filter(
         (n) =>
           n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          n.from.toLowerCase().includes(searchQuery.toLowerCase())
+          n.from.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [notifications, searchQuery]
+    [notifications, searchQuery],
   );
 
   const isAllSelected =

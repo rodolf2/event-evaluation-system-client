@@ -126,7 +126,7 @@ function Home() {
         console.error("Error adding reminder:", error);
       }
     },
-    [token, fetchReminders]
+    [token, fetchReminders],
   );
 
   const deleteReminder = useCallback(
@@ -145,7 +145,7 @@ function Home() {
         console.error("Error deleting reminder:", error);
       }
     },
-    [token, fetchReminders]
+    [token, fetchReminders],
   );
 
   const openModal = (date, position) => {

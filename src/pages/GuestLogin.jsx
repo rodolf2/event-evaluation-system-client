@@ -12,13 +12,13 @@ function GuestLogin() {
     email: "",
     role: "evaluator",
     verificationCode: "",
-    accessToken: ""
+    accessToken: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isTokenLogin, setIsTokenLogin] = useState(false);
 
   // Check if there's a token in the URL (for email-based token access)
-  const urlToken = searchParams.get('token');
+  const urlToken = searchParams.get("token");
 
   // If URL token exists, try to authenticate automatically
   useEffect(() => {
@@ -38,7 +38,7 @@ function GuestLogin() {
     const role = e.target.value;
     setFormData({
       ...formData,
-      role: role
+      role: role,
     });
 
     // If guest speaker is selected, switch to token-based login
@@ -54,10 +54,9 @@ function GuestLogin() {
     setIsTokenLogin(true);
 
     try {
-      const response = await api.post(
-        `${apiUrl}/api/guest/authenticate`,
-        { token }
-      );
+      const response = await api.post(`${apiUrl}/api/guest/authenticate`, {
+        token,
+      });
 
       if (response.data.success) {
         // Store token and redirect
@@ -70,10 +69,10 @@ function GuestLogin() {
     } catch (error) {
       console.error("Token authentication error:", error);
       toast.error(
-        error.response?.data?.message || "Invalid or expired access token"
+        error.response?.data?.message || "Invalid or expired access token",
       );
       // Clear the token from URL if authentication fails
-      navigate('/guest-login');
+      navigate("/guest-login");
     } finally {
       setIsLoading(false);
     }
@@ -96,10 +95,9 @@ function GuestLogin() {
         }
 
         const token = formData.accessToken || urlToken;
-        response = await api.post(
-          `${apiUrl}/api/guest/authenticate`,
-          { token }
-        );
+        response = await api.post(`${apiUrl}/api/guest/authenticate`, {
+          token,
+        });
       } else {
         // Existing verification code system for evaluators
         if (!formData.name || !formData.email || !formData.role) {
@@ -108,27 +106,27 @@ function GuestLogin() {
           return;
         }
 
-        response = await api.post(
-          `${apiUrl}/api/auth/guest`,
-          {
-            name: formData.name,
-            email: formData.email,
-            role: formData.role,
-            verificationCode: formData.verificationCode,
-          }
-        );
+        response = await api.post(`${apiUrl}/api/auth/guest`, {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          verificationCode: formData.verificationCode,
+        });
       }
 
       if (response.data.success) {
         // Store token
-        localStorage.setItem("token", response.data.data?.token || response.data.token);
+        localStorage.setItem(
+          "token",
+          response.data.data?.token || response.data.token,
+        );
 
         // Show success message
         toast.success("Login successful!");
 
         // Redirect based on role
         if (formData.role === "evaluator") {
-          navigate("/participant/home");
+          navigate("/student/home");
         } else if (formData.role === "guest-speaker") {
           navigate(`/guest-access?token=${formData.accessToken || urlToken}`);
         }
@@ -136,7 +134,7 @@ function GuestLogin() {
     } catch (error) {
       console.error("Guest login error:", error);
       toast.error(
-        error.response?.data?.message || "Login failed. Please try again."
+        error.response?.data?.message || "Login failed. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -237,7 +235,8 @@ function GuestLogin() {
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Enter the verification code provided for the event you attended
+                    Enter the verification code provided for the event you
+                    attended
                   </p>
                 </div>
               </>
@@ -259,7 +258,8 @@ function GuestLogin() {
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter the access token sent to your email by the PSAS department
+                  Enter the access token sent to your email by the PSAS
+                  department
                 </p>
               </div>
             )}
@@ -270,7 +270,11 @@ function GuestLogin() {
               disabled={isLoading}
               className="w-full bg-blue-950 hover:bg-blue-900 text-white font-medium py-3 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Logging in..." : isTokenLogin ? "Access Reports" : "Continue"}
+              {isLoading
+                ? "Logging in..."
+                : isTokenLogin
+                  ? "Access Reports"
+                  : "Continue"}
             </button>
           </form>
         </div>

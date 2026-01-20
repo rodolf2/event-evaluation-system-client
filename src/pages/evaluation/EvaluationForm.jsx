@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
-import { SkeletonText, SkeletonCard, SkeletonBase } from "../../components/shared/SkeletonLoader";
+import {
+  SkeletonText,
+  SkeletonCard,
+  SkeletonBase,
+} from "../../components/shared/SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
 import DynamicRatingInput from "../../components/shared/DynamicRatingInput";
 import EvaluationSuccessScreen from "../../components/participants/EvaluationSuccessScreen";
@@ -55,7 +59,7 @@ const EvaluationForm = () => {
 
       // Also load enhanced responses if available for debugging
       const enhancedResponses = localStorage.getItem(
-        `form_${formId}_enhanced_responses`
+        `form_${formId}_enhanced_responses`,
       );
       if (enhancedResponses) {
         try {
@@ -73,7 +77,7 @@ const EvaluationForm = () => {
     if (formId && Object.keys(responses).length > 0) {
       localStorage.setItem(
         `form_${formId}_responses`,
-        JSON.stringify(responses)
+        JSON.stringify(responses),
       );
     }
   }, [responses, formId]);
@@ -97,10 +101,10 @@ const EvaluationForm = () => {
       `form_${formId}_enhanced_responses`,
       JSON.stringify({
         ...JSON.parse(
-          localStorage.getItem(`form_${formId}_enhanced_responses`) || "{}"
+          localStorage.getItem(`form_${formId}_enhanced_responses`) || "{}",
         ),
         [questionIndex]: enhancedResponse,
-      })
+      }),
     );
   };
 
@@ -181,7 +185,7 @@ const EvaluationForm = () => {
         console.log(
           `🔍 DEBUG: Processing ${section.title} (${
             section.questions?.length || 0
-          } questions)`
+          } questions)`,
         );
 
         (section.questions || []).forEach((question, questionIndex) => {
@@ -193,7 +197,7 @@ const EvaluationForm = () => {
 
           const responseValue = responses[globalIndex];
           console.log(
-            `🔍 DEBUG: Question "${question.title}" -> globalIndex: ${globalIndex}, value: ${responseValue}, section: ${section.title}`
+            `🔍 DEBUG: Question "${question.title}" -> globalIndex: ${globalIndex}, value: ${responseValue}, section: ${section.title}`,
           );
 
           if (responseValue !== undefined) {
@@ -581,7 +585,10 @@ const EvaluationForm = () => {
           {/* Questions Skeleton */}
           <div className="space-y-6">
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="bg-white p-6 sm:p-8 rounded-lg shadow-sm border">
+              <div
+                key={index}
+                className="bg-white p-6 sm:p-8 rounded-lg shadow-sm border"
+              >
                 <div className="space-y-4">
                   <SkeletonText lines={1} width="medium" height="h-6" />
                   <SkeletonText lines={3} />
@@ -670,7 +677,7 @@ const EvaluationForm = () => {
         <EvaluationSuccessScreen
           formId={formId}
           certificateData={certificateData}
-          onViewCertificates={() => navigate("/participant/certificates")}
+          onViewCertificates={() => navigate("/student/certificates")}
         />
       </ParticipantLayout>
     );

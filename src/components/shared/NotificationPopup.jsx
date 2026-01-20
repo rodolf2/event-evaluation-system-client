@@ -30,7 +30,7 @@ const NotificationPopup = () => {
       const shownArray = [...shown].slice(-100);
       localStorage.setItem(
         "shownNotificationPopups",
-        JSON.stringify(shownArray)
+        JSON.stringify(shownArray),
       );
     } catch (e) {
       console.error("Error saving shown notification:", e);
@@ -62,7 +62,7 @@ const NotificationPopup = () => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
           if (response.ok) {
             const result = await response.json();
@@ -130,8 +130,8 @@ const NotificationPopup = () => {
       const notificationRoutes = {
         psas: "/psas/notifications",
         "club-officer": "/club-officer/notifications",
-        participant: "/participant/notifications",
-        "school-admin": "/school-admin/notifications",
+        student: "/student/notifications",
+        "senior-management": "/senior-management/notifications",
         mis: "/mis/notifications",
       };
 

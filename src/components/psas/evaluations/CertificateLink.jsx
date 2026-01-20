@@ -1,6 +1,10 @@
 import { Award } from "lucide-react";
 
-const CertificateLink = ({ isCertificateLinked, currentFormId, onLinkCertificate }) => {
+const CertificateLink = ({
+  isCertificateLinked,
+  currentFormId,
+  onLinkCertificate,
+}) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">Certificate</h3>
@@ -26,7 +30,8 @@ const CertificateLink = ({ isCertificateLinked, currentFormId, onLinkCertificate
                 Link a Certificate
               </h4>
               <p className="text-gray-600 mb-4">
-                Optionally link a certificate that participants will receive after completing the evaluation.
+                Optionally link a certificate that students will receive after
+                completing the evaluation.
               </p>
               <button
                 onClick={onLinkCertificate}

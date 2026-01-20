@@ -134,7 +134,7 @@ const PERMISSIONS = {
 
 // Default permissions per role
 const DEFAULT_PERMISSIONS = {
-  participant: {
+  student: {
     submit_evaluations: true,
     view_aggregated_results: false,
     access_raw_feedback: false,
@@ -167,7 +167,7 @@ const DEFAULT_PERMISSIONS = {
     manage_roles_provisioning: true,
     access_system_configuration: true,
   },
-  "school-admin": {
+  "senior-management": {
     submit_evaluations: false,
     view_aggregated_results: true,
     access_raw_feedback: false,
@@ -183,10 +183,8 @@ const DEFAULT_PERMISSIONS = {
 function UserManagement() {
   const { token } = useAuth();
   const [email, setEmail] = useState("");
-  const [selectedRole, setSelectedRole] = useState("participant");
-  const [permissions, setPermissions] = useState(
-    DEFAULT_PERMISSIONS.participant,
-  );
+  const [selectedRole, setSelectedRole] = useState("student");
+  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS.student);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [success, setSuccess] = useState("");
@@ -243,8 +241,8 @@ function UserManagement() {
           `User ${email} has been provisioned with the ${selectedRole} role.`,
         );
         setEmail("");
-        setSelectedRole("participant");
-        setPermissions(DEFAULT_PERMISSIONS.participant);
+        setSelectedRole("student");
+        setPermissions(DEFAULT_PERMISSIONS.student);
         setShowConfirmModal(false);
       } else {
         toast.error(data.message || "Failed to provision user.");
@@ -269,8 +267,8 @@ function UserManagement() {
 
   const handleCancel = () => {
     setEmail("");
-    setSelectedRole("participant");
-    setPermissions(DEFAULT_PERMISSIONS.participant);
+    setSelectedRole("student");
+    setPermissions(DEFAULT_PERMISSIONS.student);
     setSuccess("");
   };
 

@@ -14,15 +14,15 @@ const NotFound = () => {
         return "/psas/home";
       case "club-officer":
         return "/club-officer/home";
-      case "participant":
-        return "/participant/home";
-      case "school-admin":
-        return "/school-admin/home";
+      case "student":
+        return "/student/home";
+      case "senior-management":
+        return "/senior-management/home";
       case "mis":
         return "/mis";
       case "evaluator":
       case "guest-speaker":
-        return "/participant/home";
+        return "/student/home";
       default:
         return "/login";
     }

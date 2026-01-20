@@ -23,7 +23,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
   } = config;
 
   const showProfileSectionOnPath = profileSectionPaths.includes(
-    location.pathname
+    location.pathname,
   );
 
   const handleProfileClick = (rect) => {

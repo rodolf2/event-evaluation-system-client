@@ -7,35 +7,35 @@ import CertificateIcon from "../../assets/icons/certificate-icon.svg";
 import LvccName from "../../assets/fonts/lvcc-name.svg";
 
 const MENU_ITEMS = [
-  { icon: HomeIcon, label: "Home", path: "/participant/home" },
+  { icon: HomeIcon, label: "Home", path: "/student/home" },
   {
     icon: EvaluationsIcon,
     label: "My Evaluations",
-    path: "/participant/evaluations",
+    path: "/student/evaluations",
   },
   {
     icon: CertificateIcon,
     label: "My Certificates",
-    path: "/participant/certificates",
+    path: "/student/certificates",
   },
-  { icon: BadgeIcon, label: "My Badges", path: "/participant/badges" },
+  { icon: BadgeIcon, label: "My Badges", path: "/student/badges" },
 ];
 
 const getIsActive = (item, currentPath) => {
   // Special case for evaluations - also highlight on evaluation form pages
   if (
-    item.path.includes("/participant/evaluations") ||
+    item.path.includes("/student/evaluations") ||
     item.label === "My Evaluations"
   ) {
     return (
       currentPath === item.path ||
       currentPath.startsWith("/evaluation/") ||
-      currentPath.startsWith("/participant/evaluations/")
+      currentPath.startsWith("/student/evaluations/")
     );
   }
 
   // Special case for home path
-  if (item.path === "/participant/home") {
+  if (item.path === "/student/home") {
     return currentPath === item.path;
   }
 

@@ -7,7 +7,7 @@ const Header = ({ onMenuClick, onProfileClick }) => {
   const { user, refreshUserData } = useAuth();
   const location = useLocation();
   const profileRef = useRef(null);
-  
+
   useEffect(() => {
     refreshUserData();
     const refreshInterval = setInterval(() => {
@@ -19,10 +19,10 @@ const Header = ({ onMenuClick, onProfileClick }) => {
   const getPageTitle = () => {
     const path = location.pathname;
     if (path === "/profile") return "My Account";
-    if (path.includes("/participant/home")) return "Home";
-    if (path.includes("/participant/evaluations")) return "My Evaluations";
-    if (path.includes("/participant/certificates")) return "My Certificates";
-    if (path.includes("/participant/badges")) return "My Badges";
+    if (path.includes("/student/home")) return "Home";
+    if (path.includes("/student/evaluations")) return "My Evaluations";
+    if (path.includes("/student/certificates")) return "My Certificates";
+    if (path.includes("/student/badges")) return "My Badges";
     return "Home";
   };
 
@@ -50,7 +50,7 @@ const Header = ({ onMenuClick, onProfileClick }) => {
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
-        <Link to="/participant/notifications">
+        <Link to="/student/notifications">
           <Bell className="w-5 h-5 text-gray-600" />
         </Link>
         <div className="relative">
@@ -60,7 +60,10 @@ const Header = ({ onMenuClick, onProfileClick }) => {
             onClick={handleProfileClick}
           >
             <img
-              src={user?.profilePicture || "https://via.placeholder.com/32x32?text=U"}
+              src={
+                user?.profilePicture ||
+                "https://via.placeholder.com/32x32?text=U"
+              }
               alt="User"
               className="w-8 h-8 rounded-full object-cover"
             />

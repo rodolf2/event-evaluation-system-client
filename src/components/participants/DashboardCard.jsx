@@ -42,9 +42,9 @@ const DashboardCard = ({ image, title, buttonText, link, icon: Icon }) => {
       case "Event Reports":
         return "/psas/reports";
       case "My Evaluations":
-        return "/participant/evaluations";
+        return "/student/evaluations";
       case "My Certificates":
-        return "/participant/certificates";
+        return "/student/certificates";
       default:
         return "#";
     }

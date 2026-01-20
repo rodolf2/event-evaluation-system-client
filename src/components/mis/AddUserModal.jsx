@@ -1,12 +1,20 @@
-import { useState } from 'react';
-import { X, UserPlus, Mail, User, Shield, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useState } from "react";
+import {
+  X,
+  UserPlus,
+  Mail,
+  User,
+  Shield,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 
 function AddUserModal({ isOpen, onClose, onUserAdded }) {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: 'participant',
-    isActive: true
+    name: "",
+    email: "",
+    role: "student",
+    isActive: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -14,9 +22,9 @@ function AddUserModal({ isOpen, onClose, onUserAdded }) {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -27,19 +35,19 @@ function AddUserModal({ isOpen, onClose, onUserAdded }) {
     setSuccess(false);
 
     try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
+      const response = await fetch("/api/users", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to create user');
+        throw new Error(data.message || "Failed to create user");
       }
 
       setSuccess(true);
@@ -48,15 +56,14 @@ function AddUserModal({ isOpen, onClose, onUserAdded }) {
         onClose();
         // Reset form for next use
         setFormData({
-          name: '',
-          email: '',
-          role: 'participant',
-          isActive: true
+          name: "",
+          email: "",
+          role: "student",
+          isActive: true,
         });
       }, 1000);
-
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error("Error creating user:", error);
       setError(error.message);
     } finally {
       setIsSubmitting(false);
@@ -98,7 +105,10 @@ function AddUserModal({ isOpen, onClose, onUserAdded }) {
           )}
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Full Name
             </label>
             <div className="relative">
@@ -117,7 +127,10 @@ function AddUserModal({ isOpen, onClose, onUserAdded }) {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Email Address
             </label>
             <div className="relative">
@@ -136,7 +149,10 @@ function AddUserModal({ isOpen, onClose, onUserAdded }) {
           </div>
 
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="role"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               User Role
             </label>
             <div className="relative">
@@ -148,10 +164,10 @@ function AddUserModal({ isOpen, onClose, onUserAdded }) {
                 onChange={handleInputChange}
                 className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
               >
-                <option value="participant">Participant</option>
+                <option value="student">Student</option>
                 <option value="psas">PSAS Staff</option>
                 <option value="club-officer">Club Officer</option>
-                <option value="school-admin">School Admin</option>
+                <option value="senior-management">Senior Management</option>
                 <option value="mis">MIS Staff</option>
               </select>
             </div>

@@ -6,36 +6,36 @@ import CertificateIcon from "../../assets/icons/certificate-icon.svg";
 export const headerConfig = {
   pageTitles: {
     "/profile": "My Account",
-    "/participant/home": "Home",
+    "/student/home": "Home",
     "*evaluations": "My Evaluations",
     "*certificates": "My Certificates",
     "*badges": "My Badges",
   },
   defaultTitle: "Home",
-  notificationPath: false, // uses /participant/notifications
+  notificationPath: false, // uses /student/notifications
 };
 
 export const sidebarConfig = {
-  homePath: "/participant/home",
+  homePath: "/student/home",
   menuItems: [
-    { icon: HomeIcon, label: "Home", path: "/participant/home" },
+    { icon: HomeIcon, label: "Home", path: "/student/home" },
     {
       icon: EvaluationsIcon,
       label: "My Evaluations",
-      path: "/participant/evaluations",
+      path: "/student/evaluations",
     },
     {
       icon: CertificateIcon,
       label: "My Certificates",
-      path: "/participant/certificates",
+      path: "/student/certificates",
     },
-    { icon: BadgeIcon, label: "My Badges", path: "/participant/badges" },
+    { icon: BadgeIcon, label: "My Badges", path: "/student/badges" },
   ],
 };
 
 export const layoutConfig = {
   showProfileSection: false,
-  profileSectionPaths: ["/participant/home"],
+  profileSectionPaths: ["/student/home"],
   headerConfig,
   sidebarConfig,
 };

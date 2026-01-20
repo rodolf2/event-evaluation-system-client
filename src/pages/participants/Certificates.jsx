@@ -64,7 +64,7 @@ const Certificates = () => {
   useEffect(() => {
     if (certificateId && certificates.length > 0) {
       const certificate = certificates.find(
-        (cert) => cert.certificateId === certificateId
+        (cert) => cert.certificateId === certificateId,
       );
       if (certificate) {
         setSelectedCertificate(certificate);
@@ -88,7 +88,7 @@ const Certificates = () => {
                 headers: {
                   Authorization: `Bearer ${token}`,
                 },
-              }
+              },
             );
 
             if (response.ok) {
@@ -102,7 +102,7 @@ const Certificates = () => {
           } catch (error) {
             console.error(
               `Error loading thumbnail for ${cert.certificateId}:`,
-              error
+              error,
             );
           }
         }
@@ -129,7 +129,7 @@ const Certificates = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -168,7 +168,7 @@ const Certificates = () => {
     setSelectedCertificate(null);
     // If we came from a direct link, navigate back to certificates list
     if (certificateId) {
-      navigate("/participant/certificates");
+      navigate("/student/certificates");
     }
   };
 
@@ -198,7 +198,7 @@ const Certificates = () => {
           onDownload={() =>
             handleDownload(
               selectedCertificate.certificateId,
-              selectedCertificate
+              selectedCertificate,
             )
           }
           onDone={handleCertificateViewerDone}

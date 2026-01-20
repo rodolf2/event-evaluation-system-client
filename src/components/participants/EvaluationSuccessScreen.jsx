@@ -45,7 +45,7 @@ const EvaluationSuccessScreen = ({
           const userCertificates = data.data || [];
           const formCertificate = userCertificates.find(
             (cert) =>
-              cert.formId?._id === formId || cert.eventId?._id === formId
+              cert.formId?._id === formId || cert.eventId?._id === formId,
           );
 
           if (formCertificate) {
@@ -73,12 +73,10 @@ const EvaluationSuccessScreen = ({
     // Navigate to appropriate certificates page based on user role
     // Add fallback check in case user object isn't loaded yet
     const userRole = user?.role;
-    let certificatesPath = "/participant/certificates"; // default
+    let certificatesPath = "/student/certificates"; // default
 
     if (userRole === "club-officer") {
       certificatesPath = "/club-officer/certificates/my";
-    } else if (userRole === "participant") {
-      certificatesPath = "/participant/certificates";
     } else if (userRole === "psas") {
       certificatesPath = "/psas/certificates";
     }
@@ -87,7 +85,7 @@ const EvaluationSuccessScreen = ({
       "Navigating to certificates page:",
       certificatesPath,
       "for user role:",
-      userRole
+      userRole,
     );
     navigate(certificatesPath);
   };
@@ -104,12 +102,10 @@ const EvaluationSuccessScreen = ({
     } else {
       // Navigate to appropriate certificates page based on user role
       const userRole = user?.role;
-      let certificatesPath = "/participant/certificates"; // default
+      let certificatesPath = "/student/certificates"; // default
 
       if (userRole === "club-officer") {
         certificatesPath = "/club-officer/certificates/my";
-      } else if (userRole === "participant") {
-        certificatesPath = "/participant/certificates";
       } else if (userRole === "psas") {
         certificatesPath = "/psas/certificates";
       }
@@ -118,7 +114,7 @@ const EvaluationSuccessScreen = ({
         "Navigating to certificates page:",
         certificatesPath,
         "for user role:",
-        userRole
+        userRole,
       );
       navigate(certificatesPath);
     }

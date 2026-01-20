@@ -33,10 +33,10 @@ import {
 } from "../../components/shared/SkeletonLoader";
 
 const ROLE_COLORS = {
-  participant: "#3B82F6",
+  student: "#3B82F6",
   psas: "#10B981",
   "club-officer": "#8B5CF6",
-  "school-admin": "#F59E0B",
+  "senior-management": "#F59E0B",
   mis: "#EF4444",
   evaluator: "#6366F1",
   "guest-speaker": "#EC4899",

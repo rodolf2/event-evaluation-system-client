@@ -160,13 +160,13 @@ function ParticipantDashboard() {
                   image={thumbnailUrls.evaluations}
                   title="My Evaluations"
                   buttonText="Go to My Evaluations"
-                  link="/participant/evaluations"
+                  link="/student/evaluations"
                 />
                 <DashboardCard
                   image={thumbnailUrls.certificates}
                   title="My Certificates"
                   buttonText="View My Certificates"
-                  link="/participant/certificates"
+                  link="/student/certificates"
                 />
               </div>
               <CalendarWidget openModal={openModal} reminders={reminders} />
