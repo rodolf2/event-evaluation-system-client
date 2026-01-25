@@ -446,14 +446,23 @@ function UserStatistics() {
                 <tr key={user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium">
-                        {user.name?.charAt(0) || "U"}
-                      </div>
+                      <img
+                        src={
+                          user.profilePicture ||
+                          user.avatar ||
+                          "/assets/users/user1.jpg"
+                        }
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                        onError={(e) => {
+                          e.target.src = "/assets/users/user1.jpg";
+                        }}
+                      />
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-bold text-gray-900">
                           {user.name}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           {user.email}
                         </div>
                       </div>

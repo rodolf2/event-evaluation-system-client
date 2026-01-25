@@ -6,7 +6,7 @@ import {
   SkeletonText,
   SkeletonBase,
 } from "../../components/shared/SkeletonLoader";
-import { Search, Download, Eye } from "lucide-react";
+import { Search, Download, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
 import CertificateViewer from "../../components/participants/CertificateViewer";
@@ -22,6 +22,8 @@ const Certificates = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const [showCertificateViewer, setShowCertificateViewer] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Debounce search input
   useEffect(() => {
@@ -189,6 +191,25 @@ const Certificates = () => {
       return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
     });
 
+  // Effect to reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortOrder, certificates]);
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredCertificates.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
+  const totalPages = Math.ceil(filteredCertificates.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // Show certificate viewer if requested
   if (showCertificateViewer && selectedCertificate) {
     return (
@@ -296,6 +317,41 @@ const Certificates = () => {
                 </div>
               </div>
             </div>
+
+            {/* Pagination Controls - Notification Style */}
+            {filteredCertificates.length > itemsPerPage && (
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-sm text-gray-600 mr-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-full transition-colors ${
+                      currentPage === 1
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-200 text-gray-700"
+                    }`}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded-full transition-colors ${
+                      currentPage === totalPages
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-200 text-gray-700"
+                    }`}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {filteredCertificates.length === 0 ? (
@@ -309,7 +365,7 @@ const Certificates = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              {filteredCertificates.map((cert) => (
+              {currentItems.map((cert) => (
                 <div
                   key={cert._id}
                   className="bg-white rounded-lg shadow-md p-4 text-center hover:shadow-lg transition-shadow duration-300"

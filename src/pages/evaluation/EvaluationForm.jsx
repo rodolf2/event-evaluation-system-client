@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import {
   SkeletonText,
   SkeletonCard,
@@ -14,8 +15,13 @@ const EvaluationForm = () => {
   const { formId } = useParams();
   const navigate = useNavigate();
   const { token, user } = useAuth();
+
+  // Determine Layout based on role
+  const Layout =
+    user?.role === "club-officer" ? ClubOfficerLayout : ParticipantLayout;
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add submitting state
   const [error, setError] = useState(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [responses, setResponses] = useState({});
@@ -71,6 +77,52 @@ const EvaluationForm = () => {
       }
     }
   }, [formId]);
+
+  // Check if already submitted (Certificate exists)
+  useEffect(() => {
+    const checkSubmission = async () => {
+      if (!token || !formId) return;
+      try {
+        const response = await fetch(`/api/certificates/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            const userCertificates = data.data || [];
+            // Check if certificate exists for this form or its event
+            const existingCert = userCertificates.find(
+              (cert) =>
+                cert.formId?._id === formId ||
+                cert.formId === formId ||
+                cert.eventId?._id === formId,
+            );
+
+            if (existingCert) {
+              console.log(
+                "Form already submitted, redirecting to success screen",
+              );
+              // Store cert info for success screen to pick up immediately
+              const certificateInfo = {
+                certificateId: existingCert.certificateId,
+                downloadUrl: existingCert.downloadUrl,
+                formId: formId,
+              };
+              sessionStorage.setItem(
+                `cert_${formId}`,
+                JSON.stringify(certificateInfo),
+              );
+              setShowSuccess(true);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error checking submission status:", e);
+      }
+    };
+
+    checkSubmission();
+  }, [formId, token]);
 
   // Save responses to localStorage
   useEffect(() => {
@@ -173,6 +225,8 @@ const EvaluationForm = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
       // Debug: Log current responses state
       console.log("🔍 DEBUG: Current responses state:", responses);
@@ -256,8 +310,11 @@ const EvaluationForm = () => {
 
       // Show success screen with certificate data
       setShowSuccess(true);
+      setIsSubmitting(false);
     } catch (err) {
+      console.error(err);
       alert("Error submitting evaluation: " + err.message);
+      setIsSubmitting(false);
     }
   };
 
@@ -563,7 +620,7 @@ const EvaluationForm = () => {
   // Show loading state
   if (loading) {
     return (
-      <ParticipantLayout>
+      <Layout>
         <div className="w-full max-w-4xl mx-auto p-8">
           {/* Form Header Skeleton */}
           <div className="bg-white p-8 rounded-lg shadow-md mb-6">
@@ -605,14 +662,14 @@ const EvaluationForm = () => {
             <SkeletonBase className="w-32 h-12 rounded-lg" />
           </div>
         </div>
-      </ParticipantLayout>
+      </Layout>
     );
   }
 
   // Show error state
   if (error) {
     return (
-      <ParticipantLayout>
+      <Layout>
         <div className="w-full max-w-4xl mx-auto p-8">
           <div className="bg-white p-8 rounded-lg shadow-md mb-6 text-center">
             <div className="text-red-500 mb-4">
@@ -642,20 +699,20 @@ const EvaluationForm = () => {
             </button>
           </div>
         </div>
-      </ParticipantLayout>
+      </Layout>
     );
   }
 
   // Don't render form if no form data
   if (!form) {
     return (
-      <ParticipantLayout>
+      <Layout>
         <div className="w-full max-w-4xl mx-auto p-8">
           <div className="bg-white p-8 rounded-lg shadow-md mb-6 text-center">
             <p className="text-gray-600">No form data available.</p>
           </div>
         </div>
-      </ParticipantLayout>
+      </Layout>
     );
   }
 
@@ -673,18 +730,30 @@ const EvaluationForm = () => {
     }
 
     return (
-      <ParticipantLayout>
+      <Layout>
         <EvaluationSuccessScreen
           formId={formId}
           certificateData={certificateData}
-          onViewCertificates={() => navigate("/student/certificates")}
         />
-      </ParticipantLayout>
+      </Layout>
     );
   }
 
   return (
-    <ParticipantLayout>
+    <Layout>
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full mx-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+            <h3 className="text-xl font-bold mb-2 text-gray-800">
+              Processing...
+            </h3>
+            <p className="text-gray-600">
+              Generating your certificate. Please do not close this window.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-4xl mx-auto p-8">
         {/* Top White Container - Only show title/description on first section */}
         {currentSectionIndex === 0 && (
@@ -805,7 +874,7 @@ const EvaluationForm = () => {
           </div>
         )}
       </div>
-    </ParticipantLayout>
+    </Layout>
   );
 };
 

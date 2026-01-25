@@ -33,13 +33,7 @@ const ROLES = [
     icon: ClipboardList,
     color: "bg-purple-100 text-purple-700",
   },
-  {
-    id: "club-officer",
-    name: "Club Officer",
-    description: "Can manage club events and view club-specific reports.",
-    icon: Users,
-    color: "bg-green-100 text-green-700",
-  },
+
   {
     id: "senior-management",
     name: "Senior Management",

@@ -5,7 +5,7 @@ import {
   SkeletonCard,
   SkeletonText,
 } from "../../components/shared/SkeletonLoader";
-import { Search, ChevronRight, Check } from "lucide-react";
+import { Search, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
 const Evaluations = () => {
@@ -14,6 +14,8 @@ const Evaluations = () => {
   const [filteredEvaluations, setFilteredEvaluations] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
@@ -24,7 +26,7 @@ const Evaluations = () => {
 
   useEffect(() => {
     const filtered = evaluations.filter((evaluation) =>
-      evaluation.title.toLowerCase().includes(searchQuery.toLowerCase())
+      evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()),
     );
     // Sort by eventStartDate
     const sorted = [...filtered].sort((a, b) => {
@@ -33,7 +35,22 @@ const Evaluations = () => {
       return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
     });
     setFilteredEvaluations(sorted);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [searchQuery, evaluations, sortOrder]);
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredEvaluations.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
+  const totalPages = Math.ceil(filteredEvaluations.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const fetchMyEvaluations = async () => {
     if (!token) return;
@@ -180,6 +197,41 @@ const Evaluations = () => {
                 </div>
               </div>
             </div>
+
+            {/* Pagination Controls - Notification Style */}
+            {filteredEvaluations.length > itemsPerPage && (
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-sm text-gray-600 mr-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-full transition-colors ${
+                      currentPage === 1
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-200 text-gray-700"
+                    }`}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded-full transition-colors ${
+                      currentPage === totalPages
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-200 text-gray-700"
+                    }`}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {filteredEvaluations.length === 0 ? (
@@ -190,99 +242,102 @@ const Evaluations = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvaluations.map((evaluation, index) => {
-                const isCompleted = evaluation.completed || false;
-                const now = new Date();
-                const startDate = evaluation.eventStartDate
-                  ? new Date(evaluation.eventStartDate)
-                  : null;
-                const endDate = evaluation.eventEndDate
-                  ? new Date(evaluation.eventEndDate)
-                  : null;
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {currentItems.map((evaluation, index) => {
+                  const isCompleted = evaluation.completed || false;
+                  const now = new Date();
+                  const startDate = evaluation.eventStartDate
+                    ? new Date(evaluation.eventStartDate)
+                    : null;
+                  const endDate = evaluation.eventEndDate
+                    ? new Date(evaluation.eventEndDate)
+                    : null;
 
-                const isSameDay = (d1, d2) => {
+                  const isSameDay = (d1, d2) => {
+                    return (
+                      d1.getFullYear() === d2.getFullYear() &&
+                      d1.getMonth() === d2.getMonth() &&
+                      d1.getDate() === d2.getDate()
+                    );
+                  };
+
+                  const isUpcoming =
+                    startDate && now < startDate && !isSameDay(now, startDate);
+                  const isExpired =
+                    endDate && now > endDate && !isSameDay(now, endDate);
+                  const isAvailable = !isUpcoming && !isExpired && !isCompleted;
+
                   return (
-                    d1.getFullYear() === d2.getFullYear() &&
-                    d1.getMonth() === d2.getMonth() &&
-                    d1.getDate() === d2.getDate()
-                  );
-                };
-
-                const isUpcoming =
-                  startDate && now < startDate && !isSameDay(now, startDate);
-                const isExpired =
-                  endDate && now > endDate && !isSameDay(now, endDate);
-                const isAvailable = !isUpcoming && !isExpired && !isCompleted;
-
-                return (
-                  <div
-                    key={evaluation._id || index}
-                    className={`rounded-lg shadow-md transition-all duration-300 ${
-                      isCompleted
-                        ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
-                        : isExpired
-                        ? "bg-gray-400 opacity-75 cursor-not-allowed"
-                        : isUpcoming
-                        ? "bg-blue-400 opacity-75 cursor-not-allowed"
-                        : "bg-[linear-gradient(-0.15deg,_#324BA3_38%,_#002474_100%)] hover:shadow-lg cursor-pointer"
-                    }`}
-                    onClick={
-                      isAvailable
-                        ? () => navigate(`/evaluations/start/${evaluation._id}`)
-                        : undefined
-                    }
-                  >
                     <div
-                      className={`rounded-r-lg ml-3 p-8 flex items-center h-full ${
-                        isCompleted ? "bg-green-50" : "bg-white"
+                      key={evaluation._id || index}
+                      className={`rounded-lg shadow-md transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
+                          : isExpired
+                            ? "bg-gray-400 opacity-75 cursor-not-allowed"
+                            : isUpcoming
+                              ? "bg-blue-400 opacity-75 cursor-not-allowed"
+                              : "bg-[linear-gradient(-0.15deg,_#324BA3_38%,_#002474_100%)] hover:shadow-lg cursor-pointer"
                       }`}
+                      onClick={
+                        isAvailable
+                          ? () =>
+                              navigate(`/evaluations/start/${evaluation._id}`)
+                          : undefined
+                      }
                     >
-                      <div className="grow">
-                        <h3 className="font-bold text-2xl mb-4 text-gray-800">
-                          {evaluation.title}
-                        </h3>
-                        {isCompleted && (
-                          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
-                            <Check className="h-4 w-4" />
-                            Completed
-                          </div>
-                        )}
-                        {isExpired && !isCompleted && (
-                          <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
-                            Closed
-                          </div>
-                        )}
-                        {isUpcoming && !isCompleted && (
-                          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
-                            Upcoming
-                          </div>
-                        )}
-                        <div className="text-sm text-gray-500 space-x-4">
-                          <span>
-                            Open: {formatDate(evaluation.eventStartDate)}
-                          </span>
-                          <span>
-                            Closes: {formatDate(evaluation.eventEndDate)}
-                          </span>
-                        </div>
-                      </div>
                       <div
-                        className={`ml-4 ${
-                          isCompleted ? "text-green-500" : "text-gray-400"
+                        className={`rounded-r-lg ml-3 p-8 flex items-center h-full ${
+                          isCompleted ? "bg-green-50" : "bg-white"
                         }`}
                       >
-                        {isCompleted ? (
-                          <Check className="h-6 w-6" />
-                        ) : (
-                          <ChevronRight className="h-6 w-6" />
-                        )}
+                        <div className="grow">
+                          <h3 className="font-bold text-2xl mb-4 text-gray-800">
+                            {evaluation.title}
+                          </h3>
+                          {isCompleted && (
+                            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                              <Check className="h-4 w-4" />
+                              Completed
+                            </div>
+                          )}
+                          {isExpired && !isCompleted && (
+                            <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                              Closed
+                            </div>
+                          )}
+                          {isUpcoming && !isCompleted && (
+                            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                              Upcoming
+                            </div>
+                          )}
+                          <div className="text-sm text-gray-500 space-x-4">
+                            <span>
+                              Open: {formatDate(evaluation.eventStartDate)}
+                            </span>
+                            <span>
+                              Closes: {formatDate(evaluation.eventEndDate)}
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className={`ml-4 ${
+                            isCompleted ? "text-green-500" : "text-gray-400"
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <Check className="h-6 w-6" />
+                          ) : (
+                            <ChevronRight className="h-6 w-6" />
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>

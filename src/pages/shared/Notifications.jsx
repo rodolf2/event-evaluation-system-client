@@ -155,8 +155,42 @@ const NotificationDetail = ({ notification, onBack }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="bg-white rounded-xl shadow-md p-8 min-h-[600px] animate-pulse">
+        {/* Back button skeleton */}
+        <div className="h-6 w-16 bg-gray-200 rounded mb-6"></div>
+
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+          <div className="h-5 w-64 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* Title skeleton */}
+        <div className="text-center mb-12">
+          <div className="h-8 w-80 bg-gray-200 rounded mx-auto mb-4"></div>
+          <div className="h-5 w-96 bg-gray-200 rounded mx-auto"></div>
+        </div>
+
+        {/* Calendar and reminder card skeletons */}
+        <div className="flex flex-col md:flex-row justify-center items-start gap-8 max-w-5xl mx-auto">
+          <div className="bg-gray-100 rounded-2xl p-6 w-full md:w-80">
+            <div className="h-6 w-32 bg-gray-200 rounded mx-auto mb-6"></div>
+            <div className="grid grid-cols-7 gap-2">
+              {[...Array(35)].map((_, i) => (
+                <div key={i} className="h-8 w-8 bg-gray-200 rounded-full"></div>
+              ))}
+            </div>
+          </div>
+          <div className="w-full md:w-96">
+            <div className="h-12 bg-gray-200 rounded-t-2xl mb-0"></div>
+            <div className="bg-gray-100 rounded-b-2xl p-6 space-y-4">
+              <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              <div className="h-10 w-full bg-gray-200 rounded"></div>
+              <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              <div className="h-32 w-full bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -312,69 +346,86 @@ const Notifications = ({ layout: LayoutComponent }) => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [viewingNotification, setViewingNotification] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalNotifications, setTotalNotifications] = useState(0);
+  const ITEMS_PER_PAGE = 15;
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      // Skip if no token or still loading auth
-      if (!token || authLoading) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const response = await fetch("/api/notifications", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 403 || response.status === 401) {
-          setNotifications([]);
+  const fetchNotifications = useCallback(
+    async (page = 1) => {
+      try {
+        // Skip if no token or still loading auth
+        if (!token || authLoading) {
+          setLoading(false);
           return;
         }
-        throw new Error("Failed to fetch notifications");
-      }
 
-      const result = await response.json();
-
-      if (result.success) {
-        // Transform API data to match component expectations
-        const transformedNotifications = result.data.map((notification) => {
-          const from =
-            notification.createdBy?.name ||
-            (notification.isSystemGenerated ? "System" : "System");
-
-          return {
-            id: notification._id,
-            from,
-            title: notification.title,
-            preview: notification.message,
-            date: notification.createdAt
-              ? new Date(notification.createdAt).toLocaleString()
-              : "",
-            read: !!notification.isRead,
-            relatedEntity: notification.relatedEntity,
-          };
-        });
-
-        // Sort client-side just in case, newest first
-        transformedNotifications.sort(
-          (a, b) => new Date(b.date) - new Date(a.date),
+        setLoading(true);
+        const response = await fetch(
+          `/api/notifications?page=${page}&limit=${ITEMS_PER_PAGE}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
         );
 
-        setNotifications(transformedNotifications);
-      } else {
-        throw new Error(result.message || "Failed to fetch notifications");
+        if (!response.ok) {
+          if (response.status === 403 || response.status === 401) {
+            setNotifications([]);
+            return;
+          }
+          throw new Error("Failed to fetch notifications");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Update pagination info
+          if (result.pagination) {
+            setTotalPages(result.pagination.pages || 1);
+            setTotalNotifications(result.pagination.total || 0);
+            setCurrentPage(result.pagination.page || page);
+          }
+
+          // Transform API data to match component expectations
+          const transformedNotifications = result.data.map((notification) => {
+            const from =
+              notification.createdBy?.name ||
+              (notification.isSystemGenerated ? "System" : "System");
+
+            return {
+              id: notification._id,
+              from,
+              title: notification.title,
+              preview: notification.message,
+              date: notification.createdAt
+                ? new Date(notification.createdAt).toLocaleString()
+                : "",
+              read: !!notification.isRead,
+              relatedEntity: notification.relatedEntity,
+            };
+          });
+
+          // Sort client-side just in case, newest first
+          transformedNotifications.sort(
+            (a, b) => new Date(b.date) - new Date(a.date),
+          );
+
+          setNotifications(transformedNotifications);
+        } else {
+          throw new Error(result.message || "Failed to fetch notifications");
+        }
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+        setNotifications([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching notifications:", err);
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, authLoading]);
+    },
+    [token, authLoading, ITEMS_PER_PAGE],
+  );
 
   useEffect(() => {
     if (token !== null && !authLoading) {
@@ -636,12 +687,49 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
   const LayoutWrapper = LayoutComponent;
 
-  // Show loading spinner while data is being initialized
+  // Show skeleton loading while data is being initialized
   if (loading && !viewingNotification) {
     return (
       <LayoutWrapper>
-        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-full">
+          {/* Search bar skeleton */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between sm:items-center mb-4">
+            <div className="h-10 w-full sm:w-1/3 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="flex items-center gap-1">
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Notification list skeleton */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            {/* Header skeleton */}
+            <div className="flex items-center p-3 bg-gray-200 border-b border-gray-300">
+              <div className="h-5 w-5 bg-gray-300 rounded mr-4 animate-pulse"></div>
+              <div className="h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+
+            {/* Notification items skeleton */}
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center p-4 border-t border-gray-200 animate-pulse"
+              >
+                <div className="h-5 w-5 bg-gray-200 rounded mr-4"></div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </LayoutWrapper>
     );
@@ -671,17 +759,27 @@ const Notifications = ({ layout: LayoutComponent }) => {
               </div>
               <div className="flex items-center justify-between sm:justify-end gap-2">
                 <span className="text-sm text-gray-600">
-                  Page 1 of 1 ({filteredNotifications.length} total)
+                  Page {currentPage} of {totalPages} ({totalNotifications}{" "}
+                  total)
                 </span>
                 <div className="flex items-center">
                   <button
-                    className="p-2 rounded-full hover:bg-gray-200"
+                    onClick={() =>
+                      currentPage > 1 && fetchNotifications(currentPage - 1)
+                    }
+                    disabled={currentPage <= 1}
+                    className={`p-2 rounded-full ${currentPage > 1 ? "hover:bg-gray-200" : "opacity-50 cursor-not-allowed"}`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
-                    className="p-2 rounded-full hover:bg-gray-200"
+                    onClick={() =>
+                      currentPage < totalPages &&
+                      fetchNotifications(currentPage + 1)
+                    }
+                    disabled={currentPage >= totalPages}
+                    className={`p-2 rounded-full ${currentPage < totalPages ? "hover:bg-gray-200" : "opacity-50 cursor-not-allowed"}`}
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-5 h-5" />

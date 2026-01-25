@@ -45,6 +45,7 @@ import SchoolAdminLayout from "./components/school-admins/SchoolAdminLayout";
 import MisLayout from "./components/mis/MisLayout";
 import Profile from "./pages/Profile";
 import Settings from "./pages/mis/Settings";
+import Permissions from "./pages/mis/Permissions";
 import MISSharedReports from "./pages/mis/MISSharedReports";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./contexts/useAuth";
@@ -490,6 +491,16 @@ function App() {
                 )
               }
             />
+            <Route
+              path="/club-officer/reports/prepared-by"
+              element={
+                isAuthorized("club-officer") ? (
+                  <ReportSharingPage />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
             {/* Guest Access Route - for guest speakers viewing reports */}
             <Route
               path="/guest-access"
@@ -681,6 +692,19 @@ function App() {
                 isAuthorized("mis") ? (
                   <MisLayout>
                     <UserRoles />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+
+            <Route
+              path="/mis/permissions"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <Permissions />
                   </MisLayout>
                 ) : (
                   <Navigate to={getHomeRoute()} />

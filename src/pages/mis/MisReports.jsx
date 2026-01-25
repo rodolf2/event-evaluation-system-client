@@ -8,6 +8,8 @@ import {
   Database,
   Download,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -18,6 +20,8 @@ function MisReports() {
   const [searchTerm, setSearchTerm] = useState("");
   const [timeRange, setTimeRange] = useState("all");
   const [reportType, setReportType] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Mock data - replace with actual API call
   useEffect(() => {
@@ -113,6 +117,20 @@ function MisReports() {
 
     return matchesSearch && matchesType && matchesTime;
   });
+
+  // Pagination logic
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, reportType, timeRange]);
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredReports.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const getReportIcon = (type) => {
     switch (type) {
@@ -229,6 +247,40 @@ function MisReports() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          {/* Pagination Controls - Notification Style */}
+          {filteredReports.length > itemsPerPage && (
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-end items-center gap-2">
+              <span className="text-sm text-gray-600 mr-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`p-2 rounded-full transition-colors ${
+                    currentPage === 1
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                  }`}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`p-2 rounded-full transition-colors ${
+                    currentPage === totalPages
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                  }`}
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -251,7 +303,7 @@ function MisReports() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredReports.map((report) => (
+                {currentItems.map((report) => (
                   <tr key={report.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
@@ -272,10 +324,10 @@ function MisReports() {
                           report.type === "system"
                             ? "bg-blue-100 text-blue-800"
                             : report.type === "user"
-                            ? "bg-green-100 text-green-800"
-                            : report.type === "security"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-purple-100 text-purple-800"
+                              ? "bg-green-100 text-green-800"
+                              : report.type === "security"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-purple-100 text-purple-800"
                         }`}
                       >
                         {getReportTypeLabel(report.type)}

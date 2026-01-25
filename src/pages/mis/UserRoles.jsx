@@ -48,9 +48,10 @@ const FILTER_OPTIONS = [
 ];
 
 const PROGRAMS = [
-  "BS in Accountancy",
-  "BS in Information Systems",
+  "BS in Accountancy / Accounting Information System",
+  "BS in Information Systems / Associate in Computer Technology",
   "BS in Social Work",
+  "BA in Broadcasting",
 ];
 
 function UserRoles() {
@@ -68,6 +69,8 @@ function UserRoles() {
   });
 
   // Modal States
+  const [choiceModalOpen, setChoiceModalOpen] = useState(false);
+  const [selectedChoice, setSelectedChoice] = useState(null);
   const [elevationModalOpen, setElevationModalOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -153,6 +156,13 @@ function UserRoles() {
   // Handlers
   const handleElevateClick = (user) => {
     setSelectedUser(user);
+    setSelectedChoice(null);
+    setChoiceModalOpen(true);
+  };
+
+  const handleChoiceSelect = (choice) => {
+    setSelectedChoice(choice);
+    setChoiceModalOpen(false);
     setSelectedProgram(PROGRAMS[0]);
     setElevationModalOpen(true);
   };
@@ -412,12 +422,26 @@ function UserRoles() {
             {filteredUsers.map((user) => (
               <div key={user._id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">
-                      {user.name}
-                    </div>
-                    <div className="text-sm text-gray-500 truncate">
-                      {user.email}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <img
+                      src={
+                        user.profilePicture ||
+                        user.avatar ||
+                        "/assets/users/user1.jpg"
+                      }
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0"
+                      onError={(e) => {
+                        e.target.src = "/assets/users/user1.jpg";
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <div className="font-bold text-gray-900 truncate">
+                        {user.name}
+                      </div>
+                      <div className="text-sm text-gray-500 truncate">
+                        {user.email}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-2">
@@ -518,11 +542,27 @@ function UserRoles() {
               {filteredUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {user.name}
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={
+                          user.profilePicture ||
+                          user.avatar ||
+                          "/assets/users/user1.jpg"
+                        }
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                        onError={(e) => {
+                          e.target.src = "/assets/users/user1.jpg";
+                        }}
+                      />
+                      <div>
+                        <div className="font-bold text-gray-900">
+                          {user.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {user.email}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4">{getRoleBadge(user)}</td>
@@ -621,6 +661,64 @@ function UserRoles() {
           </div>
         )}
       </div>
+
+      {/* Choice Selection Modal */}
+      {choiceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">
+                Elevate to PSCO
+              </h3>
+              <button
+                onClick={() => setChoiceModalOpen(false)}
+                className="text-white/80 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-600 mb-4">
+                Select an option for <strong>{selectedUser?.name}</strong>.
+              </p>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => handleChoiceSelect("Executive")}
+                  className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
+                >
+                  <div className="font-medium text-gray-900">
+                    Presidents, VPs, and Secretaries
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Designated for top-level student organization leaders.
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleChoiceSelect("Officer")}
+                  className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
+                >
+                  <div className="font-medium text-gray-900">
+                    Other Officers
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Designated for other student organization committee members.
+                  </div>
+                </button>
+              </div>
+
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  onClick={() => setChoiceModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Elevation Input Modal */}
       {elevationModalOpen && (

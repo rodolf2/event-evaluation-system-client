@@ -396,22 +396,23 @@ function AuditLogs() {
                       }`}
                     >
                       <div className="flex items-start gap-3 mb-2">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0 ${
-                            isSuspicious
-                              ? "bg-red-400"
-                              : log.userName
-                                ? "bg-blue-500"
-                                : "bg-gray-400"
+                        <img
+                          src={
+                            log.userId?.profilePicture ||
+                            log.userId?.avatar ||
+                            "/assets/users/user1.jpg"
+                          }
+                          alt={log.userName}
+                          className={`w-8 h-8 rounded-full object-cover shrink-0 ${
+                            isSuspicious ? "border-2 border-red-400" : ""
                           }`}
-                        >
-                          {isSuspicious
-                            ? "?"
-                            : (log.userName || "S")[0].toUpperCase()}
-                        </div>
+                          onError={(e) => {
+                            e.target.src = "/assets/users/user1.jpg";
+                          }}
+                        />
                         <div className="flex-1 min-w-0">
                           <div
-                            className={`font-medium ${
+                            className={`font-bold ${
                               isSuspicious ? "text-red-700" : "text-gray-900"
                             }`}
                           >
@@ -473,22 +474,23 @@ function AuditLogs() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
-                                isSuspicious
-                                  ? "bg-red-400"
-                                  : log.userName
-                                    ? "bg-blue-500"
-                                    : "bg-gray-400"
+                            <img
+                              src={
+                                log.userId?.profilePicture ||
+                                log.userId?.avatar ||
+                                "/assets/users/user1.jpg"
+                              }
+                              alt={log.userName}
+                              className={`w-8 h-8 rounded-full object-cover ${
+                                isSuspicious ? "border-2 border-red-400" : ""
                               }`}
-                            >
-                              {isSuspicious
-                                ? "?"
-                                : (log.userName || "S")[0].toUpperCase()}
-                            </div>
+                              onError={(e) => {
+                                e.target.src = "/assets/users/user1.jpg";
+                              }}
+                            />
                             <div>
                               <div
-                                className={`font-medium ${
+                                className={`font-bold ${
                                   isSuspicious
                                     ? "text-red-700"
                                     : "text-gray-900"

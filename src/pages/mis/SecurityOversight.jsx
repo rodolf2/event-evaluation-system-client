@@ -55,7 +55,7 @@ function SecurityOversight() {
             ...s,
             // Format time if needed, backend sends ISO/Date object
             lastAccess: dayjs(s.lastAccess).fromNow(),
-          }))
+          })),
         );
       }
 
@@ -87,7 +87,7 @@ function SecurityOversight() {
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       const data = await response.json();
       if (data.success) {
@@ -128,7 +128,7 @@ function SecurityOversight() {
               background: newStatus ? "#FEF2F2" : "#F0FDF4",
               color: newStatus ? "#991B1B" : "#166534",
             },
-          }
+          },
         );
       } else {
         toast.error("Failed to update lockdown status");
@@ -303,9 +303,12 @@ function SecurityOversight() {
             <div className="divide-y divide-gray-200">
               {sessions.map((session) => (
                 <div key={session.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold shrink-0">
+                      {session.userName?.[0]?.toUpperCase() || "G"}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">
+                      <div className="font-bold text-gray-900 truncate">
                         {session.userName}
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-sm">
@@ -363,8 +366,15 @@ function SecurityOversight() {
               {sessions.length > 0 ? (
                 sessions.map((session) => (
                   <tr key={session.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {session.userName}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                          {session.userName?.[0]?.toUpperCase() || "G"}
+                        </div>
+                        <div className="font-bold text-gray-900">
+                          {session.userName}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <span

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import SchoolAdminLayout from "../../components/school-admins/SchoolAdminLayout";
 import { useAuth } from "../../contexts/useAuth";
 import QuantitativeRatings from "../reports/QuantitativeRatings";
@@ -29,13 +29,13 @@ const ReportCard = ({ report, onSelect }) => {
             onLoad={() => {
               console.log(
                 `✅ Thumbnail loaded for: ${report.title}`,
-                report.thumbnail
+                report.thumbnail,
               );
             }}
             onError={(e) => {
               console.error(
                 `❌ Thumbnail failed for: ${report.title}`,
-                report.thumbnail
+                report.thumbnail,
               );
               e.target.onerror = null;
               // Fallback to placeholder with report title
@@ -80,7 +80,7 @@ const Reports = () => {
   });
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit] = useState(8);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -117,7 +117,7 @@ const Reports = () => {
           // Apply client-side filtering
           if (searchQuery) {
             filteredReports = filteredReports.filter((r) =>
-              r.title?.toLowerCase().includes(searchQuery.toLowerCase())
+              r.title?.toLowerCase().includes(searchQuery.toLowerCase()),
             );
           }
 
@@ -125,7 +125,7 @@ const Reports = () => {
           const startIdx = (page - 1) * limit;
           const paginatedReports = filteredReports.slice(
             startIdx,
-            startIdx + limit
+            startIdx + limit,
           );
 
           setReports(paginatedReports);
@@ -141,7 +141,7 @@ const Reports = () => {
         setLoading(false);
       }
     },
-    [token, searchQuery, limit, page]
+    [token, searchQuery, limit, page],
   );
 
   // Auto-refresh every 30 seconds
@@ -356,6 +356,41 @@ const Reports = () => {
                 </div>
               </div>
             </div>
+
+            {/* Pagination Controls - Notification Style */}
+            {pagination.pages > 1 && (
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-sm text-gray-600 mr-2">
+                  Page {pagination.page} of {pagination.pages}
+                </span>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1}
+                    className={`p-2 rounded-full transition-colors ${
+                      page === 1
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-200 text-gray-700"
+                    }`}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setPage(page + 1)}
+                    disabled={page === totalPages}
+                    className={`p-2 rounded-full transition-colors ${
+                      page === totalPages
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-200 text-gray-700"
+                    }`}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Reports Grid */}
@@ -386,38 +421,7 @@ const Reports = () => {
                   ))}
                 </div>
 
-                {/* Pagination */}
-                {pagination.pages > 1 && (
-                  <div className="flex items-center justify-between mt-6">
-                    <div className="text-sm text-gray-500">
-                      Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                      {Math.min(
-                        pagination.page * pagination.limit,
-                        pagination.total
-                      )}{" "}
-                      of {pagination.total} reports
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setPage(page - 1)}
-                        disabled={page === 1}
-                        className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-gray-500">
-                        Page {page} of {totalPages}
-                      </span>
-                      <button
-                        onClick={() => setPage(page + 1)}
-                        disabled={page === totalPages}
-                        className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
+                {/* Pagination Removed - Moved to Top */}
               </>
             )}
           </div>

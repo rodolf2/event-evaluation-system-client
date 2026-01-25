@@ -1,7 +1,7 @@
-import React from "react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import { Download, Printer, UserPlus, ArrowLeft, Send } from "lucide-react";
+import { useAuth } from "../../contexts/useAuth";
 
 const ReportActions = ({
   onBackClick,
@@ -11,6 +11,7 @@ const ReportActions = ({
   loading = false,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handlePrint = () => {
     if (loading) {
@@ -47,7 +48,7 @@ const ReportActions = ({
 
       // Find the entire report container
       const reportElement = document.querySelector(
-        ".container.mx-auto.max-w-5xl"
+        ".container.mx-auto.max-w-5xl",
       );
       if (!reportElement) {
         document.body.removeChild(loadingToast);
@@ -61,113 +62,52 @@ const ReportActions = ({
 
       // Get form data first (needed for report title in header)
       const formData = JSON.parse(
-        sessionStorage.getItem("currentFormData") || "{}"
+        sessionStorage.getItem("currentFormData") || "{}",
       );
       const reportTitle = formData.title || "Evaluation Report";
 
-      // First, convert the logo to base64 for embedding in the header
-      let logoBase64 = "";
+      // Convert header image to base64 for embedding in the PDF
+      let headerBase64 = "";
+      let footerBase64 = "";
+
       try {
-        const logoImg = document.querySelector("#report-header img");
-        if (logoImg && logoImg.complete) {
+        // Get header image from the page
+        const headerImg = document.querySelector("#report-header img");
+        if (headerImg && headerImg.complete) {
           const canvas = document.createElement("canvas");
-          canvas.width = 60;
-          canvas.height = 60;
+          canvas.width = headerImg.naturalWidth || 800;
+          canvas.height = headerImg.naturalHeight || 80;
           const ctx = canvas.getContext("2d");
-          ctx.fillStyle = "white";
-          ctx.beginPath();
-          ctx.arc(30, 30, 30, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.drawImage(logoImg, 2, 2, 56, 56);
-          logoBase64 = canvas.toDataURL("image/png");
+          ctx.drawImage(headerImg, 0, 0);
+          headerBase64 = canvas.toDataURL("image/png");
         }
       } catch (e) {
-        console.warn("Could not convert logo to base64:", e);
+        console.warn("Could not convert header to base64:", e);
       }
 
-      // Header template - appears at top of every page (matching website design exactly)
+      try {
+        // Get footer image from the page
+        const footerImg = document.querySelector("#report-footer img");
+        if (footerImg && footerImg.complete) {
+          const canvas = document.createElement("canvas");
+          canvas.width = footerImg.naturalWidth || 800;
+          canvas.height = footerImg.naturalHeight || 40;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(footerImg, 0, 0);
+          footerBase64 = canvas.toDataURL("image/png");
+        }
+      } catch (e) {
+        console.warn("Could not convert footer to base64:", e);
+      }
+
+      // Header template - using the header.png image
       const headerTemplate = `
-        <div style="width: 100%; margin: 0; padding: 0; font-family: 'Times New Roman', Times, serif; position: relative;">
-          <div style="
-            width: 100%;
-            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);
-            position: relative;
-          ">
-            <!-- Decorative left pattern -->
-            <div style="
-              position: absolute;
-              left: 0;
-              top: 0;
-              height: 100%;
-              width: 64px;
-              opacity: 0.3;
-              background:
-                repeating-linear-gradient(
-                  45deg,
-                  transparent,
-                  transparent 10px,
-                  rgba(59, 130, 246, 0.3) 10px,
-                  rgba(59, 130, 246, 0.3) 20px
-                );
-            "></div>
-
-            <!-- Right gold accent bar -->
-            <div style="
-              position: absolute;
-              right: 0;
-              top: 0;
-              height: 100%;
-              width: 32px;
-              background: linear-gradient(180deg, #d4a84b 0%, #c9a227 50%, #d4a84b 100%);
-              box-shadow: -2px 0 8px rgba(0,0,0,0.3);
-            "></div>
-
-            <div style="display: flex; align-items: center; padding: 16px 32px; padding-right: 64px;">
-              <!-- Logo -->
-              <div style="flex-shrink: 0; margin-right: 24px;">
-                <div style="
-                  width: 80px;
-                  height: 80px;
-                  border-radius: 50%;
-                  overflow: hidden;
-                  background: white;
-                  border: 2px solid #eab308;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                ">
-                  ${
-                    logoBase64
-                      ? `<img src="${logoBase64}" alt="La Verdad Christian College Logo" style="width: 100%; height: 100%; object-contain; padding: 4px;" />`
-                      : `
-                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10px; font-weight: bold; color: #1e3a8a; padding: 8px;">
-                      LVCC
-                    </div>
-                  `
-                  }
-                </div>
-              </div>
-
-              <!-- School Name -->
-              <div style="flex-grow: 1;">
-                <div style="color: #d4a84b; font-size: 20px; font-weight: bold; letter-spacing: 0.05em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); font-family: 'Times New Roman', Times, serif;">
-                  LA VERDAD
-                </div>
-                <div style="color: #d4a84b; font-size: 16px; font-weight: 600; letter-spacing: 0.1em; font-family: 'Times New Roman', Times, serif;">
-                  CHRISTIAN COLLEGE, INC.
-                </div>
-                <div style="color: #e0e0e0; font-size: 12px; font-style: italic; margin-top: 4px; font-family: 'Times New Roman', Times, serif;">
-                  Apalit, Pampanga
-                </div>
-              </div>
-            </div>
-
-            <!-- Bottom border line -->
-            <div style="
-              height: 4px;
-              width: 100%;
-              background: linear-gradient(90deg, transparent 0%, #d4a84b 10%, #d4a84b 90%, transparent 100%);
-            "></div>
-          </div>
-
+        <div style="width: 100%; margin: 0; padding: 0;">
+          ${
+            headerBase64
+              ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: auto; max-height: 120px; display: block; object-fit: contain; object-position: left;" />`
+              : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
+          }
           <!-- Form Title - appears below header on each page -->
           <div style="
             width: 100%;
@@ -196,40 +136,23 @@ const ReportActions = ({
         </div>
       `;
 
-      // Footer template - appears at bottom of every page
+      // Footer template - using the footer.png image with page numbers
       const footerTemplate = `
-        <div style="width: 100%; margin: 0; padding: 0; font-family: 'Times New Roman', Times, serif;">
+        <div style="width: 100%; margin: 0; padding: 0; position: relative;">
+          ${
+            footerBase64
+              ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: auto; display: block;" />`
+              : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
+          }
           <div style="
-            width: 100%;
-            background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);
-            border-top: 2px solid #d4a84b;
-            padding: 6px 20px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: absolute;
+            bottom: 8px;
+            right: 20px;
+            font-size: 9px;
+            color: #ffffff;
+            font-family: 'Times New Roman', Times, serif;
           ">
-            <div style="
-              width: 6px;
-              height: 100%;
-              position: absolute;
-              left: 0;
-              top: 0;
-              background: linear-gradient(180deg, #d4a84b 0%, #c9a227 50%, #d4a84b 100%);
-            "></div>
-            <div style="display: flex; align-items: center; gap: 15px; font-size: 9px;">
-              <span style="color: #e0e0e0; letter-spacing: 0.02em;">
-                MacArthur Highway, Sampaloc, Apalit, Pampanga 2016
-              </span>
-              <span style="color: #d4a84b;">|</span>
-              <span style="color: #e0e0e0; letter-spacing: 0.02em;">
-                info@laverdad.edu.ph
-              </span>
-              <span style="color: #d4a84b;">|</span>
-              <span style="color: #e0e0e0; font-size: 8px;">
-                Page <span class="pageNumber"></span> of <span class="totalPages"></span>
-              </span>
-            </div>
+            Page <span class="pageNumber"></span> of <span class="totalPages"></span>
           </div>
         </div>
       `;
@@ -253,15 +176,15 @@ const ReportActions = ({
 
       // First, try to find chart containers by our explicit print-chart-container class
       const printChartContainers = reportElement.querySelectorAll(
-        ".print-chart-container"
+        ".print-chart-container",
       );
       const clonePrintChartContainers = clone.querySelectorAll(
-        ".print-chart-container"
+        ".print-chart-container",
       );
 
       console.log(
         "Found print-chart-container elements:",
-        printChartContainers.length
+        printChartContainers.length,
       );
 
       // If we found print-chart-container elements, use those directly
@@ -274,10 +197,10 @@ const ReportActions = ({
       } else {
         // Fallback: find any recharts-related elements
         const rechartsContainers = reportElement.querySelectorAll(
-          ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']"
+          ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']",
         );
         const cloneRechartsContainers = clone.querySelectorAll(
-          ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']"
+          ".recharts-wrapper, .recharts-responsive-container, [class*='recharts']",
         );
         chartContainers = Array.from(rechartsContainers);
         cloneChartContainers = Array.from(cloneRechartsContainers);
@@ -293,16 +216,16 @@ const ReportActions = ({
           "dimensions:",
           c.offsetWidth,
           "x",
-          c.offsetHeight
+          c.offsetHeight,
         );
       });
 
       // Also target SVG elements directly as fallback
       const svgElements = reportElement.querySelectorAll(
-        "svg.recharts-surface, svg[class*='recharts']"
+        "svg.recharts-surface, svg[class*='recharts']",
       );
       const cloneSvgs = clone.querySelectorAll(
-        "svg.recharts-surface, svg[class*='recharts']"
+        "svg.recharts-surface, svg[class*='recharts']",
       );
 
       console.log("Found SVG elements:", svgElements.length);
@@ -380,7 +303,7 @@ const ReportActions = ({
             if (cloneContainer.parentNode) {
               cloneContainer.parentNode.replaceChild(
                 replacement,
-                cloneContainer
+                cloneContainer,
               );
             }
           } catch (err) {
@@ -438,7 +361,7 @@ const ReportActions = ({
               }
             }
           }
-        }
+        },
       );
       await Promise.all(chartPromises);
 
@@ -651,7 +574,7 @@ const ReportActions = ({
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       const result = await response.json();
@@ -670,7 +593,8 @@ const ReportActions = ({
   };
 
   const handleShowPreparedBy = () => {
-    navigate("/psas/reports/prepared-by", {
+    const basePath = user?.role === "club-officer" ? "/club-officer" : "/psas";
+    navigate(`${basePath}/reports/prepared-by`, {
       state: { reportId: eventId, eventId: eventId },
     });
   };

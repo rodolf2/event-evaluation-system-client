@@ -17,25 +17,37 @@ export const headerConfig = {
   notificationPath: true, // uses /psas/notifications
 };
 
-export const getSidebarConfig = (user) => ({
-  homePath: "/psas/home",
-  menuItems: [
+export const getSidebarConfig = (user) => {
+  // Build menu items based on permissions
+  const menuItems = [
     { icon: HomeIcon, label: "Home", path: "/psas/home" },
     { icon: EvaluationsIcon, label: "Evaluations", path: "/psas/evaluations" },
     { icon: CertificateIcon, label: "Certificate", path: "/psas/certificates" },
-    // Conditionally add Analytics and Reports if user has permission
-    ...(user?.permissions?.canViewAnalyticsReports
-      ? [
-          {
-            icon: AnalyticsIcon,
-            label: "Event Analytics",
-            path: "/psas/analytics",
-          },
-          { icon: ReportsIcon, label: "Report", path: "/psas/reports" },
-        ]
-      : []),
-  ],
-});
+  ];
+
+  // Add Analytics if permission is granted (default to true if not set)
+  if (user?.permissions?.canViewAnalytics !== false) {
+    menuItems.push({
+      icon: AnalyticsIcon,
+      label: "Event Analytics",
+      path: "/psas/analytics",
+    });
+  }
+
+  // Add Reports if permission is granted (default to true if not set)
+  if (user?.permissions?.canViewReports !== false) {
+    menuItems.push({
+      icon: ReportsIcon,
+      label: "Report",
+      path: "/psas/reports",
+    });
+  }
+
+  return {
+    homePath: "/psas/home",
+    menuItems,
+  };
+};
 
 export const getLayoutConfig = (user) => ({
   showProfileSection: false,

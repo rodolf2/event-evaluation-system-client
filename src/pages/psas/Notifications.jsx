@@ -37,8 +37,8 @@ const NotificationItem = ({
         isAllSelected
           ? "bg-[#E1E8FD]"
           : notification.read
-          ? "bg-[#FAFAFA]"
-          : "bg-white"
+            ? "bg-[#FAFAFA]"
+            : "bg-white"
       } hover:bg-gray-100 transition-colors`}
     >
       <input
@@ -120,7 +120,7 @@ const NotificationDetail = ({ notification, onBack }) => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
           if (response.ok) {
             const result = await response.json();
@@ -143,8 +143,42 @@ const NotificationDetail = ({ notification, onBack }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="bg-white rounded-xl shadow-md p-8 min-h-[600px] animate-pulse">
+        {/* Back button skeleton */}
+        <div className="h-6 w-16 bg-gray-200 rounded mb-6"></div>
+
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+          <div className="h-5 w-64 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* Title skeleton */}
+        <div className="text-center mb-12">
+          <div className="h-8 w-80 bg-gray-200 rounded mx-auto mb-4"></div>
+          <div className="h-5 w-96 bg-gray-200 rounded mx-auto"></div>
+        </div>
+
+        {/* Calendar and reminder card skeletons */}
+        <div className="flex flex-col md:flex-row justify-center items-start gap-8 max-w-5xl mx-auto">
+          <div className="bg-gray-100 rounded-2xl p-6 w-full md:w-80">
+            <div className="h-6 w-32 bg-gray-200 rounded mx-auto mb-6"></div>
+            <div className="grid grid-cols-7 gap-2">
+              {[...Array(35)].map((_, i) => (
+                <div key={i} className="h-8 w-8 bg-gray-200 rounded-full"></div>
+              ))}
+            </div>
+          </div>
+          <div className="w-full md:w-96">
+            <div className="h-12 bg-gray-200 rounded-t-2xl mb-0"></div>
+            <div className="bg-gray-100 rounded-b-2xl p-6 space-y-4">
+              <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              <div className="h-10 w-full bg-gray-200 rounded"></div>
+              <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              <div className="h-32 w-full bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -175,7 +209,7 @@ const NotificationDetail = ({ notification, onBack }) => {
           }`}
         >
           {i}
-        </div>
+        </div>,
       );
     }
 
@@ -183,7 +217,7 @@ const NotificationDetail = ({ notification, onBack }) => {
   };
 
   const { month, year, days } = renderCalendar(
-    reminder?.date || notification.date
+    reminder?.date || notification.date,
   );
   const reminderDate = new Date(reminder?.date || notification.date);
   const formattedDate = reminderDate.toLocaleDateString("en-US", {
@@ -308,13 +342,13 @@ const Notifications = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `/api/notifications?page=${currentPage}&limit=20`,
+        `/api/notifications?page=${currentPage}&limit=15`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -348,7 +382,7 @@ const Notifications = () => {
         });
 
         transformedNotifications.sort(
-          (a, b) => new Date(b.date) - new Date(a.date)
+          (a, b) => new Date(b.date) - new Date(a.date),
         );
 
         setNotifications(transformedNotifications);
@@ -370,7 +404,7 @@ const Notifications = () => {
 
   const handleSelect = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -422,17 +456,17 @@ const Notifications = () => {
           prev.map((notification) =>
             selected.includes(notification.id)
               ? { ...notification, read: true }
-              : notification
-          )
+              : notification,
+          ),
         );
 
         setSelected([]);
         toast.success(
-          `${result.message || selected.length} notifications marked as read`
+          `${result.message || selected.length} notifications marked as read`,
         );
       } else {
         throw new Error(
-          result.message || "Failed to mark notifications as read"
+          result.message || "Failed to mark notifications as read",
         );
       }
     } catch (error) {
@@ -448,7 +482,7 @@ const Notifications = () => {
 
     if (
       !window.confirm(
-        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`
+        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`,
       )
     ) {
       return;
@@ -469,7 +503,7 @@ const Notifications = () => {
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error(
-            "You do not have permission to delete these notifications"
+            "You do not have permission to delete these notifications",
           );
         }
         throw new Error("Failed to delete notifications");
@@ -479,14 +513,14 @@ const Notifications = () => {
 
       if (result.success) {
         setNotifications((prev) =>
-          prev.filter((notification) => !selected.includes(notification.id))
+          prev.filter((notification) => !selected.includes(notification.id)),
         );
 
         setSelected([]);
         toast.success(
           `${
             result.message || selected.length
-          } notifications deleted successfully`
+          } notifications deleted successfully`,
         );
       } else {
         throw new Error(result.message || "Failed to delete notifications");
@@ -511,7 +545,7 @@ const Notifications = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -525,14 +559,14 @@ const Notifications = () => {
           prev.map((notification) =>
             notification.id === notificationId
               ? { ...notification, read: true }
-              : notification
-          )
+              : notification,
+          ),
         );
 
         toast.success("Notification marked as read");
       } else {
         throw new Error(
-          result.message || "Failed to mark notification as read"
+          result.message || "Failed to mark notification as read",
         );
       }
     } catch (error) {
@@ -546,7 +580,7 @@ const Notifications = () => {
   const handleDeleteSingle = async (notificationId) => {
     if (
       !window.confirm(
-        "Are you sure you want to delete this notification? This action cannot be undone."
+        "Are you sure you want to delete this notification? This action cannot be undone.",
       )
     ) {
       return;
@@ -566,7 +600,7 @@ const Notifications = () => {
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error(
-            "You do not have permission to delete this notification"
+            "You do not have permission to delete this notification",
           );
         }
         throw new Error("Failed to delete notification");
@@ -576,7 +610,7 @@ const Notifications = () => {
 
       if (result.success) {
         setNotifications((prev) =>
-          prev.filter((notification) => notification.id !== notificationId)
+          prev.filter((notification) => notification.id !== notificationId),
         );
 
         toast.success("Notification deleted successfully");
@@ -609,9 +643,9 @@ const Notifications = () => {
       notifications.filter(
         (n) =>
           n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          n.from.toLowerCase().includes(searchQuery.toLowerCase())
+          n.from.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [notifications, searchQuery]
+    [notifications, searchQuery],
   );
 
   const isAllSelected =
@@ -620,8 +654,45 @@ const Notifications = () => {
   if (loading && !viewingNotification) {
     return (
       <PSASLayout>
-        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-full">
+          {/* Search bar skeleton */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between sm:items-center mb-4">
+            <div className="h-10 w-full sm:w-1/3 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="flex items-center gap-1">
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Notification list skeleton */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            {/* Header skeleton */}
+            <div className="flex items-center p-3 bg-gray-200 border-b border-gray-300">
+              <div className="h-5 w-5 bg-gray-300 rounded mr-4 animate-pulse"></div>
+              <div className="h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+
+            {/* Notification items skeleton */}
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center p-4 border-t border-gray-200 animate-pulse"
+              >
+                <div className="h-5 w-5 bg-gray-200 rounded mr-4"></div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </PSASLayout>
     );

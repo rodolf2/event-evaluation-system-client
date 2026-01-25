@@ -8,6 +8,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import { useAuth } from "../../contexts/useAuth";
 import api from "../../api";
 import toast from "react-hot-toast";
@@ -22,7 +23,7 @@ const ReportSharingPage = () => {
   console.log("🚀 ReportSharingPage component is rendering!");
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -195,8 +196,10 @@ const ReportSharingPage = () => {
 
   // Note: Edit and delete functionality removed - users should be managed from User Management page
 
+  const Layout = user?.role === "club-officer" ? ClubOfficerLayout : PSASLayout;
+
   return (
-    <PSASLayout>
+    <Layout>
       <div className="p-4 sm:p-6 md:p-8 bg-gray-100 min-h-full">
         {/* Top Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
@@ -460,7 +463,7 @@ const ReportSharingPage = () => {
           </div>
         </div>
       </div>
-    </PSASLayout>
+    </Layout>
   );
 };
 

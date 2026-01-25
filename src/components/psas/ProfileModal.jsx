@@ -25,11 +25,17 @@ const ProfileModal = ({ isOpen, onClose, position }) => {
           alt="User"
           className="w-12 h-12 rounded-full object-cover"
         />
-        <div className="flex flex-col">
-          <span className="font-semibold text-gray-900">
+        <div className="flex flex-col min-w-0 flex-1">
+          <span
+            className="font-semibold text-gray-900 truncate max-w-[180px]"
+            title={user?.name || "User"}
+          >
             {user?.name || "User"}
           </span>
-          <span className="text-sm text-gray-500">
+          <span
+            className="text-sm text-gray-500 truncate max-w-[180px]"
+            title={user?.email || "user@laverdad.edu.ph"}
+          >
             {user?.email || "user@laverdad.edu.ph"}
           </span>
         </div>

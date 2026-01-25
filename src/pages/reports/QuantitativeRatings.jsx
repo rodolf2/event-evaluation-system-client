@@ -1,34 +1,9 @@
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import PSASLayout from '../../components/psas/PSASLayout';
-import ReportHeader from './ReportHeader';
-import ReportDescription from './ReportDescription';
-import ReportActions from './ReportActions';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
-const yearData2024 = [
-  { name: 'First Year', value: 106 },
-  { name: 'Second Year', value: 305 },
-  { name: 'Third Year', value: 220 },
-  { name: 'Fourth Year', value: 214 },
-];
-
-const yearData2025 = [
-    { name: 'First Year', value: 185 },
-    { name: 'Second Year', value: 305 },
-    { name: 'Third Year', value: 237 },
-    { name: 'Fourth Year', value: 256 },
-];
-
-const pieData = [
-  { name: 'Very unclear', value: 20 },
-  { name: 'Unclear', value: 20 },
-  { name: 'Neutral / Moderately clear', value: 25 },
-  { name: 'Clear', value: 15 },
-  { name: 'Extremely clear', value: 20 },
-];
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+import React from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import PSASLayout from "../../components/psas/PSASLayout";
+import ReportHeader from "./ReportHeader";
+import ReportDescription from "./ReportDescription";
+import ReportActions from "./ReportActions";
 
 const QuantitativeRatings = ({ report, onBack }) => {
   const navigate = useNavigate();
@@ -46,6 +21,90 @@ const QuantitativeRatings = ({ report, onBack }) => {
     }
   };
 
+  // Sample quantitative ratings data
+  const quantitativeRatings = [
+    {
+      category: "Event Organization",
+      rating: 4.5,
+      totalResponses: 45,
+      average: 4.5,
+    },
+    {
+      category: "Content Quality",
+      rating: 4.7,
+      totalResponses: 45,
+      average: 4.7,
+    },
+    {
+      category: "Speaker Performance",
+      rating: 4.8,
+      totalResponses: 45,
+      average: 4.8,
+    },
+    {
+      category: "Venue & Facilities",
+      rating: 4.3,
+      totalResponses: 45,
+      average: 4.3,
+    },
+    {
+      category: "Networking Opportunities",
+      rating: 4.6,
+      totalResponses: 45,
+      average: 4.6,
+    },
+    {
+      category: "Overall Satisfaction",
+      rating: 4.6,
+      totalResponses: 45,
+      average: 4.6,
+    },
+  ];
+
+  const getRatingColor = (rating) => {
+    if (rating >= 4.5) return "text-green-600";
+    if (rating >= 4.0) return "text-blue-600";
+    if (rating >= 3.5) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getRatingStars = (rating) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    return (
+      <div className="flex items-center gap-1">
+        {[...Array(fullStars)].map((_, i) => (
+          <svg
+            key={`full-${i}`}
+            className="w-5 h-5 text-yellow-400 fill-current"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+          </svg>
+        ))}
+        {hasHalfStar && (
+          <svg
+            className="w-5 h-5 text-yellow-400 fill-current"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+          </svg>
+        )}
+        {[...Array(emptyStars)].map((_, i) => (
+          <svg
+            key={`empty-${i}`}
+            className="w-5 h-5 text-gray-300 fill-current"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+          </svg>
+        ))}
+      </div>
+    );
+  };
+
   const content = (
     <>
       <ReportActions onBackClick={handleBackClick} />
@@ -60,65 +119,86 @@ const QuantitativeRatings = ({ report, onBack }) => {
                 <p className="text-xl font-semibold">EVALUATION RESULT</p>
                 <p className="text-lg">College Level</p>
               </div>
-
-      <h4 className="text-xl font-bold mb-4">Quantitative Ratings</h4>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <div>
-          <h5 className="text-lg font-semibold text-center mb-2">Higher Education Department 2024</h5>
-          <p className="text-center text-sm text-gray-500 mb-4">536 Responses</p>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={yearData2024} layout="vertical">
-              <XAxis type="number" />
-              <YAxis type="category" dataKey="name" width={100} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3B82F6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div>
-          <h5 className="text-lg font-semibold text-center mb-2">Higher Education Department 2025</h5>
-          <p className="text-center text-sm text-gray-500 mb-4">536 Responses</p>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={yearData2025} layout="vertical">
-              <XAxis type="number" />
-              <YAxis type="category" dataKey="name" width={100} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3B82F6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-              <div>
-                <h4 className="text-xl font-bold mb-2">1. How clearly were the examples explained?</h4>
-                <p className="text-sm text-gray-500 mb-4">536 responses</p>
-                <div className="flex justify-center">
-                    <ResponsiveContainer width="100%" height={400}>
-                        <PieChart>
-                        <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={150}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                        >
-                            {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
+              <h4 className="text-xl font-bold mb-4">Quantitative Ratings</h4>
+              <p className="text-sm text-gray-600 mb-6">
+                Total Categories: {quantitativeRatings.length} | Total Responses:{" "}
+                {quantitativeRatings[0]?.totalResponses || 0}
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-blue-900 text-white">
+                      <th className="border border-gray-300 px-4 py-3 text-left">
+                        Category
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-center">
+                        Rating
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-center">
+                        Average
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-center">
+                        Visual Rating
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quantitativeRatings.map((item, index) => (
+                      <tr
+                        key={index}
+                        className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        <td className="border border-gray-300 px-4 py-3 font-medium">
+                          {item.category}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          <span className={`font-bold ${getRatingColor(item.rating)}`}>
+                            {item.rating.toFixed(1)}
+                          </span>
+                        </td>
+                        <td className="border border-gray-300 px-4 py-3 text-center">
+                          {item.average.toFixed(1)}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-3">
+                          <div className="flex items-center justify-center">
+                            {getRatingStars(item.rating)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-8 p-4 bg-blue-50 border-l-4 border-blue-900 rounded-r-lg">
+                <h5 className="font-bold text-blue-900 mb-2">Summary</h5>
+                <p className="text-gray-700">
+                  The overall quantitative ratings indicate strong performance
+                  across all categories, with an average rating of{" "}
+                  <span className="font-bold">
+                    {(quantitativeRatings.reduce((sum, item) => sum + item.rating, 0) /
+                      quantitativeRatings.length).toFixed(1)}
+                  </span>{" "}
+                  out of 5.0. The highest-rated category is{" "}
+                  <span className="font-bold">
+                    {quantitativeRatings.reduce((max, item) =>
+                      item.rating > max.rating ? item : max
+                    ).category}
+                  </span>{" "}
+                  with a rating of{" "}
+                  <span className="font-bold">
+                    {quantitativeRatings.reduce((max, item) =>
+                      item.rating > max.rating ? item : max
+                    ).rating.toFixed(1)}
+                  </span>
+                  .
+                </p>
               </div>
             </main>
             <div className="bg-blue-900 text-white text-center py-4 rounded-b-lg">
-              <p>MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 | info@laverdad.edu.ph</p>
+              <p>
+                MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 |
+                info@laverdad.edu.ph
+              </p>
             </div>
           </div>
         </div>
@@ -131,11 +211,7 @@ const QuantitativeRatings = ({ report, onBack }) => {
     return content;
   }
 
-  return (
-    <PSASLayout>
-      {content}
-    </PSASLayout>
-  );
+  return <PSASLayout>{content}</PSASLayout>;
 };
 
 export default QuantitativeRatings;

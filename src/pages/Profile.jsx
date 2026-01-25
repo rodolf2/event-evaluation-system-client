@@ -445,11 +445,14 @@ function Profile() {
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-sm">
-                <div>
+                <div className="min-w-0">
                   <label className="block text-gray-500 font-medium">
                     Email Address
                   </label>
-                  <p className="text-gray-800 font-semibold mt-1">
+                  <p
+                    className="text-gray-800 font-semibold mt-1 truncate"
+                    title={user.email}
+                  >
                     {user.email}
                   </p>
                 </div>

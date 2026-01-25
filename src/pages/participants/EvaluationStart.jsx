@@ -1,15 +1,54 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import { useAuth } from "../../contexts/useAuth";
 
 const EvaluationStart = () => {
   const navigate = useNavigate();
   const { formId } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+
+  // Determine Layout based on role
+  const Layout =
+    user?.role === "club-officer" ? ClubOfficerLayout : ParticipantLayout;
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    const checkSubmission = async () => {
+      // Check session storage first for immediate feedback
+      const sessionCert = sessionStorage.getItem(`cert_${formId}`);
+      if (sessionCert) {
+        setIsCompleted(true);
+      }
+
+      if (!token || !formId) return;
+      try {
+        const response = await fetch(`/api/certificates/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            const userCertificates = data.data || [];
+            const exists = userCertificates.some(
+              (cert) =>
+                cert.formId?._id === formId ||
+                cert.formId === formId ||
+                cert.eventId?._id === formId,
+            );
+            setIsCompleted(exists);
+          }
+        }
+      } catch (e) {
+        console.error("Error checking submission:", e);
+      }
+    };
+    checkSubmission();
+  }, [formId, token]);
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -41,22 +80,26 @@ const EvaluationStart = () => {
   };
 
   const handleGoBack = () => {
-    navigate("/student/evaluations");
+    if (user?.role === "club-officer") {
+      navigate("/club-officer/evaluations/my");
+    } else {
+      navigate("/student/evaluations");
+    }
   };
 
   if (loading) {
     return (
-      <ParticipantLayout>
+      <Layout>
         <div className="flex justify-center items-center h-full">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
         </div>
-      </ParticipantLayout>
+      </Layout>
     );
   }
 
   if (error) {
     return (
-      <ParticipantLayout>
+      <Layout>
         <div className="flex justify-center items-center h-full">
           <div className="bg-white rounded-lg p-8 text-center">
             <p className="text-red-600">Error: {error}</p>
@@ -68,12 +111,12 @@ const EvaluationStart = () => {
             </button>
           </div>
         </div>
-      </ParticipantLayout>
+      </Layout>
     );
   }
 
   return (
-    <ParticipantLayout>
+    <Layout>
       <div className="flex justify-center items-center h-full bg-gray-100">
         <div className="max-w-6xl w-full mx-auto p-8">
           <div className="bg-white rounded-lg shadow-lg py-12 text-center mb-6">
@@ -113,15 +156,19 @@ const EvaluationStart = () => {
               </button>
               <button
                 onClick={handleContinue}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+                className={`${
+                  isCompleted
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                } text-white font-bold py-2 px-4 rounded-lg`}
               >
-                Continue
+                {isCompleted ? "View Certificate" : "Continue"}
               </button>
             </div>
           </div>
         </div>
       </div>
-    </ParticipantLayout>
+    </Layout>
   );
 };
 

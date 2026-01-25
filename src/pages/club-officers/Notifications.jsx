@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   ChevronLeft,
@@ -10,6 +11,7 @@ import {
 import { useAuth } from "../../contexts/useAuth";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import toast from "react-hot-toast";
+import CalendarIcon from "../../assets/icons/calendar.svg";
 
 const NotificationItem = ({
   notification,
@@ -37,8 +39,8 @@ const NotificationItem = ({
         isAllSelected
           ? "bg-[#E1E8FD]"
           : notification.read
-          ? "bg-[#FAFAFA]"
-          : "bg-white"
+            ? "bg-[#FAFAFA]"
+            : "bg-white"
       } hover:bg-gray-100 transition-colors`}
     >
       <input
@@ -59,8 +61,8 @@ const NotificationItem = ({
               isSelected
                 ? "text-gray-800"
                 : notification.read
-                ? "text-gray-700"
-                : "font-semibold text-gray-900"
+                  ? "text-gray-700"
+                  : "font-semibold text-gray-900"
             }`}
           >
             {notification.title}
@@ -114,23 +116,28 @@ const NotificationItem = ({
 
 const NotificationDetail = ({ notification, onBack }) => {
   const [reminder, setReminder] = useState(null);
+  const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const { token, user } = useAuth();
+  const navigate = useNavigate();
+
+  const isFormNotification =
+    notification.relatedEntity && notification.relatedEntity.type === "form";
+  const isReminderNotification =
+    notification.relatedEntity &&
+    notification.relatedEntity.type === "reminder";
 
   useEffect(() => {
-    const fetchReminderDetails = async () => {
-      if (
-        notification.relatedEntity &&
-        notification.relatedEntity.type === "reminder"
-      ) {
-        try {
+    const fetchDetails = async () => {
+      try {
+        if (isReminderNotification) {
           const response = await fetch(
             `/api/reminders/${notification.relatedEntity.id}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
           if (response.ok) {
             const result = await response.json();
@@ -138,28 +145,169 @@ const NotificationDetail = ({ notification, onBack }) => {
               setReminder(result.data);
             }
           }
-        } catch (error) {
-          console.error("Error fetching reminder details:", error);
-        } finally {
-          setLoading(false);
+        } else if (isFormNotification) {
+          const response = await fetch(
+            `/api/forms/${notification.relatedEntity.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setForm(result.data);
+            }
+          }
         }
-      } else {
+      } catch (error) {
+        console.error("Error fetching notification details:", error);
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchReminderDetails();
-  }, [notification, token]);
+    fetchDetails();
+  }, [notification, token, isFormNotification, isReminderNotification]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="bg-white rounded-xl shadow-md p-8 min-h-[600px] animate-pulse">
+        {/* Back button skeleton */}
+        <div className="h-6 w-16 bg-gray-200 rounded mb-6"></div>
+
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+          <div className="h-5 w-64 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* Title skeleton */}
+        <div className="text-center mb-12">
+          <div className="h-8 w-80 bg-gray-200 rounded mx-auto mb-4"></div>
+          <div className="h-5 w-96 bg-gray-200 rounded mx-auto mb-2"></div>
+          <div className="h-4 w-72 bg-gray-200 rounded mx-auto"></div>
+        </div>
+
+        {/* Content skeleton */}
+        <div className="max-w-3xl mx-auto">
+          <div className="h-6 w-40 bg-gray-200 rounded mb-4"></div>
+          <div className="space-y-3">
+            <div className="h-4 w-full bg-gray-200 rounded"></div>
+            <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
+            <div className="h-4 w-4/6 bg-gray-200 rounded"></div>
+          </div>
+
+          {/* Button skeleton */}
+          <div className="h-12 w-48 bg-gray-200 rounded-lg mx-auto mt-12"></div>
+        </div>
       </div>
     );
   }
 
-  // Helper to generate calendar days
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }) +
+      " - " +
+      date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    );
+  };
+
+  // Form notification detail view
+  if (isFormNotification) {
+    const formTitle = form?.title || "Evaluation Form";
+    const creatorRole = form?.createdBy?.role;
+    const departmentText =
+      creatorRole === "club-officer"
+        ? "Higher Education Department"
+        : "Prefect of Student Affairs and Services Department";
+
+    return (
+      <div className="bg-white rounded-xl shadow-md p-8 min-h-[600px]">
+        <button
+          onClick={onBack}
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          Back
+        </button>
+
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-gray-300 rounded-full shrink-0"></div>
+          <span className="text-gray-600 font-medium">{departmentText}</span>
+        </div>
+
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Hi {user?.name || "User"}, answer this evaluation now!
+          </h1>
+          <p className="text-lg text-gray-600 mb-2">
+            The Event Evaluation Form for the <strong>{formTitle}</strong> is
+            now open.
+          </p>
+          <p className="text-gray-600 mb-2">
+            Answer it now on the given timeframe to ensure that your voice is
+            heard by the Institution.
+          </p>
+          <p className="text-gray-600 mb-4">
+            Looking forward to your response!
+          </p>
+          <p className="text-gray-700 font-medium">Thanks be to God!</p>
+        </div>
+
+        <div className="flex flex-col items-center max-w-2xl mx-auto px-4">
+          {/* Calendar Icon with Dates and Button */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div className="w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center sm:-mt-4">
+              <img
+                src={CalendarIcon}
+                alt="Calendar"
+                className="w-32 h-32 sm:w-40 sm:h-40"
+              />
+            </div>
+            <div className="space-y-4 pt-4 text-center sm:text-left">
+              <div>
+                <span className="font-bold text-gray-800">Form Opens:</span>{" "}
+                <span className="text-gray-600">
+                  {formatDateTime(form?.eventStartDate)}
+                </span>
+              </div>
+              <div>
+                <span className="font-bold text-gray-800">Form Closes:</span>{" "}
+                <span className="text-gray-600">
+                  {formatDateTime(form?.eventEndDate)}
+                </span>
+              </div>
+              {/* Submit Button */}
+              <button
+                onClick={() =>
+                  navigate(
+                    `/evaluations/start/${notification.relatedEntity.id}`,
+                  )
+                }
+                className="bg-[#1E3A8A] hover:bg-[#15306e] text-white font-semibold py-3 px-8 rounded-lg transition-colors mt-4"
+              >
+                Submit an Evaluation
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Reminder notification detail view (original)
   const renderCalendar = (dateString) => {
     const date = new Date(dateString);
     const month = date.toLocaleString("default", { month: "long" });
@@ -185,7 +333,7 @@ const NotificationDetail = ({ notification, onBack }) => {
           }`}
         >
           {i}
-        </div>
+        </div>,
       );
     }
 
@@ -193,7 +341,7 @@ const NotificationDetail = ({ notification, onBack }) => {
   };
 
   const { month, year, days } = renderCalendar(
-    reminder?.date || notification.date
+    reminder?.date || notification.date,
   );
   const reminderDate = new Date(reminder?.date || notification.date);
   const formattedDate = reminderDate.toLocaleDateString("en-US", {
@@ -258,8 +406,7 @@ const NotificationDetail = ({ notification, onBack }) => {
         {/* Reminder Details Card */}
         <div className="bg-white rounded-2xl shadow-lg w-full md:w-96 border border-gray-100 relative">
           <div className="bg-[#1E3A8A] p-4 flex items-center relative rounded-t-2xl">
-            {/* Triangle Pointer */}
-            <div className="absolute left-[-10px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-[#1E3A8A] border-b-[10px] border-b-transparent"></div>
+            <div className="absolute left-[-10px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-10 border-t-transparent border-r-10 border-r-[#1E3A8A] border-b-10 border-b-transparent"></div>
             <span className="text-white font-bold text-lg ml-2">Reminder</span>
           </div>
           <div className="p-6">
@@ -309,69 +456,87 @@ function Notifications() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [viewingNotification, setViewingNotification] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, pages: 1 });
+  const ITEMS_PER_PAGE = 15;
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      // Skip if no token or still loading auth
-      if (!token || authLoading) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const response = await fetch("/api/notifications", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 403 || response.status === 401) {
-          setNotifications([]);
+  const fetchNotifications = useCallback(
+    async (page = 1) => {
+      try {
+        // Skip if no token or still loading auth
+        if (!token || authLoading) {
+          setLoading(false);
           return;
         }
-        throw new Error("Failed to fetch notifications");
-      }
 
-      const result = await response.json();
-
-      if (result.success) {
-        // Transform API data to match component expectations
-        const transformedNotifications = result.data.map((notification) => {
-          const from =
-            notification.createdBy?.name ||
-            (notification.isSystemGenerated ? "System" : "System");
-
-          return {
-            id: notification._id,
-            from,
-            title: notification.title,
-            preview: notification.message,
-            date: notification.createdAt
-              ? new Date(notification.createdAt).toLocaleString()
-              : "",
-            read: !!notification.isRead,
-            relatedEntity: notification.relatedEntity,
-          };
-        });
-
-        // Sort client-side just in case, newest first
-        transformedNotifications.sort(
-          (a, b) => new Date(b.date) - new Date(a.date)
+        setLoading(true);
+        const response = await fetch(
+          `/api/notifications?page=${page}&limit=${ITEMS_PER_PAGE}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
         );
 
-        setNotifications(transformedNotifications);
-      } else {
-        throw new Error(result.message || "Failed to fetch notifications");
+        if (!response.ok) {
+          if (response.status === 403 || response.status === 401) {
+            setNotifications([]);
+            return;
+          }
+          throw new Error("Failed to fetch notifications");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Transform API data to match component expectations
+          const transformedNotifications = result.data.map((notification) => {
+            const from =
+              notification.createdBy?.name ||
+              (notification.isSystemGenerated ? "System" : "System");
+
+            return {
+              id: notification._id,
+              from,
+              title: notification.title,
+              preview: notification.message,
+              date: notification.createdAt
+                ? new Date(notification.createdAt).toLocaleString()
+                : "",
+              read: !!notification.isRead,
+              relatedEntity: notification.relatedEntity,
+            };
+          });
+
+          // Sort client-side just in case, newest first
+          transformedNotifications.sort(
+            (a, b) => new Date(b.date) - new Date(a.date),
+          );
+
+          setNotifications(transformedNotifications);
+
+          // Update pagination state from API response
+          if (result.pagination) {
+            setPagination({
+              total: result.pagination.total,
+              pages: result.pagination.pages,
+            });
+            setCurrentPage(result.pagination.page);
+          }
+        } else {
+          throw new Error(result.message || "Failed to fetch notifications");
+        }
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+        setNotifications([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching notifications:", err);
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, authLoading]);
+    },
+    [token, authLoading, ITEMS_PER_PAGE],
+  );
 
   useEffect(() => {
     if (token !== null && !authLoading) {
@@ -384,7 +549,7 @@ function Notifications() {
 
   const handleSelect = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -423,17 +588,17 @@ function Notifications() {
           prev.map((notification) =>
             selected.includes(notification.id)
               ? { ...notification, read: true }
-              : notification
-          )
+              : notification,
+          ),
         );
 
         setSelected([]);
         toast.success(
-          `${result.message || selected.length} notifications marked as read`
+          `${result.message || selected.length} notifications marked as read`,
         );
       } else {
         throw new Error(
-          result.message || "Failed to mark notifications as read"
+          result.message || "Failed to mark notifications as read",
         );
       }
     } catch (error) {
@@ -450,7 +615,7 @@ function Notifications() {
     // Confirm deletion
     if (
       !window.confirm(
-        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`
+        `Are you sure you want to delete ${selected.length} notification(s)? This action cannot be undone.`,
       )
     ) {
       return;
@@ -471,7 +636,7 @@ function Notifications() {
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error(
-            "You do not have permission to delete these notifications"
+            "You do not have permission to delete these notifications",
           );
         }
         throw new Error("Failed to delete notifications");
@@ -482,14 +647,14 @@ function Notifications() {
       if (result.success) {
         // Remove deleted notifications from local state
         setNotifications((prev) =>
-          prev.filter((notification) => !selected.includes(notification.id))
+          prev.filter((notification) => !selected.includes(notification.id)),
         );
 
         setSelected([]);
         toast.success(
           `${
             result.message || selected.length
-          } notifications deleted successfully`
+          } notifications deleted successfully`,
         );
       } else {
         throw new Error(result.message || "Failed to delete notifications");
@@ -514,7 +679,7 @@ function Notifications() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -528,14 +693,14 @@ function Notifications() {
           prev.map((notification) =>
             notification.id === notificationId
               ? { ...notification, read: true }
-              : notification
-          )
+              : notification,
+          ),
         );
 
         toast.success("Notification marked as read");
       } else {
         throw new Error(
-          result.message || "Failed to mark notification as read"
+          result.message || "Failed to mark notification as read",
         );
       }
     } catch (error) {
@@ -550,7 +715,7 @@ function Notifications() {
     // Confirm deletion
     if (
       !window.confirm(
-        "Are you sure you want to delete this notification? This action cannot be undone."
+        "Are you sure you want to delete this notification? This action cannot be undone.",
       )
     ) {
       return;
@@ -570,7 +735,7 @@ function Notifications() {
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error(
-            "You do not have permission to delete this notification"
+            "You do not have permission to delete this notification",
           );
         }
         throw new Error("Failed to delete notification");
@@ -580,7 +745,7 @@ function Notifications() {
 
       if (result.success) {
         setNotifications((prev) =>
-          prev.filter((notification) => notification.id !== notificationId)
+          prev.filter((notification) => notification.id !== notificationId),
         );
 
         toast.success("Notification deleted successfully");
@@ -596,6 +761,7 @@ function Notifications() {
   };
 
   const handleNotificationClick = (notification) => {
+    // Handle reminder-type notifications - show detail view
     if (
       notification.type === "reminder" ||
       (notification.relatedEntity &&
@@ -606,6 +772,23 @@ function Notifications() {
         handleMarkSingleAsRead(notification.id);
       }
     }
+    // Handle form-type notifications (form assignment) - show detail view
+    else if (
+      notification.relatedEntity &&
+      notification.relatedEntity.type === "form"
+    ) {
+      setViewingNotification(notification);
+      if (!notification.read) {
+        handleMarkSingleAsRead(notification.id);
+      }
+    }
+    // For all other notifications, just mark as read and toggle selection
+    else {
+      if (!notification.read) {
+        handleMarkSingleAsRead(notification.id);
+      }
+      handleSelect(notification.id);
+    }
   };
 
   const filteredNotifications = useMemo(
@@ -613,20 +796,57 @@ function Notifications() {
       notifications.filter(
         (n) =>
           n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          n.from.toLowerCase().includes(searchQuery.toLowerCase())
+          n.from.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [notifications, searchQuery]
+    [notifications, searchQuery],
   );
 
   const isAllSelected =
     selected.length > 0 && selected.length === filteredNotifications.length;
 
-  // Show loading spinner while data is being initialized
+  // Show skeleton loading while data is being initialized
   if (loading && !viewingNotification) {
     return (
       <ClubOfficerLayout>
-        <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-full">
+          {/* Search bar skeleton */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between sm:items-center mb-4">
+            <div className="h-10 w-full sm:w-1/3 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="flex items-center gap-1">
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Notification list skeleton */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            {/* Header skeleton */}
+            <div className="flex items-center p-3 bg-gray-200 border-b border-gray-300">
+              <div className="h-5 w-5 bg-gray-300 rounded mr-4 animate-pulse"></div>
+              <div className="h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+
+            {/* Notification items skeleton */}
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center p-4 border-t border-gray-200 animate-pulse"
+              >
+                <div className="h-5 w-5 bg-gray-200 rounded mr-4"></div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </ClubOfficerLayout>
     );
@@ -656,18 +876,28 @@ function Notifications() {
               </div>
               <div className="flex items-center justify-between sm:justify-end gap-2">
                 <span className="text-sm text-gray-600">
-                  Page 1 of 1 ({filteredNotifications.length} total)
+                  Page {currentPage} of {pagination.pages} ({pagination.total}{" "}
+                  total)
                 </span>
                 <div className="flex items-center">
                   <button
-                    className="p-2 rounded-full hover:bg-gray-200"
+                    className={`p-2 rounded-full ${currentPage > 1 ? "hover:bg-gray-200" : "opacity-50 cursor-not-allowed"}`}
                     aria-label="Previous page"
+                    onClick={() =>
+                      currentPage > 1 && fetchNotifications(currentPage - 1)
+                    }
+                    disabled={currentPage <= 1}
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
-                    className="p-2 rounded-full hover:bg-gray-200"
+                    className={`p-2 rounded-full ${currentPage < pagination.pages ? "hover:bg-gray-200" : "opacity-50 cursor-not-allowed"}`}
                     aria-label="Next page"
+                    onClick={() =>
+                      currentPage < pagination.pages &&
+                      fetchNotifications(currentPage + 1)
+                    }
+                    disabled={currentPage >= pagination.pages}
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
