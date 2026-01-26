@@ -13,12 +13,341 @@ const ReportActions = ({
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (loading) {
       alert("Please wait for report to finish loading");
       return;
     }
-    window.print();
+
+    // Open window immediately to avoid popup blocker
+    // Must be done in sync context before any async operations
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    if (!printWindow) {
+      alert("Please allow pop-ups to print the report.");
+      return;
+    }
+
+    // Show loading message in the print window
+    printWindow.document.write(`
+      <html>
+        <head><title>Preparing Report...</title></head>
+        <body style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+          <div style="text-align: center;">
+            <div style="font-size: 18px; margin-bottom: 10px;">Preparing print preview...</div>
+            <div style="color: #666;">Please wait while charts are being processed.</div>
+          </div>
+        </body>
+      </html>
+    `);
+
+    try {
+      // Wait for charts to be fully rendered
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Get form data for report title
+      const formData = JSON.parse(
+        sessionStorage.getItem("currentFormData") || "{}",
+      );
+      const reportTitle = formData.title || "Evaluation Report";
+
+      // Find the report container
+      const reportElement = document.querySelector(
+        ".container.mx-auto.max-w-5xl",
+      );
+      if (!reportElement) {
+        printWindow.close();
+        alert("Report content not found. Please try again.");
+        return;
+      }
+
+      // Import html2canvas for chart conversion
+      const html2canvas = (await import("html2canvas")).default;
+
+      // Clone the report element
+      const clone = reportElement.cloneNode(true);
+
+      // Remove the original header/footer from the clone to prevent duplication
+      // (We add our own header/footer in the print template)
+      const headerBlock = clone.querySelector("#report-header-block");
+      const footerBlock = clone.querySelector("#report-footer-block");
+      const originalHeader = clone.querySelector("#report-header");
+      const originalFooter = clone.querySelector("#report-footer");
+
+      if (headerBlock) headerBlock.remove();
+      if (footerBlock) footerBlock.remove();
+      if (originalHeader) originalHeader.remove();
+      if (originalFooter) originalFooter.remove();
+
+      // Get header and footer images (from the original, before removal)
+      let headerBase64 = "";
+      let footerBase64 = "";
+
+      try {
+        const headerImg = document.querySelector("#report-header img");
+        if (headerImg && headerImg.complete) {
+          const canvas = document.createElement("canvas");
+          canvas.width = headerImg.naturalWidth || 800;
+          canvas.height = headerImg.naturalHeight || 80;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(headerImg, 0, 0);
+          headerBase64 = canvas.toDataURL("image/png");
+        }
+      } catch (e) {
+        console.warn("Could not convert header to base64:", e);
+      }
+
+      try {
+        const footerImg = document.querySelector("#report-footer img");
+        if (footerImg && footerImg.complete) {
+          const canvas = document.createElement("canvas");
+          canvas.width = footerImg.naturalWidth || 800;
+          canvas.height = footerImg.naturalHeight || 40;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(footerImg, 0, 0);
+          footerBase64 = canvas.toDataURL("image/png");
+        }
+      } catch (e) {
+        console.warn("Could not convert footer to base64:", e);
+      }
+
+      // Convert charts to images
+      const chartContainers = reportElement.querySelectorAll(
+        ".print-chart-container, .recharts-wrapper",
+      );
+      const cloneChartContainers = clone.querySelectorAll(
+        ".print-chart-container, .recharts-wrapper",
+      );
+
+      for (let i = 0; i < chartContainers.length; i++) {
+        try {
+          const container = chartContainers[i];
+          const cloneContainer = cloneChartContainers[i];
+          if (!cloneContainer) continue;
+
+          const width = container.offsetWidth || 400;
+          const height = container.offsetHeight || 300;
+
+          // Clone the container and normalize colors before capture
+          const canvas = await html2canvas(container, {
+            backgroundColor: "#ffffff",
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
+            // Use onclone to fix unsupported CSS color functions
+            onclone: (clonedDoc) => {
+              // Convert oklch and other unsupported color functions to fallback colors
+              const allElements = clonedDoc.querySelectorAll("*");
+              allElements.forEach((el) => {
+                const computedStyle = window.getComputedStyle(el);
+                const bgColor = computedStyle.backgroundColor;
+                const textColor = computedStyle.color;
+
+                // Check for oklch or other unsupported color functions
+                if (bgColor && bgColor.includes("oklch")) {
+                  el.style.backgroundColor = "#ffffff";
+                }
+                if (textColor && textColor.includes("oklch")) {
+                  el.style.color = "#000000";
+                }
+              });
+            },
+          });
+
+          const pngDataUrl = canvas.toDataURL("image/png");
+          const replacement = document.createElement("img");
+          replacement.src = pngDataUrl;
+          replacement.style.width = `${width}px`;
+          replacement.style.height = `${height}px`;
+          replacement.style.display = "block";
+          replacement.style.maxWidth = "100%";
+
+          if (cloneContainer.parentNode) {
+            cloneContainer.parentNode.replaceChild(replacement, cloneContainer);
+          }
+        } catch (err) {
+          console.warn("Error capturing chart:", err);
+          // On error, just leave the original chart element in place
+          // The print may still work with SVG charts
+        }
+      }
+
+      // Collect styles
+      const styles = Array.from(document.styleSheets)
+        .map((styleSheet) => {
+          try {
+            return Array.from(styleSheet.cssRules)
+              .map((rule) => rule.cssText)
+              .join("\n");
+          } catch {
+            return "";
+          }
+        })
+        .filter((style) => style.trim().length > 0)
+        .join("\n");
+
+      // Build the print document HTML
+      const printHTML = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>${reportTitle}</title>
+            <style>
+              ${styles}
+              
+              /* Print-specific styles */
+              @media print {
+                @page {
+                  margin: 0.5in 0.4in;
+                  size: A4;
+                }
+              }
+              
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: 'Times New Roman', Times, serif !important;
+                font-size: 11pt;
+                line-height: 1.5;
+                color: #000;
+                background: white;
+              }
+              
+              .print-header {
+                width: 100%;
+                margin-bottom: 10px;
+              }
+              
+              .print-header img {
+                width: 100%;
+                max-height: 120px;
+                object-fit: contain;
+              }
+              
+              .print-title {
+                text-align: center;
+                padding: 10px 20px;
+                border-bottom: 1px solid #e5e7eb;
+              }
+              
+              .print-title h1 {
+                color: #1e3a8a;
+                font-size: 16pt;
+                font-weight: bold;
+                margin: 0 0 8px 0;
+              }
+              
+              .print-title p {
+                color: #4b5563;
+                font-size: 10pt;
+                margin: 0;
+                line-height: 1.4;
+              }
+              
+              .print-content {
+                padding: 15px 30px;
+              }
+              
+              .print-footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+              }
+              
+              .print-footer img {
+                width: 100%;
+                max-height: 50px;
+                object-fit: cover;
+              }
+              
+              /* Hide navigation elements */
+              aside, nav, .print\\:hidden, header:has(.lucide-menu) {
+                display: none !important;
+              }
+              
+              /* Chart and content styling */
+              .print-chart-container, .recharts-wrapper {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin-bottom: 15px;
+              }
+              
+              img { max-width: 100% !important; }
+              
+              h1, h2, h3, h4, h5, h6 {
+                color: #1e3a8a !important;
+                page-break-after: avoid;
+              }
+              
+              .section-page {
+                page-break-before: always;
+              }
+              
+              .section-page:first-child {
+                page-break-before: avoid;
+              }
+            </style>
+          </head>
+          <body>
+            <!-- Header -->
+            <div class="print-header">
+              ${
+                headerBase64
+                  ? `<img src="${headerBase64}" alt="Header" />`
+                  : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
+              }
+            </div>
+            
+            <!-- Title Section -->
+            <div class="print-title">
+              <h1>${reportTitle}</h1>
+              <p>This evaluation report serves as a guide for the institution to acknowledge the impact of the said event on the welfare and enjoyment of the students at La Verdad Christian College – Apalit, Pampanga.</p>
+            </div>
+            
+            <!-- Report Content -->
+            <div class="print-content">
+              ${clone.innerHTML}
+            </div>
+            
+            <!-- Footer -->
+            <div class="print-footer">
+              ${
+                footerBase64
+                  ? `<img src="${footerBase64}" alt="Footer" />`
+                  : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
+              }
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Write the final HTML to the print window
+      printWindow.document.open();
+      printWindow.document.write(printHTML);
+      printWindow.document.close();
+
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+    } catch (error) {
+      console.error("Error preparing print:", error);
+      const toast = document.querySelector("div[style*='z-index: 9999']");
+      if (toast && toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+      // Fallback to simple print
+      window.print();
+    }
   };
 
   const handleDownload = async () => {
@@ -610,22 +939,25 @@ const ReportActions = ({
           <ArrowLeft size={20} className="text-gray-600" />
         </button>
         <div className="flex items-center space-x-4">
-          {onShareGuest && (
+          {onShareGuest &&
+            ["psas", "club-officer", "mis"].includes(user?.role) && (
+              <button
+                onClick={onShareGuest}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Share with guest"
+              >
+                <Send size={20} className="text-gray-600" />
+              </button>
+            )}
+          {["psas", "club-officer", "mis"].includes(user?.role) && (
             <button
-              onClick={onShareGuest}
+              onClick={handleShowPreparedBy}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              title="Share with guest"
+              title="Share Report"
             >
-              <Send size={20} className="text-gray-600" />
+              <UserPlus size={20} className="text-gray-600" />
             </button>
           )}
-          <button
-            onClick={handleShowPreparedBy}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            title="Share Report"
-          >
-            <UserPlus size={20} className="text-gray-600" />
-          </button>
           <button
             onClick={handlePrint}
             disabled={loading}

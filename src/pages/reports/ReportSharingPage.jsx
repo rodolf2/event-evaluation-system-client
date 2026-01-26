@@ -19,13 +19,33 @@ const API_ENDPOINTS = {
   REPORT_SHARE: (reportId) => `/api/reports/${reportId}/share`,
 };
 
+const formatPosition = (pos) => {
+  if (!pos) return "Club-Officer";
+  const p = pos.toLowerCase();
+  if (p === "club-officer") return "Club-Officer";
+  if (p === "mis") return "MIS";
+  if (p === "senior-management") return "Senior Management";
+  if (p === "school-admin") return "School Admin";
+  if (p === "club-adviser") return "Club Adviser";
+  if (p === "evaluator") return "Evaluator";
+  if (p === "guest-speaker") return "Guest Speaker";
+
+  // Generic capitalization for other roles/positions
+  return pos
+    .split(/[- ]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(pos.includes("-") ? "-" : " ");
+};
+
 const ReportSharingPage = () => {
   console.log("🚀 ReportSharingPage component is rendering!");
   const navigate = useNavigate();
   const location = useLocation();
   const { token, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState(
+    user?.role === "club-officer" ? "" : "Higher Education",
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
@@ -33,6 +53,27 @@ const ReportSharingPage = () => {
   const [isSharing, setIsSharing] = useState(false);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+
+  // Expiration logic
+  const now = new Date();
+  const minDate = new Date(now);
+  minDate.setMonth(now.getMonth() + 6);
+  const maxDate = new Date(now);
+  maxDate.setFullYear(now.getFullYear() + 1);
+
+  const [expiresAt, setExpiresAt] = useState(
+    maxDate.toISOString().split("T")[0],
+  );
+
+  const selectedUsers = useMemo(() => {
+    return users.filter((u) => selected.includes(u.id));
+  }, [users, selected]);
+
+  const hasGuestSelected = useMemo(() => {
+    return selectedUsers.some((u) =>
+      ["evaluator", "guest-speaker"].includes(u.role),
+    );
+  }, [selectedUsers]);
 
   // Load school admins from API
   useEffect(() => {
@@ -119,7 +160,7 @@ const ReportSharingPage = () => {
 
   const handleDone = async () => {
     if (selected.length === 0) {
-      toast.error("Please select at least one senior management member");
+      toast.error("Please select at least one recipient");
       return;
     }
 
@@ -128,9 +169,6 @@ const ReportSharingPage = () => {
       navigate(-1);
       return;
     }
-
-    // Get full user details for selected IDs
-    const selectedUsers = users.filter((u) => selected.includes(u.id));
 
     try {
       setIsSharing(true);
@@ -145,14 +183,16 @@ const ReportSharingPage = () => {
             email: u.email,
             department: u.department,
             position: u.position,
+            role: u.role,
           })),
           reportTitle, // Include report title for email notification
+          expiresAt: hasGuestSelected ? expiresAt : null, // Include expiration date only if guest is selected
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
       toast.success(
-        `Report shared with ${selected.length} senior management member(s)`,
+        `Report shared with ${selected.length} personnel member(s)`,
       );
       navigate(-1);
     } catch (error) {
@@ -168,20 +208,27 @@ const ReportSharingPage = () => {
   }, [users]);
 
   const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
+    return users.filter((u) => {
+      // Role-based filtering: Club Officers cannot see senior management
+      if (user?.role === "club-officer") {
+        if (u.role === "senior-management" || u.role === "school-admin") {
+          return false;
+        }
+      }
+
       const matchesSearch =
         !searchQuery ||
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (user.position &&
-          user.position.toLowerCase().includes(searchQuery.toLowerCase()));
+        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.position &&
+          u.position.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesDepartment =
-        !departmentFilter || user.department === departmentFilter;
+        !departmentFilter || u.department === departmentFilter;
 
       return matchesSearch && matchesDepartment;
     });
-  }, [users, searchQuery, departmentFilter]);
+  }, [users, searchQuery, departmentFilter, user]);
 
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
   const paginatedUsers = useMemo(() => {
@@ -226,20 +273,42 @@ const ReportSharingPage = () => {
 
         {/* Search and Filters */}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex flex-wrap gap-4 items-end">
             <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name, email, or position"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Search Personnel
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, or position"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
+
+            {hasGuestSelected && (
+              <div className="w-full sm:w-auto">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Guest Expiration (min 6mo, max 1yr)
+                </label>
+                <input
+                  type="date"
+                  value={expiresAt}
+                  min={minDate.toISOString().split("T")[0]}
+                  max={maxDate.toISOString().split("T")[0]}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition h-[42px]"
             >
               <Filter className="w-4 h-4" />
               Filters
@@ -326,10 +395,10 @@ const ReportSharingPage = () => {
                         Email: {person.email}
                       </span>
                       <span className="text-sm text-gray-600">
-                        Department: {person.department || "N/A"}
+                        Department: {person.department || "Higher Education"}
                       </span>
                       <span className="text-sm text-gray-600">
-                        Position: {person.position || "N/A"}
+                        Position: {formatPosition(person.position)}
                       </span>
                     </div>
 
@@ -346,12 +415,12 @@ const ReportSharingPage = () => {
                     </div>
                     <div className="hidden md:block">
                       <span className="text-gray-600">
-                        {person.department || "N/A"}
+                        {person.department || "Higher Education"}
                       </span>
                     </div>
                     <div className="hidden md:block">
                       <span className="text-gray-600">
-                        {person.position || "N/A"}
+                        {formatPosition(person.position)}
                       </span>
                     </div>
                   </div>

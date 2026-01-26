@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import SchoolAdminLayout from "../../components/school-admins/SchoolAdminLayout";
 import { useAuth } from "../../contexts/useAuth";
-import QuantitativeRatings from "../reports/QuantitativeRatings";
 import QualitativeComments from "../reports/QualitativeComments";
 import PositiveComments from "../reports/PositiveComments";
 import NegativeComments from "../reports/NegativeComments";
@@ -10,20 +9,26 @@ import NeutralComments from "../reports/NeutralComments";
 import CompleteReport from "../reports/CompleteReport";
 import {
   SkeletonBase,
-  SkeletonCard,
   SkeletonText,
 } from "../../components/shared/SkeletonLoader";
 
-const ReportCard = ({ report, onSelect }) => {
+const ReportCard = ({ report, onSelect, isLive, token }) => {
+  // Build thumbnail URL with auth token for authenticated access
+  const getThumbnailUrl = () => {
+    if (!report.thumbnail) {
+      return "https://placehold.co/800x450/1e3a8a/ffffff?text=Generating+Thumbnail...";
+    }
+    // Append token as query parameter for authentication
+    const separator = report.thumbnail.includes("?") ? "&" : "?";
+    return `${report.thumbnail}${separator}token=${token}`;
+  };
+
   return (
     <div className="bg-[#EEEEF0] hover:bg-[#DEDFE0] rounded-lg shadow-sm overflow-hidden p-4 transition-colors duration-200">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden group relative">
         <div className="relative">
           <img
-            src={
-              report.thumbnail ||
-              "https://placehold.co/800x450/1e3a8a/ffffff?text=Generating+Thumbnail..."
-            }
+            src={getThumbnailUrl()}
             alt={report.title}
             className="w-full h-48 object-cover"
             onLoad={() => {
@@ -55,6 +60,12 @@ const ReportCard = ({ report, onSelect }) => {
       </div>
       <h3 className="text-gray-800 font-semibold text-center mt-3">
         {report.title}
+        {isLive && (
+          <span
+            className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"
+            title="Live Data Available"
+          ></span>
+        )}
       </h3>
     </div>
   );
@@ -71,14 +82,6 @@ const Reports = () => {
   const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
 
-  const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
-    status: "all",
-    department: "",
-    ratingFilter: "",
-  });
-
   const [page, setPage] = useState(1);
   const [limit] = useState(8);
   const [total, setTotal] = useState(0);
@@ -91,58 +94,55 @@ const Reports = () => {
     pages: totalPages,
   };
 
-  const fetchReports = useCallback(
-    async (searchParams = {}) => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchReports = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Fetch shared reports for school admin
-        const response = await fetch(`/api/reports/my-shared`, {
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      // Fetch shared reports for school admin
+      const response = await fetch(`/api/reports/my-shared`, {
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch reports: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-          let filteredReports = result.reports || [];
-
-          // Apply client-side filtering
-          if (searchQuery) {
-            filteredReports = filteredReports.filter((r) =>
-              r.title?.toLowerCase().includes(searchQuery.toLowerCase()),
-            );
-          }
-
-          // Client-side pagination
-          const startIdx = (page - 1) * limit;
-          const paginatedReports = filteredReports.slice(
-            startIdx,
-            startIdx + limit,
-          );
-
-          setReports(paginatedReports);
-          setTotal(filteredReports.length);
-          setTotalPages(Math.ceil(filteredReports.length / limit));
-        } else {
-          throw new Error(result.message || "Failed to fetch shared reports");
-        }
-      } catch (err) {
-        console.error("Error fetching reports:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch reports: ${response.status}`);
       }
-    },
-    [token, searchQuery, limit, page],
-  );
+
+      const result = await response.json();
+
+      if (result.success) {
+        let filteredReports = result.reports || [];
+
+        // Apply client-side filtering
+        if (searchQuery) {
+          filteredReports = filteredReports.filter((r) =>
+            r.title?.toLowerCase().includes(searchQuery.toLowerCase()),
+          );
+        }
+
+        // Client-side pagination
+        const startIdx = (page - 1) * limit;
+        const paginatedReports = filteredReports.slice(
+          startIdx,
+          startIdx + limit,
+        );
+
+        setReports(paginatedReports);
+        setTotal(filteredReports.length);
+        setTotalPages(Math.ceil(filteredReports.length / limit));
+      } else {
+        throw new Error(result.message || "Failed to fetch shared reports");
+      }
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, searchQuery, limit, page]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -155,45 +155,48 @@ const Reports = () => {
     return () => clearInterval(interval);
   }, [view, fetchReports]);
 
-  const fetchReportById = async (formId) => {
-    try {
-      // Fetch analytics data for this specific form
-      const response = await fetch(`/api/analytics/form/${formId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+  const fetchReportById = useCallback(
+    async (formId) => {
+      try {
+        // Fetch analytics data for this specific form
+        const response = await fetch(`/api/analytics/form/${formId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch analytics data");
+        if (!response.ok) {
+          throw new Error("Failed to fetch analytics data");
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          // Create a dynamic report object from the analytics data
+          const dynamicReport = {
+            id: formId,
+            formId: formId,
+            title: `Event Analytics Report - ${
+              result.data.formInfo?.title || result.data.formTitle || "Form"
+            }`,
+            eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
+            lastUpdated: new Date().toISOString(),
+            analyticsData: result.data,
+            isDynamic: true,
+          };
+
+          setSelectedReport(dynamicReport);
+          setView("dashboard");
+        }
+      } catch (error) {
+        console.error("Failed to fetch report data:", error);
+        setError(error.message);
       }
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        // Create a dynamic report object from the analytics data
-        const dynamicReport = {
-          id: formId,
-          formId: formId,
-          title: `Event Analytics Report - ${
-            result.data.formInfo?.title || result.data.formTitle || "Form"
-          }`,
-          eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
-          lastUpdated: new Date().toISOString(),
-          analyticsData: result.data,
-          isDynamic: true,
-        };
-
-        setSelectedReport(dynamicReport);
-        setView("dashboard");
-      }
-    } catch (error) {
-      console.error("Failed to fetch report data:", error);
-      setError(error.message);
-    }
-  };
+    },
+    [token],
+  );
 
   // Check URL for formId and handle direct report access
   useEffect(() => {
@@ -214,17 +217,13 @@ const Reports = () => {
       // If we have a formId in URL, fetch it directly
       fetchReportById(finalFormId);
     }
-  }, [window.location.pathname, window.location.search]);
+  }, [fetchReportById]);
 
   useEffect(() => {
     if (view === "list") {
       fetchReports();
     }
   }, [fetchReports, view]);
-
-  const handleSort = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  };
 
   const handleSelectReport = (report) => {
     setSelectedReport(report);
@@ -234,15 +233,6 @@ const Reports = () => {
   const handleBackToList = () => {
     setView("list");
     setSelectedReport(null);
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    setPage(1);
   };
 
   const handleSearch = (query) => {
@@ -398,9 +388,9 @@ const Reports = () => {
             {sortedReports.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">No reports found</p>
-                {(searchQuery || Object.values(filters).some((f) => f)) && (
+                {searchQuery && (
                   <p className="text-sm text-gray-400 mt-2">
-                    Try adjusting your search or filters
+                    Try adjusting your search query
                   </p>
                 )}
               </div>
@@ -412,6 +402,7 @@ const Reports = () => {
                       key={`${report.id}-${index}`}
                       report={report}
                       onSelect={handleSelectReport}
+                      token={token}
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <

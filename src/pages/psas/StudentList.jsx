@@ -84,8 +84,8 @@ const StudentList = () => {
   const [showImportModal, setShowImportModal] = useState(false);
 
   // Determine user role for layout selection
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isClubOfficer = user.role === 'club-officer';
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isClubOfficer = user.role === "club-officer";
   const LayoutComponent = isClubOfficer ? ClubOfficerLayout : PSASLayout;
 
   // Handle CSV upload from ImportCSVModal:
@@ -109,8 +109,11 @@ const StudentList = () => {
     const isNewForm = urlParams.get("newForm") === "true";
 
     // Determine the correct form creation path based on user role
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const evaluationsPath = user.role === 'club-officer' ? '/club-officer/form-creation' : '/psas/evaluations';
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const evaluationsPath =
+      user.role === "club-officer"
+        ? "/club-officer/form-creation"
+        : "/psas/evaluations";
 
     if (formIdFromUrl) {
       // Navigate to form creation interface with edit parameter
@@ -215,7 +218,7 @@ const StudentList = () => {
 
     if (!formIdFromUrl) {
       alert(
-        "Error: Form ID not found. Cannot assign students to form. Please start from the form creation page."
+        "Error: Form ID not found. Cannot assign students to form. Please start from the form creation page.",
       );
       return;
     }
@@ -246,7 +249,7 @@ const StudentList = () => {
 
       console.log(
         "🔍 Debug: Available students data structure:",
-        students.slice(0, 2)
+        students.slice(0, 2),
       );
       console.log("🔍 Debug: Selected IDs:", selected);
 
@@ -258,7 +261,7 @@ const StudentList = () => {
           console.log(
             `🔍 Student ${student.email || student.name}: id=${
               student.id
-            }, selected=${isSelected}`
+            }, selected=${isSelected}`,
           );
           return isSelected;
         })
@@ -282,19 +285,19 @@ const StudentList = () => {
         });
 
       console.log(
-        `✅ Final selected students count: ${selectedStudents.length} out of ${selected.length} requested`
+        `✅ Final selected students count: ${selectedStudents.length} out of ${selected.length} requested`,
       );
 
       if (selectedStudents.length === 0) {
         alert(
-          "No valid students found in selection. Please check your selection and try again."
+          "No valid students found in selection. Please check your selection and try again.",
         );
         return;
       }
 
       if (selectedStudents.length < selected.length) {
         console.warn(
-          `⚠️ Only ${selectedStudents.length} students processed out of ${selected.length} selected`
+          `⚠️ Only ${selectedStudents.length} students processed out of ${selected.length} selected`,
         );
       }
 
@@ -316,9 +319,9 @@ const StudentList = () => {
       FormSessionManager.preserveFormId();
 
       // Navigate back to form creation with recipients count
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-      if (user.role === 'club-officer') {
+      if (user.role === "club-officer") {
         // Club-officers navigate to their form creation interface
         const navigationUrl = `/club-officer/form-creation?recipients=${selectedStudents.length}&formId=${finalFormId}&from=studentList`;
         console.log("🧭 Navigating club-officer to:", navigationUrl);
@@ -332,17 +335,43 @@ const StudentList = () => {
     } catch (error) {
       console.error("🚨 Error assigning students to form:", error);
       alert(
-        `An error occurred while assigning students to the form: ${error.message}`
+        `An error occurred while assigning students to the form: ${error.message}`,
       );
     }
   };
 
-  // Get unique values for filters
-  const departments = [
-    ...new Set(students.map((s) => s.department).filter(Boolean)),
-  ];
-  const programs = [...new Set(students.map((s) => s.program).filter(Boolean))];
-  const years = [...new Set(students.map((s) => s.year).filter(Boolean))];
+  // Predefined filter options based on institutional structure
+  const DEPARTMENT_CONFIG = {
+    "Higher Education": {
+      programs: ["BSIS/ACT", "BSA/BSAIS", "BAB", "BSSW"],
+      years: ["1", "2", "3", "4"],
+    },
+    "Basic Education": {
+      programs: ["STEM", "GAS", "ICT", "HUMSS"],
+      years: [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5",
+        "Grade 6",
+        "Grade 7",
+        "Grade 8",
+        "Grade 9",
+        "Grade 10",
+        "Grade 11",
+        "Grade 12",
+      ],
+    },
+  };
+
+  const departments = Object.keys(DEPARTMENT_CONFIG);
+  const currentPrograms = departmentFilter
+    ? DEPARTMENT_CONFIG[departmentFilter]?.programs || []
+    : [...new Set(Object.values(DEPARTMENT_CONFIG).flatMap((d) => d.programs))];
+  const currentYears = departmentFilter
+    ? DEPARTMENT_CONFIG[departmentFilter]?.years || []
+    : [...new Set(Object.values(DEPARTMENT_CONFIG).flatMap((d) => d.years))];
 
   if (loading) {
     return (
@@ -408,7 +437,11 @@ const StudentList = () => {
               </label>
               <select
                 value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
+                onChange={(e) => {
+                  setDepartmentFilter(e.target.value);
+                  setProgramFilter("");
+                  setYearFilter("");
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Departments</option>
@@ -429,7 +462,7 @@ const StudentList = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Programs</option>
-                {programs.map((prog) => (
+                {currentPrograms.map((prog) => (
                   <option key={prog} value={prog}>
                     {prog}
                   </option>
@@ -446,7 +479,7 @@ const StudentList = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Years</option>
-                {years.map((year) => (
+                {currentYears.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>

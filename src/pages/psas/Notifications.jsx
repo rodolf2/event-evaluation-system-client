@@ -283,7 +283,7 @@ const NotificationDetail = ({ notification, onBack }) => {
         <div className="bg-white rounded-2xl shadow-lg w-full md:w-96 border border-gray-100 relative">
           <div className="bg-[#1E3A8A] p-4 flex items-center relative rounded-t-2xl">
             {/* Triangle Pointer */}
-            <div className="absolute left-[-10px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-[10px] border-t-transparent border-r-[10px] border-r-[#1E3A8A] border-b-[10px] border-b-transparent"></div>
+            <div className="absolute left-[-10px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-10 border-t-transparent border-r-10 border-r-[#1E3A8A] border-b-10 border-b-transparent"></div>
             <span className="text-white font-bold text-lg ml-2">Reminder</span>
           </div>
           <div className="p-6">

@@ -6,6 +6,7 @@ import {
   SkeletonText,
   SkeletonBase,
 } from "../shared/SkeletonLoader";
+import { Search, ChevronDown, X, FileBarChart, Calendar } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import {
   Chart as ChartJS,
@@ -25,7 +26,7 @@ ChartJS.register(
   Legend,
   CategoryScale,
   LinearScale,
-  BarElement
+  BarElement,
 );
 
 function PsasEventAnalyticsContent() {
@@ -36,6 +37,9 @@ function PsasEventAnalyticsContent() {
   const [formId, setFormId] = useState(null);
   const [availableForms, setAvailableForms] = useState([]);
   const [formsLoading, setFormsLoading] = useState(true);
+  const [sortOption, setSortOption] = useState("newest");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Fetch available forms for the current user
   useEffect(() => {
@@ -60,7 +64,7 @@ function PsasEventAnalyticsContent() {
         if (result.success && result.data) {
           // Filter to only published forms (since only they have responses)
           const publishedForms = result.data.filter(
-            (form) => form.status === "published"
+            (form) => form.status === "published",
           );
           setAvailableForms(publishedForms);
 
@@ -103,7 +107,7 @@ function PsasEventAnalyticsContent() {
       if (!/^[0-9a-fA-F]{24}$/.test(formId)) {
         console.warn(
           "Invalid form ID format, skipping analytics fetch:",
-          formId
+          formId,
         );
         setAnalyticsData({
           totalAttendees: 0,
@@ -143,7 +147,7 @@ function PsasEventAnalyticsContent() {
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(
-            errorData.message || "Failed to fetch analytics data"
+            errorData.message || "Failed to fetch analytics data",
           );
         }
 
@@ -163,7 +167,7 @@ function PsasEventAnalyticsContent() {
           error.message.includes("Cast to ObjectId failed")
         ) {
           console.error(
-            "Invalid form ID format. This form may not be published yet or the ID is corrupted."
+            "Invalid form ID format. This form may not be published yet or the ID is corrupted.",
           );
           // Check if we should switch to another available form
           if (availableForms.length > 0 && formId !== availableForms[0]._id) {
@@ -176,7 +180,7 @@ function PsasEventAnalyticsContent() {
         // You could show a toast notification here with the error message
         console.error(
           "Analytics Error:",
-          error.message || "Failed to load analytics data"
+          error.message || "Failed to load analytics data",
         );
 
         // Set empty data to show "no data" state
@@ -493,7 +497,7 @@ function PsasEventAnalyticsContent() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       const result = await response.json();
@@ -517,31 +521,136 @@ function PsasEventAnalyticsContent() {
     navigate(`/club-officer/reports/${formId}`);
   };
 
+  // Filter and sort forms
+  const filteredAndSortedForms = [...availableForms]
+    .filter((form) =>
+      form.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+    .sort((a, b) => {
+      switch (sortOption) {
+        case "newest":
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        case "oldest":
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+        case "title-desc":
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+
+  const selectedForm = availableForms.find((f) => f._id === formId);
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         {/* Form Selector */}
         {availableForms.length > 0 && (
-          <div className="flex items-center gap-4">
-            <label
-              htmlFor="form-select"
-              className="text-sm font-medium text-gray-700"
-            >
-              Select Form:
-            </label>
-            <select
-              id="form-select"
-              value={formId || ""}
-              onChange={(e) => setFormId(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              {availableForms.map((form) => (
-                <option key={form._id} value={form._id}>
-                  {form.title}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col sm:flex-row items-end gap-3 w-full lg:w-auto">
+            <div className="flex flex-col gap-1 w-full sm:w-[350px]">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 ml-1">
+                Event Analysis
+              </span>
+              <div className="relative group">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedForm ? selectedForm.title : "Search events..."
+                    }
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setIsSearchFocused(true);
+                    }}
+                    onFocus={() => setIsSearchFocused(true)}
+                    // Clear search on blur, but delay to allow clicks on results
+                    onBlur={() =>
+                      setTimeout(() => setIsSearchFocused(false), 200)
+                    }
+                    className="w-full pl-9 pr-9 py-1.5 bg-white border border-gray-300 rounded-lg shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-all"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {isSearchFocused && (
+                  <div className="absolute z-50 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200 p-1">
+                    <div className="max-height-[250px] overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
+                      {filteredAndSortedForms.length > 0 ? (
+                        filteredAndSortedForms.map((form) => (
+                          <button
+                            key={form._id}
+                            onClick={() => {
+                              setFormId(form._id);
+                              setSearchQuery("");
+                              setIsSearchFocused(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors ${
+                              formId === form._id
+                                ? "bg-blue-50 text-blue-700"
+                                : "hover:bg-gray-50 text-gray-700"
+                            }`}
+                          >
+                            <Calendar
+                              className={`w-4 h-4 ${formId === form._id ? "text-blue-500" : "text-gray-400"}`}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate text-sm">
+                                {form.title}
+                              </div>
+                              <div className="text-[10px] opacity-60">
+                                {new Date(form.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                            {formId === form._id && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                            )}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-gray-500">
+                          <p className="text-xs font-medium">No matches</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sort Dropdown */}
+            {availableForms.length >= 2 && (
+              <div className="flex flex-col gap-1 shrink-0">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 ml-1">
+                  Sort By
+                </span>
+                <div className="relative">
+                  <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                    className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-gray-300 rounded-lg shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-xs font-medium text-gray-700 min-w-[130px]"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="title-asc">Title (A-Z)</option>
+                    <option value="title-desc">Title (Z-A)</option>
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

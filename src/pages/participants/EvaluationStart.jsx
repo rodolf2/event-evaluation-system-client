@@ -120,7 +120,7 @@ const EvaluationStart = () => {
       <div className="flex justify-center items-center h-full bg-gray-100">
         <div className="max-w-6xl w-full mx-auto p-8">
           <div className="bg-white rounded-lg shadow-lg py-12 text-center mb-6">
-            <h1 className="text-6xl font-bold text-gray-900">
+            <h1 className="text-4xl font-bold text-gray-900">
               {form?.title || "Event Evaluation Form"}
             </h1>
           </div>

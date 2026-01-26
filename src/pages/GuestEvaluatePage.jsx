@@ -17,6 +17,7 @@ function GuestEvaluatePage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
+  const [isStarted, setIsStarted] = useState(false);
 
   // Fetch form data using token
   useEffect(() => {
@@ -35,7 +36,7 @@ function GuestEvaluatePage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token }),
-          }
+          },
         );
 
         const validateData = await validateResponse.json();
@@ -102,7 +103,7 @@ function GuestEvaluatePage() {
     });
 
     sectionsData.sort(
-      (a, b) => (a.sectionNumber || 0) - (b.sectionNumber || 0)
+      (a, b) => (a.sectionNumber || 0) - (b.sectionNumber || 0),
     );
 
     const groupedQuestions = {};
@@ -331,6 +332,61 @@ function GuestEvaluatePage() {
     }
   };
 
+  // Render start screen
+  const renderStartScreen = () => {
+    return (
+      <GuestEvaluatorLayout>
+        <div className="flex justify-center items-center h-full bg-gray-100">
+          <div className="max-w-6xl w-full mx-auto p-8">
+            <div className="bg-white rounded-lg shadow-lg py-12 text-center mb-6">
+              <h1 className="text-4xl font-bold text-gray-900">
+                {form?.title || "Event Evaluation Form"}
+              </h1>
+            </div>
+            <div className="bg-white rounded-lg shadow-lg p-6 text-xl">
+              <p className="mb-4">
+                The Event Evaluation Form is now open for submission. Answer it
+                on the given time frame so that your response is seen by the
+                institution.
+              </p>
+              <h2 className="text-lg font-semibold mb-2">
+                Follow these instructions to have a smooth-sailing evaluation:
+              </h2>
+              <ul className="list-disc list-inside space-y-2">
+                <li>
+                  Use formal language (Filipino or English) in the evaluation.
+                </li>
+                <li>Avoid using Filipino or English slangs/colloquialisms.</li>
+                <li>
+                  Do not use emojis on the qualitative feedback part of the
+                  evaluation.
+                </li>
+                <li>
+                  Make sure of your responses, the integrity of the evaluation
+                  report will be based on these.
+                </li>
+              </ul>
+
+              <div className="flex justify-center flex-col items-center mt-8">
+                {evaluatorInfo && (
+                  <div className="text-sm text-gray-500 mb-4 italic">
+                    Evaluating as: <strong>{evaluatorInfo.name}</strong>
+                  </div>
+                )}
+                <button
+                  onClick={() => setIsStarted(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-lg shadow-md transition-all duration-200"
+                >
+                  Begin Evaluation
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </GuestEvaluatorLayout>
+    );
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -393,88 +449,105 @@ function GuestEvaluatePage() {
     );
   }
 
+  // Main Render
+  if (!isStarted) {
+    return renderStartScreen();
+  }
+
   return (
     <GuestEvaluatorLayout>
-      <div className="w-full max-w-4xl mx-auto">
-        {/* Welcome message for guest evaluator */}
-        {evaluatorInfo && (
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
-            <p className="text-blue-800">
-              Welcome, <strong>{evaluatorInfo.name}</strong>! Please complete
-              the evaluation below.
-            </p>
-          </div>
-        )}
+      <div className="w-full max-w-4xl mx-auto p-4">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+          <div className="p-6 sm:p-8">
+            {/* Welcome message for guest evaluator */}
+            {evaluatorInfo && (
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
+                <p className="text-blue-800">
+                  Welcome, <strong>{evaluatorInfo.name}</strong>! Please
+                  complete the evaluation below.
+                </p>
+              </div>
+            )}
 
-        {/* Form Title - Show on first section */}
-        {currentSectionIndex === 0 && form && (
-          <div className="bg-white p-8 rounded-lg shadow-md mb-6">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-gray-800">{form.title}</h1>
-              {form.description && (
-                <p className="text-gray-600 mt-2">{form.description}</p>
-              )}
+            {/* Form Title - Show on first section */}
+            {currentSectionIndex === 0 && form && (
+              <div className="bg-white p-8 rounded-lg shadow-md mb-6 border">
+                <div className="text-center">
+                  <h1 className="text-3xl font-bold text-gray-800">
+                    {form.title}
+                  </h1>
+                  {form.description && (
+                    <p className="text-gray-600 mt-2">{form.description}</p>
+                  )}
+                </div>
+                <hr className="my-4" />
+                <p className="text-red-500 text-sm">
+                  * Indicates required questions
+                </p>
+              </div>
+            )}
+
+            {/* Section Container */}
+            <div className="space-y-6">
+              {/* Section Header */}
+              <div className="bg-[#1F3463] p-6 rounded-lg shadow-md text-white">
+                <h2 className="text-xl font-bold">
+                  Section {currentSectionIndex + 1}:{" "}
+                  {currentSection?.title || "Untitled Section"}
+                </h2>
+                {currentSection?.description && (
+                  <p className="text-white/80 mt-2">
+                    {currentSection.description}
+                  </p>
+                )}
+              </div>
+
+              {/* Questions */}
+              {currentSection?.questions?.map((question, index) => (
+                <div
+                  key={index}
+                  className="bg-white p-6 rounded-lg shadow-sm border"
+                >
+                  {renderQuestion(question, index)}
+                </div>
+              ))}
             </div>
-            <hr className="my-4" />
-            <p className="text-red-500 text-sm">
-              * Indicates required questions
-            </p>
-          </div>
-        )}
 
-        {/* Section Container */}
-        <div className="space-y-6">
-          {/* Section Header */}
-          <div className="bg-[#1F3463] p-6 rounded-lg shadow-md text-white">
-            <h2 className="text-xl font-bold">
-              Section {currentSectionIndex + 1}:{" "}
-              {currentSection?.title || "Untitled Section"}
-            </h2>
-            {currentSection?.description && (
-              <p className="text-white/80 mt-2">{currentSection.description}</p>
-            )}
-          </div>
-
-          {/* Questions */}
-          {currentSection?.questions?.map((question, index) => (
-            <div
-              key={index}
-              className="bg-white p-6 rounded-lg shadow-sm border"
-            >
-              {renderQuestion(question, index)}
+            {/* Navigation Buttons */}
+            <div className="flex justify-between items-center mt-8">
+              <div>
+                {currentSectionIndex > 0 && (
+                  <button
+                    onClick={() =>
+                      setCurrentSectionIndex(currentSectionIndex - 1)
+                    }
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Previous
+                  </button>
+                )}
+              </div>
+              <div>
+                {currentSectionIndex < totalSections - 1 ? (
+                  <button
+                    onClick={() =>
+                      setCurrentSectionIndex(currentSectionIndex + 1)
+                    }
+                    className="px-8 py-3 bg-blue-800 text-white rounded-lg hover:bg-blue-900 shadow-md"
+                  >
+                    Next Section
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md disabled:opacity-50"
+                  >
+                    {submitting ? "Submitting..." : "Submit"}
+                  </button>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between items-center mt-8">
-          <div>
-            {currentSectionIndex > 0 && (
-              <button
-                onClick={() => setCurrentSectionIndex(currentSectionIndex - 1)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                Previous
-              </button>
-            )}
-          </div>
-          <div>
-            {currentSectionIndex < totalSections - 1 ? (
-              <button
-                onClick={() => setCurrentSectionIndex(currentSectionIndex + 1)}
-                className="px-8 py-3 bg-blue-800 text-white rounded-lg hover:bg-blue-900 shadow-md"
-              >
-                Next Section
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md disabled:opacity-50"
-              >
-                {submitting ? "Submitting..." : "Submit"}
-              </button>
-            )}
           </div>
         </div>
       </div>

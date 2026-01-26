@@ -306,12 +306,12 @@ const SurveyCreation = () => {
 
         if (response.status === 409) {
           toast.error(
-            "This Google Form has already been imported. You can find it in your recent evaluations."
+            "This Google Form has already been imported. You can find it in your recent evaluations.",
           );
         } else if (response.status === 400) {
           toast.error(
             errorData.message ||
-              "Invalid input. Please check your data and try again."
+              "Invalid input. Please check your data and try again.",
           );
         } else {
           toast.error(`Import failed: ${errorData.message}`);
@@ -354,7 +354,7 @@ const SurveyCreation = () => {
 
   const filteredEvaluations = evaluations
     .filter((evaluation) =>
-      evaluation.title.toLowerCase().includes(searchQuery.toLowerCase())
+      evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     .sort((a, b) => {
       if (sortBy === "newest") {
@@ -600,28 +600,28 @@ const SurveyCreation = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4 mb-7">
-                <h2 className="text-3xl font-bold text-gray-800">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 mb-5">
+                <h2 className="text-3xl font-semibold text-gray-800">
                   Recent Evaluations
                 </h2>
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                   <div className="flex-1 relative">
-                    <Search className="w-6 h-6 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Search evaluations..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-6 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <Filter className="w-6 h-6 text-gray-400" />
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-400" />
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="px-4 py-4 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="newest">Newest</option>
                       <option value="oldest">Oldest</option>

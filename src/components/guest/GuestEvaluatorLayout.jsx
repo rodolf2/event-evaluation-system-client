@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Menu, X, Download } from "lucide-react";
+import { Menu, X, Download } from "lucide-react";
 import { useUI } from "../../contexts/useUI";
 import evaluationsIcon from "../../assets/icons/evaluations-icon.svg";
 
@@ -87,9 +87,6 @@ const GuestEvaluatorHeader = ({ onMenuClick }) => {
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
-        <button className="relative p-2 rounded-lg hover:bg-gray-100 transition">
-          <Bell className="w-5 h-5 text-gray-600" />
-        </button>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#1F3463] flex items-center justify-center">
             <span className="text-white text-sm font-medium">G</span>

@@ -12,7 +12,9 @@ import {
   HardDrive,
   Activity,
   RefreshCw,
+  BookOpen,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   SkeletonText,
   SkeletonBase,
@@ -22,6 +24,7 @@ import SettingsChangeLogModal from "../../components/mis/SettingsChangeLogModal"
 
 function Settings() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showChangeLog, setShowChangeLog] = useState(false);
@@ -34,7 +37,6 @@ function Settings() {
   const [emergencyLockdown, setEmergencyLockdown] = useState(false);
 
   // NLP state
-  const [autoTraining, setAutoTraining] = useState(true);
   const [dictionaryInfo, setDictionaryInfo] = useState({
     version: "v1.0.0",
     lastUpdated: new Date().toLocaleDateString(),
@@ -71,7 +73,7 @@ function Settings() {
         // Map settings
         if (s.generalSettings) {
           setAnonymousEvaluationMode(
-            s.generalSettings.anonymousEvaluation ?? true
+            s.generalSettings.anonymousEvaluation ?? true,
           );
           setMaintenanceMode(s.generalSettings.maintenanceMode ?? false);
         }
@@ -79,7 +81,6 @@ function Settings() {
           setEmergencyLockdown(s.securitySettings.emergencyLockdown ?? false);
         }
         if (s.nlpSettings) {
-          setAutoTraining(s.nlpSettings.autoTraining ?? true);
           setDictionaryInfo({
             version: s.nlpSettings.dictionaryVersion || "v1.0.0",
             lastUpdated: s.nlpSettings.lastUpdated
@@ -122,9 +123,6 @@ function Settings() {
         },
         securitySettings: {
           emergencyLockdown: emergencyLockdown,
-        },
-        nlpSettings: {
-          autoTraining: autoTraining,
         },
       };
 
@@ -375,7 +373,7 @@ function Settings() {
                 style={{
                   width: `${Math.min(
                     (dbHealth.storageUsed / dbHealth.storageTotal) * 100,
-                    100
+                    100,
                   )}%`,
                 }}
               />
@@ -450,16 +448,26 @@ function Settings() {
             </span>
           </div>
 
-          {/* Auto-training */}
+          {/* Manage Lexicon */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <div className="font-medium text-gray-700">Auto-training</div>
+              <div className="font-medium text-gray-700">
+                Lexicon Management
+              </div>
               <div className="text-sm text-gray-500">
-                Allow system to suggest new sentiment keywords.
+                Manage the list of words used for sentiment analysis.
               </div>
             </div>
-            <ToggleSwitch enabled={autoTraining} onChange={setAutoTraining} />
+            <button
+              onClick={() => navigate("/mis/lexicon")}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+            >
+              <BookOpen className="w-4 h-4" />
+              Manage Words
+            </button>
           </div>
+
+          <div className="h-px bg-gray-100 mb-6"></div>
 
           {/* Update Dictionary Button */}
           <button

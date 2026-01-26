@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
+import ClubAdviserLayout from "../../components/club-advisers/ClubAdviserLayout";
 import ReportHeader from "./ReportHeader";
 import ReportDescription from "./ReportDescription";
 import ReportActions from "./ReportActions";
@@ -251,7 +252,9 @@ const CompleteReport = ({
       const reportsPath =
         user?.role === "club-officer"
           ? "/club-officer/reports"
-          : "/psas/reports";
+          : user?.role === "club-adviser"
+            ? "/club-adviser/reports"
+            : "/psas/reports";
       navigate(reportsPath);
     }
   };
@@ -1112,6 +1115,10 @@ const CompleteReport = ({
   // Use appropriate layout based on user role
   if (user?.role === "club-officer") {
     return <ClubOfficerLayout>{content}</ClubOfficerLayout>;
+  }
+
+  if (user?.role === "club-adviser") {
+    return <ClubAdviserLayout>{content}</ClubAdviserLayout>;
   }
 
   return <PSASLayout>{content}</PSASLayout>;

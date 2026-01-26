@@ -50,8 +50,21 @@
   aside,
   header,
   nav,
-  .print\:hidden {
+  .print\:hidden,
+  /* Additional selectors for specific UI elements */
+  .sticky,
+  [class*="sticky"],
+  header.sticky,
+  /* Hide action bars and navigation controls */
+  [class*="print:hidden"],
+  /* Hide hamburger menus and notification bells */
+  button[aria-label="menu"],
+  [class*="z-20"]:has(.lucide-menu),
+  /* Target the main app header by its structure */
+  header:has(.lucide-menu),
+  header:has(.lucide-bell) {
     display: none !important;
+    visibility: hidden !important;
   }
 
   /* Basic Page Setup - Adjusted margins for better content fit */
@@ -65,7 +78,8 @@
     font-size: 11pt !important;
     line-height: 1.5 !important; /* Improved line spacing for readability */
     color: #000 !important;
-    font-family: 'Times New Roman', Times, serif !important; /* More professional font */
+    font-family:
+      "Times New Roman", Times, serif !important; /* More professional font */
   }
 
   /* Report Container - Better padding and spacing */
@@ -452,7 +466,8 @@
     margin-bottom: 1rem !important;
   }
 
-  th, td {
+  th,
+  td {
     padding: 6px 8px !important;
     border: 1px solid #ddd !important;
     text-align: left !important;
@@ -464,7 +479,8 @@
   }
 
   /* List improvements */
-  ul, ol {
+  ul,
+  ol {
     margin-bottom: 1rem !important;
     padding-left: 1.5rem !important;
   }

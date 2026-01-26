@@ -79,6 +79,30 @@ function UserRoles() {
 
   const { token } = useAuth();
 
+  const updateStats = useCallback((userList) => {
+    const totalUsers = userList.length;
+    const activePSCOs = userList.filter(
+      (u) => u.role === "club-officer" && u.isActive,
+    ).length;
+    const facultyStaff = userList.filter(
+      (u) => u.role === "psas" || u.role === "mis",
+    ).length;
+    const suspended = userList.filter((u) => !u.isActive).length;
+
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const newUsersWeek = userList.filter(
+      (u) => new Date(u.createdAt) > oneWeekAgo,
+    ).length;
+
+    setStats({
+      totalUsers,
+      activePSCOs,
+      facultyStaff,
+      suspended,
+      newUsersWeek,
+    });
+  }, []);
+
   const fetchUsers = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
@@ -105,31 +129,7 @@ function UserRoles() {
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
-
-  const updateStats = (userList) => {
-    const totalUsers = userList.length;
-    const activePSCOs = userList.filter(
-      (u) => u.role === "club-officer" && u.isActive,
-    ).length;
-    const facultyStaff = userList.filter(
-      (u) => u.role === "psas" || u.role === "mis",
-    ).length;
-    const suspended = userList.filter((u) => !u.isActive).length;
-
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const newUsersWeek = userList.filter(
-      (u) => new Date(u.createdAt) > oneWeekAgo,
-    ).length;
-
-    setStats({
-      totalUsers,
-      activePSCOs,
-      facultyStaff,
-      suspended,
-      newUsersWeek,
-    });
-  };
+  }, [token, updateStats]);
 
   useEffect(() => {
     fetchUsers();
@@ -810,7 +810,11 @@ function UserRoles() {
 
               <p className="text-gray-600 mb-6">
                 {confirmAction === "ELEVATE" &&
-                  `Are you sure you want to elevate ${selectedUser?.name} to PSCO for ${selectedProgram}?`}
+                  `Are you sure you want to elevate ${selectedUser?.name} to PSCO (${
+                    selectedChoice === "Executive"
+                      ? "Presidents, VPs, and Secretaries"
+                      : "Other Officers"
+                  }) for ${selectedProgram}?`}
                 {confirmAction === "REMOVE_PSCO" &&
                   `This will revert ${selectedUser?.name} to a regular Student role.`}
                 {confirmAction === "DISABLE" &&

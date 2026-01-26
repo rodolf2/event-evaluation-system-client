@@ -26,6 +26,8 @@ import ClubOfficerEventAnalytics from "./pages/club-officers/EventAnalytics";
 import ClubOfficerReports from "./pages/club-officers/Reports";
 import SurveyCreation from "./pages/club-officers/SurveyCreation";
 import ClubOfficerBadges from "./pages/club-officers/Badges";
+import ClubAdviserHome from "./pages/club-advisers/Home";
+import ClubAdviserReports from "./pages/club-advisers/Reports";
 import ParticipantHome from "./pages/participants/Home.jsx";
 import ParticipantEvaluations from "./pages/participants/Evaluations.jsx";
 import ParticipantCertificates from "./pages/participants/Certificates.jsx";
@@ -42,11 +44,13 @@ import UserRoles from "./pages/mis/UserRoles";
 import ClubOfficerLayout from "./components/club-officers/ClubOfficerLayout";
 import PSASLayout from "./components/psas/PSASLayout";
 import SchoolAdminLayout from "./components/school-admins/SchoolAdminLayout";
+import ClubAdviserLayout from "./components/club-advisers/ClubAdviserLayout";
 import MisLayout from "./components/mis/MisLayout";
 import Profile from "./pages/Profile";
 import Settings from "./pages/mis/Settings";
 import Permissions from "./pages/mis/Permissions";
 import MISSharedReports from "./pages/mis/MISSharedReports";
+import LexiconManagement from "./pages/mis/LexiconManagement";
 import AuthCallback from "./pages/AuthCallback";
 import { useAuth } from "./contexts/useAuth";
 import QuantitativeRatings from "./pages/reports/QuantitativeRatings";
@@ -93,6 +97,8 @@ function App() {
         return "/student/home"; // Always redirect to full path
       case "senior-management":
         return "/senior-management/home";
+      case "club-adviser":
+        return "/club-adviser/home";
       case "mis":
         return "/mis";
       case "evaluator":
@@ -501,6 +507,63 @@ function App() {
                 )
               }
             />
+            {/* Club Adviser routes */}
+            <Route
+              path="/club-adviser/home"
+              element={
+                isAuthorized("club-adviser") ? (
+                  <ClubAdviserHome />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-adviser/reports"
+              element={
+                isAuthorized("club-adviser") ? (
+                  <ClubAdviserReports />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-adviser/reports/:eventId"
+              element={
+                isAuthorized("club-adviser") ? (
+                  <CompleteReport />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-adviser/notifications"
+              element={
+                isAuthorized("club-adviser") ? (
+                  <SharedNotifications layout={ClubAdviserLayout} />
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-adviser/profile"
+              element={
+                isAuthorized("club-adviser") ? (
+                  <ClubAdviserLayout>
+                    <Profile />
+                  </ClubAdviserLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/club-adviser"
+              element={<Navigate to="/club-adviser/home" />}
+            />
             {/* Guest Access Route - for guest speakers viewing reports */}
             <Route
               path="/guest-access"
@@ -718,6 +781,18 @@ function App() {
                 isAuthorized("mis") ? (
                   <MisLayout>
                     <Settings />
+                  </MisLayout>
+                ) : (
+                  <Navigate to={getHomeRoute()} />
+                )
+              }
+            />
+            <Route
+              path="/mis/lexicon"
+              element={
+                isAuthorized("mis") ? (
+                  <MisLayout>
+                    <LexiconManagement />
                   </MisLayout>
                 ) : (
                   <Navigate to={getHomeRoute()} />
