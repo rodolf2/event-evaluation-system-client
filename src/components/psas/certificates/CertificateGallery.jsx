@@ -172,7 +172,7 @@ const CertificateGallery = ({
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
           {isFromEvaluation
             ? "Link a Certificate Template"
-            : "Create a certificate"}
+            : "Create a Certificate"}
         </h2>
 
         {/* Only show Blank Canvas option when NOT from evaluation (certificate linking context) */}
@@ -200,7 +200,7 @@ const CertificateGallery = ({
                 </div>
               </div>
 
-              <div className="flex justify-center px-4">
+              <div className="flex justify-center px-4 mt-3">
                 <div className="text-center">
                   <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">
                     Blank Canvas

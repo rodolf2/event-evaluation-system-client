@@ -209,11 +209,10 @@ const Evaluations = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-full transition-colors ${
-                      currentPage === 1
+                    className={`p-2 rounded-full transition-colors ${currentPage === 1
                         ? "text-gray-300 cursor-not-allowed"
                         : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                      }`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -221,11 +220,10 @@ const Evaluations = () => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`p-2 rounded-full transition-colors ${
-                      currentPage === totalPages
+                    className={`p-2 rounded-full transition-colors ${currentPage === totalPages
                         ? "text-gray-300 cursor-not-allowed"
                         : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                      }`}
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -272,29 +270,27 @@ const Evaluations = () => {
                   return (
                     <div
                       key={evaluation._id || index}
-                      className={`rounded-lg shadow-md transition-all duration-300 ${
-                        isCompleted
+                      className={`rounded-lg shadow-md transition-all duration-300 ${isCompleted
                           ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
                           : isExpired
                             ? "bg-gray-400 opacity-75 cursor-not-allowed"
                             : isUpcoming
                               ? "bg-blue-400 opacity-75 cursor-not-allowed"
                               : "bg-[linear-gradient(-0.15deg,#324BA3_38%,#002474_100%)] hover:shadow-lg cursor-pointer"
-                      }`}
+                        }`}
                       onClick={
                         isAvailable
                           ? () =>
-                              navigate(`/evaluations/start/${evaluation._id}`)
+                            navigate(`/evaluations/start/${evaluation._id}`)
                           : undefined
                       }
                     >
                       <div
-                        className={`rounded-r-lg ml-3 p-8 flex items-center h-full ${
-                          isCompleted ? "bg-green-50" : "bg-white"
-                        }`}
+                        className={`rounded-r-lg ml-3 p-8 flex items-center h-full min-h-[220px] ${isCompleted ? "bg-green-50" : "bg-white"
+                          }`}
                       >
                         <div className="grow">
-                          <h3 className="font-bold text-2xl mb-4 text-gray-800">
+                          <h3 className="font-bold text-xl mb-4 text-gray-800 line-clamp-2 h-14">
                             {evaluation.title}
                           </h3>
                           {isCompleted && (
@@ -323,9 +319,8 @@ const Evaluations = () => {
                           </div>
                         </div>
                         <div
-                          className={`ml-4 ${
-                            isCompleted ? "text-green-500" : "text-gray-400"
-                          }`}
+                          className={`ml-4 ${isCompleted ? "text-green-500" : "text-gray-400"
+                            }`}
                         >
                           {isCompleted ? (
                             <Check className="h-6 w-6" />

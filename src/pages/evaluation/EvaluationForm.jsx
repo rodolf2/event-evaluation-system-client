@@ -237,8 +237,7 @@ const EvaluationForm = () => {
       console.log("🔍 DEBUG: Processing sections for submission:");
       allSections.forEach((section, sectionIndex) => {
         console.log(
-          `🔍 DEBUG: Processing ${section.title} (${
-            section.questions?.length || 0
+          `🔍 DEBUG: Processing ${section.title} (${section.questions?.length || 0
           } questions)`,
         );
 
@@ -762,7 +761,7 @@ const EvaluationForm = () => {
               <h1 className="text-4xl font-bold text-gray-800">
                 {title || "Loading..."}
               </h1>
-              <p className="text-gray-600 mt-2 mb-4">
+              <p className="text-gray-600 text-sm sm:text-base mt-2 mb-4">
                 {description || "Loading description..."}
               </p>
             </div>
@@ -791,7 +790,7 @@ const EvaluationForm = () => {
               {currentSection?.title || "Untitled Section"}
             </h2>
             {getSectionDescription() && (
-              <p className="text-gray-600">{getSectionDescription()}</p>
+              <p className="text-gray-100 text-sm sm:text-base opacity-90">{getSectionDescription()}</p>
             )}
           </div>
 

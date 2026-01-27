@@ -60,7 +60,7 @@ const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
       >
         <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
           <div className="text-center mb-4 shrink-0 relative">
-            <h2 className="text-2xl font-bold text-gray-800 line-clamp-2">
+            <h2 className="text-2xl font-bold text-gray-800 line-clamp-2 h-16 flex items-center justify-center">
               {evaluation.title}
             </h2>
             <p className="text-gray-500 text-sm line-clamp-2">
@@ -311,7 +311,7 @@ const SurveyCreation = () => {
         } else if (response.status === 400) {
           toast.error(
             errorData.message ||
-              "Invalid input. Please check your data and try again.",
+            "Invalid input. Please check your data and try again.",
           );
         } else {
           toast.error(`Import failed: ${errorData.message}`);
@@ -372,10 +372,10 @@ const SurveyCreation = () => {
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
+        <div className="p-6 md:p-5 flex flex-col">
           {/* Header Section - Match the actual gradient layout */}
           <div className="mb-8">
-            <h2 className="text-3xl text-gray-800 mb-4">Start an evaluation</h2>
+            <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
             <div className="mb-7">
               <div
                 className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
@@ -545,9 +545,9 @@ const SurveyCreation = () => {
   return (
     <>
       <ClubOfficerLayout>
-        <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
+        <div className="p-6 md:p-5 flex flex-col">
           <div className="shrink-0">
-            <h2 className="text-3xl text-gray-800 mb-4">Start an evaluation</h2>
+            <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
             <div className="mb-7">
               <div
                 className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
@@ -660,9 +660,8 @@ const SurveyCreation = () => {
                   onChange={handleUrlChange}
                   value={googleFormsUrl} // Bind value to state
                   disabled={isExtracting}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                    isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
+                    }`}
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   Paste the URL of an existing Google Form to import its
@@ -677,18 +676,16 @@ const SurveyCreation = () => {
                     setGoogleFormsUrl(""); // Clear the URL input on cancel
                   }}
                   disabled={isExtracting}
-                  className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${
-                    isExtracting ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                  className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${isExtracting ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpload}
                   disabled={isExtracting}
-                  className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${
-                    isExtracting ? "opacity-75 cursor-not-allowed" : ""
-                  }`}
+                  className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${isExtracting ? "opacity-75 cursor-not-allowed" : ""
+                    }`}
                 >
                   {isExtracting ? (
                     <>

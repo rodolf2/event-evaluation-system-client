@@ -5,7 +5,7 @@ const Reminders = ({ reminders, onDelete }) => {
   const safeReminders = Array.isArray(reminders) ? reminders : [];
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 min-h-[400px]">
+    <div className="bg-white rounded-xl shadow p-4 max-h-[400px] flex flex-col">
       <h3 className="text-lg font-semibold mb-3">
         Reminders ({safeReminders.length})
       </h3>
@@ -14,7 +14,7 @@ const Reminders = ({ reminders, onDelete }) => {
           No reminders yet. Click on a date to add one.
         </p>
       ) : (
-        <ul className="space-y-2 overflow-y-auto">
+        <ul className="space-y-2 overflow-y-auto flex-1 pr-1 custom-scrollbar">
           {safeReminders.map((reminder) => (
             <li
               key={reminder._id || reminder.id}

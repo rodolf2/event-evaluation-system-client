@@ -1,14 +1,6 @@
+import { useRef, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 
-/**
- * Section card component (restored previous simple design).
- *
- * - Simple white card, same visual language as main form card.
- * - No floating "Section X" label banner.
- * - No star/move/overflow menu.
- * - Keeps delete button in bottom-right.
- * - Supports active highlighting via `active` prop (for current FormCreationInterface logic).
- */
 const Section = ({
   id,
   index,
@@ -18,6 +10,24 @@ const Section = ({
   active,
   onUpdateSection,
 }) => {
+  const titleRef = useRef(null);
+  const descriptionRef = useRef(null);
+
+  // Auto-resize textareas
+  useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.style.height = "auto";
+      titleRef.current.style.height = `${titleRef.current.scrollHeight}px`;
+    }
+  }, [title]);
+
+  useEffect(() => {
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = "auto";
+      descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`;
+    }
+  }, [description]);
+
   // Fallback label if index is missing; index is managed by parent.
   const sectionLabel = index ? `Section ${index}` : "Section";
 
@@ -32,27 +42,28 @@ const Section = ({
 
       <div
         className={`w-full max-w-4xl bg-white rounded-lg shadow-sm p-6 sm:p-10 relative min-h-[220px] transition
-          ${
-            active
-              ? "ring-2 ring-blue-500/40"
-              : "hover:ring-1 hover:ring-gray-200"
+          ${active
+            ? "ring-2 ring-blue-500/40"
+            : "hover:ring-1 hover:ring-gray-200"
           }`}
       >
         {/* Section title - aligned to match Section 1 header styling */}
-        <input
-          type="text"
+        <textarea
+          ref={titleRef}
           value={title || ""}
           placeholder={`${sectionLabel} title`}
           onChange={(e) => onUpdateSection?.(id, "title", e.target.value)}
-          className="w-full text-3xl sm:text-5xl font-bold border-none outline-none mb-2 text-center placeholder:text-gray-400"
+          className="w-full text-xl sm:text-3xl font-bold border-none outline-none mb-2 text-center placeholder:text-gray-400 resize-none overflow-hidden"
+          rows={1}
         />
 
         {/* Section description - positioned directly under title like Section 1 */}
         <textarea
+          ref={descriptionRef}
           value={description || ""}
           placeholder="Add a description"
           onChange={(e) => onUpdateSection?.(id, "description", e.target.value)}
-          className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-gray-400"
+          className="w-full text-sm sm:text-base text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-gray-400 overflow-hidden"
           rows={1}
         />
 

@@ -443,8 +443,8 @@ function App() {
                   <ClubOfficerLayout>
                     <FormCreationInterface
                       onBack={() =>
-                        (window.location.href =
-                          "/club-officer/evaluations/create")
+                      (window.location.href =
+                        "/club-officer/evaluations/create")
                       }
                     />
                   </ClubOfficerLayout>

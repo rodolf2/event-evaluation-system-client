@@ -143,11 +143,11 @@ function PsasCertificatesContent() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-[80vh]">
+      <div className="p-4 sm:p-6 md:p-8 min-h-[80vh]">
         {/* Header Section - Match CertificateGallery gradient layout */}
         <div className="shrink-0 mb-6 sm:mb-8">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
-            Create a certificate
+            Create a Certificate
           </h2>
           <div className="mb-6 sm:mb-8">
             <div

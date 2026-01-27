@@ -13,6 +13,7 @@ import {
   Palette,
   ChevronLeft,
   X,
+  XCircle,
 } from "lucide-react";
 import { LuUndo, LuRedo } from "react-icons/lu";
 import { DayPicker } from "react-day-picker";
@@ -89,6 +90,24 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   // Form session context
   const formCanvasRef = useRef(null);
   const tempFormDataLoadedRef = useRef(false); // Track if we've loaded tempFormData
+  const titleRef = useRef(null);
+  const descriptionRef = useRef(null);
+
+  // Auto-resize textareas
+  useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.style.height = "auto";
+      titleRef.current.style.height = `${titleRef.current.scrollHeight}px`;
+    }
+  }, [formTitle]);
+
+  useEffect(() => {
+    if (descriptionRef.current) {
+      descriptionRef.current.style.height = "auto";
+      descriptionRef.current.style.height = `${descriptionRef.current.scrollHeight}px`;
+    }
+  }, [formDescription]);
+
   const [assignedStudents, setAssignedStudents] = useState(
     FormSessionManager.loadStudentAssignments() || []
   );
@@ -225,6 +244,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         linkedCertificateType,
         certificateTemplateName,
         assignedStudents,
+        uploadedCSVData,
       };
 
       setHistory((prev) => {
@@ -263,6 +283,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     linkedCertificateType,
     certificateTemplateName,
     assignedStudents,
+    uploadedCSVData,
     historyIndex, // Dependency needed for slicing correctly
   ]);
 
@@ -290,6 +311,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setLinkedCertificateType(snapshot.linkedCertificateType);
       setCertificateTemplateName(snapshot.certificateTemplateName);
       setAssignedStudents(snapshot.assignedStudents);
+      setUploadedCSVData(snapshot.uploadedCSVData);
     }
   };
 
@@ -317,6 +339,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setLinkedCertificateType(snapshot.linkedCertificateType);
       setCertificateTemplateName(snapshot.certificateTemplateName);
       setAssignedStudents(snapshot.assignedStudents);
+      setUploadedCSVData(snapshot.uploadedCSVData);
     }
   };
 
@@ -420,12 +443,18 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       /^[0-9a-fA-F]{24}$/.test(finalFormId) ? finalFormId : null
     );
 
-    // Update assigned students for the correct formId
+    // Update assigned students and transient CSV data for the correct formId
     if (finalFormId) {
       FormSessionManager.ensurePersistentFormId(finalFormId);
+
       const updatedAssignedStudents =
         FormSessionManager.loadStudentAssignments() || [];
       setAssignedStudents(updatedAssignedStudents);
+
+      const transientCSVData = FormSessionManager.loadTransientCSVData();
+      if (transientCSVData) {
+        setUploadedCSVData(transientCSVData);
+      }
     }
 
     // If we have an effective form id from URL/preserved AND it looks like a real backend id,
@@ -537,13 +566,13 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   uploadedLinks: formData.uploadedLinks || [],
                   eventStartDate: formData.eventStartDate
                     ? new Date(formData.eventStartDate)
-                        .toISOString()
-                        .split("T")[0]
+                      .toISOString()
+                      .split("T")[0]
                     : "",
                   eventEndDate: formData.eventEndDate
                     ? new Date(formData.eventEndDate)
-                        .toISOString()
-                        .split("T")[0]
+                      .toISOString()
+                      .split("T")[0]
                     : "",
                   currentFormId: finalFormId,
                   // Correctly map certificate fields
@@ -706,9 +735,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             setEventEndDate(loadedData.eventEndDate || "");
             setIsCertificateLinked(
               loadedData.isCertificateLinked ||
-                checkCertificateLinkedStatus(
-                  FormSessionManager.getCurrentFormId()
-                )
+              checkCertificateLinkedStatus(
+                FormSessionManager.getCurrentFormId()
+              )
             );
             setLinkedCertificateId(loadedData.linkedCertificateId || null);
             setAssignedStudents(
@@ -740,7 +769,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           setEventEndDate(loadedData.eventEndDate || "");
           setIsCertificateLinked(
             loadedData.isCertificateLinked ||
-              checkCertificateLinkedStatus(finalFormId)
+            checkCertificateLinkedStatus(finalFormId)
           );
           setAssignedStudents(
             FormSessionManager.loadStudentAssignments() || []
@@ -770,7 +799,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         setCurrentFormId(currentFormId);
         setIsCertificateLinked(
           formData.isCertificateLinked ||
-            checkCertificateLinkedStatus(currentFormId)
+          checkCertificateLinkedStatus(currentFormId)
         );
         setLinkedCertificateId(formData.linkedCertificateId || null);
         setAssignedStudents(FormSessionManager.loadStudentAssignments() || []);
@@ -812,9 +841,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         setCurrentFormId(currentFormId || formData.currentFormId);
         setIsCertificateLinked(
           formData.isCertificateLinked ||
-            checkCertificateLinkedStatus(
-              currentFormId || formData.currentFormId
-            )
+          checkCertificateLinkedStatus(
+            currentFormId || formData.currentFormId
+          )
         );
         setLinkedCertificateId(formData.linkedCertificateId || null);
         setAssignedStudents(FormSessionManager.loadStudentAssignments() || []);
@@ -974,8 +1003,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           localStorage.removeItem("tempFormData");
 
           toast.success(
-            `Loaded form with ${convertedQuestions.length} question${
-              convertedQuestions.length !== 1 ? "s" : ""
+            `Loaded form with ${convertedQuestions.length} question${convertedQuestions.length !== 1 ? "s" : ""
             }`
           );
         } catch (error) {
@@ -1098,8 +1126,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         localStorage.removeItem("tempFormData");
 
         toast.success(
-          `Loaded form with ${convertedQuestions.length} question${
-            convertedQuestions.length !== 1 ? "s" : ""
+          `Loaded form with ${convertedQuestions.length} question${convertedQuestions.length !== 1 ? "s" : ""
           }`
         );
       } catch (error) {
@@ -1262,9 +1289,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         const updatedSections = prevSections.map((section) =>
           section.id === targetSectionId
             ? {
-                ...section,
-                questions: [...(section.questions || []), newQuestion],
-              }
+              ...section,
+              questions: [...(section.questions || []), newQuestion],
+            }
             : section
         );
         // Defer persistence to debounced effect
@@ -1592,8 +1619,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
       setHasUnsavedChanges(true);
       toast.success(
-        `Recipient list loaded: ${csvData.students.length} students from ${
-          csvData.filename || "CSV"
+        `Recipient list loaded: ${csvData.students.length} students from ${csvData.filename || "CSV"
         }`
       );
     } catch (error) {
@@ -1656,9 +1682,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     if (duplicates.length > 0) {
       return {
         isValid: false,
-        error: `Found duplicate emails: ${duplicates.slice(0, 3).join(", ")}${
-          duplicates.length > 3 ? "..." : ""
-        }. Please ensure all emails are unique.`,
+        error: `Found duplicate emails: ${duplicates.slice(0, 3).join(", ")}${duplicates.length > 3 ? "..." : ""
+          }. Please ensure all emails are unique.`,
       };
     }
 
@@ -1811,28 +1836,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     const selectedStudents = FormSessionManager.loadStudentAssignments() || [];
     const transientCSVData = FormSessionManager.loadTransientCSVData();
 
-    // Enhanced validation with specific error messages
-    const validationErrors = [];
-
-    // Step 1: Form content validation
-    if (allQuestions.length === 0) {
-      validationErrors.push("Please add at least one question to your form");
-    }
-
-    // Display validation errors
-    if (validationErrors.length > 0) {
-      const errorMessage = `Please fix the following before publishing:\n• ${validationErrors.join(
-        "\n• "
-      )}`;
-      toast.error(errorMessage.replace(/\n/g, " "), { duration: 5000 });
-      return;
-    }
-
-    const backendQuestions = mapQuestionsToBackend(questions, sections);
-
-    // Get certificate information for publishing
-    // NOTE: certificate linkage is currently handled separately; no-op placeholder removed
-
     // Determine final selected students - prioritize explicitly assigned students,
     // then fall back to CSV data (from FormSessionManager for consistency)
     let finalSelectedStudents = selectedStudents;
@@ -1850,6 +1853,55 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       // Fallback to component state if FormSessionManager data is not available
       finalSelectedStudents = uploadedCSVData.students;
     }
+
+    // Enhanced validation with specific error messages
+    const validationErrors = [];
+
+    // Step 1: Form content validation
+    if (allQuestions.length === 0) {
+      validationErrors.push("Please add at least one question to your form");
+    }
+
+    // Step 2: Event dates validation
+    if (!eventStartDate || !eventEndDate) {
+      validationErrors.push("Please set the event start and end dates");
+    }
+
+    // Step 3: Certificate linkage validation
+    if (!isCertificateLinked) {
+      validationErrors.push("Please link a certificate to this form");
+    }
+
+    // Step 4: Participants validation (CSV or manual assignment)
+    if (!finalSelectedStudents || finalSelectedStudents.length === 0) {
+      validationErrors.push("Please upload a CSV file or assign participants");
+    }
+
+    // Display validation errors
+    if (validationErrors.length > 0) {
+      const errorMessage = `Please fix the following before publishing:\n• ${validationErrors.join(
+        "\n• "
+      )}`;
+      toast.error(errorMessage, {
+        duration: 5000,
+        style: {
+          alignItems: "flex-start",
+          maxWidth: "500px",
+          padding: "16px",
+        },
+        icon: (
+          <div style={{ marginTop: "4px" }}>
+            <XCircle size={20} color="#ef4444" />
+          </div>
+        )
+      });
+      return;
+    }
+
+    const backendQuestions = mapQuestionsToBackend(questions, sections);
+
+    // Get certificate information for publishing
+    // NOTE: certificate linkage is currently handled separately; no-op placeholder removed
 
     // Check if this is from temporary extracted data
     const tempFormData = localStorage.getItem("tempFormData");
@@ -1977,8 +2029,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           !createData.data?.form?._id
         ) {
           toast.error(
-            `Error creating draft form: ${
-              createData.message || createResponse.status
+            `Error creating draft form: ${createData.message || createResponse.status
             }`
           );
           return;
@@ -2078,8 +2129,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         setFormWasPublished(true);
       } else {
         toast.error(
-          `Error publishing form: ${
-            publishData.message || publishResponse.status
+          `Error publishing form: ${publishData.message || publishResponse.status
           }`
         );
       }
@@ -2195,12 +2245,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   >
                     {eventStartDate && eventEndDate
                       ? `${new Date(eventStartDate).toLocaleDateString(
-                          "en-US",
-                          { month: "short", day: "numeric" }
-                        )} - ${new Date(eventEndDate).toLocaleDateString(
-                          "en-US",
-                          { month: "short", day: "numeric", year: "numeric" }
-                        )}`
+                        "en-US",
+                        { month: "short", day: "numeric" }
+                      )} - ${new Date(eventEndDate).toLocaleDateString(
+                        "en-US",
+                        { month: "short", day: "numeric", year: "numeric" }
+                      )}`
                       : "Set Event Dates"}
                   </button>
 
@@ -2336,17 +2386,15 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 title="Undo"
               >
                 <LuUndo
-                  className={`w-5 h-5 ${
-                    historyIndex <= 0 ? "text-gray-300" : "text-gray-600"
-                  }`}
+                  className={`w-5 h-5 ${historyIndex <= 0 ? "text-gray-300" : "text-gray-600"
+                    }`}
                 />
               </button>
               <button
-                className={`p-2 rounded-full ${
-                  historyIndex >= history.length - 1
-                    ? "cursor-not-allowed"
-                    : "hover:bg-gray-200"
-                }`}
+                className={`p-2 rounded-full ${historyIndex >= history.length - 1
+                  ? "cursor-not-allowed"
+                  : "hover:bg-gray-200"
+                  }`}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -2356,19 +2404,17 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 title="Redo"
               >
                 <LuRedo
-                  className={`w-5 h-5 ${
-                    historyIndex >= history.length - 1
-                      ? "text-gray-300"
-                      : "text-gray-600"
-                  }`}
+                  className={`w-5 h-5 ${historyIndex >= history.length - 1
+                    ? "text-gray-300"
+                    : "text-gray-600"
+                    }`}
                 />
               </button>
-              <button
-                className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
-                onClick={() => {
-                  // Force immediate save before navigation to ensure sections are preserved
-                  persistFormState();
 
+              <button
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition relative group"
+                title="Assign Students"
+                onClick={() => {
                   // Ensure we have a stable draft id for this session (local-only at this point)
                   const stableFormId =
                     FormSessionManager.getCurrentFormId() ||
@@ -2377,15 +2423,14 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   // Also preserve the id for navigation continuity
                   FormSessionManager.preserveFormId();
 
-                  // Require a CSV import before assigning students, but do NOT wipe form state
+                  // Require a CSV import before assigning students
                   if (
                     !uploadedCSVData ||
                     !Array.isArray(uploadedCSVData.students) ||
                     uploadedCSVData.students.length === 0
                   ) {
-                    toast.error(
-                      "Please import a CSV file first to assign students. All current form inputs are saved as draft."
-                    );
+                    // Open import modal directly instead of showing a scolding background toast.
+                    // This provides a smoother, non-error-indexed workflow.
                     openImportModal();
                     return;
                   }
@@ -2405,11 +2450,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   onClick={handlePublish}
                   // Keep disabled only while actively publishing, not during init.
                   disabled={isPublishing}
-                  className={`px-6 py-2 font-semibold rounded-md transition ${
-                    isPublishing
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-[#0C2A92] text-white hover:bg-blue-700"
-                  }`}
+                  className={`px-6 py-2 font-semibold rounded-md transition ${isPublishing
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-[#0C2A92] text-white hover:bg-blue-700"
+                    }`}
                 >
                   {/* Always show consistent label as requested (no Loading.../Publishing...) */}
                   Publish
@@ -2424,11 +2468,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           >
             <div className="w-full max-w-4xl relative mt-8">
               <div
-                className={`bg-white rounded-lg shadow-sm p-6 sm:p-10 mb-6 relative min-h-[220px] ${
-                  activeSectionId === "main"
-                    ? "ring-2 ring-blue-500/40"
-                    : "hover:ring-1 hover:ring-gray-200 transition"
-                }`}
+                className={`bg-white rounded-lg shadow-sm p-6 sm:p-10 mb-6 relative min-h-[220px] ${activeSectionId === "main"
+                  ? "ring-2 ring-blue-500/40"
+                  : "hover:ring-1 hover:ring-gray-200 transition"
+                  }`}
                 onClick={(e) => {
                   // Don't activate section when clicking on input fields
                   if (
@@ -2465,8 +2508,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   )}
                 </div>
 
-                <input
-                  type="text"
+                <textarea
+                  ref={titleRef}
                   value={formTitle === "Untitled Form" ? "" : formTitle}
                   placeholder="Untitled Form"
                   onChange={(e) => {
@@ -2474,9 +2517,11 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                     setFormTitle(value || "Untitled Form");
                     setHasUnsavedChanges(true);
                   }}
-                  className="text-3xl sm:text-5xl font-bold w-full border-none outline-none mb-2 text-center placeholder:text-black bg-transparent"
+                  className="text-2xl sm:text-4xl font-bold w-full border-none outline-none mb-2 text-center placeholder:text-black bg-transparent resize-none overflow-hidden"
+                  rows={1}
                 />
                 <textarea
+                  ref={descriptionRef}
                   value={
                     formDescription === "Form Description"
                       ? ""
@@ -2488,7 +2533,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                     setFormDescription(value || "Form Description");
                     setHasUnsavedChanges(true);
                   }}
-                  className="w-full text-base sm:text-lg text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-black bg-transparent"
+                  className="w-full text-sm sm:text-base text-gray-600 border-none outline-none resize-none mb-4 text-center placeholder:text-black bg-transparent overflow-hidden"
                   rows={1}
                 />
 
@@ -2524,14 +2569,14 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                               {assignedCount > 0
                                 ? assignedCount
                                 : recipients
-                                ? parseInt(recipients)
-                                : 0}
+                                  ? parseInt(recipients)
+                                  : 0}
                               student
                               {(assignedCount > 0
                                 ? assignedCount
                                 : recipients
-                                ? parseInt(recipients)
-                                : 0) !== 1
+                                  ? parseInt(recipients)
+                                  : 0) !== 1
                                 ? "s"
                                 : ""}{" "}
                               assigned to this form
@@ -2630,11 +2675,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 <div className="w-full max-w-4xl relative">
                   <div
                     onClick={() => handleSetActiveSection(s.id)}
-                    className={`transition ${
-                      isActiveSection
-                        ? "ring-2 ring-blue-500/40 rounded-lg"
-                        : "hover:ring-1 hover:ring-gray-200 rounded-lg"
-                    }`}
+                    className={`transition ${isActiveSection
+                      ? "ring-2 ring-blue-500/40 rounded-lg"
+                      : "hover:ring-1 hover:ring-gray-200 rounded-lg"
+                      }`}
                   >
                     <Section
                       id={s.id}
@@ -2739,11 +2783,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
                 navigate(`${certificatesPath}?${queryParams.toString()}`);
               }}
-              className={`px-6 py-3 font-semibold text-white rounded-lg transition-colors ${
-                isCertificateLinked
-                  ? "bg-[#0C2A92] hover:bg-[#0B2590]"
-                  : "bg-[#5F6368] hover:bg-[#4F5358]"
-              }`}
+              className={`px-6 py-3 font-semibold text-white rounded-lg transition-colors ${isCertificateLinked
+                ? "bg-[#0C2A92] hover:bg-[#0B2590]"
+                : "bg-[#5F6368] hover:bg-[#4F5358]"
+                }`}
             >
               {isCertificateLinked ? "Certificate Linked" : "Link Certificate"}
             </button>
@@ -2783,9 +2826,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             >
               <Plus
                 size={32}
-                className={`transition-transform duration-300 ${
-                  isFabOpen ? "rotate-45" : "rotate-0"
-                }`}
+                className={`transition-transform duration-300 ${isFabOpen ? "rotate-45" : "rotate-0"
+                  }`}
               />
             </button>
           </div>

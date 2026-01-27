@@ -72,7 +72,10 @@ const DashboardCard = ({ image, title, buttonText, link, icon: Icon }) => {
   );
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center hover:shadow-lg cursor-pointer h-full transition-shadow duration-300">
+    <div
+      onClick={handleButtonClick}
+      className="bg-white rounded-xl shadow p-4 flex flex-col items-center hover:shadow-lg cursor-pointer h-full transition-shadow duration-300"
+    >
       {image && !imageError ? (
         <img
           src={image}
@@ -84,7 +87,6 @@ const DashboardCard = ({ image, title, buttonText, link, icon: Icon }) => {
         renderGradientFallback()
       )}
       <button
-        onClick={handleButtonClick}
         className="text-blue-600 font-medium hover:underline text-base mt-auto"
       >
         {buttonText}

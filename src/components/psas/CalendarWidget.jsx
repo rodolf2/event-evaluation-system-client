@@ -88,8 +88,10 @@ const CalendarWidget = ({
           const day = i + 1;
           const date = month.date(day);
           const isToday = date.isSame(dayjs(), "day");
+          const isPast = date.isBefore(dayjs(), "day");
 
           const handleDayClick = (e) => {
+            if (isPast) return; // Prevent interaction with past dates
             if (onRangeSelect) {
               // Handle date range selection
               if (!selectedStartDate) {
@@ -130,20 +132,20 @@ const CalendarWidget = ({
             <div
               key={day}
               onClick={handleDayClick}
-              className="relative flex items-center justify-center cursor-pointer group"
+              className={`relative flex items-center justify-center group ${isPast ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
             >
               <div
                 className={`rounded-lg w-8 h-8 flex items-center justify-center text-xs
-                  ${
-                    isStartOrEndDate
-                      ? "bg-[#1F3463] text-white font-bold"
-                      : inRange
+                  ${isStartOrEndDate
+                    ? "bg-[#1F3463] text-white font-bold"
+                    : inRange
                       ? "bg-[#EBF1FF] text-gray-700"
                       : isToday
-                      ? "bg-[#1F3463] text-white font-bold"
-                      : hasReminderForDay
-                      ? "bg-blue-100 text-[#1F3463]"
-                      : "text-gray-700 group-hover:bg-gray-100"
+                        ? "bg-[#1F3463] text-white font-bold"
+                        : hasReminderForDay
+                          ? "bg-blue-100 text-[#1F3463]"
+                          : "text-gray-700 group-hover:bg-gray-100"
                   }`}
               >
                 {day}

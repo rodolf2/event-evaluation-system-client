@@ -20,14 +20,12 @@ const ToggleSwitch = ({ label, enabled, setEnabled }) => (
     <span className="text-gray-600">{label}</span>
     <button
       onClick={() => setEnabled(!enabled)}
-      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-300 focus:outline-none ${
-        enabled ? "bg-blue-600" : "bg-gray-300"
-      }`}
+      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-300 focus:outline-none ${enabled ? "bg-blue-600" : "bg-gray-300"
+        }`}
     >
       <span
-        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-300 ${
-          enabled ? "translate-x-6" : "translate-x-1"
-        }`}
+        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-300 ${enabled ? "translate-x-6" : "translate-x-1"
+          }`}
       />
     </button>
   </div>
@@ -47,8 +45,6 @@ function Profile() {
   const [editedInfo, setEditedInfo] = useState({
     department: "",
     position: "",
-    country: "",
-    timezone: "",
   });
 
   // Initialize edited info when user data loads
@@ -57,8 +53,6 @@ function Profile() {
       setEditedInfo({
         department: user.department || "",
         position: user.position || "",
-        country: user.country || "Philippines",
-        timezone: user.timezone || "Asia/Manila",
       });
       // Load notification preferences
       setMuteNotifications(user.muteNotifications || false);
@@ -149,8 +143,6 @@ function Profile() {
     setEditedInfo({
       department: user.department || "",
       position: user.position || "",
-      country: user.country || "Philippines",
-      timezone: user.timezone || "Asia/Manila",
     });
   };
 
@@ -472,6 +464,7 @@ function Profile() {
                       }
                       className="w-full p-2 border border-gray-300 rounded-lg mt-1"
                       placeholder="e.g., Department Head, Student"
+                      maxLength={15}
                     />
                   ) : (
                     <p className="text-gray-800 font-semibold mt-1">
@@ -501,6 +494,7 @@ function Profile() {
                           ? "e.g., Student Council, Drama Club"
                           : "e.g., Student Affairs"
                       }
+                      maxLength={15}
                     />
                   ) : (
                     <p className="text-gray-800 font-semibold mt-1">
@@ -515,50 +509,6 @@ function Profile() {
                   <p className="text-gray-800 font-semibold mt-1">
                     {getAccessLevelDisplay(user.role)}
                   </p>
-                </div>
-                <div>
-                  <label className="block text-gray-500 font-medium">
-                    Country
-                  </label>
-                  {isEditingInfo ? (
-                    <input
-                      type="text"
-                      value={editedInfo.country}
-                      onChange={(e) =>
-                        setEditedInfo({
-                          ...editedInfo,
-                          country: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border border-gray-300 rounded-lg mt-1"
-                    />
-                  ) : (
-                    <p className="text-gray-800 font-semibold mt-1">
-                      {user.country || "Philippines"}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-gray-500 font-medium">
-                    Timezone
-                  </label>
-                  {isEditingInfo ? (
-                    <input
-                      type="text"
-                      value={editedInfo.timezone}
-                      onChange={(e) =>
-                        setEditedInfo({
-                          ...editedInfo,
-                          timezone: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border border-gray-300 rounded-lg mt-1"
-                    />
-                  ) : (
-                    <p className="text-gray-800 font-semibold mt-1">
-                      {user.timezone || "Asia/Manila"}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>

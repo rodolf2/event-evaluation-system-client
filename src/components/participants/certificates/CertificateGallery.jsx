@@ -19,10 +19,10 @@ const CertificateGallery = ({ onTemplateSelect, onBlankCanvas, isFromEvaluation 
     });
 
   return (
-    <div className="p-6 bg-gray-50 max-h-screen">
+    <div className="p-6 max-h-screen">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          {isFromEvaluation ? "Choose a Certificate Template" : "Create a certificate"}
+          {isFromEvaluation ? "Choose a Certificate Template" : "Create a Certificate"}
         </h2>
         <div onClick={onBlankCanvas} className="rounded-lg p-4 cursor-pointer hover:shadow-xl transition-shadow h-[330px]" style={{ background: "linear-gradient(180deg, #002474, #324BA3)" }}>
           <div className="bg-white rounded-md p-16 flex items-center justify-center h-[80%]">

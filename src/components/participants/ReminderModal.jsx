@@ -1,5 +1,5 @@
-// src/components/psas/ReminderModal.jsx
 import { useState, useEffect, useRef } from "react";
+import dayjs from "dayjs";
 
 const ReminderModal = ({
   isOpen,
@@ -38,6 +38,10 @@ const ReminderModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (dayjs(selectedDate).isBefore(dayjs(), "day")) {
+      alert("Cannot add reminders for past dates.");
+      return;
+    }
     if (title) {
       onAddReminder({ title, description, date: selectedDate });
       setTitle("");
@@ -52,18 +56,18 @@ const ReminderModal = ({
   const modalStyle = position
     ? window.innerWidth >= 768
       ? {
-          position: "fixed",
-          right: `${window.innerWidth - position.x + 20}px`,
-          top: `${Math.min(
-            Math.max(position.y, 60),
-            window.innerHeight - 400
-          )}px`,
-        }
+        position: "fixed",
+        right: `${window.innerWidth - position.x + 20}px`,
+        top: `${Math.min(
+          Math.max(position.y, 60),
+          window.innerHeight - 400
+        )}px`,
+      }
       : {
-          position: "fixed",
-          top: "50%",
-          transform: "translateY(-50%)",
-        }
+        position: "fixed",
+        top: "50%",
+        transform: "translateY(-50%)",
+      }
     : {};
 
   return (

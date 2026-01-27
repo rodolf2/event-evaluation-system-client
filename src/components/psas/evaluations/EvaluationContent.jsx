@@ -25,7 +25,7 @@ const EvaluationContent = ({
   return (
     <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
       <div className="shrink-0">
-        <h2 className="text-3xl text-gray-800 mb-4">Start an evaluation</h2>
+        <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
         <div className="mb-7">
           <div
             className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
@@ -170,7 +170,7 @@ const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
       >
         <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
           <div className="text-center mb-4 shrink-0 relative">
-            <h2 className="text-2xl font-bold text-gray-800 line-clamp-2">
+            <h2 className="text-2xl font-bold text-gray-800 line-clamp-2 h-16 flex items-center justify-center">
               {form.title}
             </h2>
             <p className="text-gray-500 text-sm line-clamp-2">

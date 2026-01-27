@@ -59,8 +59,10 @@ const CalendarWidget = ({ openModal, reminders = [] }) => {
           const day = i + 1;
           const date = month.date(day);
           const isToday = date.isSame(dayjs(), "day");
+          const isPast = date.isBefore(dayjs(), "day");
 
           const handleDayClick = (e) => {
+            if (isPast) return; // Prevent interaction with past dates
             const calendarRect = e.currentTarget
               .closest(".bg-white")
               .getBoundingClientRect();
@@ -76,14 +78,14 @@ const CalendarWidget = ({ openModal, reminders = [] }) => {
             <div
               key={day}
               onClick={handleDayClick}
-              className="relative flex items-center justify-center cursor-pointer group"
+              className={`relative flex items-center justify-center group ${isPast ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
             >
               <div
                 className={`rounded-lg w-8 h-8 flex items-center justify-center text-xs
-                  ${
-                    isToday
-                      ? "bg-[#1F3463] text-white font-bold"
-                      : hasReminderForDay
+                  ${isToday
+                    ? "bg-[#1F3463] text-white font-bold"
+                    : hasReminderForDay
                       ? "bg-blue-100 text-[#1F3463]"
                       : "text-gray-700 group-hover:bg-gray-100"
                   }`}

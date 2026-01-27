@@ -74,6 +74,15 @@ const Question = memo(function Question(props) {
 
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const typeDropdownRef = useRef(null);
+  const titleRef = useRef(null);
+
+  // Auto-resize title textarea
+  useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.style.height = "auto";
+      titleRef.current.style.height = `${titleRef.current.scrollHeight}px`;
+    }
+  }, [title]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -191,7 +200,7 @@ const Question = memo(function Question(props) {
                           <img
                             src={
                               emojiStylesMap[style][
-                                iconIndices[iconIndices.length - 1]
+                              iconIndices[iconIndices.length - 1]
                               ]
                             }
                             alt={style}
@@ -354,8 +363,8 @@ const Question = memo(function Question(props) {
     <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-4">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1">
-          <input
-            type="text"
+          <textarea
+            ref={titleRef}
             value={title || ""}
             onChange={(e) =>
               updateQuestion(id, (q) => ({
@@ -363,8 +372,9 @@ const Question = memo(function Question(props) {
                 title: e.target.value,
               }))
             }
-            placeholder="Write a description ..."
-            className="w-full text-lg font-medium border border-gray-300 rounded-md px-3 py-2 mb-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder:text-gray-400"
+            placeholder="Write a question title..."
+            className="w-full text-lg font-medium border border-gray-300 rounded-md px-3 py-2 mb-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder:text-gray-400 resize-none overflow-hidden"
+            rows={1}
           />
           {/* Removed 'Optional' label per requirements; required toggle still functional */}
         </div>

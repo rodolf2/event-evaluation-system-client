@@ -401,7 +401,7 @@ const CertificateStep = ({ onStepComplete, isActive }) => {
                   </div>
                   
                   {certificate.templateData && (
-                    <div className="bg-gray-50 rounded p-3 mb-3">
+                    <div className="rounded p-3 mb-3">
                       <p className="text-xs text-gray-500 mb-1">Template Preview</p>
                       <div className="text-sm text-gray-700">
                         {certificate.templateData.title && (

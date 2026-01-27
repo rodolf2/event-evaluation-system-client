@@ -72,10 +72,14 @@ const RecentActivity = () => {
           activities.map((activity, i) => (
             <div
               key={activity._id || i}
-              className="bg-white shadow rounded-md p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between hover:shadow-lg"
+              className="bg-white shadow-sm rounded-lg p-4 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 items-start hover:shadow-md transition-shadow duration-200 border border-gray-100"
             >
-              <span className="font-medium text-gray-800">{activity.action}</span>
-              <span className="text-gray-600 text-sm">{activity.description}</span>
+              <span className="font-bold text-gray-900 text-sm tracking-wide uppercase">
+                {activity.action}
+              </span>
+              <span className="text-gray-600 text-sm leading-relaxed break-words">
+                {activity.description}
+              </span>
             </div>
           ))
         ) : (

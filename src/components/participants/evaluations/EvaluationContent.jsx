@@ -16,10 +16,10 @@ const EvaluationContent = ({
   onShowUploadModal
 }) => {
   return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+    <div className="p-4 md:p-8  min-h-screen">
       {/* Start an evaluation section - preserved */}
       <div className="shrink-0">
-        <h2 className="text-3xl text-gray-800 mb-4">Start an evaluation</h2>
+        <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
         <div className="mb-7">
           <div
             className="mb-8 text-white p-8 rounded-xl shadow-lg relative"

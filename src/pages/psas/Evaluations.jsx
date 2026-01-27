@@ -308,7 +308,7 @@ const Evaluations = () => {
         <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
           {/* Header Section - Match the actual gradient layout */}
           <div className="mb-8">
-            <h2 className="text-3xl text-gray-800 mb-4">Start an evaluation</h2>
+            <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
             <div className="mb-7">
               <div
                 className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
