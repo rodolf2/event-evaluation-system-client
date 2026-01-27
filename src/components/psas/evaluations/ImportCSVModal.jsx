@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import toast from "react-hot-toast";
 import { UploadCloud, FileCheck2, Link as LinkIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FormSessionManager } from "../../../utils/formSessionManager";
@@ -45,7 +46,7 @@ const ImportCSVModal = ({
     const ext = file?.name?.toLowerCase().split(".").pop();
 
     if (!file || !allowedExtensions.includes(`.${ext}`)) {
-      alert("Please select a valid CSV or Excel file (.csv, .xlsx, .xls)");
+      toast.error("Please select a valid CSV or Excel file (.csv, .xlsx, .xls)");
       return;
     }
 
@@ -103,12 +104,14 @@ const ImportCSVModal = ({
     const selectedLinks = linkQueue.filter((item) => item.selected);
 
     if (selectedFiles.length === 0 && selectedLinks.length === 0) {
-      alert("Please select at least one file or link to import");
+      toast.error("Please select at least one file or link to import");
       return;
     }
 
     setUploading(true);
     let successCount = 0;
+    const importedFileIds = [];
+    const importedLinkIds = [];
 
     try {
       // Process selected files
@@ -141,6 +144,7 @@ const ImportCSVModal = ({
               setUploadedData(uploadResult);
               // Pass the complete upload result to FormCreationInterface
               onFileUpload(uploadResult);
+              importedFileIds.push(fileItem.id);
               successCount++;
             }
           }
@@ -173,7 +177,7 @@ const ImportCSVModal = ({
           const students = proxyData.students || [];
 
           if (students.length === 0) {
-            alert(
+            toast.error(
               "No valid students found in the CSV. Ensure it has 'name' and 'email' columns."
             );
             continue;
@@ -189,28 +193,32 @@ const ImportCSVModal = ({
           setUploadedData(linkResult);
           // Pass the validated result to FormCreationInterface
           onFileUpload(linkResult);
+          importedLinkIds.push(linkItem.id);
           successCount++;
         } catch (error) {
           console.error("Error importing link:", linkItem.url, error);
-          alert(
-            `Error importing CSV from URL: ${linkItem.url}\nDetails: ${
-              error?.message || "Unknown error"
+          toast.error(
+            `Error importing CSV from URL: ${linkItem.url}. Details: ${error?.message || "Unknown error"
             }`
           );
         }
       }
 
       if (successCount > 0) {
-        setFileQueue([]);
-        setLinkQueue([]);
+        setFileQueue((prev) =>
+          prev.filter((item) => !importedFileIds.includes(item.id))
+        );
+        setLinkQueue((prev) =>
+          prev.filter((item) => !importedLinkIds.includes(item.id))
+        );
       } else {
-        alert(
+        toast.error(
           "Failed to import any files. Please check your CSV format (required columns: name, email, unique valid emails)."
         );
       }
     } catch (error) {
       console.error("Import error:", error);
-      alert("Error importing files");
+      toast.error("Error importing files");
     } finally {
       setUploading(false);
     }
@@ -229,9 +237,8 @@ const ImportCSVModal = ({
         <h2 className="text-2xl font-bold mb-6">Import CSV</h2>
 
         <div
-          className={`border-2 border-dashed rounded-lg p-10 text-center mb-4 cursor-pointer transition-colors ${
-            isDragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"
-          } ${uploading ? "opacity-50 pointer-events-none" : ""}`}
+          className={`border-2 border-dashed rounded-lg p-10 text-center mb-4 cursor-pointer transition-colors ${isDragOver ? "border-blue-400 bg-blue-50" : "border-gray-300"
+            } ${uploading ? "opacity-50 pointer-events-none" : ""}`}
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();
@@ -260,6 +267,8 @@ const ImportCSVModal = ({
               const file = e.target.files[0];
               if (file) {
                 handleFileSelect(file);
+                // Reset input value so the same file can be selected again if removed
+                e.target.value = "";
               }
             }}
           />

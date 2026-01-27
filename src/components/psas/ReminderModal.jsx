@@ -1,5 +1,6 @@
 // src/components/psas/ReminderModal.jsx
 import { useState, useEffect, useRef } from "react";
+import toast from "react-hot-toast";
 import dayjs from "dayjs";
 
 const ReminderModal = ({
@@ -40,7 +41,7 @@ const ReminderModal = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (dayjs(selectedDate).isBefore(dayjs(), "day")) {
-      alert("Cannot add reminders for past dates.");
+      toast.error("Cannot add reminders for past dates.");
       return;
     }
     if (title) {

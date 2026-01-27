@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { Download, Printer, UserPlus, ArrowLeft, Send } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -15,7 +16,7 @@ const ReportActions = ({
 
   const handlePrint = async () => {
     if (loading) {
-      alert("Please wait for report to finish loading");
+      toast.error("Please wait for report to finish loading");
       return;
     }
 
@@ -23,7 +24,7 @@ const ReportActions = ({
     // Must be done in sync context before any async operations
     const printWindow = window.open("", "_blank", "width=900,height=700");
     if (!printWindow) {
-      alert("Please allow pop-ups to print the report.");
+      toast.error("Please allow pop-ups to print the report.");
       return;
     }
 
@@ -56,7 +57,7 @@ const ReportActions = ({
       );
       if (!reportElement) {
         printWindow.close();
-        alert("Report content not found. Please try again.");
+        toast.error("Report content not found. Please try again.");
         return;
       }
 
@@ -298,11 +299,10 @@ const ReportActions = ({
           <body>
             <!-- Header -->
             <div class="print-header">
-              ${
-                headerBase64
-                  ? `<img src="${headerBase64}" alt="Header" />`
-                  : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
-              }
+              ${headerBase64
+          ? `<img src="${headerBase64}" alt="Header" />`
+          : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
+        }
             </div>
             
             <!-- Title Section -->
@@ -318,11 +318,10 @@ const ReportActions = ({
             
             <!-- Footer -->
             <div class="print-footer">
-              ${
-                footerBase64
-                  ? `<img src="${footerBase64}" alt="Footer" />`
-                  : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
-              }
+              ${footerBase64
+          ? `<img src="${footerBase64}" alt="Footer" />`
+          : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
+        }
             </div>
           </body>
         </html>
@@ -352,7 +351,7 @@ const ReportActions = ({
 
   const handleDownload = async () => {
     if (loading) {
-      alert("Please wait for report to finish loading");
+      toast.error("Please wait for report to finish loading");
       return;
     }
     try {
@@ -381,7 +380,7 @@ const ReportActions = ({
       );
       if (!reportElement) {
         document.body.removeChild(loadingToast);
-        alert("Report content not found. Please try again.");
+        toast.error("Report content not found. Please try again.");
         return;
       }
 
@@ -432,11 +431,10 @@ const ReportActions = ({
       // Header template - using the header.png image
       const headerTemplate = `
         <div style="width: 100%; margin: 0; padding: 0;">
-          ${
-            headerBase64
-              ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: auto; max-height: 120px; display: block; object-fit: contain; object-position: left;" />`
-              : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
-          }
+          ${headerBase64
+          ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: auto; max-height: 120px; display: block; object-fit: contain; object-position: left;" />`
+          : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
+        }
           <!-- Form Title - appears below header on each page -->
           <div style="
             width: 100%;
@@ -468,11 +466,10 @@ const ReportActions = ({
       // Footer template - using the footer.png image with page numbers
       const footerTemplate = `
         <div style="width: 100%; margin: 0; padding: 0; position: relative;">
-          ${
-            footerBase64
-              ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: auto; display: block;" />`
-              : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
-          }
+          ${footerBase64
+          ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: auto; display: block;" />`
+          : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
+        }
           <div style="
             position: absolute;
             bottom: 8px;
@@ -869,9 +866,8 @@ const ReportActions = ({
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
-      a.download = `evaluation-report-${
-        new Date().toISOString().split("T")[0]
-      }.pdf`;
+      a.download = `evaluation-report-${new Date().toISOString().split("T")[0]
+        }.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -883,7 +879,7 @@ const ReportActions = ({
       if (toast && toast.parentNode) {
         toast.parentNode.removeChild(toast);
       }
-      alert("Failed to download PDF. Please check console for details.");
+      toast.error("Failed to download PDF. Please check console for details.");
     }
   };
 
@@ -891,7 +887,7 @@ const ReportActions = ({
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("Authentication required. Please log in again.");
+        toast.error("Authentication required. Please log in again.");
         return;
       }
 
@@ -909,15 +905,15 @@ const ReportActions = ({
       const result = await response.json();
 
       if (result.success) {
-        alert("Report generated successfully!");
+        toast.success("Report generated successfully!");
         // Navigate to reports page to see the generated report
         navigate("/psas/reports");
       } else {
-        alert(result.message || "Failed to generate report");
+        toast.error(result.message || "Failed to generate report");
       }
     } catch (error) {
       console.error("Error generating report:", error);
-      alert("An error occurred while generating the report");
+      toast.error("An error occurred while generating the report");
     }
   };
 
@@ -961,9 +957,8 @@ const ReportActions = ({
           <button
             onClick={handlePrint}
             disabled={loading}
-            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             title="Print report"
           >
             <Printer size={20} className="text-gray-600" />
@@ -971,9 +966,8 @@ const ReportActions = ({
           <button
             onClick={handleDownload}
             disabled={loading}
-            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             title="Download as PDF"
           >
             <Download size={20} className="text-gray-600" />

@@ -175,22 +175,20 @@ const CommentSection = ({
             <button
               onClick={handlePreviousPage}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${
-                currentPage === 1
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${currentPage === 1
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
             >
               Previous
             </button>
             <button
               onClick={handleNextPage}
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${
-                currentPage === totalPages
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${currentPage === totalPages
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
             >
               Next
             </button>
@@ -261,7 +259,7 @@ const CompleteReport = ({
 
   const SectionWrapper = ({ title, children }) => (
     <div className="section-page mb-8">
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden p-8">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4 md:p-8">
         <div className="text-center mb-8">
           <h4 className="text-lg font-bold">{title}</h4>
         </div>
@@ -554,7 +552,7 @@ const CompleteReport = ({
           loading={loading}
         />
       )}
-      <div className="bg-gray-100 min-h-screen report-print-content print:block p-8">
+      <div className="bg-gray-100 min-h-screen report-print-content print:block p-4 md:p-8">
         <div className="container mx-auto max-w-5xl">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -579,7 +577,7 @@ const CompleteReport = ({
             <ReportDescription
               title={formData?.title || "Sample Event Evaluation Report"}
             />
-            <div className="p-8 text-center">
+            <div className="p-4 md:p-8 text-center">
               <h3 className="text-xl font-bold mb-2">
                 {formData?.title || "EVENT EVALUATION REPORT"}
               </h3>
@@ -740,14 +738,25 @@ const CompleteReport = ({
                                   }
                                   isAnimationActive={false}
                                 >
-                                  {question.ratingDistribution.map(
-                                    (entry, index) => (
-                                      <Cell
-                                        key={`cell-${index}`}
-                                        fill={COLORS[index % COLORS.length]}
-                                      />
-                                    ),
-                                  )}
+                                  {question.ratingDistribution
+                                    .filter((d) => d.count > 0)
+                                    .map((entry, index) => {
+                                      // Find original index to maintain consistent colors with legend
+                                      const originalIndex =
+                                        question.ratingDistribution.findIndex(
+                                          (d) => d.name === entry.name,
+                                        );
+                                      return (
+                                        <Cell
+                                          key={`cell-${index}`}
+                                          fill={
+                                            COLORS[
+                                            originalIndex % COLORS.length
+                                            ]
+                                          }
+                                        />
+                                      );
+                                    })}
                                 </Pie>
                                 <Tooltip />
                               </PieChart>
@@ -767,7 +776,8 @@ const CompleteReport = ({
                                   }}
                                 ></div>
                                 <span className="text-sm text-gray-700">
-                                  {entry.name}: {entry.count} ({entry.value}%)
+                                  {entry.name.replace(/ Star/g, "")}:{" "}
+                                  {entry.count} ({entry.value}%)
                                 </span>
                               </div>
                             ))}

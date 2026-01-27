@@ -235,7 +235,7 @@ function PsasEvaluationsContent() {
         } else if (response.status === 400) {
           toast.error(
             errorData.message ||
-              "Invalid input. Please check your data and try again."
+            "Invalid input. Please check your data and try again."
           );
         } else {
           toast.error(`Import failed: ${errorData.message}`);
@@ -282,41 +282,44 @@ function PsasEvaluationsContent() {
               }}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
-                <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center">
-                  <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
-                  <SkeletonText
-                    lines={1}
-                    width="medium"
-                    height="h-6"
-                    className="bg-gray-200 text-gray-800"
-                  />
+                <div className="flex flex-col items-center gap-5">
+                  <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center w-full">
+                    <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
+                    <SkeletonText
+                      lines={1}
+                      width="medium"
+                      height="h-6"
+                      className="bg-gray-200 text-gray-800"
+                    />
+                  </div>
+                  <div className="text-center w-full">
+                    <SkeletonText
+                      lines={1}
+                      width="large"
+                      height="h-8"
+                      className="text-white bg-white/20"
+                    />
+                  </div>
                 </div>
-                <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center">
-                  <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
-                  <SkeletonText
-                    lines={1}
-                    width="medium"
-                    height="h-6"
-                    className="bg-gray-200 text-gray-800"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto mt-5">
-                <div className="text-center">
-                  <SkeletonText
-                    lines={1}
-                    width="large"
-                    height="h-8"
-                    className="text-white bg-white/20"
-                  />
-                </div>
-                <div className="text-center">
-                  <SkeletonText
-                    lines={1}
-                    width="large"
-                    height="h-8"
-                    className="text-white bg-white/20"
-                  />
+
+                <div className="flex flex-col items-center gap-5">
+                  <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center w-full">
+                    <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
+                    <SkeletonText
+                      lines={1}
+                      width="medium"
+                      height="h-6"
+                      className="bg-gray-200 text-gray-800"
+                    />
+                  </div>
+                  <div className="text-center w-full">
+                    <SkeletonText
+                      lines={1}
+                      width="large"
+                      height="h-8"
+                      className="text-white bg-white/20"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -460,9 +463,8 @@ function PsasEvaluationsContent() {
                 onChange={handleUrlChange}
                 value={googleFormsUrl} // Bind value to state
                 disabled={isExtracting}
-                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                  isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
-                }`}
+                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
               />
               <p className="text-sm text-gray-500 mt-1">
                 Paste the URL of an existing Google Form to import its
@@ -477,18 +479,16 @@ function PsasEvaluationsContent() {
                   setGoogleFormsUrl(""); // Clear the URL input on cancel
                 }}
                 disabled={isExtracting}
-                className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${
-                  isExtracting ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${isExtracting ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpload}
                 disabled={isExtracting}
-                className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${
-                  isExtracting ? "opacity-75 cursor-not-allowed" : ""
-                }`}
+                className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${isExtracting ? "opacity-75 cursor-not-allowed" : ""
+                  }`}
               >
                 {isExtracting ? (
                   <>

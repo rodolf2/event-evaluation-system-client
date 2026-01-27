@@ -361,7 +361,7 @@ const Question = memo(function Question(props) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-4">
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4 mb-4">
         <div className="flex-1">
           <textarea
             ref={titleRef}
@@ -380,7 +380,7 @@ const Question = memo(function Question(props) {
         </div>
 
         {/* Custom type dropdown */}
-        <div className="relative inline-block w-56" ref={typeDropdownRef}>
+        <div className="relative inline-block w-full sm:w-56" ref={typeDropdownRef}>
           <button
             type="button"
             onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}

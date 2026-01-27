@@ -37,7 +37,7 @@ const ChartsSection = ({
       {/* Response Breakdown */}
       <div className="bg-white p-6 rounded-lg shadow-md flex flex-col min-h-[350px]">
         <h3 className="text-lg font-semibold mb-4">Response Breakdown</h3>
-        <div className="flex-1 flex items-center justify-center gap-8">
+        <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8">
           <div className="w-48 h-48">
             <Doughnut
               data={responseBreakdownData}
@@ -47,7 +47,7 @@ const ChartsSection = ({
               }}
             />
           </div>
-          <div className="flex-1">
+          <div className="w-full sm:flex-1">
             <ul className="space-y-3">
               <li className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -133,9 +133,8 @@ const ChartsSection = ({
           </p>
           <button
             onClick={onGenerateReport}
-            className={`text-white px-4 py-2 rounded-xl transition text-base ${
-              responseRate >= 50 ? "hover:bg-blue-700" : "cursor-not-allowed"
-            }`}
+            className={`text-white px-4 py-2 rounded-xl transition text-base ${responseRate >= 50 ? "hover:bg-blue-700" : "cursor-not-allowed"
+              }`}
             style={{
               background:
                 responseRate >= 50

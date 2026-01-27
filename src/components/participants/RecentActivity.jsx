@@ -63,7 +63,7 @@ const RecentActivity = () => {
   }
 
   return (
-    <div>
+    <div data-tour="recent-activity">
       <h3 className="text-lg font-semibold text-gray-700 mb-3">
         Recent Activity
       </h3>

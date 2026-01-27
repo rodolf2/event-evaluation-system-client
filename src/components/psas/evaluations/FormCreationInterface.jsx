@@ -460,8 +460,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     // If we have an effective form id from URL/preserved AND it looks like a real backend id,
     // try to load it from backend for editing. Never call backend for ids that no longer exist
     // or for purely local draft ids.
-    if (effectiveFormId && token) {
-      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(effectiveFormId);
+    if (token) {
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(finalFormId);
 
       if (isValidObjectId) {
         const fetchFormData = async () => {
@@ -2228,155 +2228,154 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const content = (
     <>
       <div className="bg-gray-100 min-h-screen">
-        <div className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-            <div className="flex items-center">
+        <div className="p-2 sm:p-6">
+          <div className="flex flex-row justify-between items-center gap-1 sm:gap-4 mb-6">
+            {/* Left Group: Back Button and Dates */}
+            <div className="flex items-center gap-1 sm:gap-4">
               <button
                 onClick={handleBackClick}
-                className="text-gray-700 hover:text-black mr-4"
+                className="text-gray-700 hover:text-black p-1"
               >
-                <ChevronLeft size={24} />
+                <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
               </button>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <button
-                    onClick={() => setShowDatePicker(!showDatePicker)}
-                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors bg-white"
-                  >
-                    {eventStartDate && eventEndDate
-                      ? `${new Date(eventStartDate).toLocaleDateString(
-                        "en-US",
-                        { month: "short", day: "numeric" }
-                      )} - ${new Date(eventEndDate).toLocaleDateString(
-                        "en-US",
-                        { month: "short", day: "numeric", year: "numeric" }
-                      )}`
-                      : "Set Event Dates"}
-                  </button>
 
-                  {/* Dropdown Calendar */}
-                  {showDatePicker && (
-                    <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
-                      <style>
-                        {`
-                          .custom-calendar .rdp-nav {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            width: 100%;
-                          }
-                          .custom-calendar .rdp-month_caption {
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            flex: 1;
-                          }
-                          .custom-calendar .rdp-caption_label {
-                            font-weight: 600;
-                            font-size: 1rem;
-                          }
-                          .custom-calendar .rdp-day {
-                            border-radius: 6px;
-                          }
-                          .custom-calendar .rdp-day_button {
-                            border-radius: 6px;
-                          }
-                          .custom-calendar .rdp-selected .rdp-day_button,
-                          .custom-calendar .rdp-range_start .rdp-day_button,
-                          .custom-calendar .rdp-range_end .rdp-day_button {
-                            background-color: #1F3463 !important;
-                            color: white !important;
-                            border-radius: 6px;
-                          }
-                          .custom-calendar .rdp-range_middle .rdp-day_button {
-                            background-color: #EBF1FF !important;
-                            color: #1F3463 !important;
-                            border-radius: 0;
-                          }
-                          .custom-calendar .rdp-range_start .rdp-day_button {
-                            border-radius: 6px 0 0 6px;
-                          }
-                          .custom-calendar .rdp-range_end .rdp-day_button {
-                            border-radius: 0 6px 6px 0;
-                          }
-                        `}
-                      </style>
-                      <div className="custom-calendar">
-                        <DayPicker
-                          mode="range"
-                          selected={{
-                            from: eventStartDate
-                              ? new Date(eventStartDate)
-                              : undefined,
-                            to: eventEndDate
-                              ? new Date(eventEndDate)
-                              : undefined,
-                          }}
-                          onSelect={(range) => {
-                            // Helper to format date in local timezone (YYYY-MM-DD)
-                            const formatLocalDate = (date) => {
-                              const year = date.getFullYear();
-                              const month = String(
-                                date.getMonth() + 1
-                              ).padStart(2, "0");
-                              const day = String(date.getDate()).padStart(
-                                2,
-                                "0"
-                              );
-                              return `${year}-${month}-${day}`;
-                            };
+              <div className="relative">
+                <button
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className="px-1.5 sm:px-4 py-1 sm:py-2 text-[10px] xs:text-xs sm:text-base border border-gray-300 rounded-md hover:bg-gray-50 transition-colors bg-white whitespace-nowrap"
+                >
+                  {eventStartDate && eventEndDate
+                    ? `${new Date(eventStartDate).toLocaleDateString(
+                      "en-US",
+                      { month: "short", day: "numeric" }
+                    )} - ${new Date(eventEndDate).toLocaleDateString(
+                      "en-US",
+                      { month: "short", day: "numeric", year: "numeric" }
+                    )}`
+                    : "Set Event Dates"}
+                </button>
 
-                            if (range?.from) {
-                              setEventStartDate(formatLocalDate(range.from));
-                            } else {
-                              setEventStartDate("");
-                            }
-                            if (range?.to) {
-                              setEventEndDate(formatLocalDate(range.to));
-                            } else {
-                              setEventEndDate("");
-                            }
-                          }}
-                          numberOfMonths={1}
-                          showOutsideDays
-                          style={{
-                            "--rdp-accent-color": "#1e3a5f",
-                            "--rdp-accent-background-color": "#1e3a5f",
-                            "--rdp-range_middle-background-color":
-                              "rgba(30, 58, 95, 0.2)",
-                          }}
-                        />
-                      </div>
+                {/* Dropdown Calendar */}
+                {showDatePicker && (
+                  <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
+                    <style>
+                      {`
+                        .custom-calendar .rdp-nav {
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          width: 100%;
+                        }
+                        .custom-calendar .rdp-month_caption {
+                          display: flex;
+                          justify-content: center;
+                          align-items: center;
+                          flex: 1;
+                        }
+                        .custom-calendar .rdp-caption_label {
+                          font-weight: 600;
+                          font-size: 1rem;
+                        }
+                        .custom-calendar .rdp-day {
+                          border-radius: 6px;
+                        }
+                        .custom-calendar .rdp-day_button {
+                          border-radius: 6px;
+                        }
+                        .custom-calendar .rdp-selected .rdp-day_button,
+                        .custom-calendar .rdp-range_start .rdp-day_button,
+                        .custom-calendar .rdp-range_end .rdp-day_button {
+                          background-color: #1F3463 !important;
+                          color: white !important;
+                          border-radius: 6px;
+                        }
+                        .custom-calendar .rdp-range_middle .rdp-day_button {
+                          background-color: #EBF1FF !important;
+                          color: #1F3463 !important;
+                          border-radius: 0;
+                        }
+                        .custom-calendar .rdp-range_start .rdp-day_button {
+                          border-radius: 6px 0 0 6px;
+                        }
+                        .custom-calendar .rdp-range_end .rdp-day_button {
+                          border-radius: 0 6px 6px 0;
+                        }
+                      `}
+                    </style>
+                    <div className="custom-calendar">
+                      <DayPicker
+                        mode="range"
+                        selected={{
+                          from: eventStartDate
+                            ? new Date(eventStartDate)
+                            : undefined,
+                          to: eventEndDate
+                            ? new Date(eventEndDate)
+                            : undefined,
+                        }}
+                        onSelect={(range) => {
+                          const formatLocalDate = (date) => {
+                            const year = date.getFullYear();
+                            const month = String(
+                              date.getMonth() + 1
+                            ).padStart(2, "0");
+                            const day = String(date.getDate()).padStart(
+                              2,
+                              "0"
+                            );
+                            return `${year}-${month}-${day}`;
+                          };
 
-                      {/* Close button */}
-                      <div className="flex justify-end mt-4">
-                        <button
-                          onClick={() => setShowDatePicker(false)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm"
-                        >
-                          Done
-                        </button>
-                      </div>
+                          if (range?.from) {
+                            setEventStartDate(formatLocalDate(range.from));
+                          } else {
+                            setEventStartDate("");
+                          }
+                          if (range?.to) {
+                            setEventEndDate(formatLocalDate(range.to));
+                          } else {
+                            setEventEndDate("");
+                          }
+                        }}
+                        numberOfMonths={1}
+                        showOutsideDays
+                        style={{
+                          "--rdp-accent-color": "#1e3a5f",
+                          "--rdp-accent-background-color": "#1e3a5f",
+                          "--rdp-range_middle-background-color":
+                            "rgba(30, 58, 95, 0.2)",
+                        }}
+                      />
                     </div>
-                  )}
-                </div>
-                {isCertificateLinked && currentFormId && (
-                  <button
-                    onClick={() => setShowCertificateCustomizer(true)}
-                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2"
-                  >
-                    <Palette size={16} />
-                    Customize Certificate
-                  </button>
+
+                    <div className="flex justify-end mt-4">
+                      <button
+                        onClick={() => setShowDatePicker(false)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
+
+              {isCertificateLinked && currentFormId && (
+                <button
+                  onClick={() => setShowCertificateCustomizer(true)}
+                  className="px-1.5 sm:px-4 py-1 sm:py-2 text-[10px] xs:text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-1 sm:gap-2 whitespace-nowrap"
+                >
+                  <Palette size={12} className="sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Customize Certificate</span>
+                  <span className="sm:hidden">Cert</span>
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* TODO: Wire undo/redo using a history stack */}
+            {/* Right Group: Undo/Redo/Assign and Publish */}
+            <div className="flex items-center gap-0.5 sm:gap-2">
               <button
-                className="p-2 text-gray-600 hover:bg-gray-200 rounded-full"
-                // placeholder: no-op for now; prevents page jumps
+                className="p-1 sm:p-2 text-gray-600 hover:bg-gray-200 rounded-full"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -2386,12 +2385,12 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 title="Undo"
               >
                 <LuUndo
-                  className={`w-5 h-5 ${historyIndex <= 0 ? "text-gray-300" : "text-gray-600"
+                  className={`w-3.5 h-3.5 sm:w-5 sm:h-5 ${historyIndex <= 0 ? "text-gray-300" : "text-gray-600"
                     }`}
                 />
               </button>
               <button
-                className={`p-2 rounded-full ${historyIndex >= history.length - 1
+                className={`p-1 sm:p-2 rounded-full ${historyIndex >= history.length - 1
                   ? "cursor-not-allowed"
                   : "hover:bg-gray-200"
                   }`}
@@ -2404,7 +2403,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 title="Redo"
               >
                 <LuRedo
-                  className={`w-5 h-5 ${historyIndex >= history.length - 1
+                  className={`w-3.5 h-3.5 sm:w-5 sm:h-5 ${historyIndex >= history.length - 1
                     ? "text-gray-300"
                     : "text-gray-600"
                     }`}
@@ -2412,50 +2411,39 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               </button>
 
               <button
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition relative group"
+                className="p-1 sm:p-2 text-gray-600 hover:bg-gray-100 rounded-full transition relative group"
                 title="Assign Students"
                 onClick={() => {
-                  // Ensure we have a stable draft id for this session (local-only at this point)
                   const stableFormId =
                     FormSessionManager.getCurrentFormId() ||
                     FormSessionManager.initializeFormSession();
-
-                  // Also preserve the id for navigation continuity
                   FormSessionManager.preserveFormId();
-
-                  // Require a CSV import before assigning students
                   if (
                     !uploadedCSVData ||
                     !Array.isArray(uploadedCSVData.students) ||
                     uploadedCSVData.students.length === 0
                   ) {
-                    // Open import modal directly instead of showing a scolding background toast.
-                    // This provides a smoother, non-error-indexed workflow.
                     openImportModal();
                     return;
                   }
-
-                  // Navigate to student assignment page with the stable form id
-                  // Use PSAS students page for both roles since student assignment is shared functionality
                   const navigationUrl = `/psas/students?formId=${encodeURIComponent(
                     stableFormId
                   )}&from=evaluation`;
                   navigate(navigationUrl);
                 }}
               >
-                <UserPlus className="w-5 h-5" />
+                <UserPlus className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </button>
-              <div className="flex gap-2">
+
+              <div className="ml-1 sm:ml-2">
                 <button
                   onClick={handlePublish}
-                  // Keep disabled only while actively publishing, not during init.
                   disabled={isPublishing}
-                  className={`px-6 py-2 font-semibold rounded-md transition ${isPublishing
+                  className={`px-2.5 sm:px-6 py-1 sm:py-2 text-[10px] xs:text-xs sm:text-base font-semibold rounded-md transition ${isPublishing
                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                     : "bg-[#0C2A92] text-white hover:bg-blue-700"
                     }`}
                 >
-                  {/* Always show consistent label as requested (no Loading.../Publishing...) */}
                   Publish
                 </button>
               </div>
@@ -2468,7 +2456,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           >
             <div className="w-full max-w-4xl relative mt-8">
               <div
-                className={`bg-white rounded-lg shadow-sm p-6 sm:p-10 mb-6 relative min-h-[220px] ${activeSectionId === "main"
+                className={`bg-white rounded-lg shadow-sm p-4 sm:p-10 mb-6 relative min-h-[180px] sm:min-h-[220px] ${activeSectionId === "main"
                   ? "ring-2 ring-blue-500/40"
                   : "hover:ring-1 hover:ring-gray-200 transition"
                   }`}
@@ -2765,7 +2753,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           })}
 
           {/* Certificate Link Button */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-6 px-4">
             <button
               onClick={() => {
                 // Navigate to certificate linking page based on user role
@@ -2783,7 +2771,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
                 navigate(`${certificatesPath}?${queryParams.toString()}`);
               }}
-              className={`px-6 py-3 font-semibold text-white rounded-lg transition-colors ${isCertificateLinked
+              className={`w-full max-w-xs px-6 py-3 font-semibold text-white rounded-lg transition-colors ${isCertificateLinked
                 ? "bg-[#0C2A92] hover:bg-[#0B2590]"
                 : "bg-[#5F6368] hover:bg-[#4F5358]"
                 }`}

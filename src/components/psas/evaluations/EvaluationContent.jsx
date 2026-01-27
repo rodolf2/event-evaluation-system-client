@@ -35,41 +35,38 @@ const EvaluationContent = ({
             }}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
-              <div
-                className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10"
-                onClick={onCreateNew}
-              >
-                <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mx-auto mb-4">
-                  <img
-                    src={blankFormIcon}
-                    alt="Blank Form"
-                    className="w-10 h-10 sm:w-16 sm:h-16"
-                  />
+              <div className="flex flex-col items-center gap-5">
+                <div
+                  className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                  onClick={onCreateNew}
+                >
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mx-auto">
+                    <img
+                      src={blankFormIcon}
+                      alt="Blank Form"
+                      className="w-10 h-10 sm:w-16 sm:h-16"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div
-                className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10"
-                onClick={onShowUploadModal}
-              >
-                <div className="w-24 h-24 sm:w-30 sm:h-32 flex items-center justify-center mx-auto mb-4">
-                  <img
-                    src={uploadIcon}
-                    alt="Upload"
-                    className="w-10 h-10 sm:w-16 sm:h-16"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto mt-5">
-              <div className="text-center">
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
                   Blank Form
                 </h3>
               </div>
-              <div className="text-center">
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+
+              <div className="flex flex-col items-center gap-5">
+                <div
+                  className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                  onClick={onShowUploadModal}
+                >
+                  <div className="w-24 h-24 sm:w-30 sm:h-32 flex items-center justify-center mx-auto">
+                    <img
+                      src={uploadIcon}
+                      alt="Upload"
+                      className="w-10 h-10 sm:w-16 sm:h-16"
+                    />
+                  </div>
+                </div>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
                   Upload a Form
                 </h3>
               </div>

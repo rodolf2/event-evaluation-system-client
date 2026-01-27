@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
@@ -216,12 +217,12 @@ const EvaluationForm = () => {
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm()) {
-      alert("Please answer all required questions before submitting.");
+      toast.error("Please answer all required questions before submitting.");
       return;
     }
 
     if (!formId || !token) {
-      alert("Form ID or authentication token is missing.");
+      toast.error("Form ID or authentication token is missing.");
       return;
     }
 
@@ -312,7 +313,7 @@ const EvaluationForm = () => {
       setIsSubmitting(false);
     } catch (err) {
       console.error(err);
-      alert("Error submitting evaluation: " + err.message);
+      toast.error("Error submitting evaluation: " + err.message);
       setIsSubmitting(false);
     }
   };
@@ -753,10 +754,10 @@ const EvaluationForm = () => {
           </div>
         </div>
       )}
-      <div className="w-full max-w-4xl mx-auto p-8">
+      <div className="w-full max-w-4xl mx-auto p-4 md:p-8">
         {/* Top White Container - Only show title/description on first section */}
         {currentSectionIndex === 0 && (
-          <div className="bg-white p-8 rounded-lg shadow-md mb-6">
+          <div className="bg-white p-4 md:p-8 rounded-lg shadow-md mb-6">
             <div className="text-center">
               <h1 className="text-4xl font-bold text-gray-800">
                 {title || "Loading..."}
@@ -784,7 +785,7 @@ const EvaluationForm = () => {
         {/* Section Container - Each section has its own white container */}
         <div className="space-y-6">
           {/* Section Header */}
-          <div className="bg-[#1F3463] p-8 rounded-lg shadow-md text-white">
+          <div className="bg-[#1F3463] p-4 md:p-8 rounded-lg shadow-md text-white">
             <h2 className="text-2xl font-bold mb-2">
               Section {currentSectionIndex + 1}:{" "}
               {currentSection?.title || "Untitled Section"}
@@ -798,7 +799,7 @@ const EvaluationForm = () => {
           {currentSection?.questions?.map((question, index) => (
             <div
               key={index}
-              className="bg-white p-6 sm:p-8 rounded-lg shadow-sm border"
+              className="bg-white p-4 md:p-8 rounded-lg shadow-sm border"
             >
               {renderQuestion(question, index)}
             </div>

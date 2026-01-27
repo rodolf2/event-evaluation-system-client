@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import { Bell, X, ChevronRight } from "lucide-react";
+import { Bell, X, ChevronRight, ClipboardList } from "lucide-react";
+import toast from "react-hot-toast";
 import { useNotifications } from "../../contexts/useNotifications";
 import { useAuth } from "../../contexts/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 
 const NotificationPopup = () => {
   const { notifications, unreadCount, markAsRead } = useNotifications();
@@ -81,50 +82,13 @@ const NotificationPopup = () => {
     fetchReminderDetails();
   }, [latestUnreadNotification, token]);
 
-  // Show popup when there's a new unread notification
-  useEffect(() => {
-    if (latestUnreadNotification && !isVisible) {
-      // Delay showing popup to avoid immediate appearance
-      const showTimer = setTimeout(() => {
-        setIsVisible(true);
-        // Auto-hide after 8 seconds
-        timeoutRef.current = setTimeout(() => {
-          setIsVisible(false);
-          // Mark as shown so it won't appear again (persisted to localStorage)
-          saveShownNotification(latestUnreadNotification.id);
-        }, 8000);
-      }, 1000);
-      return () => clearTimeout(showTimer);
-    }
-  }, [latestUnreadNotification, isVisible]);
 
-  // Clear timeout when component unmounts or notification changes
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
-  const handleDismiss = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    if (latestUnreadNotification) {
-      saveShownNotification(latestUnreadNotification.id);
-    }
-    setIsVisible(false);
-  };
-
-  const handleViewNotification = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    if (latestUnreadNotification) {
-      markAsRead(latestUnreadNotification.id);
-      saveShownNotification(latestUnreadNotification.id);
-      setIsVisible(false);
+  const handleViewNotification = (notification) => {
+    if (notification) {
+      markAsRead(notification.id);
+      saveShownNotification(notification.id);
+      toast.dismiss(notification.id);
 
       // Navigate to notifications page based on role
       const notificationRoutes = {
@@ -140,52 +104,71 @@ const NotificationPopup = () => {
     }
   };
 
-  if (!isVisible || !latestUnreadNotification) {
-    return null;
-  }
+  // Show premium custom toast when there's a new unread notification
+  useEffect(() => {
+    if (latestUnreadNotification && !isVisible) {
+      // Small delay to avoid immediate appearance if many events trigger at once
+      const showTimer = setTimeout(() => {
+        setIsVisible(true);
 
-  return (
-    <div className="fixed top-20 right-4 z-50 max-w-sm">
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 animate-in slide-in-from-right-2 duration-300">
-        <div className="flex items-start gap-3">
-          <div className="shrink-0">
-            <Bell className="w-6 h-6 text-blue-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 truncate">
-              {latestUnreadNotification.title}
-            </h3>
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-              {reminderDetails?.description || latestUnreadNotification.preview}
-            </p>
-            <p className="text-xs text-gray-500 mt-2">
-              {latestUnreadNotification.from} • {latestUnreadNotification.date}
-            </p>
-          </div>
-          <button
-            onClick={handleDismiss}
-            className="shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+        const isForm = latestUnreadNotification.type === "form" || (latestUnreadNotification.relatedEntity && latestUnreadNotification.relatedEntity.type === "form");
+
+        toast.custom((t) => (
+          <div
+            className={`${t.visible ? 'animate-enter' : 'animate-leave'
+              } max-w-sm w-full bg-white shadow-2xl rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden transition-all duration-300 transform hover:scale-[1.02]`}
+            style={{ marginTop: '70px' }} // Below the header
           >
-            <X className="w-4 h-4 text-gray-400" />
-          </button>
-        </div>
-        <div className="mt-3 flex items-center justify-between">
-          <button
-            onClick={handleViewNotification}
-            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
-          >
-            View Notification
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          {unreadCount > 1 && (
-            <span className="text-xs text-gray-500">
-              +{unreadCount - 1} more
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+            <div className="flex-1 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <div className={`p-2 rounded-lg ${isForm ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'}`}>
+                    {isForm ? <ClipboardList className="h-6 w-6" /> : <Bell className="h-6 w-6" />}
+                  </div>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-bold text-gray-900 leading-tight">
+                    {latestUnreadNotification.title}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500 line-clamp-2 leading-relaxed">
+                    {reminderDetails?.description || latestUnreadNotification.preview}
+                  </p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        handleViewNotification(latestUnreadNotification);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-transparent text-xs font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    >
+                      {isForm ? "View Form" : "View"}
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+                      Just Now
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ), {
+          id: latestUnreadNotification.id,
+          duration: 2000,
+          position: 'top-right'
+        });
+
+        // If it auto-expires, we still need to mark it as shown so it doesn't pop up again
+        setTimeout(() => {
+          saveShownNotification(latestUnreadNotification.id);
+          setIsVisible(false);
+        }, 2000);
+      }, 1500);
+
+      return () => clearTimeout(showTimer);
+    }
+  }, [latestUnreadNotification, isVisible, reminderDetails]);
+
+  return null;
 };
 
 export default NotificationPopup;

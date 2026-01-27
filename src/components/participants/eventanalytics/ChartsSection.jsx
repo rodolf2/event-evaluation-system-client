@@ -31,23 +31,23 @@ const ChartsSection = ({
       {/* Response Breakdown */}
       <div className="bg-white p-4 rounded-lg shadow-md flex flex-col">
         <h3 className="text-xl font-semibold text-left">Response Breakdown</h3>
-        <div className="grow flex items-center justify-center">
-          <div className="w-1/2 h-50 py-3">
+        <div className="grow flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-0">
+          <div className="w-48 h-48 py-3">
             <Doughnut
               data={responseBreakdownData}
               options={{
                 ...responseBreakdownOptions,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
               }}
             />
           </div>
-          <div className="w-1/2 pl-4">
-            <ul className="text-base">
-              <li className="flex items-center mb-2">
+          <div className="w-full sm:w-1/2 sm:pl-4">
+            <ul className="text-base space-y-2">
+              <li className="flex items-center">
                 <span className="w-3 h-3 bg-blue-900 rounded-full mr-3"></span>
                 Positive
               </li>
-              <li className="flex items-center mb-2">
+              <li className="flex items-center">
                 <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
                 Neutral
               </li>
@@ -94,11 +94,10 @@ const ChartsSection = ({
             Generate reports once responses reach 50%.
           </p>
           <button
-            className={`${
-              responseRate >= 50
+            className={`${responseRate >= 50
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-gray-400 cursor-not-allowed"
-            } text-white px-4 py-2 rounded-lg transition text-base`}
+              } text-white px-4 py-2 rounded-lg transition text-base`}
             disabled={responseRate < 50}
           >
             Generate Report

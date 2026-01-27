@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 import { FileText, Award } from "lucide-react";
 import DashboardCard from "../../components/participants/DashboardCard";
 import CalendarWidget from "../../components/participants/CalendarWidget";
@@ -118,11 +119,14 @@ function Home() {
         });
         const data = await response.json();
         if (data.success !== false) {
+          toast.success("Reminder added successfully!");
           await fetchReminders(); // Refresh the entire list
         } else {
+          toast.error(data.message || "Failed to add reminder");
           console.error("Error adding reminder:", data.message);
         }
       } catch (error) {
+        toast.error("An error occurred while adding the reminder");
         console.error("Error adding reminder:", error);
       }
     },

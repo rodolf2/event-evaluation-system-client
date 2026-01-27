@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import toast from "react-hot-toast";
 import {
   X,
   ArrowLeft,
@@ -103,12 +104,12 @@ const ProfilePictureModal = ({
 
   const processFile = (file) => {
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
       // Updated limit to 10MB
-      alert("Image size must be less than 10MB");
+      toast.error("Image size must be less than 10MB");
       return;
     }
 
@@ -312,7 +313,7 @@ const ProfilePictureModal = ({
                 onClick={() => fileInputRef.current?.click()}
                 className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
               >
-                Upload from computer
+                Upload from devicew
               </button>
               <button
                 onClick={startCamera}
@@ -439,8 +440,8 @@ const ProfilePictureModal = ({
                       top: "50%",
                       left: "50%",
                       position: "absolute",
-                      maxWidth: "none",
-                      maxHeight: "none",
+                      maxWidth: "100%",
+                      maxHeight: "100%",
                     }}
                   />
                 )}

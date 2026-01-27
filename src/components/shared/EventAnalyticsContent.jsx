@@ -162,6 +162,11 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
       } catch (error) {
         console.error("Failed to fetch event analytics:", error);
 
+        // Show error toast for visibility
+        if (error.message && !error.message.includes("Cast to ObjectId failed")) {
+          toast.error(error.message || "Failed to load analytics data");
+        }
+
         // If we get a CastError, it means the formId is not a valid ObjectId
         if (
           error.message &&
@@ -177,12 +182,6 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
             return; // Let the effect run again with the new formId
           }
         }
-
-        // You could show a toast notification here with the error message
-        console.error(
-          "Analytics Error:",
-          error.message || "Failed to load analytics data",
-        );
 
         // Set empty data to show "no data" state
         setAnalyticsData({
@@ -212,7 +211,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   // Show loading state
   if (loading || formsLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+      <div className="p-6 min-h-screen flex flex-col gap-6">
         {/* Header Section Skeleton */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -293,7 +292,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   // Show no forms available state
   if (availableForms.length === 0) {
     return (
-      <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
+      <div className="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             No Published Forms Available
@@ -315,7 +314,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   // Show no valid form selected state
   if (!formId || !/^[0-9a-fA-F]{24}$/.test(formId)) {
     return (
-      <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
+      <div className="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             Invalid Form Selected
@@ -340,7 +339,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   // Guard against null analyticsData before destructuring
   if (!analyticsData) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+      <div className="p-6 min-h-screen flex flex-col gap-6">
         {/* Header Section Skeleton */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -545,7 +544,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   const selectedForm = availableForms.find((f) => f._id === formId);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+    <div className="p-6 min-h-screen flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         {/* Form Selector */}
@@ -598,11 +597,10 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
                               setSearchQuery("");
                               setIsSearchFocused(false);
                             }}
-                            className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors ${
-                              formId === form._id
+                            className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors ${formId === form._id
                                 ? "bg-blue-50 text-blue-700"
                                 : "hover:bg-gray-50 text-gray-700"
-                            }`}
+                              }`}
                           >
                             <Calendar
                               className={`w-4 h-4 ${formId === form._id ? "text-blue-500" : "text-gray-400"}`}

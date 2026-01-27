@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 import ClubAdviserLayout from "../../components/club-advisers/ClubAdviserLayout";
 import DashboardCard from "../../components/psas/DashboardCard";
 import CalendarWidget from "../../components/psas/CalendarWidget";
@@ -81,9 +82,13 @@ function Home() {
         });
         const data = await response.json();
         if (data.success !== false) {
+          toast.success("Reminder added successfully!");
           await fetchReminders();
+        } else {
+          toast.error(data.message || "Failed to add reminder");
         }
       } catch (error) {
+        toast.error("An error occurred while adding the reminder");
         console.error("Error adding reminder:", error);
       }
     },

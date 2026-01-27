@@ -13,10 +13,9 @@ export const ReportPageFooter = () => {
       <img
         src={FooterImage}
         alt="La Verdad Christian College Footer"
-        className="w-full h-auto object-cover"
+        className="w-full h-auto"
         style={{
           display: "block",
-          minHeight: "30px",
         }}
       />
     </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/useAuth";
 
 import DashboardCard from "../../components/psas/DashboardCard";
@@ -63,11 +64,14 @@ function MisDashboard() {
         });
         const data = await response.json();
         if (data.success !== false) {
+          toast.success("Reminder added successfully!");
           await fetchReminders();
         } else {
+          toast.error(data.message || "Failed to add reminder");
           console.error("Error adding reminder:", data.message);
         }
       } catch (error) {
+        toast.error("An error occurred while adding the reminder");
         console.error("Error adding reminder:", error);
       }
     },

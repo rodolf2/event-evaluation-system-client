@@ -50,11 +50,11 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <aside
+      data-tour="sidebar"
       className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-30 
-        ${
-          isOpen
-            ? "top-0 left-0 w-full h-full lg:w-64 lg:h-[95vh]"
-            : "top-0 -left-full lg:left-5 w-full lg:w-24 h-full lg:h-[95vh]"
+        ${isOpen
+          ? "top-0 left-0 w-full h-full lg:w-64 lg:h-[95vh]"
+          : "top-0 -left-full lg:left-5 w-full lg:w-24 h-full lg:h-[95vh]"
         }
         bg-[#1F3463] text-white flex flex-col items-center py-6 lg:rounded-[15px]`}
     >
@@ -72,9 +72,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         <img
           src="/assets/logo/LOGO.png"
           alt="Logo"
-          className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${
-            isOpen ? "w-12 h-12 lg:w-16 lg:h-16" : "w-12 h-12"
-          }`}
+          className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${isOpen ? "w-12 h-12 lg:w-16 lg:h-16" : "w-12 h-12"
+            }`}
         />
         {isOpen && (
           <div className="flex flex-col justify-center overflow-hidden whitespace-nowrap">
@@ -120,31 +119,28 @@ const SidebarItem = ({ src, label, isOpen, isActive, onClick }) => (
     )}
 
     <div
-      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all ${
-        isActive
+      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all ${isActive
           ? "bg-white text-[#1F3463] rounded-lg mx-4"
           : "text-white hover:bg-white/5 rounded-lg mx-4"
-      }`}
+        }`}
     >
       {/* Icon */}
       <div className={`relative ${isOpen ? "" : "mx-auto"}`}>
         <img
           src={src}
           alt={label}
-          className={`w-6 h-6 transition-all ${
-            isActive
+          className={`w-6 h-6 transition-all ${isActive
               ? "brightness-0" // This will make the icon #1F3463 when parent has white background
               : "brightness-0 invert" // This will make the icon white when inactive
-          }`}
+            }`}
         />
       </div>
 
       {/* Text */}
       {isOpen && (
         <span
-          className={`text-sm font-medium ${
-            isActive ? "text-[#1F3463]" : "text-white"
-          }`}
+          className={`text-sm font-medium ${isActive ? "text-[#1F3463]" : "text-white"
+            }`}
         >
           {label}
         </span>

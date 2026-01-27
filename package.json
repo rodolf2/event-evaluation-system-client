@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@flaticon/flaticon-uicons": "^3.3.1",
     "@tailwindcss/vite": "^4.1.14",
     "axios": "^1.12.2",
     "dayjs": "^1.11.18",

@@ -33,7 +33,7 @@ export class FormSessionManager {
         }
       }));
     }
-    
+
     return formId;
   }
 
@@ -42,20 +42,20 @@ export class FormSessionManager {
 
   // Ensure we have a single persistent form ID - reuse existing or create stable one
   static ensurePersistentFormId(preferredId = null) {
-    const existingId = this.getCurrentFormId();
-    
-    // If we have an existing ID, return it (preserves continuity)
-    if (existingId) {
-      return existingId;
-    }
-    
-    // If a preferred ID is provided, use it
+    // If a preferred ID is provided, use it and update session (CRITICAL for navigation)
     if (preferredId) {
       localStorage.setItem('currentFormId', preferredId);
       this.initializeFormSession(preferredId);
       return preferredId;
     }
-    
+
+    const existingId = this.getCurrentFormId();
+
+    // If we have an existing ID and no preferred ID was provided, return existing
+    if (existingId) {
+      return existingId;
+    }
+
     // Generate a new stable ID
     const newId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('currentFormId', newId);
@@ -67,10 +67,10 @@ export class FormSessionManager {
   static startNewFormSession() {
     // Clear all existing form data comprehensively
     this.clearAllFormData();
-    
+
     // Clear any preserved form ID
     this.clearPreservedFormId();
-    
+
     // Clear any temporary data
     const tempKeys = [
       'tempFormData',
@@ -81,22 +81,22 @@ export class FormSessionManager {
       'formCreationState'
     ];
     tempKeys.forEach(key => localStorage.removeItem(key));
-    
+
     // Remove all form session data
     const allKeys = Object.keys(localStorage);
     allKeys.forEach(key => {
       if (key.startsWith('formSession_') ||
-          key.startsWith('formRecipients_') ||
-          key.startsWith('certificateLinked_')) {
+        key.startsWith('formRecipients_') ||
+        key.startsWith('certificateLinked_')) {
         localStorage.removeItem(key);
       }
     });
-    
+
     // Generate new form ID for the new session
     const newFormId = `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('currentFormId', newFormId);
     this.initializeFormSession(newFormId);
-    
+
     console.log('🆕 FormSessionManager - Started new form session with clean slate');
     return newFormId;
   }
@@ -116,26 +116,26 @@ export class FormSessionManager {
   static restoreFormId() {
     const preservedId = localStorage.getItem('preservedFormId');
     const preservedTimestamp = localStorage.getItem('preservedFormIdTimestamp');
-    
+
     if (preservedId) {
       // Check if preserved ID is still valid (not too old - 1 hour limit)
       if (preservedTimestamp) {
         const preservedDate = new Date(preservedTimestamp);
         const now = new Date();
         const hoursDiff = (now - preservedDate) / (1000 * 60 * 60);
-        
+
         if (hoursDiff > 1) {
           // Too old, clear it
           this.clearPreservedFormId();
           return null;
         }
       }
-      
+
       // Restore the preserved ID as current
       localStorage.setItem('currentFormId', preservedId);
       return preservedId;
     }
-    
+
     return null;
   }
 
@@ -172,10 +172,10 @@ export class FormSessionManager {
     const localData = this.getFormSession(formId) || { formId, createdAt: new Date().toISOString() };
     localData.data = { ...localData.data, ...formData };
     localData.lastActivity = new Date().toISOString();
-    
+
     try {
       this.saveFormSession(formId, localData);
-      
+
       // Also update legacy storage for compatibility (only for essential data)
       const essentialData = {
         formTitle: formData.formTitle,
@@ -188,7 +188,7 @@ export class FormSessionManager {
         isCertificateLinked: formData.isCertificateLinked
       };
       localStorage.setItem('formCreationState', JSON.stringify(essentialData));
-      
+
     } catch (error) {
       if (error.name === 'QuotaExceededError' || error.code === 22) {
         console.warn('⚠️ FormSessionManager - localStorage quota exceeded, cleaning up old data');
@@ -204,7 +204,7 @@ export class FormSessionManager {
         throw error;
       }
     }
-    
+
     return true;
   }
 
@@ -311,9 +311,9 @@ export class FormSessionManager {
     localData.data.selectedStudents = selectedStudents;
     localData.data.studentsAssignedAt = new Date().toISOString();
     localData.lastActivity = new Date().toISOString();
-    
+
     this.saveFormSession(formId, localData);
-    
+
     // Also store in legacy location for compatibility
     localStorage.setItem('selectedStudents', JSON.stringify(selectedStudents));
     localStorage.setItem(`formRecipients_${formId}`, JSON.stringify({
@@ -321,7 +321,7 @@ export class FormSessionManager {
       students: selectedStudents,
       timestamp: new Date().toISOString()
     }));
-    
+
     return true;
   }
 
@@ -366,27 +366,27 @@ export class FormSessionManager {
   // Cleanup old form sessions when quota is exceeded
   static cleanupOldFormSessions() {
     const formSessions = this.getAllSessionForms();
-    
+
     if (formSessions.length <= 2) {
       // Don't cleanup if we only have current and one other session
       return false;
     }
-    
+
     // Sort by last activity (oldest first)
     const sortedSessions = formSessions
       .filter(session => session.formId !== this.getCurrentFormId()) // Don't delete current form
       .sort((a, b) => new Date(a.lastActivity) - new Date(b.lastActivity));
-    
+
     // Remove oldest 25% of sessions to free up space
     const sessionsToRemove = Math.ceil(sortedSessions.length * 0.25);
     const sessionsDeleted = sortedSessions.slice(0, sessionsToRemove);
-    
+
     sessionsDeleted.forEach(session => {
       localStorage.removeItem(`formSession_${session.formId}`);
       // Also clean up related data
       localStorage.removeItem(`formRecipients_${session.formId}`);
     });
-    
+
     console.log(`🧹 FormSessionManager - Cleaned up ${sessionsDeleted.length} old form sessions`);
     return true;
   }
@@ -413,19 +413,19 @@ export class FormSessionManager {
     } catch (error) {
       if (error.name === 'QuotaExceededError' || error.code === 22) {
         console.error('🔧 FormSessionManager - Critical quota exceeded, attempting emergency cleanup');
-        
+
         // Aggressive cleanup - remove all but current form
         const allKeys = Object.keys(localStorage);
         const formSessionKeys = allKeys.filter(key => key.startsWith('formSession_'));
         const currentFormId = this.getCurrentFormId();
-        
+
         // Remove all form sessions except current
         formSessionKeys.forEach(key => {
           if (!key.includes(currentFormId)) {
             localStorage.removeItem(key);
           }
         });
-        
+
         // Try again
         localStorage.setItem(`formSession_${formId}`, JSON.stringify(localData));
       } else {
@@ -510,12 +510,12 @@ export class FormSessionManager {
 
     // Set current form ID
     localStorage.setItem('currentFormId', exportedData.formId);
-    
+
     // Restore local data
     if (exportedData.localData) {
       this.saveFormSession(exportedData.formId, exportedData.localData);
     }
-    
+
     // Restore legacy data (excluding any CSV content)
     if (exportedData.legacyData) {
       if (exportedData.legacyData.formCreationState) {
@@ -526,7 +526,7 @@ export class FormSessionManager {
         localStorage.setItem('selectedStudents', exportedData.legacyData.selectedStudents);
       }
     }
-    
+
     return true;
   }
 }

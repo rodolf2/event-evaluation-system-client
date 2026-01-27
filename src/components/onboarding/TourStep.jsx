@@ -1,13 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
-function TourStep({ title, description, position, step, totalSteps, onSkip, onContinue, onDone, showDone = false }) {
-  const [viewportWidth, setViewportWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1024);
+function TourStep({
+  title,
+  description,
+  position,
+  step,
+  totalSteps,
+  onSkip,
+  onContinue,
+  onDone,
+  showDone = false,
+}) {
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
   const isMobile = viewportWidth < 768;
-  const [highlightStyle, setHighlightStyle] = useState(null);
+
+  // State for dynamic styles
+  const [styles, setStyles] = useState({
+    highlight: null,
+    tooltip: null,
+    arrow: null,
+  });
+
+  const tooltipRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
-    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -23,18 +42,19 @@ function TourStep({ title, description, position, step, totalSteps, onSkip, onCo
         target.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }
-  }, [position, isMobile]);
+  }, [position]);
 
   useEffect(() => {
     const selectorMap = {
       sidebar: [
-        "[data-tour='sidebar-toggle']",
         "[data-tour='sidebar']",
+        "[data-tour='sidebar-toggle']",
         ".sidebar-toggle",
         ".hamburger",
         "button[aria-label*='menu']",
+        "aside", // Fallback to sidebar element itself
       ],
-      header: ["[data-tour='header']", ".header"],
+      header: ["[data-tour='header']", ".header", "header"],
       "recent-activity": [
         "[data-tour='recent-activity']",
         "#recent-activity",
@@ -42,176 +62,259 @@ function TourStep({ title, description, position, step, totalSteps, onSkip, onCo
       ],
     };
 
-    const computeHighlight = () => {
+    const computeLayout = () => {
       const candidates = selectorMap[position] || [];
       let target = null;
       for (const sel of candidates) {
         const el = document.querySelector(sel);
         if (el) {
-          target = el;
-          break;
+          const rect = el.getBoundingClientRect();
+
+          const style = window.getComputedStyle(el);
+          // Check if element is visible on screen
+          // We check basic visibility styles
+          // And we check rect dimensions and position to ensure it's in the viewport
+          const isVisible =
+            style.display !== 'none' &&
+            style.visibility !== 'hidden' &&
+            style.opacity !== '0' &&
+            rect.width > 0 &&
+            rect.height > 0 &&
+            rect.right > 0 &&
+            rect.left < window.innerWidth;
+
+          if (isVisible) {
+            target = el;
+            break;
+          }
         }
       }
 
-      if (target && target.getBoundingClientRect) {
-        const rect = target.getBoundingClientRect();
-        const padding = position === "sidebar" ? 6 : 8;
-        setHighlightStyle({
-          top: `${rect.top + window.scrollY - padding}px`,
-          left: `${rect.left + window.scrollX - padding}px`,
-          width: `${rect.width + padding * 2}px`,
-          height: `${rect.height + padding * 2}px`,
-          borderRadius: position === "sidebar" ? "9999px" : "12px",
+      if (!target || !target.getBoundingClientRect) {
+        // Fallback or hidden: Center the modal if target undefined
+        setStyles({
+          highlight: null,
+          tooltip: {
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            margin: 0,
+          },
+          arrow: { display: "none" },
         });
-      } else {
-        setHighlightStyle(null);
+        return;
       }
+
+      const rect = target.getBoundingClientRect();
+      const padding = position === "sidebar" ? 6 : 8;
+
+      // Calculate Highlight (Fixed or Absolute?)
+      // Using absolute + scrollY allows it to move with page if necessary, 
+      // but if the element is fixed (like sidebar/header), absolute relative to document works if we add scrollY.
+      // However, to avoid syncing issues, let's use fixed matching the element if the element is fixed?
+      // Simpler: Use absolute relative to document.
+
+      const highlightStyle = {
+        top: `${rect.top + window.scrollY - padding}px`,
+        left: `${rect.left + window.scrollX - padding}px`,
+        width: `${rect.width + padding * 2}px`,
+        height: `${rect.height + padding * 2}px`,
+        borderRadius: position === "sidebar" ? "15px" : "12px",
+      };
+
+      // Calculate Tooltip Position
+      let tooltipStyle = {};
+      let arrowStyle = {};
+
+      const tooltipWidth = 384; // max-w-sm approx
+      const gap = 16; // space between target and tooltip
+
+      if (isMobile) {
+        // Mobile Strategy: Button sheet style or centered
+        // We'll place it at the bottom area generally, or below the header if header step.
+
+        if (position === 'header') {
+          tooltipStyle = {
+            position: 'fixed',
+            top: `${rect.bottom + gap}px`,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'calc(100% - 32px)',
+            maxWidth: '24rem',
+          };
+          arrowStyle = {
+            top: '-8px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            borderLeft: '8px solid transparent',
+            borderRight: '8px solid transparent',
+            borderBottom: '8px solid white',
+          };
+        } else {
+          // For others, center it or put at bottom
+          // Let's use a "bottom-sheet" feel for mobile steps to avoid obfuscating top nav
+          tooltipStyle = {
+            position: 'fixed',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 'calc(100% - 32px)',
+            maxWidth: '24rem',
+          };
+          // No arrow for floating bottom card on mobile usually, or point up if we knew where target is?
+          // If target is visible, point to it?
+          // Let's keep it simple: No arrow if floating at bottom.
+          arrowStyle = { display: 'none' };
+        }
+
+      } else {
+        // Desktop Strategy
+        if (position === 'sidebar') {
+          // Place to the RIGHT and CENTER vertically
+          tooltipStyle = {
+            position: 'absolute',
+            top: `${rect.top + window.scrollY + (rect.height / 2)}px`,
+            left: `${rect.right + window.scrollX + gap}px`,
+            transform: 'translateY(-50%)',
+          };
+          arrowStyle = {
+            left: '-8px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            borderTop: '8px solid transparent',
+            borderBottom: '8px solid transparent',
+            borderRight: '8px solid white',
+            position: 'absolute'
+          };
+        } else if (position === 'header') {
+          // Place BELOW
+          // Align right edge or center? Header is wide.
+          // Let's align to the right side of the screen usually for user profile
+          // Or center relative to highlight?
+          const idealLeft = rect.left + window.scrollX + (rect.width / 2) - (tooltipWidth / 2);
+          // Clamp
+          const maxLeft = window.innerWidth - tooltipWidth - 20;
+          const finalLeft = Math.min(Math.max(20, idealLeft), maxLeft);
+
+          tooltipStyle = {
+            position: 'absolute',
+            top: `${rect.bottom + window.scrollY + gap}px`,
+            left: `${finalLeft}px`,
+          };
+
+          // Arrow calculation
+          // relative to tooltip container
+          const arrowLeftCandidates = (rect.left + window.scrollX + (rect.width / 2)) - finalLeft;
+
+          arrowStyle = {
+            top: '-8px',
+            left: `${Math.max(10, Math.min(tooltipWidth - 10, arrowLeftCandidates))}px`,
+            transform: 'translateX(-50%)',
+            borderLeft: '8px solid transparent',
+            borderRight: '8px solid transparent',
+            borderBottom: '8px solid white',
+          };
+
+        } else {
+          // Recent Activity / Content
+          // Try RIGHT, if not fit, try LEFT, if not fit try BOTTOM.
+          // Simplified: Place to the right if space, else left.
+
+          if (rect.right + tooltipWidth + gap < window.innerWidth) {
+            // Fits on Right
+            tooltipStyle = {
+              position: 'absolute',
+              top: `${rect.top + window.scrollY}px`,
+              left: `${rect.right + window.scrollX + gap}px`,
+            };
+            arrowStyle = {
+              left: '-8px',
+              top: '24px',
+              borderTop: '8px solid transparent',
+              borderBottom: '8px solid transparent',
+              borderRight: '8px solid white',
+            };
+          } else {
+            // Place on Left?
+            // Or float center?
+            // Let's float centered on the element if large, or center screen.
+            tooltipStyle = {
+              position: 'absolute',
+              top: `${rect.top + window.scrollY}px`,
+              left: `${rect.left + window.scrollX - tooltipWidth - gap}px`,
+            };
+            arrowStyle = {
+              right: '-8px',
+              top: '24px',
+              borderTop: '8px solid transparent',
+              borderBottom: '8px solid transparent',
+              borderLeft: '8px solid white',
+              position: 'absolute'
+            };
+          }
+        }
+      }
+
+      setStyles({
+        highlight: highlightStyle,
+        tooltip: tooltipStyle,
+        arrow: arrowStyle
+      });
     };
 
-    const raf = requestAnimationFrame(computeHighlight);
-    const handleScroll = () => computeHighlight();
+    const raf = requestAnimationFrame(computeLayout);
+    const handleScroll = () => computeLayout();
+
+    // We update on scroll and resize
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", computeHighlight);
+    window.addEventListener("resize", computeLayout);
+    // Initial compute
+    setTimeout(computeLayout, 100); // Give small delay for layout
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", computeHighlight);
+      window.removeEventListener("resize", computeLayout);
     };
-  }, [position, viewportWidth]);
-
-  // Position styles for different elements
-  const getPositionStyles = () => {
-    if (isMobile) {
-      switch (position) {
-        case "sidebar":
-          return {
-            container: "left-1/2 top-8 -translate-x-1/2 w-[calc(100%-2rem)]",
-            arrow: "top-[-8px] left-1/2 -translate-x-1/2 rotate-180 -translate-y-1/2",
-            backdropOffset: "",
-            overlayOffset: "",
-            highlight: "rounded-full",
-          };
-        case "header":
-          return {
-            container: "left-1/2 top-8 -translate-x-1/2 w-[calc(100%-2rem)]",
-            arrow: "top-[-8px] left-1/2 -translate-x-1/2 rotate-180",
-            backdropOffset: "",
-            overlayOffset: "",
-            highlight: "top-2 left-3 right-3 h-14",
-          };
-        case "recent-activity":
-          return {
-            container: "left-1/2 top-8 -translate-x-1/2 w-[calc(100%-2rem)]",
-            arrow: "top-[-8px] left-1/2 -translate-x-1/2 rotate-180",
-            backdropOffset: "",
-            overlayOffset: "",
-            highlight: "top-[200px] left-3 right-3 h-[320px]",
-          };
-        default:
-          return {
-            container: "left-1/2 top-8 -translate-x-1/2 w-[calc(100%-2rem)]",
-            arrow: "top-[-8px] left-1/2 -translate-x-1/2 rotate-180",
-            backdropOffset: "",
-            overlayOffset: "",
-            highlight: "top-2 left-3 right-3 h-16",
-          };
-      }
-    }
-
-    switch (position) {
-      case "sidebar":
-        return {
-          container: "left-32 top-1/2 -translate-y-1/2",
-          arrow: "left-[-8px] top-1/2 -translate-y-1/2",
-          backdropOffset: "md:left-[130px]",
-          overlayOffset: "md:left-[130px]",
-          highlight: "rounded-full",
-        };
-      case "header":
-        return {
-          container: "top-32 right-4",
-          arrow: "top-[-8px] left-[310px] -translate-x-1/2",
-          backdropOffset: "md:top-[100px] md:left-[130px]",
-          overlayOffset: "md:top-[120px] md:left-[130px]",
-          highlight: "top-0 left-[130px] right-5 h-16",
-        };
-      case "recent-activity":
-        return {
-          container: "top-60 left-[120px]",
-          arrow: "bottom-[-8px] right-[270px] -translate-x-1/2",
-          backdropOffset: "md:top-[500px] md:left-[1290px]",
-          overlayOffset: "md:top-[500px] md:left-[1290px]",
-          highlight: "top-[420px] left-[130px] right-[350px] h-[280px]",
-        };
-      default:
-        return {
-          container: "left-32 top-1/2 -translate-y-1/2",
-          arrow: "left-[-8px] top-1/2 -translate-y-1/2",
-          backdropOffset: "",
-          overlayOffset: "",
-          highlight: "",
-        };
-    }
-  };
-
-  const pos = getPositionStyles();
+  }, [position, isMobile]);
 
   return (
     <>
-      {/* Backdrop blur - exclude sidebar, header, or recent activity area */}
-      <div
-        className={`fixed inset-0 z-40 ${isMobile ? "bg-white/20" : "bg-white/50"} ${pos.backdropOffset}`}
-      />
-
-      {/* Light dark overlay - exclude sidebar, header, or recent activity area */}
-      <div
-        className={`fixed inset-0 z-45 ${isMobile ? "bg-[#F1F0F0]/30" : "bg-[#F1F0F0]/50"} ${pos.overlayOffset}`}
-      />
+      {/* Backdrop blur - we use a mask or just distinct overlays. 
+          For simplicity, we'll keep the full overlay and use z-index for highlight. 
+      */}
+      <div className={`fixed inset-0 z-40 transition-colors duration-300 ${isMobile ? "bg-black/20" : "bg-black/40"}`} />
 
       {/* Highlight target area */}
-      {pos.highlight && (
+      {styles.highlight && (
         <div
-          className={`pointer-events-none fixed z-48 rounded-lg border-2 border-blue-500/80 bg-blue-100/30 shadow-[0_0_0_6px_rgba(59,130,246,0.15)] animate-pulse ${pos.highlight}`}
-          style={
-            highlightStyle
-              ? {
-                  top: highlightStyle.top,
-                  left: highlightStyle.left,
-                  width: highlightStyle.width,
-                  height: highlightStyle.height,
-                  borderRadius: highlightStyle.borderRadius,
-                }
-              : undefined
-          }
+          className="absolute z-50 rounded-lg border-2 border-blue-500/80 bg-blue-100/10 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] pointer-events-none transition-all duration-300 ease-out"
+          style={styles.highlight}
         />
       )}
 
       {/* Tour Step Modal */}
-      <div className={`fixed ${pos.container} z-50 p-4 max-w-sm transform md:transform-none`}>
-        <div className="bg-white rounded-lg shadow-xl p-6 relative w-full md:w-auto">
-          {/* Arrow pointing to element */}
+      <div
+        ref={tooltipRef}
+        className="z-50 p-0 max-w-sm w-full transition-all duration-300 ease-out"
+        style={styles.tooltip || { display: 'none' }}
+      >
+        <div className="bg-white rounded-lg shadow-xl p-6 relative">
+          {/* Arrow */}
           <div
-            className={`absolute ${pos.arrow} w-0 h-0 ${
-              position === "sidebar"
-                ? "border-t-8 border-b-8 border-r-8 border-transparent border-r-white"
-                : position === "header"
-                ? "border-l-8 border-r-8 border-b-8 border-transparent border-b-white"
-                : position === "recent-activity"
-                ? "border-l-8 border-r-8 border-t-8 border-transparent border-t-white"
-                : "border-t-8 border-b-8 border-r-8 border-transparent border-r-white"
-            }`}
-          ></div>
+            className="absolute w-0 h-0"
+            style={styles.arrow}
+          />
 
-          <div className="mb-4">
+          <div className="mb-4 text-center">
             <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
             <p className="text-gray-600 text-sm leading-relaxed">
               {description}
             </p>
           </div>
 
-          {/* Step indicator */}
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-0">
             <span className="text-sm text-gray-500">
               Step {step} of {totalSteps}
             </span>
@@ -219,7 +322,7 @@ function TourStep({ title, description, position, step, totalSteps, onSkip, onCo
               {!showDone && (
                 <button
                   onClick={onSkip}
-                  className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+                  className="text-gray-500 hover:text-gray-700 text-sm font-medium px-3 py-1"
                 >
                   Skip
                 </button>

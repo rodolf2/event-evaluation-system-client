@@ -110,11 +110,13 @@ const Header = ({
 
   return (
     <header
+      data-tour="header"
       className={`sticky top-0 flex items-center justify-between bg-white shadow-sm p-4 rounded-lg z-20 hover:shadow-lg ${className}`}
     >
       {/* Hamburger + Title */}
       <div className="flex items-center gap-3">
         <button
+          data-tour="sidebar-toggle"
           onClick={onMenuClick}
           className="p-2 rounded-lg hover:bg-gray-100 transition lg:hover:bg-gray-100/50"
         >

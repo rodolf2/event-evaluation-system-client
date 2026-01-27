@@ -172,22 +172,20 @@ const DynamicRatingInput = ({
 
                 {/* Number ABOVE icon */}
                 <span
-                  className={`text-xs sm:text-sm font-medium mb-1 transition-colors ${
-                    isSelected
-                      ? "text-gray-900 scale-110 drop-shadow-sm"
-                      : "text-gray-600 group-hover:text-gray-800"
-                  }`}
+                  className={`text-xs sm:text-sm font-medium mb-1 transition-colors ${isSelected
+                    ? "text-gray-900 scale-110 drop-shadow-sm"
+                    : "text-gray-600 group-hover:text-gray-800"
+                    }`}
                 >
                   {num}
                 </span>
 
                 {/* Icon */}
                 <div
-                  className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full border-2 flex items-center justify-center transition-all group-hover:scale-105 shadow-md ${
-                    isSelected
-                      ? `ring-2 ring-blue-500 scale-110 bg-[${color}] border-gray-300 shadow-lg`
-                      : `bg-[${color}] border-[${color}] hover:border-gray-300 hover:shadow-md`
-                  }`}
+                  className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full border-2 flex items-center justify-center transition-all group-hover:scale-105 shadow-md ${isSelected
+                    ? `ring-2 ring-blue-500 scale-110 bg-[${color}] border-gray-300 shadow-lg`
+                    : `bg-[${color}] border-[${color}] hover:border-gray-300 hover:shadow-md`
+                    }`}
                 >
                   <img
                     src={emojiList[i]}
@@ -229,9 +227,8 @@ const DynamicRatingInput = ({
               alt="Slider"
               className="absolute w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 z-20"
               style={{
-                left: `${
-                  dragPosition !== null ? dragPosition : getThumbPosition(value)
-                }%`,
+                left: `${dragPosition !== null ? dragPosition : getThumbPosition(value)
+                  }%`,
                 top: "0.75rem",
                 transform: "translateX(-50%)",
                 cursor: "pointer",
@@ -254,33 +251,47 @@ const DynamicRatingInput = ({
       range.push(i);
     }
     return (
-      <div className="w-full flex items-center justify-between gap-2 mt-2">
-        <span className="text-sm text-gray-600">{startLabel || "Poor"}</span>
-        <div className="flex justify-center items-center gap-2">
-          {range.map((num) => (
-            <label
-              key={num}
-              className="flex flex-col items-center cursor-pointer p-2 rounded-lg hover:bg-gray-100"
-            >
-              <input
-                type="radio"
-                name="likert"
-                value={num}
-                className="sr-only"
-                checked={value === num}
-                onChange={() => onChange(num)}
-              />
-              <img
-                src={likertIconMap[num]}
-                alt={`Likert ${num}`}
-                className={`w-12 h-12 sm:w-14 sm:h-14 transition-all ${
-                  value === num ? "scale-110" : "opacity-70"
-                }`}
-              />
-            </label>
-          ))}
+      <div className="w-full flex flex-col mt-2">
+        {/* Labels Row - Always visible above */}
+        <div className="flex justify-between w-full text-sm text-gray-600 mb-2 px-1">
+          <span className="font-medium">{startLabel || "Poor"}</span>
+          <span className="font-medium">{endLabel || "Excellent"}</span>
         </div>
-        <span className="text-sm text-gray-600">{endLabel || "Excellent"}</span>
+
+        {/* Responsive Container for Options */}
+        <div className="w-full pb-2 px-1">
+          <div
+            className={`w-full mx-auto gap-2 ${scale > 5
+              ? "grid grid-cols-5 gap-y-4 gap-x-2 sm:flex sm:justify-center sm:gap-3"
+              : "flex justify-between sm:justify-center"
+              }`}
+          >
+            {range.map((num) => (
+              <label
+                key={num}
+                className={`flex flex-col items-center cursor-pointer p-1 rounded-lg hover:bg-gray-100 flex-shrink-0 ${scale > 5 ? "justify-self-center" : ""
+                  }`}
+              >
+                <input
+                  type="radio"
+                  name="likert"
+                  value={num}
+                  className="sr-only"
+                  checked={value === num}
+                  onChange={() => onChange(num)}
+                />
+                <img
+                  src={likertIconMap[num]}
+                  alt={`Likert ${num}`}
+                  className={`w-10 h-10 sm:w-14 sm:h-14 transition-all ${value === num
+                    ? "scale-110 drop-shadow-md"
+                    : "opacity-70 hover:opacity-100"
+                    }`}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
     );
   };

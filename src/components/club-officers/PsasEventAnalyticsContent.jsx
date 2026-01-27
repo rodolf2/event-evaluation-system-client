@@ -211,7 +211,7 @@ function PsasEventAnalyticsContent() {
   // Show loading state
   if (loading || formsLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+      <div className="p-6 min-h-screen flex flex-col gap-6">
         {/* Header Section Skeleton */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -292,7 +292,7 @@ function PsasEventAnalyticsContent() {
   // Show no forms available state
   if (availableForms.length === 0) {
     return (
-      <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
+      <div className="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             No Published Forms Available
@@ -314,7 +314,7 @@ function PsasEventAnalyticsContent() {
   // Show no valid form selected state
   if (!formId || !/^[0-9a-fA-F]{24}$/.test(formId)) {
     return (
-      <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex flex-col items-center justify-center">
+      <div className="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
             Invalid Form Selected
@@ -339,7 +339,7 @@ function PsasEventAnalyticsContent() {
   // Guard against null analyticsData before destructuring
   if (!analyticsData) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+      <div className="p-6 min-h-screen flex flex-col gap-6">
         {/* Header Section Skeleton */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -544,7 +544,7 @@ function PsasEventAnalyticsContent() {
   const selectedForm = availableForms.find((f) => f._id === formId);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6">
+    <div className="p-6 min-h-screen flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         {/* Form Selector */}

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import toast from "react-hot-toast";
 import { Upload } from "lucide-react";
 
 const AttendeeManagement = ({ uploadedCSVData, onCSVUpload, onViewStudents }) => {
@@ -17,7 +18,7 @@ const AttendeeManagement = ({ uploadedCSVData, onCSVUpload, onViewStudents }) =>
       await onCSVUpload(text);
     } catch (error) {
       console.error("Error processing CSV:", error);
-      alert("Error processing CSV file. Please check the format.");
+      toast.error("Error processing CSV file. Please check the format.");
     } finally {
       setIsUploading(false);
     }
@@ -30,7 +31,7 @@ const AttendeeManagement = ({ uploadedCSVData, onCSVUpload, onViewStudents }) =>
     if (file && file.type === "text/csv") {
       handleFileSelect(file);
     } else {
-      alert("Please select a valid CSV file");
+      toast.error("Please select a valid CSV file");
     }
   };
 
@@ -53,11 +54,10 @@ const AttendeeManagement = ({ uploadedCSVData, onCSVUpload, onViewStudents }) =>
             setIsDragOver(true);
           }}
           onDragLeave={() => setIsDragOver(false)}
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            isDragOver
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragOver
               ? "border-blue-500 bg-blue-50"
               : "border-gray-300 hover:border-gray-400"
-          }`}
+            }`}
         >
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <p className="text-gray-600 mb-2">

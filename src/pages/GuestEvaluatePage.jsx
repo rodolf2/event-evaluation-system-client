@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import GuestEvaluatorLayout from "../components/guest/GuestEvaluatorLayout";
 import DynamicRatingInput from "../components/shared/DynamicRatingInput";
@@ -151,7 +152,7 @@ function GuestEvaluatePage() {
   // Handle submit
   const handleSubmit = async () => {
     if (!validateForm()) {
-      alert("Please answer all required questions before submitting.");
+      toast.error("Please answer all required questions before submitting.");
       return;
     }
 
@@ -193,7 +194,7 @@ function GuestEvaluatePage() {
 
       setShowSuccess(true);
     } catch (err) {
-      alert("Error submitting evaluation: " + err.message);
+      toast.error("Error submitting evaluation: " + err.message);
     } finally {
       setSubmitting(false);
     }

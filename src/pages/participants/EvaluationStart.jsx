@@ -118,22 +118,22 @@ const EvaluationStart = () => {
   return (
     <Layout>
       <div className="flex justify-center items-center h-full bg-gray-100">
-        <div className="max-w-6xl w-full mx-auto p-8">
-          <div className="bg-white rounded-lg shadow-lg py-12 text-center mb-6">
-            <h1 className="text-4xl font-bold text-gray-900">
+        <div className="max-w-6xl w-full mx-auto p-4 md:p-8">
+          <div className="bg-white rounded-lg shadow-lg py-8 md:py-12 text-center mb-6">
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 px-4">
               {form?.title || "Event Evaluation Form"}
             </h1>
           </div>
-          <div className="bg-white rounded-lg shadow-lg p-6 text-xl">
+          <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 text-base md:text-xl">
             <p className="mb-4">
               The Event Evaluation Form is now open for submission. Answer it on
               the given time frame so that your response is seen by the
               institution.
             </p>
-            <h2 className="text-lg font-semibold mb-2">
+            <h2 className="text-base md:text-lg font-semibold mb-2">
               Follow these instructions to have a smooth-sailing evaluation:
             </h2>
-            <ul className="list-disc list-inside space-y-2">
+            <ul className="list-disc list-inside space-y-2 text-sm md:text-base">
               <li>
                 Use formal language (Filipino or English) in the evaluation.
               </li>
@@ -147,20 +147,19 @@ const EvaluationStart = () => {
                 report will be based on these.
               </li>
             </ul>
-            <div className="flex justify-center mt-8">
+            <div className="flex flex-col sm:flex-row justify-center mt-8 gap-4">
               <button
                 onClick={handleGoBack}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg mr-4"
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-6 rounded-lg w-full sm:w-auto"
               >
                 Go Back
               </button>
               <button
                 onClick={handleContinue}
-                className={`${
-                  isCompleted
+                className={`${isCompleted
                     ? "bg-green-600 hover:bg-green-700"
                     : "bg-blue-600 hover:bg-blue-700"
-                } text-white font-bold py-2 px-4 rounded-lg`}
+                  } text-white font-bold py-3 px-6 rounded-lg w-full sm:w-auto`}
               >
                 {isCompleted ? "View Certificate" : "Continue"}
               </button>

@@ -1,4 +1,5 @@
 import { Camera, ChevronRight } from "lucide-react";
+import toast from "react-hot-toast";
 import ProfilePictureModal from "../components/shared/ProfilePictureModal";
 import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
@@ -13,6 +14,31 @@ import SilverBadge from "../assets/badges/SILVER.png";
 import GoldBadge from "../assets/badges/GOLD.png";
 import TitaniumBadge from "../assets/badges/TITANIUM.png";
 import PlatinumBadge from "../assets/badges/PLATINUM.png";
+import QuartzBadge from "../assets/badges/QUARTZ.png";
+import OnyxBadge from "../assets/badges/ONYX.png";
+import PearlBadge from "../assets/badges/PEARL.png";
+import TopazBadge from "../assets/badges/TOPAZ.png";
+import GarnetBadge from "../assets/badges/GARNET.png";
+import AmethystBadge from "../assets/badges/AMETHYST.png";
+import JadeBadge from "../assets/badges/JADE.png";
+import ObsidianBadge from "../assets/badges/OBSIDIAN.png";
+import OpalBadge from "../assets/badges/OPAL.png";
+import SapphireBadge from "../assets/badges/SAPPHIRE.png";
+import EmeraldBadge from "../assets/badges/EMERALD.png";
+import RubyBadge from "../assets/badges/RUBY.png";
+import DiamondBadge from "../assets/badges/DIAMOND.png";
+import CobaltBadge from "../assets/badges/COBALT.png";
+import IvoryBadge from "../assets/badges/IVORY.png";
+import CrimsonBadge from "../assets/badges/CRIMSON.png";
+import AuroraBadge from "../assets/badges/AURORA.png";
+import SolarisBadge from "../assets/badges/SOLARIS.png";
+import LunarBadge from "../assets/badges/LUNAR.png";
+import EclipseBadge from "../assets/badges/ECLIPSE.png";
+import CelestialBadge from "../assets/badges/CELESTIAL.png";
+import MythicBadge from "../assets/badges/MYTHIC.png";
+import LegendaryBadge from "../assets/badges/LEGENDARY.png";
+import MasterBadge from "../assets/badges/MASTER.png";
+import GrandmasterBadge from "../assets/badges/GRANDMASTER.png";
 
 // A simple toggle switch component
 const ToggleSwitch = ({ label, enabled, setEnabled }) => (
@@ -68,6 +94,31 @@ function Profile() {
       gold: "border-yellow-500",
       titanium: "border-gray-500",
       platinum: "border-gray-300",
+      quartz: "border-pink-300",
+      onyx: "border-gray-800",
+      pearl: "border-orange-200",
+      topaz: "border-orange-400",
+      garnet: "border-red-600",
+      amethyst: "border-purple-500",
+      jade: "border-green-500",
+      obsidian: "border-black",
+      opal: "border-cyan-300",
+      sapphire: "border-blue-500",
+      emerald: "border-green-600",
+      ruby: "border-red-500",
+      diamond: "border-blue-300",
+      cobalt: "border-blue-700",
+      ivory: "border-orange-100",
+      crimson: "border-red-700",
+      aurora: "border-green-400",
+      solaris: "border-yellow-400",
+      lunar: "border-blue-200",
+      eclipse: "border-gray-900",
+      celestial: "border-purple-400",
+      mythic: "border-indigo-600",
+      legendary: "border-yellow-600",
+      master: "border-purple-600",
+      grandmaster: "border-orange-500",
     };
     return colorMap[theme] || "border-blue-200";
   };
@@ -79,6 +130,31 @@ function Profile() {
     { name: "Gold", icon: GoldBadge, theme: "gold" },
     { name: "Titanium", icon: TitaniumBadge, theme: "titanium" },
     { name: "Platinum", icon: PlatinumBadge, theme: "platinum" },
+    { name: "Quartz", icon: QuartzBadge, theme: "quartz" },
+    { name: "Onyx", icon: OnyxBadge, theme: "onyx" },
+    { name: "Pearl", icon: PearlBadge, theme: "pearl" },
+    { name: "Topaz", icon: TopazBadge, theme: "topaz" },
+    { name: "Garnet", icon: GarnetBadge, theme: "garnet" },
+    { name: "Amethyst", icon: AmethystBadge, theme: "amethyst" },
+    { name: "Jade", icon: JadeBadge, theme: "jade" },
+    { name: "Obsidian", icon: ObsidianBadge, theme: "obsidian" },
+    { name: "Opal", icon: OpalBadge, theme: "opal" },
+    { name: "Sapphire", icon: SapphireBadge, theme: "sapphire" },
+    { name: "Emerald", icon: EmeraldBadge, theme: "emerald" },
+    { name: "Ruby", icon: RubyBadge, theme: "ruby" },
+    { name: "Diamond", icon: DiamondBadge, theme: "diamond" },
+    { name: "Cobalt", icon: CobaltBadge, theme: "cobalt" },
+    { name: "Ivory", icon: IvoryBadge, theme: "ivory" },
+    { name: "Crimson", icon: CrimsonBadge, theme: "crimson" },
+    { name: "Aurora", icon: AuroraBadge, theme: "aurora" },
+    { name: "Solaris", icon: SolarisBadge, theme: "solaris" },
+    { name: "Lunar", icon: LunarBadge, theme: "lunar" },
+    { name: "Eclipse", icon: EclipseBadge, theme: "eclipse" },
+    { name: "Celestial", icon: CelestialBadge, theme: "celestial" },
+    { name: "Mythic", icon: MythicBadge, theme: "mythic" },
+    { name: "Legendary", icon: LegendaryBadge, theme: "legendary" },
+    { name: "Master", icon: MasterBadge, theme: "master" },
+    { name: "Grandmaster", icon: GrandmasterBadge, theme: "grandmaster" },
   ];
 
   // Fetch completion count and calculate acquired badges
@@ -116,7 +192,8 @@ function Profile() {
         })
         .filter((badge) => badge.unlocked);
 
-      setAcquiredBadges(acquired);
+      // Reverse the array to show the highest tier (newest) badges first
+      setAcquiredBadges(acquired.reverse());
     } catch (err) {
       console.error("Error fetching badge data:", err);
     } finally {
@@ -170,11 +247,11 @@ function Profile() {
         window.location.reload();
       } else {
         console.error("Failed to update profile:", data.message);
-        alert("Failed to update profile. Please try again.");
+        toast.error("Failed to update profile. Please try again.");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Error updating profile. Please try again.");
+      toast.error("Error updating profile. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -534,11 +611,21 @@ function Profile() {
                   </div>
                 ) : acquiredBadges.length > 0 ? (
                   <div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    <div
+                      className={
+                        acquiredBadges.length > 5
+                          ? "flex overflow-x-auto pb-4 gap-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent px-2"
+                          : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"
+                      }
+                    >
                       {acquiredBadges.map((badge, index) => (
                         <div
                           key={index}
-                          className="flex flex-col items-center text-center"
+                          className={
+                            acquiredBadges.length > 5
+                              ? "flex flex-col items-center text-center flex-shrink-0 w-1/2 sm:w-1/3 md:w-1/5"
+                              : "flex flex-col items-center text-center"
+                          }
                         >
                           <img
                             src={badge.icon}
@@ -547,7 +634,7 @@ function Profile() {
                               badge.theme,
                             )}`}
                           />
-                          <p className="text-sm font-medium text-gray-800">
+                          <p className="text-sm font-medium text-gray-800 whitespace-nowrap">
                             {badge.name}
                           </p>
                         </div>

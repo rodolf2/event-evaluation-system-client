@@ -12,10 +12,9 @@ const ReportHeader = () => {
       <img
         src={HeaderImage}
         alt="La Verdad Christian College Header"
-        className="w-full h-auto object-cover"
+        className="w-full h-auto"
         style={{
           display: "block",
-          minHeight: "60px",
         }}
       />
     </div>

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Search,
   ChevronLeft,
@@ -217,14 +218,14 @@ const StudentList = () => {
     const formIdFromUrl = urlParams.get("formId");
 
     if (!formIdFromUrl) {
-      alert(
+      toast.error(
         "Error: Form ID not found. Cannot assign students to form. Please start from the form creation page.",
       );
       return;
     }
 
     if (selected.length === 0) {
-      alert("Please select at least one student to receive the form.");
+      toast.error("Please select at least one student to receive the form.");
       return;
     }
 
@@ -251,6 +252,7 @@ const StudentList = () => {
         "🔍 Debug: Available students data structure:",
         students.slice(0, 2),
       );
+
       console.log("🔍 Debug: Selected IDs:", selected);
 
       // Filter selected students with proper ID handling - enhanced for bulk operations
@@ -259,8 +261,7 @@ const StudentList = () => {
           const hasId = student && student.id;
           const isSelected = hasId && selected.includes(student.id);
           console.log(
-            `🔍 Student ${student.email || student.name}: id=${
-              student.id
+            `🔍 Student ${student.email || student.name}: id=${student.id
             }, selected=${isSelected}`,
           );
           return isSelected;
@@ -289,7 +290,7 @@ const StudentList = () => {
       );
 
       if (selectedStudents.length === 0) {
-        alert(
+        toast.error(
           "No valid students found in selection. Please check your selection and try again.",
         );
         return;
@@ -308,9 +309,11 @@ const StudentList = () => {
 
       if (!saveResult) {
         console.error("❌ Failed to save student assignments");
-        alert("Failed to save student assignments. Please try again.");
+        toast.error("Failed to save student assignments. Please try again.");
         return;
       }
+
+      toast.success(`Successfully assigned ${selectedStudents.length} students to the form!`);
 
       // Clear local selection state
       setSelected([]);
@@ -334,7 +337,7 @@ const StudentList = () => {
       }
     } catch (error) {
       console.error("🚨 Error assigning students to form:", error);
-      alert(
+      toast.error(
         `An error occurred while assigning students to the form: ${error.message}`,
       );
     }
@@ -613,11 +616,10 @@ const StudentList = () => {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        currentPage === pageNum
-                          ? "bg-blue-800 text-white"
-                          : "bg-gray-200 text-blue-800 hover:bg-gray-300"
-                      }`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${currentPage === pageNum
+                        ? "bg-blue-800 text-white"
+                        : "bg-gray-200 text-blue-800 hover:bg-gray-300"
+                        }`}
                     >
                       {pageNum}
                     </button>
