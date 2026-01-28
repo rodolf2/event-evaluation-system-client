@@ -23,7 +23,18 @@ import {
   Cell,
 } from "recharts";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+const COLORS = [
+  "#0088FE", // Blue
+  "#00C49F", // Teal
+  "#FFBB28", // Yellow
+  "#FF8042", // Orange
+  "#8884d8", // Purple
+  "#FF6B6B", // Red
+  "#4ECDC4", // Turquoise
+  "#45B7D1", // Light Blue
+  "#96CEB4", // Sage
+  "#FFEEAD", // Pale Yellow
+];
 
 // Dynamic Chart Components
 const DynamicBarChart = ({ data, title, subtitle, loading = false }) => {
@@ -783,7 +794,8 @@ const CompleteReport = ({
                             ))}
                             <p className="text-sm font-medium text-gray-800 mt-2">
                               Average:{" "}
-                              {question.averageRating?.toFixed(2) || "N/A"} / 5
+                              {question.averageRating?.toFixed(2) || "N/A"} /{" "}
+                              {question.scaleMax || 5}
                             </p>
                           </div>
                         </div>

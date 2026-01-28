@@ -9,9 +9,10 @@ import {
   ChevronDown,
   ArrowUpCircle,
   ArrowDownCircle,
-  Trash2,
+  Ban,
   X,
   UserCheck,
+  CircleUser,
 } from "lucide-react";
 import {
   SkeletonTable,
@@ -423,18 +424,23 @@ function UserRoles() {
               <div key={user._id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <img
-                      src={
-                        user.profilePicture ||
-                        user.avatar ||
-                        "/assets/users/user1.jpg"
-                      }
-                      alt={user.name}
-                      className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0"
-                      onError={(e) => {
-                        e.target.src = "/assets/users/user1.jpg";
-                      }}
-                    />
+                    {user.profilePicture || user.avatar ? (
+                      <img
+                        src={
+                          user.profilePicture ||
+                          user.avatar
+                        }
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentNode.innerHTML =
+                            '<svg class="w-10 h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>';
+                        }}
+                      />
+                    ) : (
+                      <CircleUser className="w-10 h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" />
+                    )}
                     <div className="min-w-0">
                       <div className="font-bold text-gray-900 truncate">
                         {user.name}
@@ -471,7 +477,7 @@ function UserRoles() {
                           className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                           title="Disable Access"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Ban className="w-5 h-5" />
                         </button>
                       )}
                     {!user.isActive &&
@@ -491,9 +497,8 @@ function UserRoles() {
                   {getRoleBadge(user)}
                   <div className="flex items-center gap-1">
                     <span
-                      className={`w-2 h-2 rounded-full ${
-                        user.isActive ? "bg-green-500" : "bg-red-500"
-                      }`}
+                      className={`w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"
+                        }`}
                     />
                     <span
                       className={
@@ -543,18 +548,23 @@ function UserRoles() {
                 <tr key={user._id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={
-                          user.profilePicture ||
-                          user.avatar ||
-                          "/assets/users/user1.jpg"
-                        }
-                        alt={user.name}
-                        className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                        onError={(e) => {
-                          e.target.src = "/assets/users/user1.jpg";
-                        }}
-                      />
+                      {user.profilePicture || user.avatar ? (
+                        <img
+                          src={
+                            user.profilePicture ||
+                            user.avatar
+                          }
+                          alt={user.name}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentNode.innerHTML =
+                              '<svg class="w-10 h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>';
+                          }}
+                        />
+                      ) : (
+                        <CircleUser className="w-10 h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" />
+                      )}
                       <div>
                         <div className="font-bold text-gray-900">
                           {user.name}
@@ -570,9 +580,8 @@ function UserRoles() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`w-2 h-2 rounded-full ${
-                          user.isActive ? "bg-green-500" : "bg-red-500"
-                        }`}
+                        className={`w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"
+                          }`}
                       />
                       <span
                         className={
@@ -616,7 +625,7 @@ function UserRoles() {
                             className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                             title="Remove from User Table (Disable Access)"
                           >
-                            <Trash2 className="w-5 h-5" />
+                            <Ban className="w-5 h-5" />
                           </button>
                         )}
                       {!user.isActive &&
@@ -786,13 +795,12 @@ function UserRoles() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative">
             <div className="flex flex-col items-center text-center">
               <div
-                className={`p-3 rounded-full mb-4 ${
-                  confirmAction === "DISABLE"
-                    ? "bg-red-100 text-red-600"
-                    : "bg-blue-100 text-blue-600"
-                }`}
+                className={`p-3 rounded-full mb-4 ${confirmAction === "DISABLE"
+                  ? "bg-red-100 text-red-600"
+                  : "bg-blue-100 text-blue-600"
+                  }`}
               >
-                {confirmAction === "DISABLE" && <Trash2 className="w-8 h-8" />}
+                {confirmAction === "DISABLE" && <Ban className="w-8 h-8" />}
                 {confirmAction === "ELEVATE" && (
                   <ArrowUpCircle className="w-8 h-8" />
                 )}
@@ -810,10 +818,9 @@ function UserRoles() {
 
               <p className="text-gray-600 mb-6">
                 {confirmAction === "ELEVATE" &&
-                  `Are you sure you want to elevate ${selectedUser?.name} to PSCO (${
-                    selectedChoice === "Executive"
-                      ? "Presidents, VPs, and Secretaries"
-                      : "Other Officers"
+                  `Are you sure you want to elevate ${selectedUser?.name} to PSCO (${selectedChoice === "Executive"
+                    ? "Presidents, VPs, and Secretaries"
+                    : "Other Officers"
                   }) for ${selectedProgram}?`}
                 {confirmAction === "REMOVE_PSCO" &&
                   `This will revert ${selectedUser?.name} to a regular Student role.`}
@@ -832,11 +839,10 @@ function UserRoles() {
                 </button>
                 <button
                   onClick={handleConfirmAction}
-                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
-                    confirmAction === "DISABLE"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white ${confirmAction === "DISABLE"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                    }`}
                 >
                   Confirm
                 </button>

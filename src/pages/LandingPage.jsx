@@ -9,31 +9,37 @@ const LandingPage = () => {
       title: "Feedback Collection",
       description:
         "Easily gather attendee insights after each events with intuitive digital surveys.",
+      icon: "fi fi-sr-assessment-alt",
     },
     {
       title: "Data-Driven Feedback Analysis",
       description:
         "Analyze event feedback to reveal key trends and provide insights needed to make decisions.",
+      icon: "fi fi-br-analyse",
     },
     {
       title: "Event Analytics",
       description:
         "Provides a performance overview of every event, tracking key metrics and overall satisfaction.",
+      icon: "fi fi-br-chart-histogram",
     },
     {
       title: "Actionable Insights",
       description:
         "Translate raw data into clear, strategic recommendations for future event planning.",
+      icon: "fi fi-br-insight",
     },
     {
       title: "Enhanced Student Engagement",
       description:
         "Foster a culture where every student voice contributes directly to campus improvement.",
+      icon: "fi fi-sr-magnet-user",
     },
     {
       title: "Performance Reports",
       description:
         "Tailor reports to specific stakeholders, ensuring relevant information reaches the right audience.",
+      icon: "fi fi-sr-newspaper",
     },
   ];
 
@@ -128,7 +134,7 @@ const LandingPage = () => {
       <header className="fixed top-0 left-0 w-full z-50 bg-white shadow">
         <div className="flex justify-between items-center px-4 md:px-6">
           {/* Logo */}
-          <div className="flex items-center">
+          <a href="#" onClick={scrollToTop} className="flex items-center cursor-pointer">
             <img
               src="/assets/logo/LOGO.png"
               alt="LVCC Logo"
@@ -138,38 +144,35 @@ const LandingPage = () => {
               <span className="text-[#1F3463]">Event</span>
               <span className="text-[#2662D9]">Stream</span>
             </div>
-          </div>
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-[40px] lg:space-x-[80px] text-[15px] lg:text-[17px] font-semibold text-[#09090B]">
             <a
               href="#"
               onClick={scrollToTop}
-              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 cursor-pointer ${
-                activeSection === "home"
-                  ? "after:w-[60px] lg:after:w-[80px]"
-                  : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
-              }`}
+              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 cursor-pointer ${activeSection === "home"
+                ? "after:w-[60px] lg:after:w-[80px]"
+                : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
+                }`}
             >
               Home
             </a>
             <a
               href="#features"
-              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${
-                activeSection === "features"
-                  ? "after:w-[60px] lg:after:w-[80px]"
-                  : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
-              }`}
+              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${activeSection === "features"
+                ? "after:w-[60px] lg:after:w-[80px]"
+                : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
+                }`}
             >
               About
             </a>
             <a
               href="#faqs"
-              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${
-                activeSection === "faqs"
-                  ? "after:w-[60px] lg:after:w-[80px]"
-                  : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
-              }`}
+              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${activeSection === "faqs"
+                ? "after:w-[60px] lg:after:w-[80px]"
+                : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
+                }`}
             >
               FAQs
             </a>
@@ -202,29 +205,26 @@ const LandingPage = () => {
               <a
                 href="#"
                 onClick={scrollToTop}
-                className={`text-[17px] font-semibold ${
-                  activeSection === "home" ? "text-blue-600" : "text-[#09090B]"
-                }`}
+                className={`text-[17px] font-semibold ${activeSection === "home" ? "text-blue-600" : "text-[#09090B]"
+                  }`}
               >
                 Home
               </a>
               <a
                 href="#features"
                 onClick={handleNavClick}
-                className={`text-[17px] font-semibold ${
-                  activeSection === "features"
-                    ? "text-blue-600"
-                    : "text-[#09090B]"
-                }`}
+                className={`text-[17px] font-semibold ${activeSection === "features"
+                  ? "text-blue-600"
+                  : "text-[#09090B]"
+                  }`}
               >
                 About
               </a>
               <a
                 href="#faqs"
                 onClick={handleNavClick}
-                className={`text-[17px] font-semibold ${
-                  activeSection === "faqs" ? "text-blue-600" : "text-[#09090B]"
-                }`}
+                className={`text-[17px] font-semibold ${activeSection === "faqs" ? "text-blue-600" : "text-[#09090B]"
+                  }`}
               >
                 FAQs
               </a>
@@ -283,7 +283,9 @@ const LandingPage = () => {
               key={i}
               className="bg-[#344773] rounded-[20px] md:rounded-[25px] p-4 md:p-6 shadow-lg hover:bg-[#3C4F8C] transition duration-300 flex flex-col gap-3 md:gap-4 min-h-[200px] md:min-h-[275px]"
             >
-              <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] bg-white rounded-full mb-6 md:mb-12"></div>
+              <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] bg-white rounded-full mb-6 md:mb-12 flex items-center justify-center text-[#1F3463]">
+                <i className={`${feature.icon} text-lg md:text-2xl leading-none`}></i>
+              </div>
               <h3 className="text-white text-base md:text-[18px] font-bold leading-tight">
                 {feature.title}
               </h3>
@@ -320,11 +322,10 @@ const LandingPage = () => {
               .map(({ faq, originalIndex }) => (
                 <div
                   key={originalIndex}
-                  className={`break-inside-avoid mb-4 md:mb-6 rounded-[15px] md:rounded-[20px] shadow transition-colors duration-300 overflow-hidden ${
-                    openIndex === originalIndex
-                      ? "bg-[#1F3463] text-white"
-                      : "bg-[#1F3463] text-white hover:bg-blue-800 cursor-pointer"
-                  }`}
+                  className={`break-inside-avoid mb-4 md:mb-6 rounded-[15px] md:rounded-[20px] shadow transition-colors duration-300 overflow-hidden ${openIndex === originalIndex
+                    ? "bg-[#1F3463] text-white"
+                    : "bg-[#1F3463] text-white hover:bg-blue-800 cursor-pointer"
+                    }`}
                   onClick={() =>
                     setOpenIndex(
                       openIndex === originalIndex ? null : originalIndex
@@ -342,9 +343,8 @@ const LandingPage = () => {
                       </p>
                     </div>
                     <ChevronDown
-                      className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${
-                        openIndex === originalIndex ? "rotate-180" : ""
-                      }`}
+                      className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${openIndex === originalIndex ? "rotate-180" : ""
+                        }`}
                     />
                   </div>
 

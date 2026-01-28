@@ -8,6 +8,7 @@ import {
   Key,
   ChevronDown,
   FileText,
+  CircleUser,
 } from "lucide-react";
 import {
   SkeletonTable,
@@ -149,9 +150,8 @@ function AuditLogs() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `audit-logs-report-${
-        new Date().toISOString().split("T")[0]
-      }.pdf`;
+      a.download = `audit-logs-report-${new Date().toISOString().split("T")[0]
+        }.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -205,9 +205,8 @@ function AuditLogs() {
     return (
       <div>
         <div
-          className={`font-medium ${
-            isFailed ? "text-red-600" : "text-gray-900"
-          }`}
+          className={`font-medium ${isFailed ? "text-red-600" : "text-gray-900"
+            }`}
         >
           {mapped.title}
         </div>
@@ -278,13 +277,12 @@ function AuditLogs() {
             </span>
           </div>
           <p
-            className={`text-xs mt-1 ${
-              stats.trend > 0
-                ? "text-green-600"
-                : stats.trend < 0
-                  ? "text-red-600"
-                  : "text-gray-500"
-            }`}
+            className={`text-xs mt-1 ${stats.trend > 0
+              ? "text-green-600"
+              : stats.trend < 0
+                ? "text-red-600"
+                : "text-gray-500"
+              }`}
           >
             {stats.trend > 0 ? "↑" : stats.trend < 0 ? "↓" : "—"}{" "}
             {Math.abs(stats.trend)}% vs yesterday
@@ -391,30 +389,37 @@ function AuditLogs() {
                   return (
                     <div
                       key={log._id}
-                      className={`p-4 ${
-                        isSuspicious ? "bg-red-50" : "hover:bg-gray-50"
-                      }`}
+                      className={`p-4 ${isSuspicious ? "bg-red-50" : "hover:bg-gray-50"
+                        }`}
                     >
                       <div className="flex items-start gap-3 mb-2">
-                        <img
-                          src={
-                            log.userId?.profilePicture ||
-                            log.userId?.avatar ||
-                            "/assets/users/user1.jpg"
-                          }
-                          alt={log.userName}
-                          className={`w-8 h-8 rounded-full object-cover shrink-0 ${
-                            isSuspicious ? "border-2 border-red-400" : ""
-                          }`}
-                          onError={(e) => {
-                            e.target.src = "/assets/users/user1.jpg";
-                          }}
-                        />
+                        {log.action === "FAILED_LOGIN" ||
+                          log.action === "FAILED_AUTH" ||
+                          (!log.userId?.profilePicture && !log.userId?.avatar) ? (
+                          <CircleUser
+                            className={`w-8 h-8 text-gray-400 ${isSuspicious ? "text-red-400" : ""
+                              }`}
+                          />
+                        ) : (
+                          <img
+                            src={
+                              log.userId?.profilePicture || log.userId?.avatar
+                            }
+                            alt={log.userName}
+                            className={`w-8 h-8 rounded-full object-cover shrink-0 ${isSuspicious ? "border-2 border-red-400" : ""
+                              }`}
+                            onError={(e) => {
+                              // If image fails to load, replace with default icon
+                              e.target.style.display = 'none';
+                              e.target.parentNode.innerHTML =
+                                '<svg class="w-8 h-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>';
+                            }}
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div
-                            className={`font-bold ${
-                              isSuspicious ? "text-red-700" : "text-gray-900"
-                            }`}
+                            className={`font-bold ${isSuspicious ? "text-red-700" : "text-gray-900"
+                              }`}
                           >
                             {isSuspicious
                               ? "Unknown"
@@ -457,44 +462,52 @@ function AuditLogs() {
                     return (
                       <tr
                         key={log._id}
-                        className={`transition ${
-                          isSuspicious
-                            ? "bg-red-50 hover:bg-red-100"
-                            : "hover:bg-gray-50"
-                        }`}
+                        className={`transition ${isSuspicious
+                          ? "bg-red-50 hover:bg-red-100"
+                          : "hover:bg-gray-50"
+                          }`}
                       >
                         <td className="px-6 py-4">
                           <div
-                            className={`font-medium ${
-                              isSuspicious ? "text-red-700" : "text-gray-900"
-                            }`}
+                            className={`font-medium ${isSuspicious ? "text-red-700" : "text-gray-900"
+                              }`}
                           >
                             {formatTimestamp(log.createdAt)}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <img
-                              src={
-                                log.userId?.profilePicture ||
-                                log.userId?.avatar ||
-                                "/assets/users/user1.jpg"
-                              }
-                              alt={log.userName}
-                              className={`w-8 h-8 rounded-full object-cover ${
-                                isSuspicious ? "border-2 border-red-400" : ""
-                              }`}
-                              onError={(e) => {
-                                e.target.src = "/assets/users/user1.jpg";
-                              }}
-                            />
+                            {log.action === "FAILED_LOGIN" ||
+                              log.action === "FAILED_AUTH" ||
+                              (!log.userId?.profilePicture &&
+                                !log.userId?.avatar) ? (
+                              <CircleUser
+                                className={`w-8 h-8 text-gray-400 ${isSuspicious ? "text-red-400" : ""
+                                  }`}
+                              />
+                            ) : (
+                              <img
+                                src={
+                                  log.userId?.profilePicture ||
+                                  log.userId?.avatar
+                                }
+                                alt={log.userName}
+                                className={`w-8 h-8 rounded-full object-cover ${isSuspicious ? "border-2 border-red-400" : ""
+                                  }`}
+                                onError={(e) => {
+                                  // If image fails to load, replace with default icon
+                                  e.target.style.display = 'none';
+                                  e.target.parentNode.innerHTML =
+                                    '<svg class="w-8 h-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>';
+                                }}
+                              />
+                            )}
                             <div>
                               <div
-                                className={`font-bold ${
-                                  isSuspicious
-                                    ? "text-red-700"
-                                    : "text-gray-900"
-                                }`}
+                                className={`font-bold ${isSuspicious
+                                  ? "text-red-700"
+                                  : "text-gray-900"
+                                  }`}
                               >
                                 {isSuspicious
                                   ? "Unknown"

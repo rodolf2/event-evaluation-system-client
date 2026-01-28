@@ -21,6 +21,7 @@ import toast from "react-hot-toast";
 import uploadIcon from "../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../assets/icons/blankform-icon.svg";
 import EvaluatorShareModal from "../../components/shared/EvaluatorShareModal";
+import ConfirmationModal from "../../components/shared/ConfirmationModal";
 
 const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -39,11 +40,7 @@ const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
 
   const handleDelete = (e) => {
     e.stopPropagation(); // Prevent card click
-    if (
-      window.confirm(`Are you sure you want to delete "${evaluation.title}"?`)
-    ) {
-      onDelete(evaluation);
-    }
+    onDelete(evaluation);
     setShowMenu(false);
   };
 
@@ -195,6 +192,14 @@ const SurveyCreation = () => {
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
 
+  // Delete Modal State
+  const [deleteModal, setDeleteModal] = useState({
+    show: false,
+    evaluationId: null,
+    title: "",
+    loading: false
+  });
+
   const fetchEvaluations = useCallback(async () => {
     try {
       setLoading(true);
@@ -325,15 +330,23 @@ const SurveyCreation = () => {
     }
   };
 
-  const handleDelete = async (evaluation) => {
-    if (
-      !window.confirm(`Are you sure you want to delete "${evaluation.title}"?`)
-    ) {
-      return;
-    }
+  const handleDeleteClick = (evaluation) => {
+    setDeleteModal({
+      show: true,
+      evaluationId: evaluation._id,
+      title: evaluation.title,
+      loading: false
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const { evaluationId } = deleteModal;
+    if (!evaluationId) return;
+
+    setDeleteModal(prev => ({ ...prev, loading: true }));
 
     try {
-      const response = await fetch(`/api/forms/${evaluation._id}`, {
+      const response = await fetch(`/api/forms/${evaluationId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -343,12 +356,15 @@ const SurveyCreation = () => {
       if (response.ok) {
         toast.success("Evaluation deleted successfully");
         fetchEvaluations();
+        setDeleteModal({ show: false, evaluationId: null, title: "", loading: false });
       } else {
         toast.error("Failed to delete evaluation");
+        setDeleteModal(prev => ({ ...prev, loading: false }));
       }
     } catch (error) {
       console.error("Error deleting evaluation:", error);
       toast.error("Error deleting evaluation");
+      setDeleteModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -637,7 +653,7 @@ const SurveyCreation = () => {
                   <SurveyEvaluationCard
                     key={evaluation._id}
                     evaluation={evaluation}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteClick}
                   />
                 ))}
               </div>
@@ -720,6 +736,19 @@ const SurveyCreation = () => {
           </div>
         )}
       </ClubOfficerLayout>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModal.show}
+        onClose={() => setDeleteModal({ show: false, evaluationId: null, title: "", loading: false })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Evaluation"
+        message={`Are you sure you want to delete "${deleteModal.title}"? This action cannot be undone and will permanently remove all associated data.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={deleteModal.loading}
+      />
     </>
   );
 };

@@ -11,7 +11,7 @@ import {
   Zap,
   HardDrive,
   Activity,
-  RefreshCw,
+
   BookOpen,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -162,33 +162,19 @@ function Settings() {
     toast.success("Index optimization started (Background)");
   };
 
-  const handleUpdateDictionary = async () => {
-    // Check if auto-training updates are available
-    toast.loading("Checking for dictionary updates...");
-    setTimeout(() => {
-      toast.dismiss();
-      toast.success("Dictionary is up to date (v1.0.1)");
-      setDictionaryInfo((prev) => ({
-        ...prev,
-        version: "v1.0.1",
-        lastUpdated: "Just now",
-      }));
-    }, 1500);
-  };
+
 
   // Toggle switch component
   const ToggleSwitch = ({ enabled, onChange, disabled = false }) => (
     <button
       onClick={() => !disabled && onChange(!enabled)}
       disabled={disabled}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-        enabled ? "bg-blue-500" : "bg-gray-200"
-      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${enabled ? "bg-blue-500" : "bg-gray-200"
+        } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
-          enabled ? "translate-x-6" : "translate-x-1"
-        }`}
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${enabled ? "translate-x-6" : "translate-x-1"
+          }`}
       />
     </button>
   );
@@ -345,11 +331,10 @@ function Settings() {
               </h2>
             </div>
             <span
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                dbHealth.status === "healthy"
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${dbHealth.status === "healthy"
                   ? "bg-green-100 text-green-700"
                   : "bg-red-100 text-red-700"
-              }`}
+                }`}
             >
               <Activity className="w-3 h-3" />
               {dbHealth.status.toUpperCase()}
@@ -467,16 +452,7 @@ function Settings() {
             </button>
           </div>
 
-          <div className="h-px bg-gray-100 mb-6"></div>
 
-          {/* Update Dictionary Button */}
-          <button
-            onClick={handleUpdateDictionary}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Update List of Words / Dictionary
-          </button>
         </div>
       </div>
       {showChangeLog && (

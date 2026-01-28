@@ -313,7 +313,7 @@ const ProfilePictureModal = ({
                 onClick={() => fileInputRef.current?.click()}
                 className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
               >
-                Upload from devicew
+                Upload from device
               </button>
               <button
                 onClick={startCamera}

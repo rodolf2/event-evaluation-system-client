@@ -7,7 +7,6 @@ import {
   RefreshCw,
   Trash2,
   Plus,
-  AlertTriangle,
   Check,
   Activity,
 } from "lucide-react";
@@ -31,7 +30,6 @@ function SecurityOversight() {
   const [sessions, setSessions] = useState([]);
   const [domainWhitelist, setDomainWhitelist] = useState([]);
   const [newDomain, setNewDomain] = useState("");
-  const [lockdownEnabled, setLockdownEnabled] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!token) return;
@@ -61,7 +59,6 @@ function SecurityOversight() {
 
       if (settingsData.success) {
         setDomainWhitelist(settingsData.data.domainWhitelist || []);
-        setLockdownEnabled(settingsData.data.emergencyLockdown || false);
       }
     } catch (error) {
       console.error("Error fetching security data:", error);
@@ -102,42 +99,6 @@ function SecurityOversight() {
     }
   };
 
-  const handleEmergencyLockdown = async () => {
-    // Toggle lockdown
-    const newStatus = !lockdownEnabled;
-    try {
-      const response = await fetch("/api/settings/security", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ emergencyLockdown: newStatus }),
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        setLockdownEnabled(newStatus);
-        toast(
-          newStatus
-            ? "Emergency Lockdown ACTIVATED"
-            : "Emergency Lockdown Deactivated",
-          {
-            icon: newStatus ? "🚨" : "🔓",
-            style: {
-              background: newStatus ? "#FEF2F2" : "#F0FDF4",
-              color: newStatus ? "#991B1B" : "#166534",
-            },
-          },
-        );
-      } else {
-        toast.error("Failed to update lockdown status");
-      }
-    } catch (error) {
-      console.error("Error updating lockdown:", error);
-      toast.error("An error occurred");
-    }
-  };
 
   const handeUpdateSettings = async (updates) => {
     try {
@@ -214,17 +175,6 @@ function SecurityOversight() {
           <h1 className="text-2xl font-bold text-gray-800">
             Security Oversight
           </h1>
-          <button
-            onClick={handleEmergencyLockdown}
-            className={`flex items-center gap-2 px-4 py-2 ${
-              lockdownEnabled
-                ? "bg-red-800 hover:bg-red-900 border-2 border-red-500 animate-pulse"
-                : "bg-red-600 hover:bg-red-700"
-            } text-white rounded-lg transition`}
-          >
-            <AlertTriangle className="w-4 h-4" />
-            {lockdownEnabled ? "SYSTEM LOCKDOWN ACTIVE" : "Emergency Lockdown"}
-          </button>
         </div>
       </div>
 
@@ -313,11 +263,10 @@ function SecurityOversight() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-sm">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            session.role === "Evaluator"
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${session.role === "Evaluator"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-purple-100 text-purple-700"
-                          }`}
+                            }`}
                         >
                           {session.role}
                         </span>
@@ -378,11 +327,10 @@ function SecurityOversight() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          session.role === "Evaluator"
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${session.role === "Evaluator"
                             ? "bg-blue-100 text-blue-700"
                             : "bg-purple-100 text-purple-700"
-                        }`}
+                          }`}
                       >
                         {session.role}
                       </span>
