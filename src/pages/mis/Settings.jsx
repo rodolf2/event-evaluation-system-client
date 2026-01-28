@@ -8,8 +8,6 @@ import {
   Check,
   History,
   Save,
-  Zap,
-  HardDrive,
   Activity,
 
   BookOpen,
@@ -152,15 +150,6 @@ function Settings() {
     }
   };
 
-  const handleTriggerBackup = () => {
-    // Simulated backup trigger
-    toast.success("Backup job queued successfully");
-  };
-
-  const handleOptimizeIndex = () => {
-    // Simulated optimization
-    toast.success("Index optimization started (Background)");
-  };
 
 
 
@@ -332,8 +321,8 @@ function Settings() {
             </div>
             <span
               className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${dbHealth.status === "healthy"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
                 }`}
             >
               <Activity className="w-3 h-3" />
@@ -381,23 +370,6 @@ function Settings() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={handleTriggerBackup}
-              className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-            >
-              <HardDrive className="w-4 h-4" />
-              Trigger Backup
-            </button>
-            <button
-              onClick={handleOptimizeIndex}
-              className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-            >
-              <Zap className="w-4 h-4" />
-              Optimize Index
-            </button>
-          </div>
         </div>
 
         {/* NLP & Sentiment Engine */}
