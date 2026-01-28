@@ -134,18 +134,32 @@ function TourStep({
         // Mobile Strategy: Button sheet style or centered
         // We'll place it at the bottom area generally, or below the header if header step.
 
-        if (position === 'header') {
+        if (position === 'header' || position === 'sidebar') {
+          // Add extra offset for sidebar to move it down further
+          const verticalOffset = position === 'sidebar' ? 16 : 0;
+
           tooltipStyle = {
             position: 'fixed',
-            top: `${rect.bottom + gap}px`,
+            top: `${rect.bottom + gap + verticalOffset}px`,
             left: '50%',
             transform: 'translateX(-50%)',
             width: 'calc(100% - 32px)',
             maxWidth: '24rem',
           };
+
+          // Calculate arrow position
+          let arrowLeft = '50%';
+          if (position === 'sidebar') {
+            // Point to the hamburger icon
+            // Tooltip starts at 16px from left edge
+            const targetCenter = rect.left + (rect.width / 2);
+            const relativeLeft = targetCenter - 16;
+            arrowLeft = `${relativeLeft}px`;
+          }
+
           arrowStyle = {
             top: '-8px',
-            left: '50%',
+            left: arrowLeft,
             transform: 'translateX(-50%)',
             borderLeft: '8px solid transparent',
             borderRight: '8px solid transparent',
@@ -171,16 +185,25 @@ function TourStep({
       } else {
         // Desktop Strategy
         if (position === 'sidebar') {
-          // Place to the RIGHT and CENTER vertically
+          // Place to the RIGHT. Align TOP to avoid going off-screen if element is high up
+          // Calculate top: rect.top, maybe shift down slightly if needed.
+          // Don't use translateY(-50%) as it risks negative top.
+
           tooltipStyle = {
             position: 'absolute',
-            top: `${rect.top + window.scrollY + (rect.height / 2)}px`,
+            top: `${rect.top + window.scrollY}px`,
             left: `${rect.right + window.scrollX + gap}px`,
-            transform: 'translateY(-50%)',
+            // transform: 'translateY(-50%)', // Removed to avoid clipping
           };
+
+          // Arrow pointing deep left (vertical center of target? or align with top?)
+          // Target height is usually small (icon). Tooltip is large.
+          // Arrow should be near the top of the tooltip to point to the icon.
+          const iconCenterOffset = rect.height / 2;
+
           arrowStyle = {
             left: '-8px',
-            top: '50%',
+            top: '32px',
             transform: 'translateY(-50%)',
             borderTop: '8px solid transparent',
             borderBottom: '8px solid transparent',
@@ -218,8 +241,7 @@ function TourStep({
 
         } else {
           // Recent Activity / Content
-          // Try RIGHT, if not fit, try LEFT, if not fit try BOTTOM.
-          // Simplified: Place to the right if space, else left.
+          // Priority: RIGHT -> BOTTOM (Right Aligned)
 
           if (rect.right + tooltipWidth + gap < window.innerWidth) {
             // Fits on Right
@@ -234,22 +256,28 @@ function TourStep({
               borderTop: '8px solid transparent',
               borderBottom: '8px solid transparent',
               borderRight: '8px solid white',
+              position: 'absolute'
             };
           } else {
-            // Place on Left?
-            // Or float center?
-            // Let's float centered on the element if large, or center screen.
+            // Fallback: Bottom, Right Aligned
+            const alignRightLeft = rect.right + window.scrollX - tooltipWidth;
+            // Ensure positive left
+            const finalLeft = Math.max(10, alignRightLeft);
+
             tooltipStyle = {
               position: 'absolute',
-              top: `${rect.top + window.scrollY}px`,
-              left: `${rect.left + window.scrollX - tooltipWidth - gap}px`,
+              top: `${rect.top + window.scrollY - gap}px`,
+              left: `${finalLeft}px`,
+              transform: 'translateY(-100%)',
             };
+
+            // Arrow on bottom, near right side
             arrowStyle = {
-              right: '-8px',
-              top: '24px',
-              borderTop: '8px solid transparent',
-              borderBottom: '8px solid transparent',
-              borderLeft: '8px solid white',
+              bottom: '-8px',
+              right: '24px',
+              borderLeft: '8px solid transparent',
+              borderRight: '8px solid transparent',
+              borderTop: '8px solid white',
               position: 'absolute'
             };
           }
