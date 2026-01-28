@@ -209,9 +209,11 @@ const ReportSharingPage = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      // Role-based filtering: Club Officers cannot see senior management
+      // Role-based filtering: Club Officers (PBOOs) 
       if (user?.role === "club-officer") {
-        if (u.role === "senior-management" || u.role === "school-admin") {
+        // Restricted to Club Advisers, PSAS, and Guests
+        const allowedRoles = ["club-adviser", "psas", "evaluator", "guest-speaker"];
+        if (!allowedRoles.includes(u.role)) {
           return false;
         }
       }
@@ -487,11 +489,10 @@ const ReportSharingPage = () => {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        currentPage === pageNum
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${currentPage === pageNum
                           ? "bg-blue-800 text-white"
                           : "bg-gray-200 text-blue-800 hover:bg-gray-300"
-                      }`}
+                        }`}
                     >
                       {pageNum}
                     </button>

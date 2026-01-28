@@ -13,6 +13,10 @@ import {
   X,
   UserCheck,
   CircleUser,
+  Shield,
+  BarChart3,
+  FileText,
+  Share2,
 } from "lucide-react";
 import {
   SkeletonTable,
@@ -27,7 +31,7 @@ const ROLE_COLORS = {
   "club-officer": {
     bg: "bg-orange-100",
     text: "text-orange-700",
-    label: "PSCO",
+    label: "PBOO",
   },
   psas: { bg: "bg-purple-100", text: "text-purple-700", label: "PSAS Staff" },
   mis: { bg: "bg-red-100", text: "text-red-700", label: "MIS Staff" },
@@ -36,16 +40,24 @@ const ROLE_COLORS = {
     text: "text-green-700",
     label: "Senior Mgmt",
   },
+  "club-adviser": {
+    bg: "bg-teal-100",
+    text: "text-teal-700",
+    label: "Club Adviser",
+  },
 };
+
+// Filter options
 
 // Filter options
 const FILTER_OPTIONS = [
   { id: "all", label: "All Users" },
   { id: "student", label: "Students" },
-  { id: "club-officer", label: "PSCOs" },
-  { id: "psas", label: "Staff" },
+  { id: "club-officer", label: "PBOOs" },
+  { id: "psas", label: "PSAS Staff" },
   { id: "mis", label: "MIS Staff" },
   { id: "senior-management", label: "Senior Mgmt" },
+  { id: "club-adviser", label: "Club Adviser" },
 ];
 
 const PROGRAMS = [
@@ -63,7 +75,7 @@ function UserRoles() {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
-    activePSCOs: 0,
+    activePBOOs: 0,
     facultyStaff: 0,
     suspended: 0,
     newUsersWeek: 0,
@@ -76,13 +88,13 @@ function UserRoles() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedProgram, setSelectedProgram] = useState(PROGRAMS[0]);
-  const [confirmAction, setConfirmAction] = useState(null); // 'ELEVATE', 'REMOVE_PSCO', 'DISABLE'
+  const [confirmAction, setConfirmAction] = useState(null); // 'ELEVATE', 'REMOVE_PBOO', 'DISABLE', 'ELEVATE_HEAD', 'REMOVE_HEAD'
 
-  const { token } = useAuth();
+  const { token, user: currentUser, refreshUserData } = useAuth();
 
   const updateStats = useCallback((userList) => {
     const totalUsers = userList.length;
-    const activePSCOs = userList.filter(
+    const activePBOOs = userList.filter(
       (u) => u.role === "club-officer" && u.isActive,
     ).length;
     const facultyStaff = userList.filter(
@@ -97,7 +109,7 @@ function UserRoles() {
 
     setStats({
       totalUsers,
-      activePSCOs,
+      activePBOOs,
       facultyStaff,
       suspended,
       newUsersWeek,
@@ -168,9 +180,9 @@ function UserRoles() {
     setElevationModalOpen(true);
   };
 
-  const handleRemovePSCOClick = (user) => {
+  const handleRemovePBOOClick = (user) => {
     setSelectedUser(user);
-    setConfirmAction("REMOVE_PSCO");
+    setConfirmAction("REMOVE_PBOO");
     setConfirmModalOpen(true);
   };
 
@@ -185,6 +197,19 @@ function UserRoles() {
     setConfirmAction("ENABLE");
     setConfirmModalOpen(true);
   };
+
+  const handleElevateHeadClick = (user) => {
+    setSelectedUser(user);
+    setConfirmAction("ELEVATE_HEAD");
+    setConfirmModalOpen(true);
+  };
+
+  const handleRemoveHeadClick = (user) => {
+    setSelectedUser(user);
+    setConfirmAction("REMOVE_HEAD");
+    setConfirmModalOpen(true);
+  };
+
 
   const handleElevationSubmit = () => {
     setElevationModalOpen(false);
@@ -204,14 +229,36 @@ function UserRoles() {
         program: selectedProgram,
         elevationDate: new Date().toISOString(),
       };
-      successMessage = `Elevated ${selectedUser.name} to PSCO (${selectedProgram})`;
-    } else if (confirmAction === "REMOVE_PSCO") {
+      successMessage = `Elevated ${selectedUser.name} to PBOO (${selectedProgram})`;
+    } else if (confirmAction === "REMOVE_PBOO") {
       payload = {
         role: "student",
         program: null,
         elevationDate: null,
       };
-      successMessage = `Removed PSCO role from ${selectedUser.name}`;
+      successMessage = `Removed PBOO role from ${selectedUser.name}`;
+    } else if (confirmAction === "ELEVATE_HEAD") {
+      const isMis = selectedUser.role === "mis";
+      payload = {
+        position: isMis ? "MIS Head" : "PSAS Head",
+        permissions: {
+          canViewReports: true,
+          canViewAnalytics: !isMis, // PSAS Head gets analytics too
+        },
+        elevationDate: new Date().toISOString(),
+      };
+      successMessage = `Elevated ${selectedUser.name} to ${payload.position}`;
+    } else if (confirmAction === "REMOVE_HEAD") {
+      const isMis = selectedUser.role === "mis";
+      payload = {
+        position: isMis ? "MIS Staff" : "PSAS Staff",
+        permissions: {
+          canViewReports: false,
+          canViewAnalytics: false,
+        },
+        elevationDate: null,
+      };
+      successMessage = `Removed Head status from ${selectedUser.name}`;
     } else if (confirmAction === "DISABLE") {
       payload = {
         isActive: false,
@@ -239,6 +286,11 @@ function UserRoles() {
       if (data.success) {
         toast.success(successMessage);
         fetchUsers(); // Refresh the list
+
+        // If we updated our own account, refresh the auth context
+        if (selectedUser._id === currentUser?._id) {
+          await refreshUserData();
+        }
       } else {
         toast.error(data.message || "Failed to update user");
       }
@@ -269,6 +321,11 @@ function UserRoles() {
     const roleConfig = ROLE_COLORS[user.role] || ROLE_COLORS.student;
     let label = roleConfig.label;
 
+    // Show "Head" in badge if applicable
+    if (user.position === "MIS Head" || user.position === "PSAS Head") {
+      label = user.position;
+    }
+
     return (
       <span
         className={`px-3 py-1 rounded-md text-xs font-medium ${roleConfig.bg} ${roleConfig.text}`}
@@ -279,10 +336,10 @@ function UserRoles() {
   };
 
   const getRemarks = (user) => {
-    if (user.elevationDate && user.role === "club-officer") {
+    if (user.elevationDate && (user.role === "club-officer" || user.position?.includes("Head"))) {
       return (
         <span className="text-sm text-gray-500 italic">
-          Role is elevated on{" "}
+          {user.position?.includes("Head") ? "Promoted" : "Elevated"} on{" "}
           {dayjs(user.elevationDate).format("MMMM DD, YYYY")}
         </span>
       );
@@ -318,7 +375,7 @@ function UserRoles() {
               User & Role Management
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage system access, elevate PSCO roles, and synchronize
+              Manage system access, elevate PBOO roles, and synchronize
               accounts.
             </p>
           </div>
@@ -344,12 +401,12 @@ function UserRoles() {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-sm">Active PSCOs</span>
+            <span className="text-gray-600 text-sm">Active PBOOs</span>
             <Clock className="w-5 h-5 text-gray-400" />
           </div>
           <div className="mt-2">
             <span className="text-3xl font-bold text-gray-800">
-              {stats.activePSCOs}
+              {stats.activePBOOs}
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">Current Term</p>
@@ -455,16 +512,16 @@ function UserRoles() {
                       <button
                         onClick={() => handleElevateClick(user)}
                         className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
-                        title="Elevate to PSCO"
+                        title="Elevate to PBOO"
                       >
                         <ArrowUpCircle className="w-5 h-5" />
                       </button>
                     )}
                     {user.role === "club-officer" && user.isActive && (
                       <button
-                        onClick={() => handleRemovePSCOClick(user)}
+                        onClick={() => handleRemovePBOOClick(user)}
                         className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
-                        title="Remove PSCO Role"
+                        title="Remove PBOO Role"
                       >
                         <ArrowDownCircle className="w-5 h-5" />
                       </button>
@@ -491,6 +548,28 @@ function UserRoles() {
                           <UserCheck className="w-5 h-5" />
                         </button>
                       )}
+                    {(user.role === "psas" || user.role === "mis") && user.isActive && (
+                      <>
+                        {user.position !== "MIS Head" &&
+                          user.position !== "PSAS Head" ? (
+                          <button
+                            onClick={() => handleElevateHeadClick(user)}
+                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                            title={`Elevate to ${user.role === "mis" ? "MIS" : "PSAS"} Head`}
+                          >
+                            <ArrowUpCircle className="w-5 h-5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRemoveHeadClick(user)}
+                            className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
+                            title="Remove Head Status"
+                          >
+                            <ArrowDownCircle className="w-5 h-5" />
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -602,7 +681,7 @@ function UserRoles() {
                           <button
                             onClick={() => handleElevateClick(user)}
                             className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
-                            title="Elevate to PSCO"
+                            title="Elevate to PBOO"
                           >
                             <ArrowUpCircle className="w-5 h-5" />
                           </button>
@@ -610,9 +689,9 @@ function UserRoles() {
                       )}
                       {user.role === "club-officer" && user.isActive && (
                         <button
-                          onClick={() => handleRemovePSCOClick(user)}
+                          onClick={() => handleRemovePBOOClick(user)}
                           className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
-                          title="Remove PSCO Role"
+                          title="Remove PBOO Role"
                         >
                           <ArrowDownCircle className="w-5 h-5" />
                         </button>
@@ -623,7 +702,7 @@ function UserRoles() {
                           <button
                             onClick={() => handleDisableClick(user)}
                             className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                            title="Remove from User Table (Disable Access)"
+                            title="Disable Access"
                           >
                             <Ban className="w-5 h-5" />
                           </button>
@@ -639,10 +718,29 @@ function UserRoles() {
                             <UserCheck className="w-5 h-5" />
                           </button>
                         )}
-                      {user.role !== "student" &&
-                        user.role !== "club-officer" && (
-                          <div className="text-gray-400 text-xs">-</div>
-                        )}
+                      {(user.role === "mis" || user.role === "psas") && (
+                        <>
+                          {user.position !== "MIS Head" &&
+                            user.position !== "PSAS Head" ? (
+                            <button
+                              onClick={() => handleElevateHeadClick(user)}
+                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                              title={`Elevate to ${user.role === "mis" ? "MIS" : "PSAS"
+                                } Head`}
+                            >
+                              <ArrowUpCircle className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleRemoveHeadClick(user)}
+                              className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
+                              title="Remove Head Status"
+                            >
+                              <ArrowDownCircle className="w-5 h-5" />
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -650,6 +748,7 @@ function UserRoles() {
             </tbody>
           </table>
         </div>
+
 
         {/* Empty state */}
         {filteredUsers.length === 0 && (
@@ -677,7 +776,7 @@ function UserRoles() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
             <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-white">
-                Elevate to PSCO
+                Elevate to PBOO
               </h3>
               <button
                 onClick={() => setChoiceModalOpen(false)}
@@ -735,7 +834,7 @@ function UserRoles() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
             <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-white">
-                Elevate to PSCO
+                Elevate to PBOO
               </h3>
               <button
                 onClick={() => setElevationModalOpen(false)}
@@ -804,25 +903,32 @@ function UserRoles() {
                 {confirmAction === "ELEVATE" && (
                   <ArrowUpCircle className="w-8 h-8" />
                 )}
-                {confirmAction === "REMOVE_PSCO" && (
+                {confirmAction === "REMOVE_PBOO" && (
                   <ArrowDownCircle className="w-8 h-8" />
                 )}
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 {confirmAction === "ELEVATE" && "Confirm Elevation"}
-                {confirmAction === "REMOVE_PSCO" && "Remove PSCO Role?"}
+                {confirmAction === "ELEVATE_HEAD" && "Elevate to Head?"}
+                {confirmAction === "REMOVE_HEAD" && "Remove Head Status?"}
+                {confirmAction === "REMOVE_PBOO" && "Remove PBOO Role?"}
                 {confirmAction === "DISABLE" && "Disable User Access?"}
                 {confirmAction === "ENABLE" && "Reactivate User?"}
               </h3>
 
               <p className="text-gray-600 mb-6">
                 {confirmAction === "ELEVATE" &&
-                  `Are you sure you want to elevate ${selectedUser?.name} to PSCO (${selectedChoice === "Executive"
+                  `Are you sure you want to elevate ${selectedUser?.name} to PBOO (${selectedChoice === "Executive"
                     ? "Presidents, VPs, and Secretaries"
                     : "Other Officers"
                   }) for ${selectedProgram}?`}
-                {confirmAction === "REMOVE_PSCO" &&
+                {confirmAction === "ELEVATE_HEAD" &&
+                  `This will elevate ${selectedUser?.name} to ${selectedUser?.role === "mis" ? "MIS" : "PSAS"
+                  } Head, granting access to full reports.`}
+                {confirmAction === "REMOVE_HEAD" &&
+                  `This will remove Head status from ${selectedUser?.name} and revert their permissions.`}
+                {confirmAction === "REMOVE_PBOO" &&
                   `This will revert ${selectedUser?.name} to a regular Student role.`}
                 {confirmAction === "DISABLE" &&
                   `This will disable access for ${selectedUser?.name}. They won't be able to log in.`}

@@ -25,8 +25,8 @@ export const getSidebarConfig = (user) => {
     { icon: CertificateIcon, label: "Certificate", path: "/psas/certificates" },
   ];
 
-  // Add Analytics if permission is granted (default to true if not set)
-  if (user?.permissions?.canViewAnalytics !== false) {
+  // Add Analytics if permission is granted (explicitly true for PSAS Head)
+  if (user?.role === "psas" && user?.position === "PSAS Head") {
     menuItems.push({
       icon: AnalyticsIcon,
       label: "Event Analytics",
@@ -34,8 +34,8 @@ export const getSidebarConfig = (user) => {
     });
   }
 
-  // Add Reports if permission is granted (default to true if not set)
-  if (user?.permissions?.canViewReports !== false) {
+  // Add Reports if permission is granted (explicitly true for PSAS Head)
+  if (user?.role === "psas" && user?.position === "PSAS Head") {
     menuItems.push({
       icon: ReportsIcon,
       label: "Report",

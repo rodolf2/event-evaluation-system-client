@@ -185,7 +185,7 @@ function AuditLogs() {
     const actionMap = {
       LOGIN: { title: "User Login", desc: "Authenticated via SSO" },
       LOGOUT: { title: "User Logout", desc: "Session ended" },
-      ROLE_CHANGE: { title: "Role Elevated", desc: "Student → PSCO" },
+      ROLE_CHANGE: { title: "Role Elevated", desc: "Student → PBOO" },
       SSO_SYNC: { title: "SSO Sync", desc: "Bulk update" },
       FAILED_AUTH: { title: "Failed Auth", desc: "Authentication failed" },
       REPORT_GENERATED: {

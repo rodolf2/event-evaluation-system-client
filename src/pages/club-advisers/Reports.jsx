@@ -8,16 +8,21 @@ import {
   SkeletonText,
 } from "../../components/shared/SkeletonLoader";
 
-const ReportCard = ({ report, onSelect }) => {
+const ReportCard = ({ report, onSelect, token }) => {
+  const getThumbnailUrl = () => {
+    if (!report.thumbnail) {
+      return "https://placehold.co/800x450/1e3a8a/ffffff?text=Generating+Thumbnail...";
+    }
+    const separator = report.thumbnail.includes("?") ? "&" : "?";
+    return `${report.thumbnail}${separator}token=${token}`;
+  };
+
   return (
     <div className="bg-[#EEEEF0] hover:bg-[#DEDFE0] rounded-lg shadow-sm overflow-hidden p-4 transition-colors duration-200">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden group relative">
         <div className="relative">
           <img
-            src={
-              report.thumbnail ||
-              "https://placehold.co/800x450/1e3a8a/ffffff?text=Generating+Thumbnail..."
-            }
+            src={getThumbnailUrl()}
             alt={report.title}
             className="w-full h-48 object-cover"
             onError={(e) => {
@@ -219,6 +224,7 @@ const Reports = () => {
                     key={`${report.id}-${index}`}
                     report={report}
                     onSelect={handleSelectReport}
+                    token={token}
                   />
                 ))}
               </div>

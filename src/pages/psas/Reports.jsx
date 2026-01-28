@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, Share2, Send, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Share2, Send, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
 import GuestShareModal from "../../components/psas/GuestShareModal";
@@ -67,7 +67,7 @@ const Reports = () => {
   const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
@@ -92,6 +92,9 @@ const Reports = () => {
     total,
     pages: totalPages,
   };
+
+  // Check if user has permission to view reports (must be PSAS Head)
+  const hasPermission = user?.role === "psas" && user?.position === "PSAS Head";
 
   const fetchReports = useCallback(
     async (searchParams = {}) => {
@@ -188,9 +191,8 @@ const Reports = () => {
         const dynamicReport = {
           id: formId,
           formId: formId,
-          title: `Event Analytics Report - ${
-            result.data.formInfo?.title || result.data.formTitle || "Form"
-          }`,
+          title: `Event Analytics Report - ${result.data.formInfo?.title || result.data.formTitle || "Form"
+            }`,
           eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
           lastUpdated: new Date().toISOString(),
           analyticsData: result.data,
@@ -309,6 +311,24 @@ const Reports = () => {
     );
   }
 
+  if (!hasPermission) {
+    return (
+      <PSASLayout>
+        <div className="p-8 bg-gray-100 min-h-full flex items-center justify-center">
+          <div className="text-center">
+            <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">
+              Access Restricted
+            </h2>
+            <p className="text-gray-500">
+              You do not have permission to view event reports.
+            </p>
+          </div>
+        </div>
+      </PSASLayout>
+    );
+  }
+
   return (
     <PSASLayout>
       {view === "list" && (
@@ -365,11 +385,10 @@ const Reports = () => {
                   <button
                     onClick={() => setPage(page - 1)}
                     disabled={page === 1}
-                    className={`p-2 rounded-full transition-colors ${
-                      page === 1
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                    className={`p-2 rounded-full transition-colors ${page === 1
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                      }`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -377,11 +396,10 @@ const Reports = () => {
                   <button
                     onClick={() => setPage(page + 1)}
                     disabled={page === totalPages}
-                    className={`p-2 rounded-full transition-colors ${
-                      page === totalPages
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                    className={`p-2 rounded-full transition-colors ${page === totalPages
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                      }`}
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -413,7 +431,7 @@ const Reports = () => {
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
-                          300000
+                        300000
                       } // 5 minutes
                     />
                   ))}

@@ -18,7 +18,6 @@ export const headerConfig = {
     "/mis/security-oversight": "Security Oversight",
     "/mis/notifications": "Notifications",
     "/mis/reports": "Shared Reports",
-    "/mis/permissions": "Page Permissions",
     "/profile": "My Account",
   },
   defaultTitle: "MIS Dashboard",
@@ -49,20 +48,16 @@ export const getSidebarConfig = (user) => ({
       label: "Security Oversight",
       path: "/mis/security-oversight",
     },
-    {
-      iconComponent: Shield,
-      label: "Permissions",
-      path: "/mis/permissions",
-    },
-    // Conditionally add Reports if user has canViewSharedReports permission (default to true if not set)
-    ...(user?.permissions?.canViewSharedReports !== false
+    // Conditionally add Reports if user is elevated to MIS Head
+    // We check both role and explicit position to ensure correct access
+    ...(user?.role === "mis" && user?.position === "MIS Head"
       ? [
-          {
-            iconComponent: FileBarChart,
-            label: "Shared Reports",
-            path: "/mis/reports",
-          },
-        ]
+        {
+          iconComponent: FileBarChart,
+          label: "Shared Reports",
+          path: "/mis/reports",
+        },
+      ]
       : []),
   ],
 });

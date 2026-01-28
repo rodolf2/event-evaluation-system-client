@@ -119,8 +119,8 @@ const MISSharedReports = () => {
     pages: totalPages,
   };
 
-  // Check if user has permission to view reports
-  const hasPermission = user?.permissions?.canViewReports;
+  // Check if user has permission to view reports (must be MIS Head)
+  const hasPermission = user?.role === "mis" && user?.position === "MIS Head";
 
   const fetchReports = useCallback(async () => {
     if (!hasPermission) {
@@ -347,11 +347,10 @@ const MISSharedReports = () => {
                   <button
                     onClick={() => setPage(page - 1)}
                     disabled={page === 1}
-                    className={`p-2 rounded-full transition-colors ${
-                      page === 1
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                    className={`p-2 rounded-full transition-colors ${page === 1
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                      }`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -359,11 +358,10 @@ const MISSharedReports = () => {
                   <button
                     onClick={() => setPage(page + 1)}
                     disabled={page === totalPages}
-                    className={`p-2 rounded-full transition-colors ${
-                      page === totalPages
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                    className={`p-2 rounded-full transition-colors ${page === totalPages
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                      }`}
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-5 h-5" />

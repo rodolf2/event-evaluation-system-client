@@ -48,7 +48,6 @@ import ClubAdviserLayout from "./components/club-advisers/ClubAdviserLayout";
 import MisLayout from "./components/mis/MisLayout";
 import Profile from "./pages/Profile";
 import Settings from "./pages/mis/Settings";
-import Permissions from "./pages/mis/Permissions";
 import MISSharedReports from "./pages/mis/MISSharedReports";
 import LexiconManagement from "./pages/mis/LexiconManagement";
 import AuthCallback from "./pages/AuthCallback";
@@ -755,19 +754,6 @@ function App() {
                 isAuthorized("mis") ? (
                   <MisLayout>
                     <UserRoles />
-                  </MisLayout>
-                ) : (
-                  <Navigate to={getHomeRoute()} />
-                )
-              }
-            />
-
-            <Route
-              path="/mis/permissions"
-              element={
-                isAuthorized("mis") ? (
-                  <MisLayout>
-                    <Permissions />
                   </MisLayout>
                 ) : (
                   <Navigate to={getHomeRoute()} />

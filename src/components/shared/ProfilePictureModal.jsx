@@ -203,10 +203,16 @@ const ProfilePictureModal = ({
     // Draw image with transforms
     // Translate to center of canvas
     ctx.translate(size / 2, size / 2);
-    // Apply crop offset (scaled)
+    // Apply crop offset (scaled from visual to output size)
     ctx.translate(crop.x * scaleFactor, crop.y * scaleFactor);
-    // Apply zoom
-    ctx.scale(zoom, zoom);
+
+    // Calculate the scale to fit the image in the visual container (280px)
+    // We used min(280/w, 280/h) for 'contain' behavior, or max for 'cover'
+    // The current CSS uses maxWidth/maxHeight 100% which is 'contain'
+    const initialScale = Math.min(visualSize / img.width, visualSize / img.height);
+    const finalScale = initialScale * scaleFactor * zoom;
+
+    ctx.scale(finalScale, finalScale);
     // Draw image centered
     ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
@@ -440,6 +446,9 @@ const ProfilePictureModal = ({
                       top: "50%",
                       left: "50%",
                       position: "absolute",
+                      // Remove max-width/height and use explicit object-fit behavioral styling
+                      width: "auto",
+                      height: "auto",
                       maxWidth: "100%",
                       maxHeight: "100%",
                     }}
