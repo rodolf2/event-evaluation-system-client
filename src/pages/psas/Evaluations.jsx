@@ -304,8 +304,8 @@ const Evaluations = () => {
 
   if (loading) {
     return (
-      <PSASLayout>
-        <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
+      <PSASLayout backgroundColor="bg-white">
+        <div className="p-6 md:p-5 bg-white flex flex-col">
           {/* Header Section - Match the actual gradient layout */}
           <div className="mb-8">
             <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
@@ -462,7 +462,7 @@ const Evaluations = () => {
   return (
     <>
       {/* Always keep PSAS shell (sidebar + header) via PSASLayout */}
-      <PSASLayout>
+      <PSASLayout backgroundColor="bg-white">
         {view === "create" ? (
           <FormCreationInterface
             currentFormId={currentFormId}

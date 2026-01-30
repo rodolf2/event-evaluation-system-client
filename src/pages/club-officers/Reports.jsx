@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 import GuestShareModal from "../../components/psas/GuestShareModal";
 import QuantitativeRatings from "../reports/QuantitativeRatings";
 import QualitativeComments from "../reports/QualitativeComments";
@@ -75,6 +76,7 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
+  const socket = useSocket();
 
   // Debounce search input update
   useEffect(() => {
@@ -158,16 +160,18 @@ const Reports = () => {
     [token, searchQuery, filters, limit, page, reports.length],
   );
 
-  // Auto-refresh every 30 seconds
+  // Real-time updates via socket (replaces polling)
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (view === "list") {
+    if (socket) {
+      socket.on("report-generated", (data) => {
+        console.log("📄 Report generated via socket:", data);
         fetchReports();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [view, fetchReports]);
+      });
+      return () => {
+        socket.off("report-generated");
+      };
+    }
+  }, [socket, fetchReports]);
 
   const fetchReportById = async (formId) => {
     try {
@@ -191,9 +195,8 @@ const Reports = () => {
         const dynamicReport = {
           id: formId,
           formId: formId,
-          title: `Event Analytics Report - ${
-            result.data.formInfo?.title || result.data.formTitle || "Form"
-          }`,
+          title: `Event Analytics Report - ${result.data.formInfo?.title || result.data.formTitle || "Form"
+            }`,
           eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
           lastUpdated: new Date().toISOString(),
           analyticsData: result.data,
@@ -366,11 +369,10 @@ const Reports = () => {
                   <button
                     onClick={() => setPage(page - 1)}
                     disabled={page === 1}
-                    className={`p-2 rounded-full transition-colors ${
-                      page === 1
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                    className={`p-2 rounded-full transition-colors ${page === 1
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                      }`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -378,11 +380,10 @@ const Reports = () => {
                   <button
                     onClick={() => setPage(page + 1)}
                     disabled={page === totalPages}
-                    className={`p-2 rounded-full transition-colors ${
-                      page === totalPages
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
+                    className={`p-2 rounded-full transition-colors ${page === totalPages
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-200 text-gray-700"
+                      }`}
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -415,7 +416,7 @@ const Reports = () => {
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
-                          300000
+                        300000
                       } // 5 minutes
                     />
                   ))}

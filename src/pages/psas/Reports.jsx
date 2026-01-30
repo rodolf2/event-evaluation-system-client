@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Share2, Send, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 import GuestShareModal from "../../components/psas/GuestShareModal";
 import QuantitativeRatings from "../reports/QuantitativeRatings";
 import QualitativeComments from "../reports/QualitativeComments";
@@ -68,6 +69,7 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token, user } = useAuth();
+  const socket = useSocket();
 
   const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
@@ -158,16 +160,18 @@ const Reports = () => {
     [token, searchQuery, filters, limit, page],
   );
 
-  // Auto-refresh every 30 seconds
+  // Real-time updates via socket (replaces polling)
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (view === "list") {
+    if (socket) {
+      socket.on("report-generated", (data) => {
+        console.log("📄 Report generated via socket:", data);
         fetchReports();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [view, fetchReports]);
+      });
+      return () => {
+        socket.off("report-generated");
+      };
+    }
+  }, [socket, fetchReports]);
 
   const fetchReportById = async (formId) => {
     try {

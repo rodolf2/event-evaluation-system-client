@@ -13,6 +13,7 @@ import {
   SkeletonDashboardCard,
 } from "../../components/shared/SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 
 function Home() {
   const [reminders, setReminders] = useState([]);
@@ -25,6 +26,7 @@ function Home() {
     reports: null,
   });
   const { token, isLoading } = useAuth();
+  const socket = useSocket();
 
   const fetchThumbnails = useCallback(async () => {
     if (!token) return;
@@ -154,6 +156,20 @@ function Home() {
     setIsModalOpen(false);
     setModalPosition(null);
   };
+
+  // Setup real-time listeners
+  useEffect(() => {
+    if (socket) {
+      socket.on("reminder-updated", (data) => {
+        console.log("⏰ Real-time reminder update received:", data);
+        fetchReminders();
+      });
+
+      return () => {
+        socket.off("reminder-updated");
+      };
+    }
+  }, [socket, fetchReminders]);
 
   useEffect(() => {
     fetchReminders();

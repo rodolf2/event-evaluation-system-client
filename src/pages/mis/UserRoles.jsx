@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 import {
   Search,
   Users,
@@ -91,6 +92,8 @@ function UserRoles() {
   const [confirmAction, setConfirmAction] = useState(null); // 'ELEVATE', 'REMOVE_PBOO', 'DISABLE', 'ELEVATE_HEAD', 'REMOVE_HEAD'
 
   const { token, user: currentUser, refreshUserData } = useAuth();
+  const socket = useSocket();
+
 
   const updateStats = useCallback((userList) => {
     const totalUsers = userList.length;
@@ -143,6 +146,20 @@ function UserRoles() {
       setIsLoading(false);
     }
   }, [token, updateStats]);
+
+  // Real-time listener
+  useEffect(() => {
+    if (socket) {
+      socket.on("user-updated", (updatedUser) => {
+        console.log("👥 Real-time user update received:", updatedUser);
+        fetchUsers();
+      });
+
+      return () => {
+        socket.off("user-updated");
+      };
+    }
+  }, [socket, fetchUsers]);
 
   useEffect(() => {
     fetchUsers();

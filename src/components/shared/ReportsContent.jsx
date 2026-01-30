@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Filter } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 import QuantitativeRatings from "../../pages/reports/QuantitativeRatings";
 import QualitativeComments from "../../pages/reports/QualitativeComments";
 import PositiveComments from "../../pages/reports/PositiveComments";
@@ -62,6 +63,7 @@ const ReportsContent = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
+  const socket = useSocket();
 
   const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
@@ -134,16 +136,26 @@ const ReportsContent = () => {
     [token, searchQuery, filters, limit, page]
   );
 
-  // Auto-refresh every 30 seconds
+  // Setup real-time listeners for reports
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (view === "list") {
-        fetchReports();
-      }
-    }, 30000);
+    if (socket) {
+      socket.on("response-received", (data) => {
+        console.log("📊 Real-time response received for form:", data.formId);
+        // If we are in the list view, refresh the list
+        if (view === "list") {
+          fetchReports();
+        }
+        // If we are viewing the report for this specific form, refresh it
+        else if (selectedReport && (selectedReport.id === data.formId || selectedReport.formId === data.formId)) {
+          fetchReportById(data.formId);
+        }
+      });
 
-    return () => clearInterval(interval);
-  }, [view, fetchReports]);
+      return () => {
+        socket.off("response-received");
+      };
+    }
+  }, [socket, view, selectedReport, fetchReports]);
 
   const fetchReportById = async (formId) => {
     try {
@@ -167,9 +179,8 @@ const ReportsContent = () => {
         const dynamicReport = {
           id: formId,
           formId: formId,
-          title: `Event Analytics Report - ${
-            result.data.formInfo?.title || result.data.formTitle || "Form"
-          }`,
+          title: `Event Analytics Report - ${result.data.formInfo?.title || result.data.formTitle || "Form"
+            }`,
           eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
           lastUpdated: new Date().toISOString(),
           analyticsData: result.data,
@@ -335,7 +346,7 @@ const ReportsContent = () => {
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
-                          300000
+                        300000
                       } // 5 minutes
                     />
                   ))}

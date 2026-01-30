@@ -587,19 +587,21 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
                 {/* Search Results Dropdown */}
                 {isSearchFocused && (
                   <div className="absolute z-50 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200 p-1">
-                    <div className="max-height-[250px] overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
+                    <div className="max-h-[250px] overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
                       {filteredAndSortedForms.length > 0 ? (
                         filteredAndSortedForms.map((form) => (
                           <button
                             key={form._id}
-                            onClick={() => {
+                            onMouseDown={(e) => {
+                              // Use onMouseDown to trigger before input onBlur
+                              e.preventDefault();
                               setFormId(form._id);
                               setSearchQuery("");
                               setIsSearchFocused(false);
                             }}
                             className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors ${formId === form._id
-                                ? "bg-blue-50 text-blue-700"
-                                : "hover:bg-gray-50 text-gray-700"
+                              ? "bg-blue-50 text-blue-700"
+                              : "hover:bg-gray-50 text-gray-700"
                               }`}
                           >
                             <Calendar

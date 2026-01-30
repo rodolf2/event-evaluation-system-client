@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Filter } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 import QuantitativeRatings from "../../pages/reports/QuantitativeRatings";
 import QualitativeComments from "../../pages/reports/QualitativeComments";
 import PositiveComments from "../../pages/reports/PositiveComments";
@@ -66,6 +67,7 @@ function PsasReportsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
+  const socket = useSocket();
 
   const [view, setView] = useState("list");
   const [selectedReport, setSelectedReport] = useState(null);
@@ -138,16 +140,18 @@ function PsasReportsContent() {
     [token, searchQuery, filters, limit, page]
   );
 
-  // Auto-refresh every 30 seconds
+  // Real-time updates via socket (replaces polling)
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (view === "list") {
+    if (socket) {
+      socket.on("report-generated", (data) => {
+        console.log("📄 Report generated via socket:", data);
         fetchReports();
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [view, fetchReports]);
+      });
+      return () => {
+        socket.off("report-generated");
+      };
+    }
+  }, [socket, fetchReports]);
 
   const fetchReportById = async (formId) => {
     try {
@@ -171,9 +175,8 @@ function PsasReportsContent() {
         const dynamicReport = {
           id: formId,
           formId: formId,
-          title: `Event Analytics Report - ${
-            result.data.formInfo?.title || result.data.formTitle || "Form"
-          }`,
+          title: `Event Analytics Report - ${result.data.formInfo?.title || result.data.formTitle || "Form"
+            }`,
           eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
           lastUpdated: new Date().toISOString(),
           analyticsData: result.data,
@@ -339,7 +342,7 @@ function PsasReportsContent() {
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
-                          300000
+                        300000
                       } // 5 minutes
                     />
                   ))}

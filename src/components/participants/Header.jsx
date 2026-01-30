@@ -1,20 +1,32 @@
 import { Bell, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 const Header = ({ onMenuClick, onProfileClick }) => {
   const { user, refreshUserData } = useAuth();
+  const socket = useSocket();
   const location = useLocation();
   const profileRef = useRef(null);
 
+  // Initial data fetch
   useEffect(() => {
     refreshUserData();
-    const refreshInterval = setInterval(() => {
-      refreshUserData();
-    }, 30000);
-    return () => clearInterval(refreshInterval);
   }, [refreshUserData]);
+
+  // Real-time updates via socket (replaces polling)
+  useEffect(() => {
+    if (socket) {
+      socket.on("user-updated", () => {
+        console.log("👤 User updated via socket");
+        refreshUserData();
+      });
+      return () => {
+        socket.off("user-updated");
+      };
+    }
+  }, [socket, refreshUserData]);
 
   const getPageTitle = () => {
     const path = location.pathname;

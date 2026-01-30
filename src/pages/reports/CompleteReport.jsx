@@ -24,6 +24,9 @@ import {
 } from "recharts";
 
 const COLORS = [
+  "#3B82F6", // Blue (Positive)
+  "#9CA3AF", // Gray (Neutral)
+  "#EF4444", // Red (Negative)
   "#0088FE", // Blue
   "#00C49F", // Teal
   "#FFBB28", // Yellow
@@ -35,6 +38,41 @@ const COLORS = [
   "#96CEB4", // Sage
   "#FFEEAD", // Pale Yellow
 ];
+
+const SENTIMENT_COLORS = {
+  positive: "#3B82F6",
+  neutral: "#9CA3AF",
+  negative: "#EF4444",
+};
+
+const renderCustomizedLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}) => {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (percent < 0.05) return null;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="white"
+      textAnchor="middle"
+      dominantBaseline="central"
+      style={{ fontSize: "12px", fontWeight: "bold" }}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
 
 // Dynamic Chart Components
 const DynamicBarChart = ({ data, title, subtitle, loading = false }) => {
@@ -105,7 +143,7 @@ const DynamicPieChart = ({ data, title, subtitle, loading = false }) => {
             outerRadius={150}
             fill="#8884d8"
             dataKey="value"
-            label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+            label={renderCustomizedLabel}
             isAnimationActive={false}
           >
             {data.map((entry, index) => (
@@ -293,25 +331,25 @@ const CompleteReport = ({
 
   // Helper to get sentiment data
   const sentiment = qualitativeData?.sentimentBreakdown || {
-    positive: { percentage: 0 },
-    neutral: { percentage: 0 },
-    negative: { percentage: 0 },
+    positive: { percentage: 0, count: 0 },
+    neutral: { percentage: 0, count: 0 },
+    negative: { percentage: 0, count: 0 },
   };
   const sentimentData = [
     {
       name: "Positive",
       value: sentiment.positive?.percentage || 0,
-      color: "#3B82F6",
+      color: SENTIMENT_COLORS.positive,
     },
     {
       name: "Neutral",
       value: sentiment.neutral?.percentage || 0,
-      color: "#9CA3AF",
+      color: SENTIMENT_COLORS.neutral,
     },
     {
       name: "Negative",
       value: sentiment.negative?.percentage || 0,
-      color: "#EF4444",
+      color: SENTIMENT_COLORS.negative,
     },
   ].filter((d) => d.value > 0);
 
@@ -728,8 +766,8 @@ const CompleteReport = ({
                     {question.questionType === "scale" &&
                       question.ratingDistribution && (
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
-                          <div className="w-48 h-48">
-                            <ResponsiveContainer width="100%" height={192}>
+                          <div className="w-64 h-64">
+                            <ResponsiveContainer width="100%" height={256}>
                               <PieChart>
                                 <Pie
                                   data={question.ratingDistribution.filter(
@@ -738,15 +776,11 @@ const CompleteReport = ({
                                   cx="50%"
                                   cy="50%"
                                   innerRadius={0}
-                                  outerRadius={80}
+                                  outerRadius={100}
                                   fill="#8884d8"
                                   dataKey="count"
                                   labelLine={false}
-                                  label={({ percent }) =>
-                                    percent > 0.05
-                                      ? `${(percent * 100).toFixed(0)}%`
-                                      : ""
-                                  }
+                                  label={renderCustomizedLabel}
                                   isAnimationActive={false}
                                 >
                                   {question.ratingDistribution
@@ -806,8 +840,8 @@ const CompleteReport = ({
                       question.questionType === "short_answer") &&
                       question.sentimentBreakdown && (
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
-                          <div className="w-48 h-48">
-                            <ResponsiveContainer width="100%" height={192}>
+                          <div className="w-64 h-64">
+                            <ResponsiveContainer width="100%" height={256}>
                               <PieChart>
                                 <Pie
                                   data={[
@@ -816,46 +850,38 @@ const CompleteReport = ({
                                       value:
                                         question.sentimentBreakdown.positive
                                           ?.count || 0,
-                                      color: "#3B82F6",
+                                      color: SENTIMENT_COLORS.positive,
                                     },
                                     {
                                       name: "Neutral",
                                       value:
                                         question.sentimentBreakdown.neutral
                                           ?.count || 0,
-                                      color: "#9CA3AF",
+                                      color: SENTIMENT_COLORS.neutral,
                                     },
                                     {
                                       name: "Negative",
                                       value:
                                         question.sentimentBreakdown.negative
                                           ?.count || 0,
-                                      color: "#EF4444",
+                                      color: SENTIMENT_COLORS.negative,
                                     },
                                   ].filter((d) => d.value > 0)}
                                   cx="50%"
                                   cy="50%"
                                   innerRadius={0}
-                                  outerRadius={80}
+                                  outerRadius={100}
                                   fill="#8884d8"
                                   dataKey="value"
                                   labelLine={false}
-                                  label={({ percent }) =>
-                                    percent > 0.05
-                                      ? `${(percent * 100).toFixed(0)}%`
-                                      : ""
-                                  }
-                                  isAnimationActive={false}
+                                  label={renderCustomizedLabel}
                                 >
                                   {[
-                                    { color: "#3B82F6" },
-                                    { color: "#9CA3AF" },
-                                    { color: "#EF4444" },
-                                  ].map((entry, index) => (
-                                    <Cell
-                                      key={`cell-${index}`}
-                                      fill={entry.color}
-                                    />
+                                    { name: "Positive", value: question.sentimentBreakdown.positive?.count || 0, color: SENTIMENT_COLORS.positive },
+                                    { name: "Neutral", value: question.sentimentBreakdown.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
+                                    { name: "Negative", value: question.sentimentBreakdown.negative?.count || 0, color: SENTIMENT_COLORS.negative }
+                                  ].filter(d => d.value > 0).map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
                                   ))}
                                 </Pie>
                                 <Tooltip />
@@ -864,7 +890,12 @@ const CompleteReport = ({
                           </div>
                           <div className="space-y-2">
                             <div className="flex items-center gap-3">
-                              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{
+                                  backgroundColor: SENTIMENT_COLORS.positive,
+                                }}
+                              ></div>
                               <span className="text-sm text-gray-700">
                                 Positive:{" "}
                                 {question.sentimentBreakdown.positive?.count ||
@@ -876,7 +907,12 @@ const CompleteReport = ({
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{
+                                  backgroundColor: SENTIMENT_COLORS.neutral,
+                                }}
+                              ></div>
                               <span className="text-sm text-gray-700">
                                 Neutral:{" "}
                                 {question.sentimentBreakdown.neutral?.count ||
@@ -888,7 +924,12 @@ const CompleteReport = ({
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{
+                                  backgroundColor: SENTIMENT_COLORS.negative,
+                                }}
+                              ></div>
                               <span className="text-sm text-gray-700">
                                 Negative:{" "}
                                 {question.sentimentBreakdown.negative?.count ||
@@ -907,8 +948,8 @@ const CompleteReport = ({
                     {question.questionType === "multiple_choice" &&
                       question.optionDistribution && (
                         <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
-                          <div className="w-48 h-48">
-                            <ResponsiveContainer width="100%" height={192}>
+                          <div className="w-64 h-64">
+                            <ResponsiveContainer width="100%" height={256}>
                               <PieChart>
                                 <Pie
                                   data={question.optionDistribution.filter(
@@ -917,25 +958,31 @@ const CompleteReport = ({
                                   cx="50%"
                                   cy="50%"
                                   innerRadius={0}
-                                  outerRadius={80}
+                                  outerRadius={100}
                                   fill="#8884d8"
                                   dataKey="count"
                                   labelLine={false}
-                                  label={({ percent }) =>
-                                    percent > 0.05
-                                      ? `${(percent * 100).toFixed(0)}%`
-                                      : ""
-                                  }
+                                  label={renderCustomizedLabel}
                                   isAnimationActive={false}
                                 >
-                                  {question.optionDistribution.map(
-                                    (entry, index) => (
-                                      <Cell
-                                        key={`cell-${index}`}
-                                        fill={COLORS[index % COLORS.length]}
-                                      />
-                                    ),
-                                  )}
+                                  {question.optionDistribution
+                                    .filter((d) => d.count > 0)
+                                    .map((entry, index) => {
+                                      const originalIndex =
+                                        question.optionDistribution.findIndex(
+                                          (d) => d.name === entry.name,
+                                        );
+                                      return (
+                                        <Cell
+                                          key={`cell-${index}`}
+                                          fill={
+                                            COLORS[
+                                            originalIndex % COLORS.length
+                                            ]
+                                          }
+                                        />
+                                      );
+                                    })}
                                 </Pie>
                                 <Tooltip />
                               </PieChart>
@@ -989,13 +1036,10 @@ const CompleteReport = ({
                         cx="50%"
                         cy="50%"
                         innerRadius={0}
-                        outerRadius={100}
-                        fill="#8884d8"
                         dataKey="value"
-                        labelLine={true}
-                        label={({ percent }) =>
-                          `${(percent * 100).toFixed(0)}%`
-                        }
+                        labelLine={false}
+                        outerRadius={110}
+                        label={renderCustomizedLabel}
                         isAnimationActive={false}
                       >
                         {sentimentData.map((entry, index) => (
@@ -1030,21 +1074,33 @@ const CompleteReport = ({
 
                 <div className="space-y-6 text-sm text-gray-800 leading-relaxed">
                   <p>
-                    <span className="font-bold">
-                      {sentiment.positive?.percentage || 0}%
-                    </span>{" "}
+                    {sentiment.positive?.count > 0 ? (
+                      <>
+                        <span className="font-bold">
+                          {sentiment.positive?.percentage || 0}%
+                        </span>{" "}
+                      </>
+                    ) : null}
                     {generateSummary("positive")}
                   </p>
                   <p>
-                    <span className="font-bold">
-                      {sentiment.neutral?.percentage || 0}%
-                    </span>{" "}
+                    {sentiment.neutral?.count > 0 ? (
+                      <>
+                        <span className="font-bold">
+                          {sentiment.neutral?.percentage || 0}%
+                        </span>{" "}
+                      </>
+                    ) : null}
                     {generateSummary("neutral")}
                   </p>
                   <p>
-                    <span className="font-bold">
-                      {sentiment.negative?.percentage || 0}%
-                    </span>{" "}
+                    {sentiment.negative?.count > 0 ? (
+                      <>
+                        <span className="font-bold">
+                          {sentiment.negative?.percentage || 0}%
+                        </span>{" "}
+                      </>
+                    ) : null}
                     {generateSummary("negative")}
                   </p>
                 </div>

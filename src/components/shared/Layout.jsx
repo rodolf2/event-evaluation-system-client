@@ -20,6 +20,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
     headerConfig = {},
     sidebarConfig = {},
     profileSectionPaths = [],
+    backgroundColor = "bg-gray-100",
   } = config;
 
   const showProfileSectionOnPath = profileSectionPaths.includes(
@@ -50,7 +51,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-gray-100 relative">
+    <div className={`flex min-h-screen ${backgroundColor} relative`}>
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={toggleSidebar}
@@ -66,9 +67,8 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
       )}
 
       <main
-        className={`flex-1 p-4 sm:p-6 lg:p-8 space-y-6 transition-all duration-300 relative ${
-          isSidebarOpen ? "lg:ml-[276px]" : "lg:ml-[116px]"
-        }`}
+        className={`flex-1 p-4 sm:p-6 lg:p-8 space-y-6 transition-all duration-300 relative ${isSidebarOpen ? "lg:ml-[276px]" : "lg:ml-[116px]"
+          }`}
       >
         <Header
           sidebarOpen={isSidebarOpen}

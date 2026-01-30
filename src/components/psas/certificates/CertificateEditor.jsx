@@ -231,15 +231,41 @@ const CertificateEditor = ({
           setForceUpdate((f) => f + 1);
         };
 
-        const handleModification = () => {
+        const handleTextAutoShrink = (obj) => {
+          if (!obj || obj.type !== "textbox") return;
+          const minFontSize = 10;
+          const text = obj.text || "";
+          const isPlaceholder = text.includes("[") && text.includes("]");
+          let maxLines = 4;
+          if (isPlaceholder) maxLines = 1;
+          else if (obj.fontSize >= 40) maxLines = 2;
+
+          let shrinked = false;
+          let iterations = 0;
+          // In Fabric Textbox, _textLines is populated after wrap
+          while (obj._textLines && obj._textLines.length > maxLines && obj.fontSize > minFontSize && iterations < 50) {
+            obj.set("fontSize", obj.fontSize - 1);
+            obj.initDimensions(); // Re-calculate wrap
+            shrinked = true;
+            iterations++;
+          }
+          if (shrinked && canvas) canvas.requestRenderAll();
+        };
+
+        const handleModification = (e) => {
+          if (e && e.target) handleTextAutoShrink(e.target);
           updateSelection();
           rawPushHistory(canvas);
         };
 
         canvas.on({
           "object:modified": handleModification,
-          "object:added": handleModification,
+          "object:added": (e) => {
+            if (e.target && e.target.type === "textbox") handleTextAutoShrink(e.target);
+            handleModification();
+          },
           "object:removed": handleModification,
+          "text:changed": (e) => handleTextAutoShrink(e.target),
           "selection:created": updateSelection,
           "selection:updated": updateSelection,
           "selection:cleared": updateSelection,
@@ -518,6 +544,12 @@ const CertificateEditor = ({
 
             // Ensure all objects/backgrounds/borders are laid out on the logical canvas
             canvas.renderAll();
+
+            // Run auto-shrink for all text boxes after initial render
+            canvas.getObjects().forEach((obj) => {
+              if (obj.type === "textbox") handleTextAutoShrink(obj);
+            });
+
             // Center the full canvas (including any background/border) in the container
             centerAndFitCanvas();
             pushHistory();
@@ -658,22 +690,23 @@ const CertificateEditor = ({
     (isHeadline) => {
       const fabric = fabricRef.current;
       if (!fabric || !fabricCanvas.current) return;
+      const boxWidth = isHeadline ? 800 : 600;
       const text = new fabric.Textbox(
         isHeadline ? "Click to edit headline" : "Click to edit body text",
         {
-          left: 100,
-          top: 100,
+          left: (BASE_WIDTH - boxWidth) / 2,
+          top: isHeadline ? 180 : 350,
           fontSize: isHeadline ? 48 : 24,
           fill: "#000",
           fontFamily: "Inter, Arial",
-          width: isHeadline ? 400 : 300,
+          width: boxWidth,
           editable: true,
           textAlign: "center",
         },
       );
       addObjectToCanvas(text);
     },
-    [addObjectToCanvas],
+    [addObjectToCanvas, BASE_WIDTH],
   );
 
   const handleImageUpload = (e) => {

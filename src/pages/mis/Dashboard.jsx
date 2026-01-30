@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 
 import DashboardCard from "../../components/psas/DashboardCard";
 import CalendarWidget from "../../components/mis/CalendarWidget";
@@ -16,6 +17,7 @@ import dayjs from "dayjs";
 
 function MisDashboard() {
   const { token, isLoading } = useAuth();
+  const socket = useSocket();
   const [reminders, setReminders] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs());
@@ -36,6 +38,20 @@ function MisDashboard() {
       console.error("Error fetching reminders:", error);
     }
   }, [token]);
+
+  // Real-time listener for reminders
+  useEffect(() => {
+    if (socket) {
+      socket.on("reminder-updated", (data) => {
+        console.log("⏰ Real-time reminder update received:", data);
+        fetchReminders();
+      });
+
+      return () => {
+        socket.off("reminder-updated");
+      };
+    }
+  }, [socket, fetchReminders]);
 
   useEffect(() => {
     fetchReminders();

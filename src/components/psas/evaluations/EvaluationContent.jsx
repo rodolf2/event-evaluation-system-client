@@ -23,7 +23,7 @@ const EvaluationContent = ({
   onReopenForm,
 }) => {
   return (
-    <div className="p-6 md:p-5 bg-gray-50 flex flex-col">
+    <div className="p-6 md:p-5 bg-white flex flex-col">
       <div className="shrink-0">
         <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
         <div className="mb-7">

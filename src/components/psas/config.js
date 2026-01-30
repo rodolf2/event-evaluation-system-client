@@ -52,6 +52,7 @@ export const getSidebarConfig = (user) => {
 export const getLayoutConfig = (user) => ({
   showProfileSection: false,
   profileSectionPaths: ["/psas/home"],
+  backgroundColor: "bg-gray-100",
   headerConfig,
   sidebarConfig: getSidebarConfig(user),
 });

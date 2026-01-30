@@ -162,7 +162,7 @@ const Certificates = () => {
   // Loading skeleton
   if (loading) {
     return (
-      <Layout>
+      <Layout backgroundColor="bg-white">
         <div className="p-4 sm:p-6 md:p-8 min-h-[80vh]">
           {/* Header Section - Match CertificateGallery gradient layout */}
           <div className="shrink-0 mb-6 sm:mb-8">
@@ -255,7 +255,7 @@ const Certificates = () => {
   // Editor view
   if (view === "editor") {
     return (
-      <Layout>
+      <Layout backgroundColor="bg-white">
         <CertificateEditor
           initialData={initialData}
           selectedTemplate={selectedTemplate}
@@ -271,8 +271,8 @@ const Certificates = () => {
 
   // Gallery view
   return (
-    <Layout>
-      <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-[80vh]">
+    <Layout backgroundColor="bg-white">
+      <div className="p-4 sm:p-6 md:p-8 bg-white min-h-[80vh]">
         <CertificateGallery
           onTemplateSelect={handleTemplatePreview}
           onBlankCanvas={handleBlankCanvas}

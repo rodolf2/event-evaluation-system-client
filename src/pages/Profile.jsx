@@ -58,7 +58,7 @@ const ToggleSwitch = ({ label, enabled, setEnabled }) => (
 );
 
 function Profile() {
-  const { user, token } = useAuth();
+  const { user, token, refreshUserData } = useAuth();
   const [muteNotifications, setMuteNotifications] = useState(false);
   const [muteReminders, setMuteReminders] = useState(false);
   const [acquiredBadges, setAcquiredBadges] = useState([]);
@@ -243,8 +243,10 @@ function Profile() {
       if (data.success) {
         // Update local storage with new user data
         localStorage.setItem("user", JSON.stringify(data.data.user));
-        // Force an immediate UI update by refreshing user data
-        window.location.reload();
+        // Force an immediate UI update by refreshing user data without reload
+        await refreshUserData();
+        setIsEditingInfo(false); // Close edit mode
+        toast.success("Profile updated successfully!");
       } else {
         console.error("Failed to update profile:", data.message);
         toast.error("Failed to update profile. Please try again.");
@@ -669,7 +671,7 @@ function Profile() {
           // Let's check:
           const storedUser = JSON.parse(localStorage.getItem("user"));
           if (storedUser && storedUser.profilePicture !== user.profilePicture) {
-            window.location.reload();
+            refreshUserData();
           }
         }}
         currentImage={user.profilePicture || "/assets/users/user1.jpg"}

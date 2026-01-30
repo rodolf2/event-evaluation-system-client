@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { NotificationContext } from './NotificationContextDefinition';
 import { useAuth } from './useAuth';
+import { useSocket } from './SocketContext';
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const { token, isLoading: authLoading } = useAuth();
+  const socket = useSocket();
 
   const unreadCount = useMemo(() => {
     return notifications.filter(n => !n.read).length;
@@ -110,16 +112,31 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Fetch notifications on mount and periodically
+  // Fetch notifications on mount and setup real-time listener
   useEffect(() => {
     if (token && !authLoading) {
       fetchNotifications();
-
-      // Poll for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
     }
   }, [token, authLoading, fetchNotifications]);
+
+  // Setup real-time listeners
+  useEffect(() => {
+    if (socket) {
+      socket.on("notification-received", (newNotification) => {
+        console.log("🔔 Real-time notification received:", newNotification);
+        fetchNotifications(); // Re-fetch to get correctly transformed data and read status
+
+        // Optionally, we could manually transform and append to state for even faster UI:
+        /*
+        setNotifications(prev => [transform(newNotification), ...prev]);
+        */
+      });
+
+      return () => {
+        socket.off("notification-received");
+      };
+    }
+  }, [socket, fetchNotifications]);
 
   return (
     <NotificationContext.Provider

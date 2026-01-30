@@ -1,11 +1,13 @@
 import { Bell, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "../../api";
 
 const Header = ({ onMenuClick, onProfileClick }) => {
   const { user, token, refreshUserData } = useAuth();
+  const socket = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const profileRef = useRef(null);
@@ -35,17 +37,29 @@ const Header = ({ onMenuClick, onProfileClick }) => {
     }
   }, [token]);
 
+  // Initial data fetch
   useEffect(() => {
     refreshUserData();
     fetchUnreadCount();
-
-    const refreshInterval = setInterval(() => {
-      refreshUserData();
-      fetchUnreadCount();
-    }, 30000);
-
-    return () => clearInterval(refreshInterval);
   }, [refreshUserData, token, fetchUnreadCount]);
+
+  // Real-time updates via socket (replaces polling)
+  useEffect(() => {
+    if (socket) {
+      socket.on("user-updated", () => {
+        console.log("👤 User updated via socket");
+        refreshUserData();
+      });
+      socket.on("notification-received", () => {
+        console.log("🔔 Notification received via socket");
+        fetchUnreadCount();
+      });
+      return () => {
+        socket.off("user-updated");
+        socket.off("notification-received");
+      };
+    }
+  }, [socket, refreshUserData, fetchUnreadCount]);
 
   const getPageTitle = () => {
     const path = location.pathname;
