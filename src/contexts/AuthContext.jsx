@@ -37,10 +37,12 @@ export const AuthProvider = ({ children }) => {
     // But for now, stick to existing logic to minimize diff.
 
     try {
-      const response = await fetch("/api/auth/profile", {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+      const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include", // Important: Send cookies for cross-origin requests
       });
 
       const data = await response.json();

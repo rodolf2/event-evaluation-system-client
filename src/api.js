@@ -15,6 +15,7 @@ export const api = {
         "Content-Type": "application/json",
         ...customHeaders,
       },
+      credentials: "include", // Send cookies for cross-origin requests
     };
 
     const response = await fetch(url, config);
