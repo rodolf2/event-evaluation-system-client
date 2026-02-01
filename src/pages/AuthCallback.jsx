@@ -44,9 +44,18 @@ function AuthCallback() {
   // Wait for user data to be loaded before navigating
   useEffect(() => {
     if (tokenSaved && !isLoading && user) {
-      // Navigate to role-based home route
+      // Check if there's a stored redirection path
+      const redirectTo = localStorage.getItem("redirectTo");
+      
+      // Navigate to intended route or role-based home route
       setTimeout(() => {
-        navigate(getHomeRoute(user.role));
+        if (redirectTo) {
+          console.log("[AUTH-CALLBACK] Redirecting to stored path:", redirectTo);
+          localStorage.removeItem("redirectTo"); // Clean up
+          navigate(redirectTo);
+        } else {
+          navigate(getHomeRoute(user.role));
+        }
       }, 100);
     }
   }, [tokenSaved, isLoading, user, navigate]);

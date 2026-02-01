@@ -5,12 +5,15 @@ import "@flaticon/flaticon-uicons/css/all/all.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UIProvider } from "./contexts/UIContext";
+import { BrowserRouter as Router } from "react-router-dom";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
       <UIProvider>
-        <App />
+        <Router>
+          <App />
+        </Router>
       </UIProvider>
     </AuthProvider>
   </StrictMode>

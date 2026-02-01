@@ -222,37 +222,39 @@ const ReportActions = ({
               
               .print-header {
                 width: 100%;
-                margin-bottom: 10px;
+                margin-bottom: 15px;
               }
               
               .print-header img {
                 width: 100%;
-                max-height: 120px;
-                object-fit: contain;
+                height: 80px;
+                object-fit: cover;
+                display: block;
               }
               
               .print-title {
                 text-align: center;
-                padding: 10px 20px;
-                border-bottom: 1px solid #e5e7eb;
+                padding: 15px 30px;
+                border-bottom: 2px solid #1e3a8a;
+                margin-bottom: 15px;
               }
               
               .print-title h1 {
                 color: #1e3a8a;
-                font-size: 16pt;
+                font-size: 18pt;
                 font-weight: bold;
-                margin: 0 0 8px 0;
+                margin: 0 0 10px 0;
               }
               
               .print-title p {
                 color: #4b5563;
-                font-size: 10pt;
+                font-size: 11pt;
                 margin: 0;
-                line-height: 1.4;
+                line-height: 1.5;
               }
               
               .print-content {
-                padding: 15px 30px;
+                padding: 20px 40px;
               }
               
               .print-footer {
@@ -264,8 +266,9 @@ const ReportActions = ({
               
               .print-footer img {
                 width: 100%;
-                max-height: 50px;
+                height: 50px;
                 object-fit: cover;
+                display: block;
               }
               
               /* Hide navigation elements */
@@ -430,53 +433,29 @@ const ReportActions = ({
 
       // Header template - using the header.png image
       const headerTemplate = `
-        <div style="width: 100%; margin: 0; padding: 0;">
+        <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
           ${headerBase64
-          ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: auto; max-height: 120px; display: block; object-fit: contain; object-position: left;" />`
+          ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: 80px; display: block; object-fit: cover;" />`
           : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
         }
-          <!-- Form Title - appears below header on each page -->
-          <div style="
-            width: 100%;
-            background: white;
-            padding: 8px 32px;
-            border-bottom: 1px solid #e5e7eb;
-            font-family: 'Times New Roman', Times, serif;
-          ">
-            <div style="color: #1e3a8a; font-size: 14px; font-weight: bold; text-align: center;">
-              ${reportTitle}
-            </div>
-          </div>
-
-          <!-- Report Description - appears below title on each page -->
-          <div style="
-            width: 100%;
-            background: white;
-            padding: 8px 32px;
-            border-bottom: 1px solid #e5e7eb;
-            font-family: 'Times New Roman', Times, serif;
-          ">
-            <div style="color: #4b5563; font-size: 11px; text-align: center; line-height: 1.4;">
-              This evaluation report serves as a guide for the institution to acknowledge the impact of the said event on the welfare and enjoyment of the students at La Verdad Christian College – Apalit, Pampanga.
-            </div>
-          </div>
         </div>
       `;
 
       // Footer template - using the footer.png image with page numbers
       const footerTemplate = `
-        <div style="width: 100%; margin: 0; padding: 0; position: relative;">
+        <div style="width: 100%; margin: 0; padding: 0; position: relative; font-size: 10px;">
           ${footerBase64
-          ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: auto; display: block;" />`
-          : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
+          ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: 50px; display: block; object-fit: cover;" />`
+          : `<div style="width: 100%; height: 40px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
         }
           <div style="
             position: absolute;
-            bottom: 8px;
-            right: 20px;
-            font-size: 9px;
+            bottom: 15px;
+            right: 30px;
+            font-size: 10px;
             color: #ffffff;
-            font-family: 'Times New Roman', Times, serif;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
           ">
             Page <span class="pageNumber"></span> of <span class="totalPages"></span>
           </div>
@@ -784,17 +763,18 @@ const ReportActions = ({
                 page-break-inside: auto;
               }
 
-              /* Question blocks - keep question with chart */
+              /* Question blocks - keep question with chart but allow multiple per page */
               .question-block {
                 break-inside: avoid;
                 page-break-inside: avoid;
-                margin-bottom: 1.5rem;
+                margin-bottom: 0.75rem;
               }
 
-              /* Section pages - force new page */
+              /* Section pages - NO forced breaks, natural flow */
               .section-page {
-                page-break-before: always;
-                break-before: page;
+                page-break-before: auto;
+                break-before: auto;
+                margin-bottom: 0.5rem;
               }
               .section-page:first-child {
                 page-break-before: avoid;
@@ -814,20 +794,67 @@ const ReportActions = ({
               }
 
               /* Additional spacing improvements for print */
-              .mb-8 { margin-bottom: 1.5rem !important; }
-              .mb-6 { margin-bottom: 1rem !important; }
-              .mb-4 { margin-bottom: 0.75rem !important; }
-              .mb-2 { margin-bottom: 0.5rem !important; }
-              .mt-8 { margin-top: 1.5rem !important; }
-              .mt-6 { margin-top: 1rem !important; }
-              .mt-4 { margin-top: 0.75rem !important; }
-              .mt-2 { margin-top: 0.5rem !important; }
+              .mb-8 { margin-bottom: 0.75rem !important; }
+              .mb-6 { margin-bottom: 0.5rem !important; }
+              .mb-4 { margin-bottom: 0.4rem !important; }
+              .mb-2 { margin-bottom: 0.25rem !important; }
+              .mt-8 { margin-top: 0.75rem !important; }
+              .mt-6 { margin-top: 0.5rem !important; }
+              .mt-4 { margin-top: 0.4rem !important; }
+              .mt-2 { margin-top: 0.25rem !important; }
 
               /* Better font for print */
               body, p, li, span, div {
                 font-family: 'Times New Roman', Times, serif !important;
-                line-height: 1.5 !important;
+                line-height: 1.4 !important;
               }
+
+              /* ========================================
+                 AGGRESSIVE OVERRIDES - COMPACT LAYOUT
+                 Multiple charts per page, no forced breaks
+                 ======================================== */
+              * {
+                page-break-before: auto !important;
+                page-break-after: auto !important;
+                break-before: auto !important;
+                break-after: auto !important;
+              }
+              
+              .section-page,
+              .print-chart-container,
+              .question-block,
+              .mb-16,
+              .mb-12 {
+                page-break-before: auto !important;
+                page-break-after: auto !important;
+                page-break-inside: avoid !important;
+                break-before: auto !important;
+                break-after: auto !important;
+                margin-bottom: 10px !important;
+              }
+              
+              /* Compact chart sizing */
+              .print-chart-container,
+              .recharts-wrapper {
+                max-height: 200px !important;
+                margin-bottom: 8px !important;
+              }
+              
+              .w-64.h-64 {
+                width: 180px !important;
+                height: 180px !important;
+              }
+              
+              /* Compact spacing */
+              .space-y-12 { gap: 0.5rem !important; }
+              .gap-12 { gap: 0.75rem !important; }
+              .gap-8 { gap: 0.5rem !important; }
+              .pb-8 { padding-bottom: 0.5rem !important; }
+              .mb-16 { margin-bottom: 0.75rem !important; }
+              .mb-12 { margin-bottom: 0.5rem !important; }
+              
+              /* Grid layouts more compact */
+              .grid { gap: 0.5rem !important; }
             </style>
           </head>
           <body>

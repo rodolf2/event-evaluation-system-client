@@ -170,6 +170,11 @@ const CommentSection = ({
   const [currentPage, setCurrentPage] = React.useState(1);
   const commentsPerPage = 10;
 
+  // Reset to page 1 when comments array changes (prevents stale pagination)
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [comments?.length, type]);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -194,11 +199,16 @@ const CommentSection = ({
     );
   }
 
-  // Calculate pagination
-  const totalPages = Math.ceil(comments.length / commentsPerPage);
+  // Deduplicate comments based on comment text to prevent visual duplicates
+  const uniqueComments = comments.filter((comment, index, self) =>
+    index === self.findIndex((c) => c.comment === comment.comment)
+  );
+
+  // Calculate pagination using deduplicated comments
+  const totalPages = Math.ceil(uniqueComments.length / commentsPerPage);
   const startIndex = (currentPage - 1) * commentsPerPage;
   const endIndex = startIndex + commentsPerPage;
-  const currentComments = comments.slice(startIndex, endIndex);
+  const currentComments = uniqueComments.slice(startIndex, endIndex);
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
@@ -217,7 +227,7 @@ const CommentSection = ({
       {type !== "neutral" && (
         <div className="flex justify-between items-center mb-6">
           <p className="text-sm text-gray-600">
-            Total {title}: {comments.length} | Page {currentPage} of{" "}
+            Total {title}: {uniqueComments.length} | Page {currentPage} of{" "}
             {totalPages}
           </p>
           <div className="flex items-center gap-2">
@@ -246,12 +256,10 @@ const CommentSection = ({
       )}
 
       <div className="space-y-2 comment-section-container">
-        {(type === "neutral" ? comments : currentComments).map(
+        {(type === "neutral" ? uniqueComments : currentComments).map(
           (comment, index) => (
             <div
-              key={
-                comment.id || (type === "neutral" ? index : startIndex + index)
-              }
+              key={`${type}-${startIndex + index}-${comment.comment?.substring(0, 20) || index}`}
               className="flex gap-2 comment-item"
             >
               <span className="text-gray-600 mt-1">•</span>

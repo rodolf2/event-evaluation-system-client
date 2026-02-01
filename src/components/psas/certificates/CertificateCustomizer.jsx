@@ -20,7 +20,7 @@ const CertificateCustomizer = ({ formId, onSave, onClose }) => {
     // Signatures
     signature1Name: "Dr. Sharene T. Labung",
     signature1Title: "Chancellor / Administrator",
-    signature2Name: "Luckie Christine Villanueva",
+    signature2Name: "Luckie Kristine Villanueva",
     signature2Title: "PSAS Department Head",
 
     // Download options

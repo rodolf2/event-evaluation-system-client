@@ -104,7 +104,7 @@ export const templates = [
     id: 'skills-training-achievement',
     name: 'Skills Training Participation Certificate',
     thumbnail:
-      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='260' fill='%23EFF6FF'/%3E%3Crect x='12' y='12' width='376' height='236' fill='none' stroke='%230C4A6E' stroke-width='2'/%3E%3C/svg%3E",
+      "data:image/svg+xml,%3Csvg width='400' height='260' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='260' fill='%230F172A'/%3E%3Crect x='12' y='12' width='376' height='236' fill='none' stroke='%230EA5E9' stroke-width='2'/%3E%3C/svg%3E",
     data: skillsTrainingAchievementData,
   },
   {

@@ -132,27 +132,29 @@ const CalendarWidget = ({
             <div
               key={day}
               onClick={handleDayClick}
-              className={`relative flex items-center justify-center group ${isPast ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+              className={`relative flex flex-col items-center justify-center group ${isPast ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                 }`}
             >
               <div
-                className={`rounded-lg w-8 h-8 flex items-center justify-center text-xs
+                className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm transition-all
                   ${isStartOrEndDate
-                    ? "bg-[#1F3463] text-white font-bold"
+                    ? "bg-[#1E3A8A] text-white font-bold scale-105"
                     : inRange
-                      ? "bg-[#EBF1FF] text-gray-700"
+                      ? "bg-blue-50 text-blue-700 font-medium"
                       : isToday
-                        ? "bg-[#1F3463] text-white font-bold"
+                        ? "bg-[#1E3A8A] text-white font-bold shadow-sm"
                         : hasReminderForDay
-                          ? "bg-blue-100 text-[#1F3463]"
+                          ? "bg-blue-100 text-[#1E3A8A] font-semibold"
                           : "text-gray-700 group-hover:bg-gray-100"
                   }`}
               >
                 {day}
               </div>
-              {hasReminderForDay && (
-                <div className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-[#1F3463]" />
-              )}
+              <div className="h-1 mt-0.5 flex items-center justify-center">
+                {hasReminderForDay && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                )}
+              </div>
             </div>
           );
         })}

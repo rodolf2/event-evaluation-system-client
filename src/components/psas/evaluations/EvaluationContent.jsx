@@ -3,13 +3,14 @@ import {
   Search,
   Filter,
   MoreVertical,
-  Trash2,
   Users,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 import uploadIcon from "../../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
 import EvaluatorShareModal from "../../shared/EvaluatorShareModal";
+import ConfirmationModal from "../../shared/ConfirmationModal";
 
 const EvaluationContent = ({
   searchTerm,
@@ -19,9 +20,10 @@ const EvaluationContent = ({
   evaluationForms,
   onCreateNew,
   onShowUploadModal,
-  onDeleteForm,
   onReopenForm,
+  onCloseForm,
 }) => {
+
   return (
     <div className="p-6 md:p-5 bg-white flex flex-col">
       <div className="shrink-0">
@@ -112,8 +114,8 @@ const EvaluationContent = ({
               <RecentEvaluationCard
                 key={form.id}
                 form={form}
-                onDeleteForm={onDeleteForm}
                 onReopenForm={onReopenForm}
+                onCloseForm={onCloseForm}
               />
             ))}
           </div>
@@ -123,9 +125,13 @@ const EvaluationContent = ({
   );
 };
 
-const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
+const RecentEvaluationCard = ({ form, onReopenForm, onCloseForm }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isReopeing, setIsReopening] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [showReopenConfirm, setShowReopenConfirm] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const handleCardClick = (e) => {
     // Don't navigate if clicking on menu items
@@ -140,18 +146,34 @@ const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
 
   const handleReopen = (e) => {
     e.stopPropagation(); // Prevent card click
-    if (window.confirm(`Are you sure you want to reopen "${form.title}"?`)) {
-      onReopenForm(form.id);
-    }
+    setShowReopenConfirm(true);
     setShowMenu(false);
   };
 
-  const handleDelete = (e) => {
-    e.stopPropagation(); // Prevent card click
-    if (window.confirm(`Are you sure you want to delete "${form.title}"?`)) {
-      onDeleteForm(form.id);
+  const handleConfirmReopen = async () => {
+    setIsReopening(true);
+    try {
+      await onReopenForm(form.id);
+      setShowReopenConfirm(false);
+    } finally {
+      setIsReopening(false);
     }
+  };
+
+  const handleClose = (e) => {
+    e.stopPropagation(); // Prevent card click
+    setShowCloseConfirm(true);
     setShowMenu(false);
+  };
+
+  const handleConfirmClose = async () => {
+    setIsClosing(true);
+    try {
+      await onCloseForm(form.id);
+      setShowCloseConfirm(false);
+    } finally {
+      setIsClosing(false);
+    }
   };
 
   const toggleMenu = (e) => {
@@ -159,65 +181,84 @@ const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
     setShowMenu(!showMenu);
   };
 
+  const now = new Date();
+  const isExpired = form.eventEndDate && now > new Date(form.eventEndDate);
+  const isClosed = form.status === "closed" || (form.status === "published" && isExpired);
+
+  // Check if there are any menu options to show
+  const hasMenuOptions = (form.status === "published" && !isExpired) || isClosed;
+
   return (
     <>
       <div
-        className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col"
+        className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col relative"
         onClick={handleCardClick}
       >
+        {isClosed && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 border border-red-200 shadow-sm">
+              <Lock size={12} />
+              Closed
+            </span>
+          </div>
+        )}
         <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
           <div className="text-center mb-4 shrink-0 relative">
             <h2 className="text-2xl font-bold text-gray-800 line-clamp-2 h-16 flex items-center justify-center">
               {form.title}
             </h2>
             <p className="text-gray-500 text-sm line-clamp-2">
-              {form.description}
+              {form.description || "No description provided"}
             </p>
 
-            {/* Menu button */}
-            <div className="absolute top-0 right-0">
-              <button
-                onClick={toggleMenu}
-                className="menu-button p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-                title="Actions"
-              >
-                <MoreVertical size={20} />
-              </button>
+            {/* Menu button - only show if there are menu options */}
+            {hasMenuOptions && (
+              <div className="absolute top-0 right-0">
+                <button
+                  onClick={toggleMenu}
+                  className="menu-button p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                  title="Actions"
+                >
+                  <MoreVertical size={20} />
+                </button>
 
-              {showMenu && (
-                <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
-                  {form.status === "published" && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowShareModal(true);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                    >
-                      <Users size={16} />
-                      Share with Evaluators
-                    </button>
-                  )}
-                  {form.status === "closed" && (
-                    <button
-                      onClick={handleReopen}
-                      className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
-                    >
-                      <RotateCcw size={16} />
-                      Reopen Form
-                    </button>
-                  )}
-                  <button
-                    onClick={handleDelete}
-                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <Trash2 size={16} />
-                    Delete Form
-                  </button>
-                </div>
-              )}
-            </div>
+                {showMenu && (
+                  <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
+                    {form.status === "published" && !isExpired && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowShareModal(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                        >
+                          <Users size={16} />
+                          Share with Evaluators
+                        </button>
+                        <button
+                          onClick={handleClose}
+                          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Lock size={16} />
+                          Close Form
+                        </button>
+                      </>
+                    )}
+                    {isClosed && (
+                      <button
+                        onClick={handleReopen}
+                        className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
+                      >
+                        <RotateCcw size={16} />
+                        Reopen Form
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Fixed preview section */}
@@ -267,7 +308,9 @@ const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
         <div
           className="p-4 rounded-b-lg shrink-0"
           style={{
-            background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+            background: isClosed
+              ? "linear-gradient(-0.15deg, #4B5563 38%, #1F2937 100%)"
+              : "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
           }}
         >
           <h3 className="text-lg font-bold text-white line-clamp-1">
@@ -277,7 +320,9 @@ const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
             <div>
               <span>{form.responses} responses</span>
               <span className="mx-2">•</span>
-              <span>{form.status}</span>
+              <span>
+                {isClosed ? "Closed" : (form.status === "published" ? "Published" : "Draft")}
+              </span>
             </div>
             <span className="text-xs">{form.createdAt}</span>
           </div>
@@ -290,6 +335,31 @@ const RecentEvaluationCard = ({ form, onDeleteForm, onReopenForm }) => {
         onClose={() => setShowShareModal(false)}
         formId={form.id}
         formTitle={form.title}
+      />
+
+      {/* Confirmation Modals */}
+      <ConfirmationModal
+        isOpen={showReopenConfirm}
+        onClose={() => setShowReopenConfirm(false)}
+        onConfirm={handleConfirmReopen}
+        title="Reopen Evaluation"
+        message={`Are you sure you want to reopen "${form.title}"? It will be available for another 7 days.`}
+        confirmText="Reopen"
+        cancelText="Cancel"
+        isDestructive={false}
+        isLoading={isReopeing}
+      />
+
+      <ConfirmationModal
+        isOpen={showCloseConfirm}
+        onClose={() => setShowCloseConfirm(false)}
+        onConfirm={handleConfirmClose}
+        title="Close Evaluation"
+        message={`Are you sure you want to close "${form.title}"? New responses will no longer be accepted.`}
+        confirmText="Close Form"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isClosing}
       />
     </>
   );

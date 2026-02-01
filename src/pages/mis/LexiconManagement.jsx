@@ -19,6 +19,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import MisLayout from "../../components/mis/MisLayout";
+import ConfirmationModal from "../../components/shared/ConfirmationModal";
 
 const LexiconManagement = () => {
   const { token } = useAuth();
@@ -31,6 +32,9 @@ const LexiconManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWord, setEditingWord] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [wordToDelete, setWordToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // New word form state
   const [formData, setFormData] = useState({
@@ -127,24 +131,34 @@ const LexiconManagement = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this word?")) return;
+  const handleDelete = (id) => {
+    setWordToDelete(id);
+    setShowDeleteConfirm(true);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!wordToDelete) return;
+    
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/lexicon/${id}`, {
+      const response = await fetch(`/api/lexicon/${wordToDelete}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
       if (data.success) {
         toast.success("Word removed from lexicon");
-        setLexicon(lexicon.filter((item) => item._id !== id));
+        setLexicon(lexicon.filter((item) => item._id !== wordToDelete));
+        setShowDeleteConfirm(false);
       } else {
         toast.error(data.message || "Failed to delete");
       }
     } catch (error) {
       console.error("Error deleting lexicon item:", error);
       toast.error("An error occurred");
+    } finally {
+      setIsDeleting(false);
+      setWordToDelete(null);
     }
   };
 
@@ -488,6 +502,19 @@ const LexiconManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Word"
+        message="Are you sure you want to delete this word from the lexicon? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

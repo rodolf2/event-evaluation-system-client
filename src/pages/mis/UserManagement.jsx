@@ -249,8 +249,8 @@ function UserManagement() {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(
-          `User ${email} has been provisioned with the ${selectedRole} role.`,
+        toast.success(
+          `User ${email} has been provisioned with the ${selectedRole} role.`
         );
         setEmail("");
         setSelectedRole("student");

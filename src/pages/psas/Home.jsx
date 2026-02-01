@@ -14,6 +14,7 @@ import {
 } from "../../components/shared/SkeletonLoader";
 import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
+import { useSocket } from "../../contexts/SocketContext";
 
 function Home() {
   const [reminders, setReminders] = useState([]);
@@ -26,6 +27,7 @@ function Home() {
     reports: null,
   });
   const { token, isLoading } = useAuth();
+  const socket = useSocket();
 
   const fetchReminders = useCallback(async () => {
     if (!token) return; // Ensure token exists before fetching
@@ -108,6 +110,33 @@ function Home() {
     return () => clearTimeout(timer);
   }, [fetchReminders, fetchThumbnails]);
 
+  // WebSocket listeners for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReminderUpdate = () => {
+      console.log("🔔 Real-time reminder update received");
+      fetchReminders();
+    };
+
+    const handleDataUpdate = () => {
+      console.log("📊 Real-time data update received, refreshing thumbnails");
+      fetchThumbnails();
+    };
+
+    socket.on("reminder-updated", handleReminderUpdate);
+    socket.on("response-received", handleDataUpdate);
+    socket.on("form-updated", handleDataUpdate);
+    socket.on("form-deleted", handleDataUpdate);
+
+    return () => {
+      socket.off("reminder-updated", handleReminderUpdate);
+      socket.off("response-received", handleDataUpdate);
+      socket.off("form-updated", handleDataUpdate);
+      socket.off("form-deleted", handleDataUpdate);
+    };
+  }, [socket, fetchReminders, fetchThumbnails]);
+
   const addReminder = useCallback(
     async (reminder) => {
       try {
@@ -152,6 +181,32 @@ function Home() {
         }
       } catch (error) {
         console.error("Error deleting reminder:", error);
+      }
+    },
+    [token, fetchReminders]
+  );
+
+  const updateReminder = useCallback(
+    async (id, updateData) => {
+      try {
+        const response = await fetch(`/api/reminders/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateData),
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast.success("Reminder updated successfully!");
+          await fetchReminders();
+        } else {
+          toast.error(data.message || "Failed to update reminder");
+        }
+      } catch (error) {
+        toast.error("An error occurred while updating the reminder");
+        console.error("Error updating reminder:", error);
       }
     },
     [token, fetchReminders]
@@ -251,6 +306,9 @@ function Home() {
             isOpen={isModalOpen}
             onClose={closeModal}
             onAddReminder={addReminder}
+            onUpdateReminder={updateReminder}
+            onDeleteReminder={deleteReminder}
+            reminders={reminders}
             selectedDate={selectedDate}
             position={modalPosition}
           />

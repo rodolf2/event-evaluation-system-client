@@ -41,7 +41,6 @@
 
 /* Print Styles for Reports */
 @media print {
-
   /* Ensure background colors and images are printed */
   * {
     -webkit-print-color-adjust: exact !important;
@@ -82,8 +81,7 @@
     line-height: 1.5 !important;
     /* Improved line spacing for readability */
     color: #000 !important;
-    font-family:
-      "Times New Roman", Times, serif !important;
+    font-family: "Times New Roman", Times, serif !important;
     /* More professional font */
   }
 
@@ -308,12 +306,12 @@
     margin-bottom: 8px !important;
   }
 
-  /* Page Breaks - Improved section spacing */
+  /* Section spacing - NO forced page breaks, allow natural flow */
   .section-page {
-    page-break-before: always !important;
-    page-break-inside: avoid !important;
-    margin-top: 1.5rem !important;
-    margin-bottom: 1rem !important;
+    page-break-before: auto !important; /* Changed from always - allow multiple sections per page */
+    page-break-inside: auto !important; /* Allow breaking within if needed */
+    margin-top: 1rem !important;
+    margin-bottom: 0.75rem !important;
   }
 
   .section-page:first-child {
@@ -321,11 +319,11 @@
     margin-top: 0 !important;
   }
 
-  /* Explicitly handle breaks for chart sections */
+  /* Charts - keep individual chart together but allow multiple per page */
   .mb-16 {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    margin-bottom: 1.5rem !important;
+    margin-bottom: 1rem !important; /* Reduced spacing */
   }
 
   /* ========================================
@@ -394,14 +392,14 @@
   }
 
   /* Rating legend items - keep together */
-  .space-y-2>div {
+  .space-y-2 > div {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     margin-bottom: 0.5rem !important;
   }
 
   /* Insights section - each insight paragraph should not break */
-  .space-y-6>p {
+  .space-y-6 > p {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     margin-bottom: 0.75rem !important;

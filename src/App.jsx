@@ -1,9 +1,9 @@
 import { Toaster } from "react-hot-toast";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import "./App.css";
 import LoginPage from "./pages/LogIn";
@@ -83,9 +83,17 @@ import MaintenanceOverlay from "./components/shared/MaintenanceOverlay";
 
 function App() {
   const { user, token, isLoading, systemStatus } = useAuth();
+  const location = useLocation();
 
   const getHomeRoute = () => {
-    if (!token) return "/login";
+    if (!token) {
+      // If we're not on a public route, save the current path for redirection after login
+      const currentPath = location.pathname + location.search;
+      if (currentPath !== "/" && currentPath !== "/login" && currentPath !== "/guest-login") {
+        return `/login?redirectTo=${encodeURIComponent(currentPath)}`;
+      }
+      return "/login";
+    }
     if (!user) return "/login"; // Don't redirect during loading
 
     switch (user.role) {
@@ -154,13 +162,12 @@ function App() {
     <SocketProvider>
       <NotificationProvider>
         <OnboardingProvider>
-          <Router>
-            <Toaster position="top-center" reverseOrder={false} />
-            {token && user && <NotificationPopup />}
-            <OnboardingWrapper />
+          <Toaster position="top-center" reverseOrder={false} />
+          {token && user && <NotificationPopup />}
+          <OnboardingWrapper />
 
-            <Routes>
-              {/* Public routes */}
+          <Routes>
+            {/* Public routes */}
               <Route
                 path="/login"
                 element={token ? <Navigate to={getHomeRoute()} /> : <LoginPage />}
@@ -865,7 +872,6 @@ function App() {
               {/* Catch all route - 404 Not Found */}
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
-          </Router>
         </OnboardingProvider>
       </NotificationProvider>
     </SocketProvider>

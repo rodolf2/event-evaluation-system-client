@@ -64,17 +64,16 @@ const DashboardCard = ({ image, title, buttonText, link, icon: Icon }) => {
     <div
       className={`rounded-md mb-3 w-full h-48 bg-linear-to-br ${getGradientColor(title)} flex flex-col items-center justify-center`}
     >
-      <div className="bg-white/20 rounded-full p-4 mb-2">
+      <div className="bg-white/20 rounded-full p-4">
         <CardIcon className="w-10 h-10 text-white" />
       </div>
-      <p className="text-white text-sm font-medium opacity-90">{title}</p>
     </div>
   );
 
   return (
     <div
       onClick={handleButtonClick}
-      className="bg-white rounded-xl shadow p-4 flex flex-col items-center hover:shadow-lg cursor-pointer h-full transition-shadow duration-300"
+      className="bg-white rounded-xl shadow p-4 flex flex-col items-center hover:shadow-lg cursor-pointer h-full transition-all duration-300 border border-gray-100"
     >
       {image && !imageError ? (
         <img
@@ -86,11 +85,13 @@ const DashboardCard = ({ image, title, buttonText, link, icon: Icon }) => {
       ) : (
         renderGradientFallback()
       )}
-      <button
-        className="text-blue-600 font-medium hover:underline text-base mt-auto"
-      >
-        {buttonText}
-      </button>
+      <div className="flex-1 w-full flex items-center justify-center pt-2">
+        <button
+          className="text-blue-600 font-medium hover:underline text-base mt-auto transition-colors duration-200"
+        >
+          {buttonText}
+        </button>
+      </div>
     </div>
   );
 };

@@ -59,6 +59,7 @@ function ClubOfficerEvaluationsContent() {
             sections: form.sections || [],
             uploadedFiles: form.uploadedFiles || [],
             uploadedLinks: form.uploadedLinks || [],
+            eventEndDate: form.eventEndDate,
           }));
           setEvaluationForms(mappedForms);
         }
@@ -132,10 +133,10 @@ function ClubOfficerEvaluationsContent() {
     setShowUploadModal(true);
   };
 
-  const handleDeleteForm = async (formId) => {
+  const handleReopenForm = async (formId) => {
     try {
-      const response = await fetch(`/api/forms/${formId}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/forms/${formId}/reopen`, {
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -144,30 +145,49 @@ function ClubOfficerEvaluationsContent() {
       const data = await response.json();
 
       if (data.success) {
-        // Remove the deleted form from the local state
-        setEvaluationForms((prev) => prev.filter((form) => form.id !== formId));
-
-        // Clean up localStorage for the deleted form
-        if (localStorage.getItem("editFormId") === formId) {
-          localStorage.removeItem("editFormId");
-        }
-
-        // Clean up any form session data
-        const formSessionKey = `formSession_${formId}`;
-        const formRecipientsKey = `formRecipients_${formId}`;
-        const certificateLinkedKey = `certificateLinked_${formId}`;
-
-        localStorage.removeItem(formSessionKey);
-        localStorage.removeItem(formRecipientsKey);
-        localStorage.removeItem(certificateLinkedKey);
-
-        toast.success("Form deleted successfully");
+        // Update the form locally
+        setEvaluationForms((prev) =>
+          prev.map((form) =>
+            form.id === formId
+              ? { ...form, status: "published" }
+              : form
+          )
+        );
+        toast.success("Form reopened successfully");
       } else {
-        toast.error("Failed to delete form");
+        toast.error(data.message || "Failed to reopen form");
       }
     } catch (error) {
-      console.error("Error deleting form:", error);
-      toast.error("Failed to delete form");
+      console.error("Error reopening form:", error);
+      toast.error("An error occurred while reopening the form");
+    }
+  };
+
+  const handleCloseForm = async (formId) => {
+    try {
+      const response = await fetch(`/api/forms/${formId}/close`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the form locally
+        setEvaluationForms((prev) =>
+          prev.map((form) =>
+            form.id === formId ? { ...form, status: "closed" } : form
+          )
+        );
+        toast.success("Form closed successfully");
+      } else {
+        toast.error(data.message || "Failed to close form");
+      }
+    } catch (error) {
+      console.error("Error closing form:", error);
+      toast.error("An error occurred while closing the form");
     }
   };
 
@@ -449,7 +469,8 @@ function ClubOfficerEvaluationsContent() {
           evaluationForms={filteredAndSortedForms}
           onCreateNew={handleCreateNew}
           onShowUploadModal={handleShowUploadModal}
-          onDeleteForm={handleDeleteForm}
+          onReopenForm={handleReopenForm}
+          onCloseForm={handleCloseForm}
         />
       )}
 

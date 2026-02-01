@@ -43,6 +43,13 @@ function LoginPage() {
       );
       window.history.replaceState({}, document.title, "/login");
     }
+
+    // Capture redirectTo parameter and store it for redirection after login
+    const redirectTo = searchParams.get("redirectTo");
+    if (redirectTo) {
+      localStorage.setItem("redirectTo", redirectTo);
+      console.log("[LOGIN] Stored redirectTo path:", redirectTo);
+    }
   }, [searchParams]);
 
   const handleGoogleLogin = () => {

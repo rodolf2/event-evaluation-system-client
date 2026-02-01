@@ -212,7 +212,7 @@ const EvaluatorShareModal = ({ isOpen, onClose, formId, formTitle }) => {
             }`}
           >
             <Users className="w-4 h-4 inline mr-2" />
-            Manage Access ({existingTokens.length})
+            Access List ({existingTokens.length})
           </button>
         </div>
 

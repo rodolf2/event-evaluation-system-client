@@ -4,10 +4,12 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Trash2,
   Mail,
-  MailOpen,
+  Trash2,
+  CheckCircle,
+  Bell,
 } from "lucide-react";
+import dayjs from "dayjs";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
@@ -24,7 +26,6 @@ const NotificationItem = ({
   onClick,
 }) => {
   const handleItemClick = () => {
-    // If onClick is provided, it's for viewing details
     if (onClick) {
       onClick();
     } else {
@@ -35,13 +36,13 @@ const NotificationItem = ({
   return (
     <div
       onClick={handleItemClick}
-      className={`flex items-start sm:items-center p-3 sm:p-4 border-t border-gray-200 cursor-pointer ${
+      className={`relative flex items-start sm:items-center p-3 sm:p-4 border-t border-gray-200 cursor-pointer transition-all duration-200 ${
         isAllSelected
-          ? "bg-[#E1E8FD]"
+          ? "bg-blue-100/50 border-l-4 border-blue-600"
           : notification.read
-            ? "bg-[#FAFAFA]"
-            : "bg-white"
-      } hover:bg-gray-100 transition-colors`}
+            ? "bg-white border-l-4 border-transparent"
+            : "bg-blue-50/40 border-l-4 border-blue-500"
+      } hover:bg-gray-50`}
     >
       <input
         type="checkbox"
@@ -50,35 +51,40 @@ const NotificationItem = ({
         onClick={(e) => e.stopPropagation()}
         className="mr-3 sm:mr-4 mt-1 sm:mt-0 h-4 w-4 sm:h-5 sm:w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 shrink-0"
       />
+      
       <div className="flex-1 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
-          <span className="font-bold text-gray-800 text-sm sm:text-base truncate">
-            {notification.from}
-          </span>
-          <span className="hidden sm:inline text-gray-800"> - </span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-2 overflow-hidden">
+            {!notification.read && (
+              <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" title="Unread"></span>
+            )}
+            <span className={`text-sm sm:text-base truncate ${
+              notification.read ? "font-medium text-gray-600" : "font-bold text-gray-900"
+            }`}>
+              {notification.from}
+            </span>
+          </div>
+          <span className="hidden sm:inline text-gray-400 font-light"> | </span>
           <span
             className={`text-sm sm:text-base truncate ${
-              isSelected
-                ? "text-gray-800"
-                : notification.read
-                  ? "text-gray-700"
-                  : "font-semibold text-gray-900"
+              notification.read
+                ? "text-gray-600 font-normal"
+                : "text-gray-900 font-semibold"
             }`}
           >
             {notification.title}
           </span>
         </div>
-        <p
-          className={`text-xs sm:text-sm mt-1 line-clamp-2 ${
-            isSelected ? "text-gray-600" : "text-gray-500"
-          }`}
-        >
+        <p className={`text-xs sm:text-sm mt-1 line-clamp-1 ${
+          notification.read ? "text-gray-400 font-normal" : "text-gray-600 font-medium"
+        }`}>
           {notification.preview}
         </p>
-        <div className="sm:hidden mt-2 text-xs text-gray-500">
+        <div className="sm:hidden mt-2 text-xs text-gray-400">
           {notification.date}
         </div>
       </div>
+      
       {isSelected ? (
         <div
           className="flex items-center gap-3 sm:gap-4 ml-2 sm:ml-4 shrink-0"
@@ -87,26 +93,24 @@ const NotificationItem = ({
           <Trash2
             className={`w-4 h-4 sm:w-5 sm:h-5 ${
               actionLoading
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-500 hover:text-red-600 cursor-pointer"
+                ? "text-gray-300 cursor-not-allowed"
+                : "text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
             }`}
             onClick={!actionLoading ? onDelete : undefined}
           />
           <Mail
             className={`w-4 h-4 sm:w-5 sm:h-5 ${
               actionLoading
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-500 hover:text-blue-600 cursor-pointer"
+                ? "text-gray-300 cursor-not-allowed"
+                : "text-gray-400 hover:text-blue-500 transition-colors cursor-pointer"
             }`}
             onClick={!actionLoading ? onMarkAsRead : undefined}
           />
         </div>
       ) : (
-        <div
-          className={`hidden sm:block text-right font-medium text-sm w-28 ml-4 shrink-0 ${
-            isSelected ? "text-gray-800" : "text-gray-600"
-          }`}
-        >
+        <div className={`hidden sm:block text-right font-medium text-xs w-32 ml-4 shrink-0 ${
+          notification.read ? "text-gray-400" : "text-gray-500"
+        }`}>
           {notification.date}
         </div>
       )}
@@ -116,7 +120,8 @@ const NotificationItem = ({
 
 const NotificationDetail = ({ notification, onBack }) => {
   const [reminder, setReminder] = useState(null);
-  const [form, setForm] = useState(null);
+  const [allReminders, setAllReminders] = useState([]);
+  const [selectedDateReminders, setSelectedDateReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const { token, user } = useAuth();
   const navigate = useNavigate();
@@ -128,8 +133,18 @@ const NotificationDetail = ({ notification, onBack }) => {
     notification.relatedEntity.type === "reminder";
 
   useEffect(() => {
-    const fetchDetails = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
+        // Fetch all reminders for this user to show in calendar
+        const remindersResponse = await fetch("/api/reminders", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (remindersResponse.ok) {
+          const remindersResult = await remindersResponse.json();
+          setAllReminders(remindersResult);
+        }
+
         if (isReminderNotification) {
           const response = await fetch(
             `/api/reminders/${notification.relatedEntity.id}`,
@@ -143,6 +158,7 @@ const NotificationDetail = ({ notification, onBack }) => {
             const result = await response.json();
             if (result.success) {
               setReminder(result.data);
+              setSelectedDateReminders([result.data]);
             }
           }
         } else if (isFormNotification) {
@@ -168,7 +184,7 @@ const NotificationDetail = ({ notification, onBack }) => {
       }
     };
 
-    fetchDetails();
+    fetchData();
   }, [notification, token, isFormNotification, isReminderNotification]);
 
   if (loading) {
@@ -307,32 +323,63 @@ const NotificationDetail = ({ notification, onBack }) => {
     );
   }
 
-  // Reminder notification detail view (original)
-  const renderCalendar = (dateString) => {
-    const date = new Date(dateString);
-    const month = date.toLocaleString("default", { month: "long" });
-    const year = date.getFullYear();
-    const day = date.getDate();
+  // Helper to generate calendar days
+  const handleDateClick = (clickedDate) => {
+    const targetStr = dayjs(clickedDate).format("YYYY-MM-DD");
+    const remindersOnDate = allReminders.filter(
+      (r) => dayjs(r.date).format("YYYY-MM-DD") === targetStr
+    );
+    setSelectedDateReminders(remindersOnDate);
+    if (remindersOnDate.length > 0) {
+      setReminder(remindersOnDate[0]);
+    } else {
+      setReminder(null);
+    }
+  };
 
-    const daysInMonth = new Date(year, date.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(year, date.getMonth(), 1).getDay();
+  const renderCalendar = (dateString) => {
+    const centerpieceDate = new Date(dateString);
+    const month = centerpieceDate.toLocaleString("default", { month: "long" });
+    const year = centerpieceDate.getFullYear();
+    const centerDay = centerpieceDate.getDate();
+
+    const daysInMonth = new Date(year, centerpieceDate.getMonth() + 1, 0).getDate();
+    const firstDayOfMonth = new Date(year, centerpieceDate.getMonth(), 1).getDay();
 
     const days = [];
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(<div key={`empty-${i}`} className="h-8 w-8"></div>);
     }
     for (let i = 1; i <= daysInMonth; i++) {
-      const isSelected = i === day;
+      const currentIterDate = new Date(year, centerpieceDate.getMonth(), i);
+      const isSelected = i === centerDay;
+      const iterStr = dayjs(currentIterDate).format("YYYY-MM-DD");
+      const hasReminders = allReminders.some(
+        (r) => dayjs(r.date).format("YYYY-MM-DD") === iterStr
+      );
+
       days.push(
         <div
           key={i}
-          className={`h-8 w-8 flex items-center justify-center rounded-full text-sm ${
-            isSelected
-              ? "bg-[#1E3A8A] text-white font-bold"
-              : "text-gray-700 hover:bg-gray-100"
-          }`}
+          onClick={() => handleDateClick(currentIterDate)}
+          className="flex flex-col items-center cursor-pointer group"
         >
-          {i}
+          <div
+            className={`h-9 w-9 flex items-center justify-center rounded-xl text-sm transition-all ${
+              isSelected
+                ? "bg-[#1E3A8A] text-white font-bold"
+                : hasReminders
+                  ? "bg-blue-100 text-blue-700 font-semibold group-hover:bg-blue-200"
+                  : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            {i}
+          </div>
+          <div className="h-1.5 mt-1 flex items-center justify-center">
+            {hasReminders && (
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+            )}
+          </div>
         </div>,
       );
     }
@@ -372,7 +419,11 @@ const NotificationDetail = ({ notification, onBack }) => {
           Hi, {user?.name || "User"}!
         </h1>
         <p className="text-xl text-gray-600">
-          You have just created a notification reminder for {formattedDate}.
+          {reminder
+            ? `You have a reminder for ${formattedDate}.`
+            : selectedDateReminders.length === 0
+              ? `No reminders set for ${formattedDate}.`
+              : `You have reminders for ${formattedDate}.`}
         </p>
       </div>
 
@@ -410,38 +461,36 @@ const NotificationDetail = ({ notification, onBack }) => {
             <div className="absolute left-[-10px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-10 border-t-transparent border-r-10 border-r-[#1E3A8A] border-b-10 border-b-transparent"></div>
             <span className="text-white font-bold text-lg ml-2">Reminder</span>
           </div>
-          <div className="p-6">
-            <div className="mb-6">
-              <label className="block text-sm font-bold text-gray-900 mb-2">
-                Reminder Title:
-              </label>
-              <div className="border border-gray-300 rounded-lg p-3 text-gray-700 bg-white">
-                {reminder?.title || notification.title}
+          <div className="p-6 h-[400px] overflow-y-auto custom-scrollbar">
+            {selectedDateReminders && selectedDateReminders.length > 0 ? (
+              selectedDateReminders.map((r, idx) => (
+                <div key={r._id || idx} className={idx > 0 ? "mt-12 pt-12 border-t-2 border-dashed border-gray-100" : ""}>
+                  <div className="mb-6">
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      Reminder Title:
+                    </label>
+                    <div className="border border-gray-300 rounded-lg p-3 text-gray-700 bg-gray-50 font-semibold shadow-sm">
+                      {r.title}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      Description:
+                    </label>
+                    <div className="border border-gray-300 rounded-lg p-4 text-gray-700 bg-white min-h-[150px] shadow-inner">
+                      <p className="whitespace-pre-wrap">
+                        {r.description || "No description provided."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
+                <Bell className="w-8 h-8 mb-2 opacity-20" />
+                <p className="text-sm">Select a date with a dot to view reminders.</p>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-2">
-                Description:
-              </label>
-              <div className="border border-gray-300 rounded-lg p-4 text-gray-700 bg-white min-h-[150px]">
-                <p className="mb-4">
-                  {reminder?.description || notification.preview}
-                </p>
-                {!reminder?.description && (
-                  <>
-                    <p className="mb-2">
-                      Take note that four evaluation forms should be created:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Primary Department</li>
-                      <li>Junior High Department</li>
-                      <li>Senior High Department</li>
-                      <li>College Department</li>
-                    </ul>
-                  </>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

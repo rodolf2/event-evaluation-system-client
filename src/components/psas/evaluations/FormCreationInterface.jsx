@@ -22,6 +22,7 @@ import Question from "./Question";
 import Section from "./Section";
 import ImportCSVModal from "./ImportCSVModal";
 import SuccessScreen from "./SuccessScreen";
+import ConfirmationModal from "../../shared/ConfirmationModal";
 import CertificateCustomizer from "../certificates/CertificateCustomizer";
 import { useAuth } from "../../../contexts/useAuth";
 import { FormSessionManager } from "../../../utils/formSessionManager";
@@ -67,6 +68,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [showCertificateCustomizer, setShowCertificateCustomizer] =
     useState(false);
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
 
   // History state for Undo/Redo
   const [history, setHistory] = useState([]);
@@ -164,10 +166,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
     // For non-published forms, check for unsaved changes
     if (isEditing && hasUnsavedChanges) {
-      const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to leave without saving?"
-      );
-      if (!confirmed) return;
+      setShowBackConfirm(true);
+      return;
     }
     onBack();
   };

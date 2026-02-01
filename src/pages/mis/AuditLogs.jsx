@@ -30,6 +30,8 @@ const EVENT_TYPES = [
   { id: "auth", label: "Authentication" },
   { id: "user", label: "User Changes" },
   { id: "form", label: "Form Actions" },
+  { id: "certificate", label: "Certificate Actions" },
+  { id: "notification", label: "Notification Actions" },
   { id: "system", label: "System Events" },
   { id: "security", label: "Security Events" },
 ];
@@ -183,16 +185,48 @@ function AuditLogs() {
   // Get action display
   const getActionDisplay = (log) => {
     const actionMap = {
+      // Authentication actions
       LOGIN: { title: "User Login", desc: "Authenticated via SSO" },
+      USER_LOGIN: { title: "User Login", desc: "User authenticated" },
       LOGOUT: { title: "User Logout", desc: "Session ended" },
-      ROLE_CHANGE: { title: "Role Elevated", desc: "Student → PBOO" },
-      SSO_SYNC: { title: "SSO Sync", desc: "Bulk update" },
+      USER_LOGOUT: { title: "User Logout", desc: "Session ended" },
+      GUEST_LOGIN: { title: "Guest Login", desc: "Guest user authenticated" },
+      FAILED_LOGIN: { title: "Failed Login", desc: "Authentication failed" },
       FAILED_AUTH: { title: "Failed Auth", desc: "Authentication failed" },
-      REPORT_GENERATED: {
-        title: "Report Generated",
-        desc: "Quarterly Evaluation",
-      },
+      
+      // User CRUD actions
+      USER_CREATE: { title: "User Created", desc: "New user account created" },
+      USER_UPDATE: { title: "User Updated", desc: "User profile modified" },
+      USER_DELETE: { title: "User Deleted", desc: "User account removed" },
+      ROLE_CHANGE: { title: "Role Changed", desc: "User role updated" },
+      USER_ACTIVATED: { title: "User Activated", desc: "Account activated" },
+      USER_SUSPENDED: { title: "User Suspended", desc: "Account suspended" },
+      
+      // Form CRUD actions
+      FORM_CREATE: { title: "Form Created", desc: "New evaluation form created" },
+      FORM_UPDATE: { title: "Form Updated", desc: "Form content modified" },
+      FORM_DELETE: { title: "Form Deleted", desc: "Form removed" },
+      FORM_PUBLISH: { title: "Form Published", desc: "Form made available" },
+      
+      // Certificate CRUD actions
+      CERTIFICATE_CREATE: { title: "Certificate Generated", desc: "New certificate issued" },
+      CERTIFICATE_UPDATE: { title: "Certificate Updated", desc: "Certificate modified" },
+      CERTIFICATE_DELETE: { title: "Certificate Deleted", desc: "Certificate removed" },
+      CERTIFICATE_DOWNLOAD: { title: "Certificate Downloaded", desc: "Certificate file retrieved" },
+      
+      // Notification CRUD actions
+      NOTIFICATION_CREATE: { title: "Notification Created", desc: "New notification sent" },
+      NOTIFICATION_DELETE: { title: "Notification Deleted", desc: "Notification removed" },
+      
+      // Report actions
+      REPORT_VIEW: { title: "Report Viewed", desc: "Analytics report accessed" },
+      REPORT_GENERATE: { title: "Report Generated", desc: "Report created" },
+      REPORT_GENERATED: { title: "Report Generated", desc: "Quarterly Evaluation" },
+      
+      // System actions
+      SSO_SYNC: { title: "SSO Sync", desc: "Bulk update" },
       CONFIG_UPDATE: { title: "Config Update", desc: "Settings changed" },
+      SETTINGS_UPDATE: { title: "Settings Updated", desc: "System configuration modified" },
     };
 
     const mapped = actionMap[log.action] || {

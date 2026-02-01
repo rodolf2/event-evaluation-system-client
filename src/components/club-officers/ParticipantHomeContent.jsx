@@ -58,9 +58,10 @@ function ParticipantHomeContent() {
       const certData = await certRes.json();
       const certId = certData.success ? certData.data?.id : null;
 
-      const evalThumb = formId ? `/api/thumbnails/form-${formId}.png` : null;
+      const timestamp = new Date().getTime();
+      const evalThumb = formId ? `/api/thumbnails/form-${formId}.png?t=${timestamp}` : null;
       const certThumb = certId
-        ? `/api/thumbnails/certificate-${certId}.png`
+        ? `/api/thumbnails/certificate-${certId}.png?t=${timestamp}`
         : null;
       setThumbnailUrls({ evaluations: evalThumb, certificates: certThumb });
     } catch (err) {

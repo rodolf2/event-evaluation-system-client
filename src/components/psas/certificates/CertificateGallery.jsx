@@ -5,10 +5,10 @@ import axios from "axios";
 import { useAuth } from "../../../contexts/useAuth";
 import { templates } from "../../../templates";
 import {
-  getAllTemplates,
   getTemplatesForEvent,
   EVENT_TEMPLATE_MAPPING,
 } from "../../../templates/eventTemplateMapping";
+import ConfirmationModal from "../../shared/ConfirmationModal";
 
 const CertificateGallery = ({
   onTemplateSelect,
@@ -23,6 +23,9 @@ const CertificateGallery = ({
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   const [customTemplates, setCustomTemplates] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch custom templates
   useEffect(() => {
@@ -46,27 +49,35 @@ const CertificateGallery = ({
     fetchTemplates();
   }, [token]);
 
-  const handleDeleteTemplate = async (e, templateId) => {
+  const handleDeleteTemplate = (e, templateId) => {
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this template?")) {
-      return;
-    }
+    setTemplateToDelete(templateId);
+    setShowDeleteConfirm(true);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!templateToDelete) return;
+
+    setIsDeleting(true);
     try {
-      await axios.delete(`/api/certificates/templates/${templateId}`, {
+      await axios.delete(`/api/certificates/templates/${templateToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       // Remove from state
-      setCustomTemplates((prev) => prev.filter((t) => t.id !== templateId));
+      setCustomTemplates((prev) => prev.filter((t) => t.id !== templateToDelete));
 
       // If selected, deselect
-      if (selectedTemplate?.id === templateId) {
+      if (selectedTemplate?.id === templateToDelete) {
         setSelectedTemplate(null);
       }
+      setShowDeleteConfirm(false);
     } catch (error) {
       console.error("Error deleting template:", error);
       alert("Failed to delete template");
+    } finally {
+      setIsDeleting(false);
+      setTemplateToDelete(null);
     }
   };
 
@@ -383,6 +394,19 @@ const CertificateGallery = ({
           )}
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Template"
+        message="Are you sure you want to delete this certificate template? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

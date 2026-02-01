@@ -9,12 +9,10 @@ import {
 import {
   Search,
   Filter,
-  Plus,
-  Edit,
-  Eye,
   MoreVertical,
-  Trash2,
   Users,
+  RotateCcw,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
@@ -23,9 +21,13 @@ import blankFormIcon from "../../assets/icons/blankform-icon.svg";
 import EvaluatorShareModal from "../../components/shared/EvaluatorShareModal";
 import ConfirmationModal from "../../components/shared/ConfirmationModal";
 
-const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
+const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [showReopenConfirm, setShowReopenConfirm] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const handleCardClick = (e) => {
     // Don't navigate if clicking on menu items
@@ -38,23 +40,49 @@ const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
     window.location.href = `/club-officer/form-creation?edit=${evaluation._id}`;
   };
 
-  const handleDelete = (e) => {
-    e.stopPropagation(); // Prevent card click
-    onDelete(evaluation);
-    setShowMenu(false);
-  };
-
   const toggleMenu = (e) => {
     e.stopPropagation(); // Prevent card click
     setShowMenu(!showMenu);
   };
 
+  const now = new Date();
+  const isExpired = evaluation.eventEndDate && now > new Date(evaluation.eventEndDate);
+  const isClosed = evaluation.status === "closed" || (evaluation.status === "published" && isExpired);
+
+  const handleConfirmReopen = async () => {
+    setIsReopening(true);
+    try {
+      await onReopen(evaluation._id);
+      setShowReopenConfirm(false);
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
+  const handleConfirmClose = async () => {
+    setIsClosing(true);
+    try {
+      await onClose(evaluation._id);
+      setShowCloseConfirm(false);
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
   return (
     <>
       <div
-        className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col"
+        className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col relative"
         onClick={handleCardClick}
       >
+        {isClosed && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 border border-red-200 shadow-sm">
+              <Lock size={12} />
+              Closed
+            </span>
+          </div>
+        )}
         <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
           <div className="text-center mb-4 shrink-0 relative">
             <h2 className="text-2xl font-bold text-gray-800 line-clamp-2 h-16 flex items-center justify-center">
@@ -76,26 +104,45 @@ const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
 
               {showMenu && (
                 <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
-                  {evaluation.status === "published" && (
+                  {evaluation.status === "published" && !isExpired && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowShareModal(true);
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                      >
+                        <Users size={16} />
+                        Share with Evaluators
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCloseConfirm(true);
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Lock size={16} />
+                        Close Form
+                      </button>
+                    </>
+                  )}
+                  {isClosed && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowShareModal(true);
+                        setShowReopenConfirm(true);
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
                     >
-                      <Users size={16} />
-                      Share with Evaluators
+                      <RotateCcw size={16} />
+                      Reopen Form
                     </button>
                   )}
-                  <button
-                    onClick={handleDelete}
-                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
-                  >
-                    <Trash2 size={16} />
-                    Delete Form
-                  </button>
                 </div>
               )}
             </div>
@@ -148,7 +195,9 @@ const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
         <div
           className="p-4 rounded-b-lg shrink-0"
           style={{
-            background: "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+            background: isClosed 
+              ? "linear-gradient(-0.15deg, #4B5563 38%, #1F2937 100%)" 
+              : "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
           }}
         >
           <h3 className="text-lg font-bold text-white line-clamp-1">
@@ -159,7 +208,7 @@ const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
               <span>{evaluation.responseCount || 0} responses</span>
               <span className="mx-2">•</span>
               <span>
-                {evaluation.status === "published" ? "Published" : "Draft"}
+                {isClosed ? "Closed" : (evaluation.status === "published" ? "Published" : "Draft")}
               </span>
             </div>
             <span className="text-xs">
@@ -176,6 +225,31 @@ const SurveyEvaluationCard = ({ evaluation, onDelete }) => {
         formId={evaluation._id}
         formTitle={evaluation.title}
       />
+
+      {/* Confirmation Modals */}
+      <ConfirmationModal
+        isOpen={showReopenConfirm}
+        onClose={() => setShowReopenConfirm(false)}
+        onConfirm={handleConfirmReopen}
+        title="Reopen Evaluation"
+        message={`Are you sure you want to reopen "${evaluation.title}"? It will be available for another 7 days.`}
+        confirmText="Reopen"
+        cancelText="Cancel"
+        isDestructive={false}
+        isLoading={isReopening}
+      />
+
+      <ConfirmationModal
+        isOpen={showCloseConfirm}
+        onClose={() => setShowCloseConfirm(false)}
+        onConfirm={handleConfirmClose}
+        title="Close Evaluation"
+        message={`Are you sure you want to close this form "${evaluation.title}"? New responses will no longer be accepted.`}
+        confirmText="Close Form"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isClosing}
+      />
     </>
   );
 };
@@ -191,14 +265,6 @@ const SurveyCreation = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
-
-  // Delete Modal State
-  const [deleteModal, setDeleteModal] = useState({
-    show: false,
-    evaluationId: null,
-    title: "",
-    loading: false
-  });
 
   const fetchEvaluations = useCallback(async () => {
     try {
@@ -330,41 +396,47 @@ const SurveyCreation = () => {
     }
   };
 
-  const handleDeleteClick = (evaluation) => {
-    setDeleteModal({
-      show: true,
-      evaluationId: evaluation._id,
-      title: evaluation.title,
-      loading: false
-    });
-  };
-
-  const handleConfirmDelete = async () => {
-    const { evaluationId } = deleteModal;
-    if (!evaluationId) return;
-
-    setDeleteModal(prev => ({ ...prev, loading: true }));
-
+  const handleReopenForm = async (formId) => {
     try {
-      const response = await fetch(`/api/forms/${evaluationId}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/forms/${formId}/reopen`, {
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (response.ok) {
-        toast.success("Evaluation deleted successfully");
+      const result = await response.json();
+      if (result.success) {
+        toast.success("Form reopened successfully! It is now published and available for another 7 days.");
         fetchEvaluations();
-        setDeleteModal({ show: false, evaluationId: null, title: "", loading: false });
       } else {
-        toast.error("Failed to delete evaluation");
-        setDeleteModal(prev => ({ ...prev, loading: false }));
+        toast.error(result.message || "Failed to reopen form");
       }
     } catch (error) {
-      console.error("Error deleting evaluation:", error);
-      toast.error("Error deleting evaluation");
-      setDeleteModal(prev => ({ ...prev, loading: false }));
+      console.error("Error reopening form:", error);
+      toast.error("An error occurred while reopening the form");
+    }
+  };
+
+  const handleCloseForm = async (formId) => {
+    try {
+      const response = await fetch(`/api/forms/${formId}/close`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success("Form closed successfully. New responses will no longer be accepted.");
+        fetchEvaluations();
+      } else {
+        toast.error(result.message || "Failed to close form");
+      }
+    } catch (error) {
+      console.error("Error closing form:", error);
+      toast.error("An error occurred while closing the form");
     }
   };
 
@@ -653,7 +725,8 @@ const SurveyCreation = () => {
                   <SurveyEvaluationCard
                     key={evaluation._id}
                     evaluation={evaluation}
-                    onDelete={handleDeleteClick}
+                    onReopen={handleReopenForm}
+                    onClose={handleCloseForm}
                   />
                 ))}
               </div>
@@ -736,19 +809,6 @@ const SurveyCreation = () => {
           </div>
         )}
       </ClubOfficerLayout>
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={deleteModal.show}
-        onClose={() => setDeleteModal({ show: false, evaluationId: null, title: "", loading: false })}
-        onConfirm={handleConfirmDelete}
-        title="Delete Evaluation"
-        message={`Are you sure you want to delete "${deleteModal.title}"? This action cannot be undone and will permanently remove all associated data.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        isDestructive={true}
-        isLoading={deleteModal.loading}
-      />
     </>
   );
 };
