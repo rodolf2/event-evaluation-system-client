@@ -285,7 +285,8 @@ const EvaluationForm = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit evaluation");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to submit evaluation");
       }
 
       // Parse the response data
