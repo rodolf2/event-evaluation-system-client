@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 import PSASLayout from "../../components/psas/PSASLayout";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
@@ -199,9 +199,16 @@ const CommentSection = ({
     );
   }
 
+  // Helper to extract text from comment object or string
+  const getCommentText = (c) => {
+    if (!c) return "";
+    if (typeof c === "string") return c;
+    return c.comment || c.text || "";
+  };
+
   // Deduplicate comments based on comment text to prevent visual duplicates
   const uniqueComments = comments.filter((comment, index, self) =>
-    index === self.findIndex((c) => c.comment === comment.comment)
+    index === self.findIndex((c) => getCommentText(c) === getCommentText(comment))
   );
 
   // Calculate pagination using deduplicated comments
@@ -259,11 +266,11 @@ const CommentSection = ({
         {(type === "neutral" ? uniqueComments : currentComments).map(
           (comment, index) => (
             <div
-              key={`${type}-${startIndex + index}-${comment.comment?.substring(0, 20) || index}`}
+              key={`${type}-${startIndex + index}-${getCommentText(comment).substring(0, 20) || index}`}
               className="flex gap-2 comment-item"
             >
               <span className="text-gray-600 mt-1">•</span>
-              <p className="text-gray-800 flex-1">{comment.comment}</p>
+              <p className="text-gray-800 flex-1">{getCommentText(comment)}</p>
             </div>
           ),
         )}
@@ -278,10 +285,25 @@ const CompleteReport = ({
   isGeneratedReport = false,
   isGuestView = false,
   onShareGuest,
+  onViewQuantitative,
+  onViewQualitative,
+  onViewPositive,
+  onViewNegative,
+  onViewNeutral,
 }) => {
   const navigate = useNavigate();
   const { eventId } = useParams(); // Get eventId from URL if not provided as prop
   const { user } = useAuth();
+  
+  // Check for dynamic=true in URL query parameters
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const isDynamicQuery = queryParams.get("dynamic") === "true";
+
+  // A report is generated if:
+  // 1. the isGeneratedReport prop is true OR
+  // 2. it's NOT a dynamic query from the analytics page
+  const effectivelyGenerated = isGeneratedReport || !isDynamicQuery;
 
   const reportId = report?.formId || eventId;
 
@@ -293,7 +315,7 @@ const CompleteReport = ({
     loading,
     error,
     refreshData,
-  } = useDynamicReportData(reportId);
+  } = useDynamicReportData(reportId, effectivelyGenerated);
 
   // If rendered as child component (with props) or as guest view, don't use PSASLayout
   // If accessed via direct routing (no props), use PSASLayout
@@ -1030,6 +1052,16 @@ const CompleteReport = ({
                 ))}
               </div>
             )}
+            {onViewQuantitative && (
+              <div className="mt-8 text-center print:hidden">
+                <button
+                  onClick={onViewQuantitative}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  View Detailed Ratings
+                </button>
+              </div>
+            )}
           </SectionWrapper>
 
           {/* Qualitative Comments Section */}
@@ -1087,6 +1119,33 @@ const CompleteReport = ({
                       </span>
                     </div>
                   ))}
+                </div>
+
+                <div className="flex flex-wrap gap-4 mt-8 print:hidden">
+                  {onViewPositive && (
+                    <button
+                      onClick={onViewPositive}
+                      className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-200 transition"
+                    >
+                      View Positive
+                    </button>
+                  )}
+                  {onViewNeutral && (
+                    <button
+                      onClick={onViewNeutral}
+                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200 transition"
+                    >
+                      View Neutral
+                    </button>
+                  )}
+                  {onViewNegative && (
+                    <button
+                      onClick={onViewNegative}
+                      className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition"
+                    >
+                      View Negative
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-6 text-sm text-gray-800 leading-relaxed">
@@ -1187,7 +1246,16 @@ const CompleteReport = ({
               loading={loading}
               type="negative"
             />
-            
+            {onViewQualitative && (
+              <div className="mt-12 text-center print:hidden">
+                <button
+                  onClick={onViewQualitative}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                >
+                  View All Detailed Comments
+                </button>
+              </div>
+            )}
           </SectionWrapper>
           
           {qualitativeData?.previousYearData && (

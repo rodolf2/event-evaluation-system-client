@@ -518,7 +518,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   };
 
   const handleViewReport = () => {
-    navigate(`${basePath}/reports/${formId}`);
+    navigate(`${basePath}/reports/${formId}?dynamic=true`);
   };
 
   // Filter and sort forms

@@ -1,13 +1,38 @@
-import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useDynamicReportData } from "../../hooks/useDynamicReportData";
+import { useAuth } from "../../contexts/useAuth";
+import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
+import ClubAdviserLayout from "../../components/club-advisers/ClubAdviserLayout";
 import PSASLayout from "../../components/psas/PSASLayout";
 import ReportHeader from "./ReportHeader";
 import ReportDescription from "./ReportDescription";
 import ReportActions from "./ReportActions";
 
-const QualitativeComments = ({ report, onBack }) => {
+const QualitativeComments = ({ report, onBack, isGeneratedReport = false }) => {
   const navigate = useNavigate();
   const { eventId } = useParams();
+  const { user } = useAuth();
+
+  // Check for dynamic=true in URL query parameters
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const isDynamicQuery = queryParams.get("dynamic") === "true";
+
+  // A report is generated if:
+  // 1. the isGeneratedReport prop is true OR
+  // 2. it's NOT a dynamic query from the analytics page
+  const effectivelyGenerated = isGeneratedReport || !isDynamicQuery;
+
+  const reportId = report?.formId || eventId;
+
+  // Use dynamic data hook
+  const {
+    qualitativeData,
+    formData,
+    loading,
+    error,
+    refreshData,
+  } = useDynamicReportData(reportId, effectivelyGenerated);
 
   // If rendered as child component (with props), don't use PSASLayout
   // If accessed via direct routing (no props), use PSASLayout
@@ -17,35 +42,46 @@ const QualitativeComments = ({ report, onBack }) => {
     if (isChildComponent) {
       onBack();
     } else {
-      navigate(`/psas/reports/${eventId}`);
+      const reportsPath =
+        user?.role === "club-officer"
+          ? "/club-officer/reports"
+          : user?.role === "club-adviser"
+            ? "/club-adviser/reports"
+            : "/psas/reports";
+      
+      const dynamicParam = isDynamicQuery ? "?dynamic=true" : "";
+      navigate(`${reportsPath}/${reportId}${dynamicParam}`);
     }
   };
 
-  // Sample qualitative comments data
-  const qualitativeComments = [
-    "The interactive workshops were particularly engaging and helped me understand the concepts better.",
-    "I appreciated the diverse range of speakers who brought different perspectives to the discussion.",
-    "The networking session provided valuable connections that I hope to maintain in the future.",
-    "While the content was good, I would have liked more time for Q&A with the presenters.",
-    "The event successfully bridged the gap between theory and practical application.",
-    "The venue's location was convenient, and the facilities were well-maintained.",
-    "I found the balance between formal presentations and casual discussions to be effective.",
-    "The follow-up materials provided after the event were comprehensive and useful.",
-    "The event fostered a sense of community among participants from different backgrounds.",
-    "Overall, it was a professionally organized event that met my expectations for quality content.",
-  ];
+  // Flatten all comments from all questions
+  const qualitativeComments = (qualitativeData?.questionBreakdown || [])
+    .filter(q => q.questionType === "text" || q.questionType === "paragraph" || q.questionType === "short_answer")
+    .flatMap(q => q.responses || [])
+    .filter(comment => comment && comment.trim() !== "");
 
   const content = (
     <>
-      <ReportActions onBackClick={handleBackClick} />
+      <ReportActions 
+        onBackClick={handleBackClick} 
+        eventId={reportId}
+        isGeneratedReport={effectivelyGenerated}
+        loading={loading}
+      />
       <div className="bg-gray-100 min-h-screen report-print-content print:block">
         <div className="container mx-auto py-8">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 mx-4 md:mx-0">
+              <p className="text-red-600 text-sm">Error loading data: {error}</p>
+              <button onClick={refreshData} className="mt-2 text-red-700 underline text-sm">Retry</button>
+            </div>
+          )}
           <div className="bg-white shadow-lg rounded-lg">
-            <ReportHeader title="Sample Event Evaluation Report" />
-            <ReportDescription />
+            <ReportHeader />
+            <ReportDescription title={formData?.title || "Evaluation Report"} />
             <main className="p-8">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold">SAMPLE EVENT EVALUATION</h3>
+                <h3 className="text-2xl font-bold uppercase">{formData?.title || "EVENT EVALUATION"}</h3>
                 <p className="text-xl font-semibold">EVALUATION RESULT</p>
                 <p className="text-lg">College Level</p>
               </div>
@@ -53,16 +89,27 @@ const QualitativeComments = ({ report, onBack }) => {
               <p className="text-sm text-gray-600 mb-6">
                 Total Qualitative Comments: {qualitativeComments.length}
               </p>
-              <div className="space-y-4">
-                {qualitativeComments.map((comment, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded-r-lg"
-                  >
-                    <p className="text-gray-800">{comment}</p>
-                  </div>
-                ))}
-              </div>
+              
+              {loading ? (
+                 <div className="flex items-center justify-center py-12">
+                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                 </div>
+              ) : qualitativeComments.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p>No qualitative comments found for this report.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {qualitativeComments.map((comment, index) => (
+                    <div
+                      key={index}
+                      className="bg-gray-50 border-l-4 border-gray-500 p-4 rounded-r-lg"
+                    >
+                      <p className="text-gray-800">{comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </main>
             <div className="bg-blue-900 text-white text-center py-4 rounded-b-lg">
               <p>
@@ -76,12 +123,19 @@ const QualitativeComments = ({ report, onBack }) => {
     </>
   );
 
-  // Only wrap with PSASLayout if accessed via direct routing (no props)
+  // Determine layout wrapper
+  const LayoutWrapper = user?.role === "club-officer" 
+    ? ClubOfficerLayout 
+    : user?.role === "club-adviser"
+    ? ClubAdviserLayout
+    : PSASLayout;
+
+  // Only wrap with Layout if accessed via direct routing (no props)
   if (isChildComponent) {
     return content;
   }
 
-  return <PSASLayout>{content}</PSASLayout>;
+  return <LayoutWrapper>{content}</LayoutWrapper>;
 };
 
 export default QualitativeComments;

@@ -434,6 +434,11 @@ const Reports = () => {
           <CompleteReport
             report={selectedReport}
             onBack={handleBackToList}
+            onViewQuantitative={() => setView("quantitative")}
+            onViewQualitative={() => setView("qualitative")}
+            onViewPositive={() => setView("positive")}
+            onViewNegative={() => setView("negative")}
+            onViewNeutral={() => setView("neutral")}
             isGeneratedReport={!selectedReport.isDynamic}
             onShareGuest={() => setShowGuestShareModal(true)}
           />
@@ -449,24 +454,28 @@ const Reports = () => {
         <QualitativeComments
           report={selectedReport}
           onBack={() => setView("dashboard")}
+          isGeneratedReport={!selectedReport.isDynamic}
         />
       )}
       {view === "positive" && selectedReport && (
         <PositiveComments
           report={selectedReport}
           onBack={() => setView("dashboard")}
+          isGeneratedReport={!selectedReport.isDynamic}
         />
       )}
       {view === "negative" && selectedReport && (
         <NegativeComments
           report={selectedReport}
           onBack={() => setView("dashboard")}
+          isGeneratedReport={!selectedReport.isDynamic}
         />
       )}
       {view === "neutral" && selectedReport && (
         <NeutralComments
           report={selectedReport}
           onBack={() => setView("dashboard")}
+          isGeneratedReport={!selectedReport.isDynamic}
         />
       )}
     </ClubOfficerLayout>
