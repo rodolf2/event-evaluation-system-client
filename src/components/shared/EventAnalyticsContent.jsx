@@ -43,7 +43,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
       if (!token) return;
 
       try {
-        const response = await fetch("/api/forms", {
+        const response = await fetch("/api/forms?limit=1000", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

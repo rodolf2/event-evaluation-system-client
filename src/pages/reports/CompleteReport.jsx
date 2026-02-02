@@ -1187,7 +1187,119 @@ const CompleteReport = ({
               loading={loading}
               type="negative"
             />
+            
           </SectionWrapper>
+          
+          {qualitativeData?.previousYearData && (
+            <SectionWrapper title="Qualitative Comments - Previous Year">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-12">
+                {/* Previous Year Sentiment Pie Chart */}
+                <div className="h-64 print-chart-container">
+                  <ResponsiveContainer width="100%" height={256}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: "Positive", value: qualitativeData.previousYearData.sentiment?.positive?.count || 0, color: SENTIMENT_COLORS.positive },
+                          { name: "Neutral", value: qualitativeData.previousYearData.sentiment?.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
+                          { name: "Negative", value: qualitativeData.previousYearData.sentiment?.negative?.count || 0, color: SENTIMENT_COLORS.negative },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={0}
+                        dataKey="value"
+                        labelLine={false}
+                        outerRadius={110}
+                        label={renderCustomizedLabel}
+                        isAnimationActive={false}
+                      >
+                        {[
+                          { name: "Positive", value: qualitativeData.previousYearData.sentiment?.positive?.count || 0, color: SENTIMENT_COLORS.positive },
+                          { name: "Neutral", value: qualitativeData.previousYearData.sentiment?.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
+                          { name: "Negative", value: qualitativeData.previousYearData.sentiment?.negative?.count || 0, color: SENTIMENT_COLORS.negative },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Previous Year Report Summary Text */}
+                <div>
+                  <h5 className="text-lg font-bold mb-2 text-center md:text-left">
+                    Report Summary
+                  </h5>
+                  <p className="text-sm text-gray-500 mb-6 text-center md:text-left italic">
+                    Comparing against: <strong>{qualitativeData.previousYearData.title}</strong> ({new Date(qualitativeData.previousYearData.date).toLocaleDateString()})
+                  </p>
+
+                  {/* Legend */}
+                  <div className="flex gap-6 mb-8 justify-center md:justify-start">
+                    {[
+                      { name: "Positive", value: qualitativeData.previousYearData.sentiment?.positive?.count || 0, color: SENTIMENT_COLORS.positive },
+                      { name: "Neutral", value: qualitativeData.previousYearData.sentiment?.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
+                      { name: "Negative", value: qualitativeData.previousYearData.sentiment?.negative?.count || 0, color: SENTIMENT_COLORS.negative },
+                    ].map((entry, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        ></div>
+                        <span className="text-sm font-medium text-gray-600">
+                          {entry.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-6 text-sm text-gray-800 leading-relaxed">
+                    <p>
+                      <span className="font-bold">
+                        {qualitativeData.previousYearData.sentiment?.positive?.percentage || 0}%
+                      </span> of the responses resulted to positive citing informative sessions and engaging speakers such as the keynote address and workshop activities.
+                    </p>
+                    <p>
+                      <span className="font-bold">
+                        {qualitativeData.previousYearData.sentiment?.neutral?.percentage || 0}%
+                      </span> of the responses resulted into neutral, providing balanced feedback without strong positive or negative sentiments.
+                    </p>
+                    <p>
+                      <span className="font-bold">
+                        {qualitativeData.previousYearData.sentiment?.negative?.percentage || 0}%
+                      </span> of the responses resulted into negative particularly regarding venue ventilation and audio quality, suggesting areas that need improvement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Previous Year Event Insights */}
+              <div className="mb-12">
+                <h4 className="text-xl font-bold text-center mb-8">
+                  Event Insights and Recommendations
+                </h4>
+                <div className="space-y-6 text-gray-800 max-w-3xl mx-auto">
+                  <p>
+                    ★ Moderate Success: The event received {qualitativeData.previousYearData.sentiment?.positive?.percentage || 0}% positive feedback. While generally well-received, there is room for improvement to achieve excellence.
+                  </p>
+                  <p>
+                    • Strengths to Maintain: Participants particularly appreciated the informative sessions and engaging speakers. These elements should be prioritized in future planning.
+                  </p>
+                  <p>
+                    • Areas Requiring Attention: Responses highlighted concerns about venue ventilation and audio quality. These areas should be prioritized for improvement.
+                  </p>
+                  <p>
+                    • Recommendation - Facilities: Ensure that the venue has adequate ventilation and sound systems are tested thoroughly before the event.
+                  </p>
+                  <p>
+                    ⚠ Action Required: With {qualitativeData.previousYearData.sentiment?.negative?.percentage || 0}% negative feedback, address the logistical issues raised to prevent recurrence in future events.
+                  </p>
+                  <p className="font-medium mt-8">
+                    Disclaimer: This is a system-generated recommendation based on previous year's data.
+                  </p>
+                </div>
+              </div>
+            </SectionWrapper>
+          )}
 
           {/* Report Footer - appears only once at bottom */}
           <div
