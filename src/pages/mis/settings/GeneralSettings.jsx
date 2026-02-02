@@ -22,6 +22,7 @@ function GeneralSettings() {
     sessionTimeout: "30",
     enableAnalytics: true,
     showTutorials: true,
+    enableMisReports: false,
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -282,6 +283,23 @@ function GeneralSettings() {
                 className="text-gray-700 font-medium"
               >
                 Maintenance Mode
+              </label>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="enableMisReports"
+                name="enableMisReports"
+                checked={settings.enableMisReports}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label
+                htmlFor="enableMisReports"
+                className="text-gray-700 font-medium"
+              >
+                Enable Reports for MIS Staff
               </label>
             </div>
 

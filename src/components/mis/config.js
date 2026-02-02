@@ -48,8 +48,7 @@ export const getSidebarConfig = (user) => ({
       label: "Security Oversight",
       path: "/mis/security-oversight",
     },
-    // Conditionally add Reports if user is elevated to MIS Head
-    // We check both role and explicit position to ensure correct access
+    // Add Reports link STRICTLY for MIS Head only
     ...(user?.role === "mis" && user?.position === "MIS Head"
       ? [
         {

@@ -113,6 +113,32 @@ function MisDashboard() {
     [token, fetchReminders]
   );
 
+  const updateReminder = useCallback(
+    async (id, updateData) => {
+      try {
+        const response = await fetch(`/api/reminders/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateData),
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast.success("Reminder updated successfully!");
+          await fetchReminders();
+        } else {
+          toast.error(data.message || "Failed to update reminder");
+        }
+      } catch (error) {
+        toast.error("An error occurred while updating the reminder");
+        console.error("Error updating reminder:", error);
+      }
+    },
+    [token, fetchReminders]
+  );
+
   const openModal = (date, position) => {
     setSelectedDate(date);
     setModalPosition(position);
@@ -204,6 +230,9 @@ function MisDashboard() {
             isOpen={isModalOpen}
             onClose={closeModal}
             onAddReminder={addReminder}
+            onUpdateReminder={updateReminder}
+            onDeleteReminder={deleteReminder}
+            reminders={reminders}
             selectedDate={selectedDate}
             position={modalPosition}
           />

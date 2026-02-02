@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Search,
   Mail,
+  MailOpen,
   Trash2,
   CheckCircle,
   Bell,
@@ -55,9 +56,12 @@ const NotificationItem = ({
       <div className="flex-1 min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
           <div className="flex items-center gap-2 overflow-hidden">
-            {!notification.read && (
-              <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" title="Unread"></span>
-            )}
+            <span
+              className={`h-2 w-2 rounded-full shrink-0 ${
+                notification.read ? "invisible" : "bg-blue-500"
+              }`}
+              title={notification.read ? "" : "Unread"}
+            ></span>
             <span className={`text-sm sm:text-base truncate ${
               notification.read ? "font-medium text-gray-600" : "font-bold text-gray-900"
             }`}>

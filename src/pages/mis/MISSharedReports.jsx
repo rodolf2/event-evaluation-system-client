@@ -17,7 +17,7 @@ import {
 } from "../../components/shared/SkeletonLoader";
 
 // CSS-based thumbnail card that doesn't require server-generated images
-const ReportCard = ({ report, onSelect }) => {
+const ReportCard = ({ report, onSelect, token }) => {
   // Generate a consistent color based on report title
   const getGradientColor = (title) => {
     const colors = [
@@ -48,30 +48,61 @@ const ReportCard = ({ report, onSelect }) => {
     <div className="bg-[#EEEEF0] hover:bg-[#DEDFE0] rounded-lg shadow-sm overflow-hidden p-4 transition-colors duration-200">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden group relative">
         <div className="relative">
-          {/* CSS-based thumbnail design */}
-          <div
-            className={`w-full h-48 bg-linear-to-br ${getGradientColor(report.title)} flex flex-col items-center justify-center p-4`}
-          >
-            <div className="bg-white/20 rounded-full p-4 mb-3">
-              <BarChart2 className="w-10 h-10 text-white" />
-            </div>
-            <div className="text-white text-center">
-              <p className="text-xs uppercase tracking-wider opacity-80 mb-1">
-                Evaluation Report
-              </p>
-              <p className="text-sm font-medium line-clamp-2 px-2">
-                {report.title?.length > 40
-                  ? `${report.title.substring(0, 40)}...`
-                  : report.title}
-              </p>
-            </div>
-            {report.sharedAt && (
-              <div className="absolute bottom-2 right-2 flex items-center gap-1 text-white/70 text-xs">
-                <Calendar className="w-3 h-3" />
-                {formatDate(report.sharedAt)}
+          {/* CSS-based thumbnail design or Real Thumbnail */}
+          {report.thumbnail ? (
+            <div className="w-full h-48 relative">
+              <img 
+                src={`${report.thumbnail}?token=${token}`} 
+                alt={report.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div 
+                className={`hidden w-full h-full bg-linear-to-br ${getGradientColor(report.title)} flex-col items-center justify-center p-4`}
+              >
+                <div className="bg-white/20 rounded-full p-4 mb-3">
+                  <BarChart2 className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-white text-center">
+                  <p className="text-xs uppercase tracking-wider opacity-80 mb-1">
+                    Evaluation Report
+                  </p>
+                  <p className="text-sm font-medium line-clamp-2 px-2">
+                    {report.title?.length > 40
+                      ? `${report.title.substring(0, 40)}...`
+                      : report.title}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div
+              className={`w-full h-48 bg-linear-to-br ${getGradientColor(report.title)} flex flex-col items-center justify-center p-4`}
+            >
+              <div className="bg-white/20 rounded-full p-4 mb-3">
+                <BarChart2 className="w-10 h-10 text-white" />
+              </div>
+              <div className="text-white text-center">
+                <p className="text-xs uppercase tracking-wider opacity-80 mb-1">
+                  Evaluation Report
+                </p>
+                <p className="text-sm font-medium line-clamp-2 px-2">
+                  {report.title?.length > 40
+                    ? `${report.title.substring(0, 40)}...`
+                    : report.title}
+                </p>
+              </div>
+              {report.sharedAt && (
+                <div className="absolute bottom-2 right-2 flex items-center gap-1 text-white/70 text-xs">
+                  <Calendar className="w-3 h-3" />
+                  {formatDate(report.sharedAt)}
+                </div>
+              )}
+            </div>
+          )}
           {/* Hover overlay */}
           <div className="absolute inset-0 bg-[#DEDFE0] bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button
@@ -119,8 +150,12 @@ const MISSharedReports = () => {
     pages: totalPages,
   };
 
-  // Check if user has permission to view reports (must be MIS Head)
-  const hasPermission = user?.role === "mis" && user?.position === "MIS Head";
+  // Check if user has permission to view reports
+  const hasPermission =
+    (user?.role === "mis" && user?.position === "MIS Head") ||
+    user?.role === "psas" ||
+    user?.role === "superadmin" ||
+    user?.role === "admin";
 
   const fetchReports = useCallback(async () => {
     if (!hasPermission) {
@@ -291,7 +326,7 @@ const MISSharedReports = () => {
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">Shared Reports</h1>
             <p className="text-gray-600 mt-1">
-              View reports that have been shared with you
+              View evaluation reports shared with the MIS team
             </p>
           </div>
 
@@ -389,6 +424,7 @@ const MISSharedReports = () => {
                       key={`${report.id}-${index}`}
                       report={report}
                       onSelect={handleSelectReport}
+                      token={token}
                     />
                   ))}
                 </div>

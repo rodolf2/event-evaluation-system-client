@@ -19,6 +19,18 @@ const StudentItem = ({ student, isSelected, onSelect }) => {
   const studentName =
     student.name || student["full name"] || student["student name"] || "N/A";
 
+  const formatYearDisplay = (year) => {
+    if (!year) return "N/A";
+    const y = year.toString().trim();
+    if (y === "1") return "1st Year";
+    if (y === "2") return "2nd Year";
+    if (y === "3") return "3rd Year";
+    if (y === "4") return "4th Year";
+    if (y === "11") return "Grade 11";
+    if (y === "12") return "Grade 12";
+    return y;
+  };
+
   return (
     <div
       onClick={() => onSelect(student.id)}
@@ -44,7 +56,7 @@ const StudentItem = ({ student, isSelected, onSelect }) => {
         <span className="text-gray-600">
           Program: {student.program || "N/A"}
         </span>
-        <span className="text-gray-600">Year: {student.year || "N/A"}</span>
+        <span className="text-gray-600">Year: {formatYearDisplay(student.year)}</span>
       </div>
 
       {/* Desktop View: Grid columns */}
@@ -63,7 +75,7 @@ const StudentItem = ({ student, isSelected, onSelect }) => {
         <span className="text-gray-600">{student.program || "N/A"}</span>
       </div>
       <div className="hidden md:block text-right text-gray-600">
-        {student.year || "N/A"}
+        {formatYearDisplay(student.year)}
       </div>
     </div>
   );
@@ -144,13 +156,16 @@ const StudentList = () => {
     const transientCSV = FormSessionManager.loadTransientCSVData();
     if (transientCSV && Array.isArray(transientCSV.students)) {
       const studentsWithIds = transientCSV.students.map((student, index) => {
-        // Normalize email to ensure consistency with server-side processing
+        // Normalize email and year fields
         const normalizedEmail = student.email
           ? student.email.toLowerCase().trim()
           : "";
+        const normalizedYear = (student.year || student["year level"] || student.yearLevel || "").toString().trim();
+
         return {
           ...student,
-          email: normalizedEmail, // Use normalized email
+          year: normalizedYear,
+          email: normalizedEmail,
           // Use normalized email as stable ID to ensure consistency across page reloads
           id: normalizedEmail || `student_${index + 1}`,
         };
@@ -191,9 +206,38 @@ const StudentList = () => {
 
       const matchesDepartment =
         !departmentFilter || student.department === departmentFilter;
+
+      // Robust program matching to handle grouped strings like "BSIS/ACT" and variations in spacing
+      const normalizeProgram = (str) =>
+        (str || "").toLowerCase().replace(/\s+/g, "").trim();
+
+      const normalizedFilter = normalizeProgram(programFilter);
+
       const matchesProgram =
-        !programFilter || student.program === programFilter;
-      const matchesYear = !yearFilter || student.year === yearFilter;
+        !programFilter ||
+        normalizeProgram(student.program) === normalizedFilter ||
+        (student.program &&
+          student.program.split("/").some(p => normalizeProgram(p) === normalizedFilter));
+
+      // Match year level robustly
+      const studentYear = student.year?.toString().toLowerCase().trim();
+      const filterYear = yearFilter.toLowerCase().trim();
+
+      const matchesYear =
+        !yearFilter ||
+        studentYear === filterYear ||
+        (studentYear === "1" && filterYear === "1st year") ||
+        (studentYear === "2" && filterYear === "2nd year") ||
+        (studentYear === "3" && filterYear === "3rd year") ||
+        (studentYear === "4" && filterYear === "4th year") ||
+        (studentYear === "1st year" && filterYear === "1") ||
+        (studentYear === "2nd year" && filterYear === "2") ||
+        (studentYear === "3rd year" && filterYear === "3") ||
+        (studentYear === "4th year" && filterYear === "4") ||
+        (studentYear === "11" && filterYear === "grade 11") ||
+        (studentYear === "12" && filterYear === "grade 12") ||
+        (studentYear === "grade 11" && filterYear === "11") ||
+        (studentYear === "grade 12" && filterYear === "12");
 
       // Always show all students - filtering is only for search/department/program/year
       // Selection is handled by checkboxes but doesn't hide students from view
@@ -346,8 +390,8 @@ const StudentList = () => {
   // Predefined filter options based on institutional structure
   const DEPARTMENT_CONFIG = {
     "Higher Education": {
-      programs: ["BSIS/ACT", "BSA/BSAIS", "BAB", "BSSW"],
-      years: ["1", "2", "3", "4"],
+      programs: ["BSIS", "ACT", "BSA", "BSAIS", "BAB", "BSSW"],
+      years: ["1st Year", "2nd Year", "3rd Year", "4th Year"],
     },
     "Basic Education": {
       programs: ["STEM", "GAS", "ICT", "HUMSS"],

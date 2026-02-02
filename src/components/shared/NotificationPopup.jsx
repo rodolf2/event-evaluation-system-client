@@ -109,6 +109,24 @@ const NotificationPopup = () => {
     if (latestUnreadNotification && !isVisible) {
       // Small delay to avoid immediate appearance if many events trigger at once
       const showTimer = setTimeout(() => {
+        // Check mute settings before showing toast
+        const isReminder =
+          latestUnreadNotification.type === "reminder" ||
+          (latestUnreadNotification.relatedEntity &&
+            latestUnreadNotification.relatedEntity.type === "reminder");
+            
+        if (isReminder && user?.muteReminders) {
+          // Skip toast for muted reminders, but mark as "shown" so we don't try again
+          saveShownNotification(latestUnreadNotification.id);
+          return;
+        }
+        
+        if (!isReminder && user?.muteNotifications) {
+           // Skip toast for muted notifications, but mark as "shown" so we don't try again
+           saveShownNotification(latestUnreadNotification.id);
+           return;
+        }
+
         setIsVisible(true);
 
         const isForm = latestUnreadNotification.type === "form" || (latestUnreadNotification.relatedEntity && latestUnreadNotification.relatedEntity.type === "form");

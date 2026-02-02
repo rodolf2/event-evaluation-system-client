@@ -317,9 +317,11 @@ const CompleteReport = ({
   const SectionWrapper = ({ title, children }) => (
     <div className="section-page mb-8">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4 md:p-8">
-        <div className="text-center mb-8">
-          <h4 className="text-lg font-bold">{title}</h4>
-        </div>
+        {title && (
+          <div className="text-center mb-8">
+            <h4 className="text-lg font-bold">{title}</h4>
+          </div>
+        )}
         {children}
       </div>
     </div>
@@ -643,108 +645,115 @@ const CompleteReport = ({
             </div>
           </div>
 
+          {/* Departmental Year Level Breakdowns */}
+          {(quantitativeData?.charts?.yearLevelBreakdown?.departments || [
+            {
+              name: "Higher Education Department",
+              currentYear:
+                quantitativeData?.charts?.yearLevelBreakdown?.currentYear,
+              previousYear:
+                quantitativeData?.charts?.yearLevelBreakdown?.previousYear,
+            },
+          ]).map((dept, deptIdx) => (
+            <SectionWrapper key={deptIdx} title="">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+                {/* Previous Year */}
+                <div>
+                  <h5 className="font-bold text-lg mb-1">
+                    {dept.name} {dept.previousYear?.year || previousYear}
+                  </h5>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {dept.previousYear?.total !== undefined
+                      ? dept.previousYear.total
+                      : previousYearData}{" "}
+                    Responses
+                  </p>
+                  <div className="space-y-3">
+                    {dept.previousYear?.breakdown?.length > 0 ? (
+                      dept.previousYear.breakdown.map((yearLevel, idx) => {
+                        const maxCount = Math.max(
+                          ...dept.previousYear.breakdown.map((y) => y.count),
+                          1,
+                        );
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div
+                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                              style={{
+                                width: `${Math.max(
+                                  (yearLevel.count / maxCount) * 70,
+                                  20,
+                                )}%`,
+                                minWidth: "100px",
+                              }}
+                            >
+                              {yearLevel.name}
+                            </div>
+                            <span className="text-gray-700 text-sm font-medium">
+                              {yearLevel.count}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-gray-400 text-sm italic">
+                        No year level data available
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Current Year */}
+                <div>
+                  <h5 className="font-bold text-lg mb-1">
+                    {dept.name} {dept.currentYear?.year || currentYear}
+                  </h5>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {dept.currentYear?.total !== undefined
+                      ? dept.currentYear.total
+                      : currentYearData}{" "}
+                    Responses
+                  </p>
+                  <div className="space-y-3">
+                    {dept.currentYear?.breakdown?.length > 0 ? (
+                      dept.currentYear.breakdown.map((yearLevel, idx) => {
+                        const maxCount = Math.max(
+                          ...dept.currentYear.breakdown.map((y) => y.count),
+                          1,
+                        );
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <div
+                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                              style={{
+                                width: `${Math.max(
+                                  (yearLevel.count / maxCount) * 70,
+                                  20,
+                                )}%`,
+                                minWidth: "100px",
+                              }}
+                            >
+                              {yearLevel.name}
+                            </div>
+                            <span className="text-gray-700 text-sm font-medium">
+                              {yearLevel.count}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-gray-400 text-sm italic">
+                        No year level data available
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </SectionWrapper>
+          ))}
+
           {/* Quantitative Ratings Section */}
           <SectionWrapper title="Quantitative Ratings" showLiveIndicator={true}>
-            {/* Year Level Comparison - Previous vs Current Year */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
-              {/* Previous Year */}
-              <div>
-                <h5 className="font-bold text-lg mb-1">
-                  Higher Education Department{" "}
-                  {quantitativeData?.charts?.yearLevelBreakdown?.previousYear
-                    ?.year || previousYear}
-                </h5>
-                <p className="text-sm text-gray-500 mb-4">
-                  {quantitativeData?.charts?.yearLevelBreakdown?.previousYear
-                    ?.total || previousYearData}{" "}
-                  Responses
-                </p>
-                <div className="space-y-3">
-                  {quantitativeData?.charts?.yearLevelBreakdown?.previousYear
-                    ?.breakdown?.length > 0 ? (
-                    quantitativeData.charts.yearLevelBreakdown.previousYear.breakdown.map(
-                      (yearLevel, idx) => {
-                        const maxCount = Math.max(
-                          ...quantitativeData.charts.yearLevelBreakdown.previousYear.breakdown.map(
-                            (y) => y.count,
-                          ),
-                          1,
-                        );
-                        return (
-                          <div key={idx} className="flex items-center gap-3">
-                            <div
-                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
-                              style={{
-                                width: `${Math.max((yearLevel.count / maxCount) * 70, 20)}%`,
-                                minWidth: "100px",
-                              }}
-                            >
-                              {yearLevel.name}
-                            </div>
-                            <span className="text-gray-700 text-sm font-medium">
-                              {yearLevel.count}
-                            </span>
-                          </div>
-                        );
-                      },
-                    )
-                  ) : (
-                    <div className="text-gray-400 text-sm italic">
-                      No year level data available
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Current Year */}
-              <div>
-                <h5 className="font-bold text-lg mb-1">
-                  Higher Education Department{" "}
-                  {quantitativeData?.charts?.yearLevelBreakdown?.currentYear
-                    ?.year || currentYear}
-                </h5>
-                <p className="text-sm text-gray-500 mb-4">
-                  {quantitativeData?.charts?.yearLevelBreakdown?.currentYear
-                    ?.total || currentYearData}{" "}
-                  Responses
-                </p>
-                <div className="space-y-3">
-                  {quantitativeData?.charts?.yearLevelBreakdown?.currentYear
-                    ?.breakdown?.length > 0 ? (
-                    quantitativeData.charts.yearLevelBreakdown.currentYear.breakdown.map(
-                      (yearLevel, idx) => {
-                        const maxCount = Math.max(
-                          ...quantitativeData.charts.yearLevelBreakdown.currentYear.breakdown.map(
-                            (y) => y.count,
-                          ),
-                          1,
-                        );
-                        return (
-                          <div key={idx} className="flex items-center gap-3">
-                            <div
-                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
-                              style={{
-                                width: `${Math.max((yearLevel.count / maxCount) * 70, 20)}%`,
-                                minWidth: "100px",
-                              }}
-                            >
-                              {yearLevel.name}
-                            </div>
-                            <span className="text-gray-700 text-sm font-medium">
-                              {yearLevel.count}
-                            </span>
-                          </div>
-                        );
-                      },
-                    )
-                  ) : (
-                    <div className="text-gray-400 text-sm italic">
-                      No year level data available
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
             {/* Per-Question Visualizations */}
             {loading ? (
