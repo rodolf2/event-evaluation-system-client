@@ -18,6 +18,8 @@ import EventAnalytics from "./pages/psas/EventAnalytics";
 import Reports from "./pages/psas/Reports";
 import Notifications from "./pages/psas/Notifications";
 import StudentList from "./pages/psas/StudentList";
+import StudentUserManagement from "./pages/psas/StudentUserManagement";
+import PsasSystemControls from "./pages/psas/PsasSystemControls";
 import ClubOfficerHome from "./pages/club-officers/Home";
 import ClubOfficerEvaluations from "./pages/club-officers/Evaluations";
 import ClubOfficerCertificates from "./pages/club-officers/Certificates";
@@ -75,7 +77,6 @@ import SecuritySettings from "./pages/mis/settings/SecuritySettings";
 import AuditLogs from "./pages/mis/AuditLogs";
 import UserStatistics from "./pages/mis/UserStatistics";
 import SystemHealth from "./pages/mis/SystemHealth";
-import SecurityOversight from "./pages/mis/SecurityOversight";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
@@ -343,11 +344,57 @@ function App() {
                   )
                 }
               />
+               <Route
+                path="/psas/student-management"
+                element={
+                  isAuthorized("psas") ? (
+                    <PSASLayout>
+                      <StudentUserManagement />
+                    </PSASLayout>
+                  ) : (
+                    <Navigate to={getHomeRoute()} />
+                  )
+                }
+              />
               <Route
                 path="/psas/profile"
                 element={
                   isAuthorized("psas") ? (
                     <Profile />
+                  ) : (
+                    <Navigate to={getHomeRoute()} />
+                  )
+                }
+              />
+              <Route
+                path="/psas/profile"
+                element={
+                  isAuthorized("psas") ? (
+                    <Profile />
+                  ) : (
+                    <Navigate to={getHomeRoute()} />
+                  )
+                }
+              />
+              <Route
+                path="/psas/system-controls"
+                element={
+                  isAuthorized("psas") ? (
+                    <PSASLayout>
+                      <PsasSystemControls />
+                    </PSASLayout>
+                  ) : (
+                    <Navigate to={getHomeRoute()} />
+                  )
+                }
+              />
+              <Route
+                path="/psas/lexicon-management"
+                element={
+                  isAuthorized("psas") ? (
+                    <PSASLayout>
+                      <LexiconManagement />
+                    </PSASLayout>
                   ) : (
                     <Navigate to={getHomeRoute()} />
                   )
@@ -783,7 +830,7 @@ function App() {
                 }
               />
               <Route
-                path="/mis/lexicon"
+                path="/mis/lexicon-management"
                 element={
                   isAuthorized("mis") ? (
                     <MisLayout>
@@ -794,18 +841,8 @@ function App() {
                   )
                 }
               />
-              <Route
-                path="/mis/security-oversight"
-                element={
-                  isAuthorized("mis") ? (
-                    <MisLayout>
-                      <SecurityOversight />
-                    </MisLayout>
-                  ) : (
-                    <Navigate to={getHomeRoute()} />
-                  )
-                }
-              />
+
+
               <Route
                 path="/mis/reports"
                 element={

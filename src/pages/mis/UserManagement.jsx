@@ -19,13 +19,8 @@ import {
 
 // Role definitions with descriptions
 const ROLES = [
-  {
-    id: "student",
-    name: "Student (Default)",
-    description: "Can respond to evaluations and view their own certificates.",
-    icon: GraduationCap,
-    color: "bg-blue-100 text-blue-700",
-  },
+  // Student role removed - managed by ITSS
+
   {
     id: "psas",
     name: "PSAS Staff",
@@ -50,7 +45,7 @@ const ROLES = [
   },
   {
     id: "mis",
-    name: "MIS Administrator",
+    name: "MIS Staff",
     description: "Full system access including user management and settings.",
     icon: Shield,
     color: "bg-red-100 text-red-700",
@@ -193,10 +188,10 @@ const DEFAULT_PERMISSIONS = {
 };
 
 function UserManagement() {
-  const { token } = useAuth();
+  const { token, user: currentUser } = useAuth();
   const [email, setEmail] = useState("");
-  const [selectedRole, setSelectedRole] = useState("student");
-  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS.student);
+  const [selectedRole, setSelectedRole] = useState("psas");
+  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS.psas);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [success, setSuccess] = useState("");
@@ -253,8 +248,8 @@ function UserManagement() {
           `User ${email} has been provisioned with the ${selectedRole} role.`
         );
         setEmail("");
-        setSelectedRole("student");
-        setPermissions(DEFAULT_PERMISSIONS.student);
+        setSelectedRole("psas");
+        setPermissions(DEFAULT_PERMISSIONS.psas);
         setShowConfirmModal(false);
       } else {
         toast.error(data.message || "Failed to provision user.");
@@ -279,8 +274,8 @@ function UserManagement() {
 
   const handleCancel = () => {
     setEmail("");
-    setSelectedRole("student");
-    setPermissions(DEFAULT_PERMISSIONS.student);
+    setSelectedRole("psas");
+    setPermissions(DEFAULT_PERMISSIONS.psas);
     setSuccess("");
   };
 
@@ -335,10 +330,15 @@ function UserManagement() {
     );
   }
 
+  // Permissions check
+  const isMisHead = currentUser?.position === "MIS Head";
+  // Allow all MIS users to access the form, but restrict specific actions
+  const canProvision = currentUser?.role === "mis";
+
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      {/* <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
@@ -349,12 +349,8 @@ function UserManagement() {
               fine-tune permissions.
             </p>
           </div>
-          {/* <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-2 rounded-lg">
-            <Shield className="w-4 h-4" />
-            MFA required for MIS access (NFR11)
-          </div> */}
         </div>
-      </div>
+      </div> */}
 
       {/* User Info Card */}
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -371,8 +367,11 @@ function UserManagement() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={!canProvision}
                 placeholder="e.g. student.name@school.edu"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 ${
+                  !canProvision ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "border-gray-300"
+                }`}
               />
               <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
@@ -398,10 +397,18 @@ function UserManagement() {
             {ROLES.map((role) => (
               <button
                 key={role.id}
-                onClick={() => handleRoleSelect(role.id)}
+                onClick={() => {
+                  if (canProvision) {
+                    if (role.id === "mis" && !isMisHead) return;
+                    handleRoleSelect(role.id);
+                  }
+                }}
+                disabled={!canProvision || (role.id === "mis" && !isMisHead)}
                 className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                   selectedRole === role.id
                     ? "border-blue-500 bg-blue-50"
+                    : !canProvision || (role.id === "mis" && !isMisHead)
+                    ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-60"
                     : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
               >
@@ -418,7 +425,16 @@ function UserManagement() {
                     )}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{role.name}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-gray-900">
+                        {role.name}
+                      </div>
+                      {role.id === "mis" && !isMisHead && (
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
+                          Head Only
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-gray-500">
                       {role.description}
                     </div>
@@ -476,9 +492,12 @@ function UserManagement() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handlePermissionToggle(item.id)}
+                        onClick={() => canProvision && handlePermissionToggle(item.id)}
+                        disabled={!canProvision}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          permissions[item.id] ? "bg-blue-500" : "bg-gray-200"
+                          permissions[item.id]
+                            ? canProvision ? "bg-blue-500" : "bg-blue-300 cursor-not-allowed"
+                            : "bg-gray-200"
                         }`}
                       >
                         <span
@@ -506,20 +525,30 @@ function UserManagement() {
             role and permissions.
           </p>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
-              onClick={handleCancel}
-              className="flex-1 sm:flex-none px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddUser}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <UserPlus className="w-4 h-4" />
-              Add User
-            </button>
+            {canProvision ? (
+              <>
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 sm:flex-none px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddUser}
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  title="Create new user"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add User
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-500 bg-gray-100 px-4 py-2 rounded-lg border border-gray-200 cursor-not-allowed">
+                <Shield className="w-4 h-4" />
+                <span>Restricted to MIS Head</span>
+              </div>
+            )}
           </div>
         </div>
 

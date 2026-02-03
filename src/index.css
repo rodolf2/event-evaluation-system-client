@@ -1,5 +1,4 @@
 @import "tailwindcss";
-/* @import "tailwindcss/preflight"; */
 
 /* Custom Fonts */
 
@@ -239,27 +238,61 @@
     /* Better paragraph spacing */
   }
 
-  /* Charts - FIXED PIXEL DIMENSIONS FOR PRINT with consistent sizing */
   .print-chart-container {
     width: 100% !important;
-    max-width: 400px !important;
+    max-width: none !important;
     height: auto !important;
-    min-height: 280px !important;
-    display: block !important;
+    min-height: 150px !important;
+    display: flex !important;
+    flex-direction: row !important; /* Force side-by-side */
+    flex-wrap: nowrap !important; /* Prevent wrapping */
+    align-items: flex-start !important; /* Align to top */
+    justify-content: flex-start !important;
+    gap: 1rem !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    margin-bottom: 1.5rem !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    margin-bottom: 0.5rem !important;
   }
 
-  /* Target wrapper inside our container - consistent size for all charts */
+  /* Reduce Chart Size to fit side-by-side */
+  .print-chart-container .w-64 {
+    width: 140px !important;
+    height: 140px !important;
+    flex-shrink: 0 !important; /* Prevent chart shrinking */
+  }
+
+  /* Target wrapper inside our container */
   .print-chart-container .recharts-wrapper {
-    width: 100% !important;
-    max-width: 400px !important;
-    height: 250px !important;
+    width: 140px !important;
+    height: 140px !important;
     display: block !important;
     visibility: visible !important;
+  }
+  
+  /* HIDE TOOLTIPS IN PRINT */
+  .recharts-tooltip-wrapper {
+    display: none !important;
+  }
+  
+  /* Pie Chart specific SVG scaling */
+  .print-chart-container .recharts-surface {
+    overflow: visible !important;
+  }
+
+  /* Legend Container - COMPACT 2-COLUMN GRID */
+  .print-chart-container .space-y-2 {
+    flex: 1 !important;
+    text-align: left !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important; /* Split legend into 2 columns */
+    gap: 0.25rem 0.5rem !important;
+    font-size: 9pt !important;
+  }
+  
+  /* Ensure legend items don't have extra margins ruining the grid */
+  .print-chart-container .space-y-2 > div {
+    margin-bottom: 0 !important;
+    break-inside: avoid !important;
   }
 
   /* Fallback for other charts */
@@ -537,5 +570,22 @@
 
   .gap-8 {
     gap: 2rem !important;
+  }
+
+  /* Grid Layout for Questions (2 columns to fit 4 per page) */
+  .questions-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Compact Question Block */
+  .questions-grid-container .question-block {
+    margin-bottom: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    border-bottom: 1px solid #eee !important;
   }
 }

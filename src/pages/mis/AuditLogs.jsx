@@ -284,7 +284,6 @@ function AuditLogs() {
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <h1 className="text-2xl font-bold text-gray-800">
-            Technical Audit Logs
           </h1>
           <div className="flex items-center gap-3">
             <button

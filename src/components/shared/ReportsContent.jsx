@@ -394,11 +394,6 @@ const ReportsContent = () => {
         <CompleteReport
           report={selectedReport}
           onBack={handleBackToList}
-          onViewQuantitative={() => setView("quantitative")}
-          onViewQualitative={() => setView("qualitative")}
-          onViewPositive={() => setView("positive")}
-          onViewNegative={() => setView("negative")}
-          onViewNeutral={() => setView("neutral")}
           isGeneratedReport={!selectedReport.isDynamic}
         />
       )}

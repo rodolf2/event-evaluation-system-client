@@ -18,11 +18,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import MisLayout from "../../components/mis/MisLayout";
 import ConfirmationModal from "../../components/shared/ConfirmationModal";
 
 const LexiconManagement = () => {
-  const { token } = useAuth();
+  const { token, currentUser } = useAuth();
   const navigate = useNavigate();
   const [lexicon, setLexicon] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -209,7 +208,13 @@ const LexiconManagement = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate("/mis/settings")}
+              onClick={() => {
+                if (window.location.pathname.startsWith("/psas")) {
+                  navigate("/psas/system-controls");
+                } else {
+                  navigate("/mis/settings");
+                }
+              }}
               className="p-2 hover:bg-gray-100 rounded-lg transition"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />

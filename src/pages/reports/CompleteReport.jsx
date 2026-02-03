@@ -788,7 +788,7 @@ const CompleteReport = ({
                 <p>No question data available</p>
               </div>
             ) : (
-              <div className="space-y-12">
+              <div className="space-y-12 questions-grid-container">
                 {qualitativeData.questionBreakdown.map((question, idx) => (
                   <div
                     key={question.questionId || idx}
@@ -815,7 +815,7 @@ const CompleteReport = ({
                                   cx="50%"
                                   cy="50%"
                                   innerRadius={0}
-                                  outerRadius={100}
+                                  outerRadius={50}
                                   fill="#8884d8"
                                   dataKey="count"
                                   labelLine={false}
@@ -909,7 +909,7 @@ const CompleteReport = ({
                                   cx="50%"
                                   cy="50%"
                                   innerRadius={0}
-                                  outerRadius={100}
+                                  outerRadius={50}
                                   fill="#8884d8"
                                   dataKey="value"
                                   labelLine={false}
@@ -997,7 +997,7 @@ const CompleteReport = ({
                                   cx="50%"
                                   cy="50%"
                                   innerRadius={0}
-                                  outerRadius={100}
+                                  outerRadius={50}
                                   fill="#8884d8"
                                   dataKey="count"
                                   labelLine={false}

@@ -72,7 +72,30 @@ function GuestEvaluatePage() {
     };
 
     fetchFormData();
-  }, [token]);
+
+    // Set up periodic health check (every 30 seconds)
+    const healthCheckInterval = setInterval(async () => {
+      if (!token || error || showSuccess) return;
+
+      try {
+        const response = await fetch("/api/guest/evaluator/validate-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          setError(data.message || "Access has been revoked or expired");
+          setForm(null);
+        }
+      } catch (err) {
+        console.error("Health check failed:", err);
+      }
+    }, 30000);
+
+    return () => clearInterval(healthCheckInterval);
+  }, [token, error, showSuccess]);
 
   // Handle response change
   const handleResponseChange = (questionIndex, value) => {

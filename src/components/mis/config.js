@@ -15,7 +15,6 @@ export const headerConfig = {
     "/mis/user-roles": "User Roles",
     "/mis/audit-logs": "Audit Logs",
     "/mis/settings": "System Configuration",
-    "/mis/security-oversight": "Security Oversight",
     "/mis/notifications": "Notifications",
     "/mis/reports": "Shared Reports",
     "/profile": "My Account",
@@ -43,11 +42,7 @@ export const getSidebarConfig = (user) => ({
       path: "/mis/settings",
     },
     { iconComponent: FileText, label: "Audit Logs", path: "/mis/audit-logs" },
-    {
-      iconComponent: Lock,
-      label: "Security Oversight",
-      path: "/mis/security-oversight",
-    },
+
     // Add Reports link STRICTLY for MIS Head only
     ...(user?.role === "mis" && user?.position === "MIS Head"
       ? [

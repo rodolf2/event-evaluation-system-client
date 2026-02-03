@@ -4,6 +4,8 @@ import AnalyticsIcon from "../../assets/icons/analytics-icon.svg";
 import EvaluationsIcon from "../../assets/icons/evaluations-icon.svg";
 import CertificateIcon from "../../assets/icons/certificate-icon.svg";
 
+import { Users, Settings } from "lucide-react";
+
 export const headerConfig = {
   pageTitles: {
     "/profile": "My Account",
@@ -12,6 +14,8 @@ export const headerConfig = {
     "*certificates": "Certificates",
     "/psas/analytics": "Event Analytics",
     "*reports": "Reports",
+    "/psas/student-management": "Student User Management",
+    "/psas/system-controls": "System Settings",
   },
   defaultTitle: "Home",
   notificationPath: true, // uses /psas/notifications
@@ -21,9 +25,35 @@ export const getSidebarConfig = (user) => {
   // Build menu items based on permissions
   const menuItems = [
     { icon: HomeIcon, label: "Home", path: "/psas/home" },
-    { icon: EvaluationsIcon, label: "Evaluations", path: "/psas/evaluations" },
-    { icon: CertificateIcon, label: "Certificate", path: "/psas/certificates" },
   ];
+
+  // [ITSS RESTRICTION] ITSS only sees Home and Student Management
+  if (user?.position === "ITSS") {
+    menuItems.push({
+      iconComponent: Users,
+      label: "Students",
+      path: "/psas/student-management",
+    });
+    return {
+      homePath: "/psas/home",
+      menuItems,
+    };
+  }
+
+  // Standard PSAS items
+  menuItems.push(
+    { icon: EvaluationsIcon, label: "Evaluations", path: "/psas/evaluations" },
+    { icon: CertificateIcon, label: "Certificate", path: "/psas/certificates" }
+  );
+
+  // Add Students Management for PSAS Head (for PBOO elevation)
+  if (user?.position === "PSAS Head") {
+    menuItems.push({
+      iconComponent: Users,
+      label: "Students",
+      path: "/psas/student-management",
+    });
+  }
 
   // Add Analytics if permission is granted (explicitly true for PSAS Head)
   if (user?.role === "psas" && user?.position === "PSAS Head") {
@@ -40,6 +70,12 @@ export const getSidebarConfig = (user) => {
       icon: ReportsIcon,
       label: "Report",
       path: "/psas/reports",
+    });
+    // System Controls (Global Params, NLP, JWT)
+    menuItems.push({
+      iconComponent: Settings, // Needs import
+      label: "System Settings",
+      path: "/psas/system-controls",
     });
   }
 

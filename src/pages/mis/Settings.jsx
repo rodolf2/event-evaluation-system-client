@@ -5,14 +5,15 @@ import {
   Shield,
   Database,
   FileText,
-  Check,
   History,
   Save,
   Activity,
-
+  Lock,
+  Plus,
+  Trash2,
   BookOpen,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   SkeletonText,
   SkeletonBase,
@@ -27,19 +28,11 @@ function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [showChangeLog, setShowChangeLog] = useState(false);
 
-  // Global Parameters state
-  const [anonymousEvaluationMode, setAnonymousEvaluationMode] = useState(true);
-
   // System Modes state
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [emergencyLockdown, setEmergencyLockdown] = useState(false);
-
-  // NLP state
-  const [dictionaryInfo, setDictionaryInfo] = useState({
-    version: "v1.0.0",
-    lastUpdated: new Date().toLocaleDateString(),
-    updatedBy: "System",
-  });
+  const [domainWhitelist, setDomainWhitelist] = useState([]);
+  const [newDomain, setNewDomain] = useState("");
 
   // Database health state
   const [dbHealth, setDbHealth] = useState({
@@ -64,30 +57,19 @@ function Settings() {
       ]);
 
       const settingsData = await settingsRes.json();
-      const healthData = await healthRes.json();
 
       if (settingsData.success) {
         const s = settingsData.data;
-        // Map settings
         if (s.generalSettings) {
-          setAnonymousEvaluationMode(
-            s.generalSettings.anonymousEvaluation ?? true,
-          );
           setMaintenanceMode(s.generalSettings.maintenanceMode ?? false);
         }
         if (s.securitySettings) {
           setEmergencyLockdown(s.securitySettings.emergencyLockdown ?? false);
-        }
-        if (s.nlpSettings) {
-          setDictionaryInfo({
-            version: s.nlpSettings.dictionaryVersion || "v1.0.0",
-            lastUpdated: s.nlpSettings.lastUpdated
-              ? new Date(s.nlpSettings.lastUpdated).toLocaleDateString()
-              : "Never",
-            updatedBy: s.nlpSettings.updatedBy || "System",
-          });
+          setDomainWhitelist(s.securitySettings.domainWhitelist || []);
         }
       }
+
+      const healthData = await healthRes.json();
 
       if (healthData.success) {
         const h = healthData.data;
@@ -116,7 +98,6 @@ function Settings() {
     try {
       const updates = {
         generalSettings: {
-          anonymousEvaluation: anonymousEvaluationMode,
           maintenanceMode: maintenanceMode,
         },
         securitySettings: {
@@ -142,11 +123,58 @@ function Settings() {
       } else {
         throw new Error(data.message);
       }
+      /*
+     toast.success("No MIS-specific settings to save currently.");
+     */
     } catch (error) {
       console.error("Error saving settings:", error);
       toast.error("Failed to save configuration");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleUpdateSecuritySettings = async (updates) => {
+    try {
+      const response = await fetch("/api/settings/security", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setDomainWhitelist(data.data.domainWhitelist); // Update purely the whitelist from response
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      return false;
+    }
+  };
+
+  const handleAddDomain = async () => {
+    if (!newDomain.trim()) return;
+    const newEntry = { domain: newDomain, label: "Custom Domain" };
+    const updatedList = [...domainWhitelist, newEntry];
+
+    if (await handleUpdateSecuritySettings({ domainWhitelist: updatedList })) {
+      setNewDomain("");
+      toast.success("Domain added to whitelist");
+    } else {
+      toast.error("Failed to add domain");
+    }
+  };
+
+  const handleRemoveDomain = async (id) => {
+    const updatedList = domainWhitelist.filter((item) => item._id !== id);
+    if (await handleUpdateSecuritySettings({ domainWhitelist: updatedList })) {
+      toast.success("Domain removed from whitelist");
+    } else {
+      toast.error("Failed to remove domain");
     }
   };
 
@@ -201,7 +229,6 @@ function Settings() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-800">
-              System Configuration
             </h1>
             {/* <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
               <Check className="w-3 h-3" />
@@ -230,37 +257,6 @@ function Settings() {
 
       {/* Configuration Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global Parameters */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Globe className="w-5 h-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Global Parameters
-            </h2>
-          </div>
-          <p className="text-sm text-gray-500 mb-6">
-            Configure general system behavior and token validity.
-          </p>
-
-          <div className="space-y-6">
-            {/* Anonymous Evaluation Mode */}
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-gray-700">
-                  Anonymous Submissions
-                </div>
-                <div className="text-sm text-gray-500">
-                  Hides student identities in raw feedback data.
-                </div>
-              </div>
-              <ToggleSwitch
-                enabled={anonymousEvaluationMode}
-                onChange={setAnonymousEvaluationMode}
-              />
-            </div>
-          </div>
-        </div>
-
         {/* System Modes */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center gap-2 mb-2">
@@ -309,6 +305,48 @@ function Settings() {
             </div>
           </div>
         </div>
+
+        {/* NLP Engine Card */}
+        <div className="bg-white rounded-lg shadow-md p-6 flex flex-col h-full">
+          <div className="flex items-start gap-3 mb-1">
+            <FileText className="w-6 h-6 text-gray-700 mt-1" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">NLP & Sentiment Engine</h2>
+              <p className="text-gray-500 text-sm">Manage TextBlob dictionaries for student feedback analysis.</p>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-gray-50/50 rounded-xl p-4 border border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-100/50 rounded-xl flex items-center justify-center">
+                <Database className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <div className="font-bold text-gray-800">Internal Dictionary v1.0.0</div>
+                <div className="text-xs text-gray-500">Last updated: 1/6/2026 by System</div>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+              Active
+            </span>
+          </div>
+
+          <div className="mt-8 flex items-center justify-between">
+            <div>
+              <div className="font-bold text-gray-800">Lexicon Management</div>
+              <p className="text-sm text-gray-500">Manage the list of words used for sentiment analysis.</p>
+            </div>
+            <Link 
+              to="/mis/lexicon-management"
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors"
+            >
+              <BookOpen className="w-5 h-5" />
+              Manage Words
+            </Link>
+          </div>
+        </div>
+
+
 
         {/* MongoDB Atlas Health */}
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -372,61 +410,57 @@ function Settings() {
 
         </div>
 
-        {/* NLP & Sentiment Engine */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-5 h-5 text-gray-600" />
+      </div>
+
+      {/* Email Domain Whitelist */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Lock className="w-5 h-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-800">
-              NLP & Sentiment Engine
+              Email Domain Whitelist
             </h2>
           </div>
-          <p className="text-sm text-gray-500 mb-6">
-            Manage TextBlob dictionaries for student feedback analysis.
-          </p>
 
-          {/* Dictionary Info */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Database className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="font-medium text-gray-800">
-                  Internal Dictionary {dictionaryInfo.version}
-                </div>
-                <div className="text-sm text-gray-500">
-                  Last updated: {dictionaryInfo.lastUpdated} by{" "}
-                  {dictionaryInfo.updatedBy}
-                </div>
-              </div>
-            </div>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-              Active
-            </span>
-          </div>
-
-          {/* Manage Lexicon */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <div className="font-medium text-gray-700">
-                Lexicon Management
-              </div>
-              <div className="text-sm text-gray-500">
-                Manage the list of words used for sentiment analysis.
-              </div>
-            </div>
+          {/* Add Domain Input */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-6">
+            <input
+              type="text"
+              value={newDomain}
+              onChange={(e) => setNewDomain(e.target.value)}
+              placeholder="e.g., @laverdad.edu.ph"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
             <button
-              onClick={() => navigate("/mis/lexicon")}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+              onClick={handleAddDomain}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-900 hover:bg-blue-900 text-white rounded-lg transition"
             >
-              <BookOpen className="w-4 h-4" />
-              Manage Words
+              <Plus className="w-4 h-4" />
+              Add Domain
             </button>
           </div>
 
-
+          {/* Domain List */}
+          <div className="space-y-3">
+            {domainWhitelist.map((item) => (
+              <div
+                key={item._id || item.id}
+                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+              >
+                <div>
+                  <div className="font-medium text-gray-800">{item.domain}</div>
+                  <div className="text-sm text-gray-500">{item.label}</div>
+                </div>
+                <button
+                  onClick={() => handleRemoveDomain(item._id || item.id)}
+                  className="p-2 text-gray-400 hover:text-red-600 transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+
       {showChangeLog && (
         <SettingsChangeLogModal onClose={() => setShowChangeLog(false)} />
       )}

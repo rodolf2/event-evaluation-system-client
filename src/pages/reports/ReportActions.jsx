@@ -1002,7 +1002,8 @@ const ReportActions = ({
           {!isGeneratedReport && (
             <button
               onClick={handleGenerate}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              disabled={loading}
+              className={`bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               title="Generate report"
             >
               Generate

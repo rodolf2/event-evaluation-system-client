@@ -27,10 +27,13 @@ export const api = {
       ...options,
       method: "GET",
     });
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(data.message || `HTTP error! status: ${response.status}`);
+      error.response = { data };
+      throw error;
     }
-    return response.json();
+    return data;
   },
 
   async post(endpoint, data, options = {}) {
@@ -39,10 +42,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     });
+    const result = await response.json();
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+      error.response = { data: result };
+      throw error;
     }
-    return response.json();
+    return result;
   },
 
   async put(endpoint, data, options = {}) {
@@ -51,10 +57,13 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(data),
     });
+    const result = await response.json();
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+      error.response = { data: result };
+      throw error;
     }
-    return response.json();
+    return result;
   },
 
   async delete(endpoint, data, options = {}) {
@@ -63,10 +72,13 @@ export const api = {
       method: "DELETE",
       body: data ? JSON.stringify(data) : undefined,
     });
+    const result = await response.json();
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+      error.response = { data: result };
+      throw error;
     }
-    return response.json();
+    return result;
   },
 };
 

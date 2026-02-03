@@ -8,6 +8,8 @@ import {
   Building,
   AlertCircle,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ArrowUpCircle,
   ArrowDownCircle,
   Ban,
@@ -91,6 +93,10 @@ function UserRoles() {
   const [selectedProgram, setSelectedProgram] = useState(PROGRAMS[0]);
   const [confirmAction, setConfirmAction] = useState(null); // 'ELEVATE', 'REMOVE_PBOO', 'DISABLE', 'ELEVATE_HEAD', 'REMOVE_HEAD'
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const { token, user: currentUser, refreshUserData } = useAuth();
   const socket = useSocket();
 
@@ -123,7 +129,7 @@ function UserRoles() {
     if (!token) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/users", {
+      const response = await fetch("/api/users?limit=0", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -181,7 +187,14 @@ function UserRoles() {
       );
     }
     setFilteredUsers(filtered);
+    setCurrentPage(1); // Reset to first page when filtering
   }, [searchQuery, selectedFilter, users]);
+
+  // Pagination Logic
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const paginatedUsers = filteredUsers.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
 
   // Handlers
   const handleElevateClick = (user) => {
@@ -197,6 +210,10 @@ function UserRoles() {
     // If we're removing head status, go straight to confirm
     if (choice === "DEMOTE_STAY" || choice === "DEMOTE_TRANSFER") {
       setConfirmAction("REMOVE_HEAD");
+      setConfirmModalOpen(true);
+    } else if (choice === "Head" || choice === "ITSS") {
+      // Elevating PSAS to Head or ITSS
+      setConfirmAction("ELEVATE_HEAD");
       setConfirmModalOpen(true);
     } else {
       // Otherwise proceed to elevation input (PBOO flow)
@@ -225,18 +242,16 @@ function UserRoles() {
 
   const handleElevateHeadClick = (user) => {
     setSelectedUser(user);
-    setConfirmAction("ELEVATE_HEAD");
-    setConfirmModalOpen(true);
+    // Open choice modal to allow selecting between Head and ITSS
+    setChoiceModalOpen(true);
   };
 
   const handleRemoveHeadClick = (user) => {
     setSelectedUser(user);
-    if (user.role === "mis" || user.role === "psas") {
-      setChoiceModalOpen(true);
-    } else {
-      setConfirmAction("REMOVE_HEAD");
-      setConfirmModalOpen(true);
-    }
+    // Directly go to confirmation (no transfer option)
+    setSelectedChoice("DEMOTE_STAY");
+    setConfirmAction("REMOVE_HEAD");
+    setConfirmModalOpen(true);
   };
 
   const handleElevationSubmit = () => {
@@ -267,11 +282,19 @@ function UserRoles() {
       successMessage = `Removed PBOO role from ${selectedUser.name}`;
     } else if (confirmAction === "ELEVATE_HEAD") {
       const isMis = selectedUser.role === "mis";
+      // Determine position: if MIS, it's MIS Head. If PSAS, check choice (ITSS or PSAS Head)
+      // Default to PSAS Head if no choice made (legacy safety)
+      let targetPosition = isMis ? "MIS Head" : "PSAS Head";
+      if (!isMis && selectedChoice === "ITSS") {
+        targetPosition = "ITSS";
+      }
+
       payload = {
-        position: isMis ? "MIS Head" : "PSAS Head",
+        position: targetPosition,
         permissions: {
-          canViewReports: true,
-          canViewAnalytics: !isMis, // PSAS Head gets analytics too
+          canViewReports: true, 
+          // ITSS also needs some permissions, but backend strictly handles provisioning restrictions
+          canViewAnalytics: !isMis && targetPosition !== "ITSS", // Only PSAS Head gets analytics, ITSS does not
         },
         elevationDate: new Date().toISOString(),
       };
@@ -357,8 +380,12 @@ function UserRoles() {
     const roleConfig = ROLE_COLORS[user.role] || ROLE_COLORS.student;
     let label = roleConfig.label;
 
-    // Show "Head" in badge if applicable
-    if (user.position === "MIS Head" || user.position === "PSAS Head") {
+    // Show "Head" or "ITSS" in badge if applicable
+    if (
+      user.position === "MIS Head" ||
+      user.position === "PSAS Head" ||
+      user.position === "ITSS"
+    ) {
       label = user.position;
     }
 
@@ -404,7 +431,7 @@ function UserRoles() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      {/* <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
@@ -416,7 +443,7 @@ function UserRoles() {
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -513,7 +540,7 @@ function UserRoles() {
         {/* Mobile Card Layout */}
         <div className="block lg:hidden">
           <div className="divide-y divide-gray-200">
-            {filteredUsers.map((user) => (
+            {paginatedUsers.map((user) => (
               <div key={user._id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -544,52 +571,14 @@ function UserRoles() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-2">
-                    {user.role === "student" && user.isActive && currentUser?.position === "MIS Head" && (
-                      <button
-                        onClick={() => handleElevateClick(user)}
-                        className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
-                        title="Elevate to PBOO"
-                      >
-                        <ArrowUpCircle className="w-5 h-5" />
-                      </button>
-                    )}
-                    {user.role === "club-officer" && user.isActive && currentUser?.position === "MIS Head" && (
-                      <button
-                        onClick={() => handleRemovePBOOClick(user)}
-                        className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
-                        title="Remove PBOO Role"
-                      >
-                        <ArrowDownCircle className="w-5 h-5" />
-                      </button>
-                    )}
-                    {(user.role === "student" ||
-                      user.role === "club-officer") &&
-                      user.isActive && (
-                        <button
-                          onClick={() => handleDisableClick(user)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                          title="Disable Access"
-                        >
-                          <Ban className="w-5 h-5" />
-                        </button>
-                      )}
-                    {!user.isActive &&
-                      (user.role === "student" ||
-                        user.role === "club-officer") && (
-                        <button
-                          onClick={() => handleEnableClick(user)}
-                          className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition"
-                          title="Reactivate User"
-                        >
-                          <UserCheck className="w-5 h-5" />
-                        </button>
-                      )}
+
                       {(user.role === "psas" || user.role === "mis") && 
                       user.isActive && 
                       currentUser?.position === "MIS Head" && (
                         <>
                           {user.position !== "MIS Head" &&
-                            user.position !== "PSAS Head" ? (
+                            user.position !== "PSAS Head" &&
+                            user.position !== "ITSS" ? (
                             <button
                               onClick={() => handleElevateHeadClick(user)}
                               className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
@@ -608,6 +597,32 @@ function UserRoles() {
                           )}
                         </>
                       )}
+                    {/* Disable/Enable Actions - Available to MIS Staff for ALL users (except Head/Self) */}
+                    {/* Also available to PSAS Head/ITSS for Students/PBOOs only */}
+                    {((currentUser?.role === "mis") || 
+                      ((user.role === "student" || user.role === "club-officer") && currentUser?.role === "psas")) && 
+                      user._id !== currentUser?._id && 
+                      user.position !== "MIS Head" && (
+                      <>
+                        {user.isActive ? (
+                          <button
+                            onClick={() => handleDisableClick(user)}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Disable Access"
+                          >
+                            <Ban className="w-5 h-5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleEnableClick(user)}
+                            className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition"
+                            title="Reactivate User"
+                          >
+                            <UserCheck className="w-5 h-5" />
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -661,7 +676,7 @@ function UserRoles() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -714,57 +729,17 @@ function UserRoles() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      {user.role === "student" && user.isActive && currentUser?.position === "MIS Head" && (
-                        <>
-                          <button
-                            onClick={() => handleElevateClick(user)}
-                            className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
-                            title="Elevate to PBOO"
-                          >
-                            <ArrowUpCircle className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
-                      {user.role === "club-officer" && user.isActive && currentUser?.position === "MIS Head" && (
-                        <button
-                          onClick={() => handleRemovePBOOClick(user)}
-                          className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
-                          title="Remove PBOO Role"
-                        >
-                          <ArrowDownCircle className="w-5 h-5" />
-                        </button>
-                      )}
-                      {(user.role === "student" ||
-                        user.role === "club-officer") &&
-                        user.isActive && (
-                          <button
-                            onClick={() => handleDisableClick(user)}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                            title="Disable Access"
-                          >
-                            <Ban className="w-5 h-5" />
-                          </button>
-                        )}
-                      {!user.isActive &&
-                        (user.role === "student" ||
-                          user.role === "club-officer") && (
-                          <button
-                            onClick={() => handleEnableClick(user)}
-                            className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition"
-                            title="Reactivate User"
-                          >
-                            <UserCheck className="w-5 h-5" />
-                          </button>
-                        )}
+
                       {(user.role === "mis" || user.role === "psas") && 
                       currentUser?.position === "MIS Head" && (
                         <>
                           {user.position !== "MIS Head" &&
-                            user.position !== "PSAS Head" ? (
+                          user.position !== "PSAS Head" &&
+                          user.position !== "ITSS" ? (
                             <button
                               onClick={() => handleElevateHeadClick(user)}
                               className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
-                              title={`Elevate to ${user.role === "mis" ? "MIS" : "PSAS"} Head`}
+                              title={`Elevate ${user.role === "mis" ? "MIS" : "PSAS"} Staff`}
                             >
                               <ArrowUpCircle className="w-5 h-5" />
                             </button>
@@ -772,9 +747,34 @@ function UserRoles() {
                             <button
                               onClick={() => handleRemoveHeadClick(user)}
                               className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
-                              title="Remove Head Status"
+                              title="Remove Position"
                             >
                               <ArrowDownCircle className="w-5 h-5" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {/* Disable/Enable Actions */}
+                      {((currentUser?.role === "mis") || 
+                        ((user.role === "student" || user.role === "club-officer") && currentUser?.role === "psas")) && 
+                        user._id !== currentUser?._id && 
+                        user.position !== "MIS Head" && (
+                        <>
+                          {user.isActive ? (
+                            <button
+                              onClick={() => handleDisableClick(user)}
+                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Disable Access"
+                            >
+                              <Ban className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleEnableClick(user)}
+                              className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition"
+                              title="Reactivate User"
+                            >
+                              <UserCheck className="w-5 h-5" />
                             </button>
                           )}
                         </>
@@ -806,6 +806,48 @@ function UserRoles() {
             </button>
           </div>
         )}
+
+        {/* Pagination Controls */}
+        <div className="flex flex-col md:flex-row justify-between items-center p-4 border-t border-gray-200">
+          <div className="flex items-center gap-2 mb-4 md:mb-0">
+            <span className="text-gray-700 text-sm">Rows per page:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-gray-700 text-sm">
+              {filteredUsers.length} total
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-50"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {Math.max(1, totalPages)}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-50"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Choice Selection Modal */}
@@ -814,7 +856,11 @@ function UserRoles() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
             <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-white">
-                {selectedUser?.position?.includes("Head") ? "Demote from Head" : "Elevate to PBOO"}
+                {selectedUser?.position?.includes("Head") 
+                  ? "Demote from Head" 
+                  : selectedUser?.role === "student" 
+                    ? "Elevate to PBOO" 
+                    : "Elevate Role"}
               </h3>
               <button
                 onClick={() => setChoiceModalOpen(false)}
@@ -829,31 +875,38 @@ function UserRoles() {
               </p>
 
               <div className="space-y-3">
-                {selectedUser?.position?.includes("Head") ? (
+
+                {selectedUser?.role === "psas" ? (
                   <>
-                    <button
-                      onClick={() => handleChoiceSelect("DEMOTE_STAY")}
+                     <button
+                      onClick={() => handleChoiceSelect("Head")}
                       className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
                     >
-                      <div className="font-medium text-gray-900">
-                        Stay in {selectedUser.role.toUpperCase()} Department
-                      </div>
+                      <div className="font-medium text-gray-900">Make PSAS Head</div>
                       <div className="text-sm text-gray-500">
-                        Revert to regular Staff in the current department.
+                        Full authority over evaluations, certificates, and reports.
                       </div>
                     </button>
                     <button
-                      onClick={() => handleChoiceSelect("DEMOTE_TRANSFER")}
+                      onClick={() => handleChoiceSelect("ITSS")}
                       className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
                     >
-                      <div className="font-medium text-gray-900">
-                        Transfer to {selectedUser.role === "mis" ? "PSAS" : "MIS"} Department
-                      </div>
+                      <div className="font-medium text-gray-900">Make ITSS</div>
                       <div className="text-sm text-gray-500">
-                        Demote and move to the other department as Staff.
+                        Responsible for Student User Management and onboarding.
                       </div>
                     </button>
                   </>
+                ) : selectedUser?.role === "mis" ? (
+                  <button
+                    onClick={() => handleChoiceSelect("Head")}
+                    className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
+                  >
+                    <div className="font-medium text-gray-900">Make MIS Head</div>
+                    <div className="text-sm text-gray-500">
+                      Full authority over system configuration and user management.
+                    </div>
+                  </button>
                 ) : selectedUser?.role === "student" ? (
                   <>
                     <button
@@ -961,16 +1014,25 @@ function UserRoles() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative">
             <div className="flex flex-col items-center text-center">
               <div
-                className={`p-3 rounded-full mb-4 ${confirmAction === "DISABLE"
-                  ? "bg-red-100 text-red-600"
-                  : "bg-blue-100 text-blue-600"
-                  }`}
+                className={`p-3 rounded-full mb-4 ${
+                  confirmAction === "DISABLE"
+                    ? "bg-red-100 text-red-600"
+                    : confirmAction === "REMOVE_HEAD" || confirmAction === "REMOVE_PBOO"
+                    ? "bg-orange-100 text-orange-600"
+                    : "bg-blue-100 text-blue-600"
+                }`}
               >
                 {confirmAction === "DISABLE" && <Ban className="w-8 h-8" />}
                 {confirmAction === "ELEVATE" && (
                   <ArrowUpCircle className="w-8 h-8" />
                 )}
                 {confirmAction === "REMOVE_PBOO" && (
+                  <ArrowDownCircle className="w-8 h-8" />
+                )}
+                {confirmAction === "ELEVATE_HEAD" && (
+                  <ArrowUpCircle className="w-8 h-8" />
+                )}
+                {confirmAction === "REMOVE_HEAD" && (
                   <ArrowDownCircle className="w-8 h-8" />
                 )}
               </div>
@@ -994,7 +1056,11 @@ function UserRoles() {
                   `This will elevate ${selectedUser?.name} to ${selectedUser?.role === "mis" ? "MIS" : "PSAS"
                   } Head, granting access to full reports.`}
                 {confirmAction === "REMOVE_HEAD" &&
-                  `This will remove Head status from ${selectedUser?.name} and revert their permissions.`}
+                  `This will remove ${
+                    selectedUser?.position === "PSAS Head"
+                      ? "Head status"
+                      : selectedUser?.position
+                  } from ${selectedUser?.name} and revert their permissions.`}
                 {confirmAction === "REMOVE_PBOO" &&
                   `This will revert ${selectedUser?.name} to a regular Student role.`}
                 {confirmAction === "DISABLE" &&
@@ -1012,10 +1078,13 @@ function UserRoles() {
                 </button>
                 <button
                   onClick={handleConfirmAction}
-                  className={`flex-1 px-4 py-2 rounded-lg text-white ${confirmAction === "DISABLE"
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-                    }`}
+                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
+                    confirmAction === "DISABLE"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : confirmAction === "REMOVE_HEAD" || confirmAction === "REMOVE_PBOO"
+                      ? "bg-orange-600 hover:bg-orange-700"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
                   Confirm
                 </button>

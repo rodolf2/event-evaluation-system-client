@@ -45,7 +45,8 @@ const GuestAccessHandler = () => {
 
       setError(
         err.response?.data?.message ||
-          "Invalid or expired access token. Please request a new link from the event organizer."
+          err.message ||
+          "Failed to validate access token"
       );
       console.error("Token validation failed:", err);
     } finally {
@@ -54,13 +55,6 @@ const GuestAccessHandler = () => {
     }
   };
 
-  const handleManualTokenSubmit = async (e) => {
-    e.preventDefault();
-    const manualToken = e.target.token.value;
-    if (manualToken) {
-      validateToken(manualToken);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -86,8 +80,7 @@ const GuestAccessHandler = () => {
             Guest Access
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Please use the access link provided in your email or enter your
-            token below.
+            Please use the unique access link provided in your email to view this report.
           </p>
         </div>
 
@@ -115,60 +108,33 @@ const GuestAccessHandler = () => {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleManualTokenSubmit}>
-          <div className="rounded-md shadow-sm">
-            <div>
-              <label htmlFor="token" className="sr-only">
-                Access Token
-              </label>
-              <input
-                id="token"
-                name="token"
-                type="text"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your access token manually"
-                disabled={isValidating}
-              />
+        <div className="mt-8 flex justify-center">
+          {isValidating && (
+            <div className="flex items-center gap-3 text-indigo-600 font-medium">
+              <svg
+                className="animate-spin h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span>Checking validation status...</span>
             </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isValidating}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isValidating ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Validating...
-                </>
-              ) : (
-                "Access Event"
-              )}
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
 
         <div className="text-center text-sm text-gray-500">
           <p>Having trouble? Contact the event organizer for assistance.</p>

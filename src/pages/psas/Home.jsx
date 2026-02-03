@@ -26,7 +26,7 @@ function Home() {
     analytics: null,
     reports: null,
   });
-  const { token, isLoading } = useAuth();
+  const { token, isLoading, user } = useAuth();
   const socket = useSocket();
 
   const fetchReminders = useCallback(async () => {
@@ -275,16 +275,30 @@ function Home() {
               </div>
               {/* Cards - spans 2 columns, positioned in second row */}
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <DashboardCard
-                  image={thumbnailUrls.analytics}
-                  title="Event Analytics"
-                  buttonText="View Event Analytics"
-                />
-                <DashboardCard
-                  image={thumbnailUrls.reports}
-                  title="Event Reports"
-                  buttonText="View Event Reports"
-                />
+                {user?.position === "ITSS" ? (
+                  // [ITSS VIEW] Single Card
+                  <div className="sm:col-span-2">
+                    <DashboardCard
+                      title="Student User Management"
+                      buttonText="Manage Students"
+                      link="/psas/student-management"
+                    />
+                  </div>
+                ) : (
+                  // [STANDARD VIEW] Analytics & Reports
+                  <>
+                    <DashboardCard
+                      image={thumbnailUrls.analytics}
+                      title="Event Analytics"
+                      buttonText="View Event Analytics"
+                    />
+                    <DashboardCard
+                      image={thumbnailUrls.reports}
+                      title="Event Reports"
+                      buttonText="View Event Reports"
+                    />
+                  </>
+                )}
               </div>
             </div>
 

@@ -7,7 +7,7 @@ const GuestShareModal = ({ isOpen, onClose, reportId, reportTitle }) => {
   const { token } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [expirationDays, setExpirationDays] = useState(48);
+  const [expirationDays, setExpirationDays] = useState("6m");
   const [isLoading, setIsLoading] = useState(false);
   const [generatedToken, setGeneratedToken] = useState(null);
   const [existingTokens, setExistingTokens] = useState([]);
@@ -127,7 +127,7 @@ const GuestShareModal = ({ isOpen, onClose, reportId, reportTitle }) => {
   const resetForm = () => {
     setEmail("");
     setName("");
-    setExpirationDays(48);
+    setExpirationDays("6m");
     setGeneratedToken(null);
   };
 
@@ -279,16 +279,12 @@ const GuestShareModal = ({ isOpen, onClose, reportId, reportTitle }) => {
                     <select
                       value={expirationDays}
                       onChange={(e) =>
-                        setExpirationDays(Number(e.target.value))
+                        setExpirationDays(e.target.value)
                       }
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#1F3463] focus:border-transparent"
                     >
-                      <option value={48}>48 hours</option>
-                      <option value={72}>72 hours</option>
-                      <option value={96}>96 hours</option>
-                      <option value={120}>120 hours</option>
-                      <option value={144}>144 hours</option>
-                      <option value={168}>168 hours (7 days)</option>
+                      <option value="6m">6 Months</option>
+                      <option value="1y">1 Year</option>
                     </select>
                   </div>
 
