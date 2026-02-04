@@ -208,7 +208,7 @@ const CommentSection = ({
     <>
       <div className="mb-4">
         <p className="text-sm text-gray-600">
-          Total {title}: {uniqueComments.length}
+          Total Unique {title}: {uniqueComments.length}
         </p>
       </div>
 
