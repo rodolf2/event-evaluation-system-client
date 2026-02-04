@@ -23,8 +23,14 @@ export const AuthProvider = ({ children }) => {
     type: "normal", // 'maintenance' or 'lockdown'
   });
   const sessionCheckIntervalRef = useRef(null);
+  const tokenRef = useRef(token);
 
-  const fetchUser = useCallback(async () => {
+  // Update tokenRef whenever token state changes
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
+
+  const fetchUser = useCallback(async (tokenToUse = null) => {
     // Rely on cookie for auth, so no token check needed here
 
 
@@ -37,9 +43,20 @@ export const AuthProvider = ({ children }) => {
         import.meta.env.VITE_API_URL ||
         import.meta.env.VITE_API_BASE_URL ||
         "http://localhost:5000";
+      
+      // Use provided token, or current ref, or state
+      const activeToken = tokenToUse || tokenRef.current || token;
+
+      if (!activeToken) {
+        console.log("[AUTH-CONTEXT] No token available, skipping profile fetch");
+        setIsLoading(false);
+        return;
+      }
+      
+      
       const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${activeToken}`,
         },
       });
 
@@ -109,12 +126,12 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [token]); // Still depend on token for lifecycle, but ref handles the "immediate" case
   // Function to refresh user data with error handling
-  const refreshUserData = useCallback(async () => {
+  const refreshUserData = useCallback(async (tokenToUse = null) => {
     try {
       setIsLoading(true);
-      await fetchUser();
+      await fetchUser(tokenToUse);
     } catch (error) {
       console.error("Error refreshing user data:", error);
     } finally {
@@ -241,9 +258,10 @@ export const AuthProvider = ({ children }) => {
 
   const saveToken = (newToken) => {
     localStorage.setItem("token", newToken);
+    tokenRef.current = newToken; // Update ref immediately for the next call
     setToken(newToken);
-    // User data will be fetched by the effect or refreshUserData
-    refreshUserData();
+    // Fetch user data WITH the new token immediately to avoid state delay
+    refreshUserData(newToken);
   };
 
   const removeToken = () => {
