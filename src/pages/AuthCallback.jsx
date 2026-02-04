@@ -33,54 +33,35 @@ function AuthCallback() {
   const homeRoute = user ? getHomeRoute(user.role) : "/login";
 
   useEffect(() => {
-    // Explicitly refresh user data when landing on callback to ensure cookie is picked up
-    const initializeAuth = async () => {
-      // If we already have a user, proceed immediately
-      if (user) {
-        handleRedirect();
-        return;
-      }
+    // Restore token extraction from URL
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token");
 
-      // If still loading or no user, try to refresh
-      await refreshUserData();
-    };
-
-    initializeAuth();
-  }, [refreshUserData]); // Only run on mount (and when refreshUserData changes, which is stable)
-
-  // Separate effect to handle redirection after loading state settles
-  useEffect(() => {
-    if (!isLoading) {
-      if (user) {
-        handleRedirect();
-      } else {
-        // If first attempt failed, try one more time after a short delay
-        // This handles cases where the cookie needs a split second to be attached
-        if (retryCount < 2) {
-          const timer = setTimeout(() => {
-            console.log(`[AUTH-CALLBACK] Retrying auth check (${retryCount + 1}/2)...`);
-            setRetryCount(prev => prev + 1);
-            refreshUserData();
-          }, 1000); // Wait 1 second before retry
-          return () => clearTimeout(timer);
-        } else {
-          // If all retries failed
-          console.warn("[AUTH-CALLBACK] Auth failed after retries, redirecting to login");
-          navigate("/login?error=auth_failed");
-        }
-      }
+    if (token) {
+      console.log("[AUTH-CALLBACK] Token found in URL, saving...");
+      saveToken(token);
+    } else if (!isLoading && !user) {
+      console.warn("[AUTH-CALLBACK] No token found and not logged in, redirecting to login");
+      navigate("/login");
     }
-  }, [isLoading, user, retryCount]);
+  }, [location, saveToken, isLoading, user, navigate]);
+
+  // Separate effect to handle redirection after user state is populated
+  useEffect(() => {
+    if (user && !isLoading) {
+      handleRedirect();
+    }
+  }, [user, isLoading]);
 
   const handleRedirect = () => {
     const redirectTo = localStorage.getItem("redirectTo");
     console.log("[AUTH-CALLBACK] Auth success, redirecting...");
-    
+
     if (redirectTo) {
       localStorage.removeItem("redirectTo");
       navigate(redirectTo);
     } else {
-      navigate(user ? getHomeRoute(user.role) : "/login");
+      navigate(getHomeRoute(user.role));
     }
   };
 

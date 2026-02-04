@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  // Token is now managed by HttpOnly cookie
+  const [token, setToken] = useState(localStorage.getItem("token"));
   const [isLoading, setIsLoading] = useState(true); // Always start loading to check auth status
   const [systemStatus, setSystemStatus] = useState({
     active: false,
@@ -39,9 +39,8 @@ export const AuthProvider = ({ children }) => {
         "http://localhost:5000";
       const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         headers: {
-          // No Authorization header needed with cookies
+          Authorization: `Bearer ${token}`,
         },
-        credentials: "include", // Important: Send cookies for cross-origin requests
       });
 
       const data = await response.json();
@@ -110,7 +109,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
   // Function to refresh user data with error handling
   const refreshUserData = useCallback(async () => {
     try {
@@ -240,33 +239,33 @@ export const AuthProvider = ({ children }) => {
     handleSessionExpired,
   ]);
 
-  const saveToken = () => {
-    // Token is handled via cookie now
-    // Just refresh user data to confirm login
+  const saveToken = (newToken) => {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    // User data will be fetched by the effect or refreshUserData
     refreshUserData();
   };
 
   const removeToken = () => {
-    localStorage.removeItem("token"); // Clean up old tokens if any
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem(ACTIVITY_KEY);
     if (sessionCheckIntervalRef.current) {
       clearInterval(sessionCheckIntervalRef.current);
       sessionCheckIntervalRef.current = null;
     }
-    // setToken(null);
+    setToken(null);
     setUser(null);
-    
-    // Call server logout
+
+    // Call server logout (informative)
     const API_BASE_URL =
       import.meta.env.VITE_API_URL ||
       import.meta.env.VITE_API_BASE_URL ||
       "http://localhost:5000";
-      
+
     fetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-    }).catch(err => console.error("Logout error", err));
+      method: "POST",
+    }).catch((err) => console.error("Logout error", err));
   };
 
   const updateUser = (newUserData) => {
@@ -278,15 +277,14 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider
       value={{
+        token,
         user,
-        // token, // Expose loading state instead? Or keep token null to break consumers?
-        // Better to remove token from interface, but for compatibility let's keep it null or remove
-        saveToken,
-        removeToken,
-        refreshUserData,
-        updateUser,
         isLoading,
         systemStatus,
+        saveToken,
+        removeToken,
+        updateUser,
+        refreshUserData,
       }}
     >
       {children}
