@@ -43,9 +43,7 @@ const ReportSharingPage = () => {
   const location = useLocation();
   const { token, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState(
-    user?.role === "club-officer" ? "" : "Higher Education",
-  );
+  const [departmentFilter, setDepartmentFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
@@ -209,14 +207,8 @@ const ReportSharingPage = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      // Role-based filtering: Club Officers (PBOOs) 
-      if (user?.role === "club-officer") {
-        // Restricted to Club Advisers, PSAS, and Guests
-        const allowedRoles = ["club-adviser", "psas", "evaluator", "guest-speaker"];
-        if (!allowedRoles.includes(u.role)) {
-          return false;
-        }
-      }
+      // Backend now handles role-based filtering for security
+
 
       const matchesSearch =
         !searchQuery ||

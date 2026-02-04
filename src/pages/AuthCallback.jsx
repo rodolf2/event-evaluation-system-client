@@ -29,36 +29,33 @@ function AuthCallback() {
     }
   };
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const token = params.get("token");
+  // Determine effective home route
+  const homeRoute = user ? getHomeRoute(user.role) : "/login";
 
-    if (token && !tokenSaved) {
-      saveToken(token);
-      setTokenSaved(true);
-    } else if (!token) {
-      navigate("/login");
-    }
-  }, [location, navigate, saveToken, tokenSaved]);
-
-  // Wait for user data to be loaded before navigating
   useEffect(() => {
-    if (tokenSaved && !isLoading && user) {
-      // Check if there's a stored redirection path
-      const redirectTo = localStorage.getItem("redirectTo");
-      
-      // Navigate to intended route or role-based home route
-      setTimeout(() => {
-        if (redirectTo) {
-          console.log("[AUTH-CALLBACK] Redirecting to stored path:", redirectTo);
-          localStorage.removeItem("redirectTo"); // Clean up
-          navigate(redirectTo);
-        } else {
-          navigate(getHomeRoute(user.role));
-        }
-      }, 100);
+    // Just wait for user data to load (via cookie)
+    if (!isLoading) {
+      if (user) {
+        // Check if there's a stored redirection path
+        const redirectTo = localStorage.getItem("redirectTo");
+        
+        // Navigate with a small delay to ensure state settles
+        setTimeout(() => {
+          if (redirectTo) {
+            console.log("[AUTH-CALLBACK] Redirecting to stored path:", redirectTo);
+            localStorage.removeItem("redirectTo");
+            navigate(redirectTo);
+          } else {
+            navigate(homeRoute);
+          }
+        }, 100);
+      } else {
+        // If loading finished and no user, auth failed
+        console.warn("[AUTH-CALLBACK] No user found after loading, redirecting to login");
+        navigate("/login");
+      }
     }
-  }, [tokenSaved, isLoading, user, navigate]);
+  }, [isLoading, user, navigate, homeRoute]);
 
   return (
     <div

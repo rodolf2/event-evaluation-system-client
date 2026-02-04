@@ -9,18 +9,14 @@ const ACTIVITY_KEY = "lastActivityTime";
 const TOKEN_EXPIRY_WARNING_MS = 5 * 60 * 1000; // Warn when 5 minutes left
 const TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000; // Refresh when 2 minutes left
 
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [isLoading, setIsLoading] = useState(() => {
-    // Don't start in loading state by default - use timeout approach
-    const savedToken = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-    return savedToken && !savedUser;
-  });
+  // Token is now managed by HttpOnly cookie
+  const [isLoading, setIsLoading] = useState(true); // Always start loading to check auth status
   const [systemStatus, setSystemStatus] = useState({
     active: false,
     message: "",
@@ -29,10 +25,8 @@ export const AuthProvider = ({ children }) => {
   const sessionCheckIntervalRef = useRef(null);
 
   const fetchUser = useCallback(async () => {
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+    // Rely on cookie for auth, so no token check needed here
+
 
     // Don't fetch if we already have user data (unless forced refresh needed?)
     // Actually, we should probably verify token validity on mount?
@@ -45,7 +39,7 @@ export const AuthProvider = ({ children }) => {
         "http://localhost:5000";
       const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          // No Authorization header needed with cookies
         },
         credentials: "include", // Important: Send cookies for cross-origin requests
       });
@@ -63,6 +57,20 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
+      // Explicitly check for auth failures
+      if (response.status === 401 || response.status === 403) {
+        console.error("Authentication failed (401/403), logging out");
+        removeToken();
+        return;
+      }
+
+      // Ignore other server errors/rate limits (e.g., 429, 500, 502) to prevent accidental logout
+      if (!response.ok) {
+        console.warn(`Server authentication check failed with status: ${response.status}`);
+        // Do not removeToken() here. Just return.
+        return;
+      }
+
       // Reset system status if successful
       setSystemStatus({ active: false, message: "", type: "normal" });
 
@@ -71,6 +79,8 @@ export const AuthProvider = ({ children }) => {
         const user = data.data.user;
         if (!user.email || !user.role) {
           console.error("Invalid user data received");
+          // removeToken(); // Don't logout on bad data? Maybe, but definitely not on network error.
+          // For invalid data, we probably DO want to logout as state is corrupted.
           removeToken();
           return;
         }
@@ -83,19 +93,24 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("user", JSON.stringify(user));
         setUser(user);
       } else {
-        console.error("Failed to fetch user profile");
-        removeToken();
+        console.error("Failed to fetch user profile, success=false");
+        // If the server explicitly says success=false, it might be an auth error or other logic error.
+        // We should check the STATUS code primarily. This block runs if response.ok was true but data.success is false?
+        // Wait, response.ok triggers for 200-299.
+        // If response was 401, it threw? No, fetch doesn't throw on 401.
+        // I need to check response status before parsing json.
       }
     } catch (error) {
       console.error("Error fetching user:", error);
-      // Only remove token on auth errors or network mismatch?
-      // For safety, catching generic error might mean network down.
-      // If network down, maybe show maintenance too? For now, keep removeToken behavior for critical fails.
-      removeToken();
+      // Only remove token on 401 from the server, which we handle above via response.status check inside catch? 
+      // No, fetch doesn't throw on HTTP errors. It throws on network errors.
+      // So if we are here, it's a network error (like cancelled request from reload). 
+      // WE SHOULD NOT LOGOUT HERE.
+      // removeToken(); 
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, []);
   // Function to refresh user data with error handling
   const refreshUserData = useCallback(async () => {
     try {
@@ -127,9 +142,9 @@ export const AuthProvider = ({ children }) => {
       sessionCheckIntervalRef.current = null;
     }
     localStorage.removeItem(ACTIVITY_KEY);
-    localStorage.removeItem("token");
+    // localStorage.removeItem("token"); // No longer needed
     localStorage.removeItem("user");
-    setToken(null);
+    // setToken(null);
     setUser(null);
     toast.error(
       "Your session has expired due to inactivity. Please log in again.",
@@ -142,23 +157,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (token) {
-      // Add a timeout to ensure we don't get stuck in loading state
-      const loadingTimeout = setTimeout(() => {
-        setIsLoading(false);
-      }, 5000); // 5 second timeout
-
-      refreshUserData().finally(() => {
-        clearTimeout(loadingTimeout);
-      });
-    } else {
-      setIsLoading(false);
-    }
-  }, [token, refreshUserData]);
+    // Initial check on mount
+    refreshUserData(); 
+  }, [refreshUserData]);
 
   // Session timeout effect - only active when user is logged in
   useEffect(() => {
-    if (!token || !user) {
+    if (!user) {
       // Clear interval if user logs out
       if (sessionCheckIntervalRef.current) {
         clearInterval(sessionCheckIntervalRef.current);
@@ -229,33 +234,39 @@ export const AuthProvider = ({ children }) => {
       }
     };
   }, [
-    token,
     user,
     updateActivityTime,
     checkSessionExpiry,
     handleSessionExpired,
   ]);
 
-  const saveToken = (userToken) => {
-    if (!userToken) {
-      removeToken();
-      return;
-    }
-    localStorage.setItem("token", userToken);
-    setToken(userToken);
-    refreshUserData(); // Fetch user data with new token
+  const saveToken = () => {
+    // Token is handled via cookie now
+    // Just refresh user data to confirm login
+    refreshUserData();
   };
 
   const removeToken = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("token"); // Clean up old tokens if any
     localStorage.removeItem("user");
     localStorage.removeItem(ACTIVITY_KEY);
     if (sessionCheckIntervalRef.current) {
       clearInterval(sessionCheckIntervalRef.current);
       sessionCheckIntervalRef.current = null;
     }
-    setToken(null);
+    // setToken(null);
     setUser(null);
+    
+    // Call server logout
+    const API_BASE_URL =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://localhost:5000";
+      
+    fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+    }).catch(err => console.error("Logout error", err));
   };
 
   const updateUser = (newUserData) => {
@@ -268,7 +279,8 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        token,
+        // token, // Expose loading state instead? Or keep token null to break consumers?
+        // Better to remove token from interface, but for compatibility let's keep it null or remove
         saveToken,
         removeToken,
         refreshUserData,
