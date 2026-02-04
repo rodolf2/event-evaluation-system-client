@@ -341,13 +341,14 @@
 
   /* Section spacing - NO forced page breaks, allow natural flow */
   .section-page {
-    page-break-before: auto !important; /* Changed from always - allow multiple sections per page */
-    page-break-inside: auto !important; /* Allow breaking within if needed */
+    page-break-before: auto; /* Allow overrides */
+    page-break-inside: auto;
     margin-top: 1rem !important;
     margin-bottom: 0.75rem !important;
   }
 
-  .section-page:first-child {
+  /* Ensure first section can still break if explicitly requested */
+  .section-page:first-child:not(.print-page-break-before-forced) {
     page-break-before: avoid !important;
     margin-top: 0 !important;
   }
@@ -406,9 +407,21 @@
   }
 
   /* Content that should always start on a new page */
-  .print-page-break-before {
+  .print-page-break-before,
+  .print-page-break-before-forced {
+    display: block !important;
+    clear: both !important;
     break-before: page !important;
     page-break-before: always !important;
+  }
+
+  /* Content that should always end a page */
+  .print-page-break-after,
+  .print-page-break-after-forced {
+    display: block !important;
+    clear: both !important;
+    break-after: page !important;
+    page-break-after: always !important;
   }
 
   /* Prevent page break right after this element */
@@ -425,10 +438,11 @@
   }
 
   /* Rating legend items - keep together */
-  .space-y-2 > div {
+  .space-y-2 > div,
+  .print-keep-together {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
   }
 
   /* Insights section - each insight paragraph should not break */
@@ -439,10 +453,10 @@
     line-height: 1.5 !important;
   }
 
-  /* Section wrappers with white background - nice boundary */
+  /* Section wrappers with white background - allow breaking for long sections like Ratings */
   .bg-white.rounded-lg {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
     margin-bottom: 1rem !important;
   }
 
@@ -576,16 +590,32 @@
   .questions-grid-container {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 1rem !important;
+    gap: 0.5rem !important;
     margin-bottom: 0 !important;
+    row-gap: 0.5rem !important;
   }
   
   /* Compact Question Block */
   .questions-grid-container .question-block {
-    margin-bottom: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    border-bottom: 1px solid #eee !important;
+    border-bottom: none !important; /* Removed gray line */
+  }
+
+  /* Reduce Chart Size even further to fit 8 per page (4 rows) */
+  /* Target height < 200px per row. 140px chart + 20px text = 160px. */
+  .print-chart-container .w-64 {
+    width: 140px !important;
+    height: 140px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .print-chart-container .recharts-wrapper {
+    width: 140px !important;
+    height: 140px !important;
+    display: block !important;
+    visibility: visible !important;
   }
 }

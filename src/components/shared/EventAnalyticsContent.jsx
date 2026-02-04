@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Search, ChevronDown, X, FileBarChart, Calendar } from "lucide-react";
@@ -36,6 +36,19 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   const [sortOption, setSortOption] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Optimize: Track in-flight requests and cache them
+  const requestCacheRef = useRef({});
+  const abortControllerRef = useRef(null);
+
+  // Clear cache on logout
+  useEffect(() => {
+    if (!token) {
+      // Clear all cached analytics data when user logs out
+      requestCacheRef.current = {};
+      console.log("[SECURITY] Analytics cache cleared on logout");
+    }
+  }, [token]);
 
   // Fetch available forms for the current user
   useEffect(() => {
@@ -130,6 +143,20 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
         return;
       }
 
+      // Check if data is already cached locally
+      if (requestCacheRef.current[formId]) {
+        console.log(`[CACHE HIT] Loading cached analytics for form ${formId}`);
+        setAnalyticsData(requestCacheRef.current[formId]);
+        setLoading(false);
+        return;
+      }
+
+      // Cancel previous request if switching forms quickly
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       setLoading(true);
       try {
         if (!token) {
@@ -143,7 +170,14 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          signal: abortControllerRef.current.signal,
         });
+
+        // Don't process if request was aborted
+        if (abortControllerRef.current.signal.aborted) {
+          console.log(`[ABORT] Request cancelled for form ${formId}`);
+          return;
+        }
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -155,15 +189,26 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
         const result = await response.json();
 
         if (result.success && result.data) {
+          // Cache the result locally
+          requestCacheRef.current[formId] = result.data;
           setAnalyticsData(result.data);
         } else {
           throw new Error("Invalid response format");
         }
       } catch (error) {
+        // Don't log error if request was intentionally aborted
+        if (error.name === "AbortError") {
+          console.log(`[ABORT] Request aborted for form ${formId}`);
+          return;
+        }
+
         console.error("Failed to fetch event analytics:", error);
 
         // Show error toast for visibility
-        if (error.message && !error.message.includes("Cast to ObjectId failed")) {
+        if (
+          error.message &&
+          !error.message.includes("Cast to ObjectId failed")
+        ) {
           toast.error(error.message || "Failed to load analytics data");
         }
 
@@ -599,10 +644,11 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
                               setSearchQuery("");
                               setIsSearchFocused(false);
                             }}
-                            className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors ${formId === form._id
-                              ? "bg-blue-50 text-blue-700"
-                              : "hover:bg-gray-50 text-gray-700"
-                              }`}
+                            className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors ${
+                              formId === form._id
+                                ? "bg-blue-50 text-blue-700"
+                                : "hover:bg-gray-50 text-gray-700"
+                            }`}
                           >
                             <Calendar
                               className={`w-4 h-4 ${formId === form._id ? "text-blue-500" : "text-gray-400"}`}

@@ -5,7 +5,6 @@ import PSASLayout from "../../components/psas/PSASLayout";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import ClubAdviserLayout from "../../components/club-advisers/ClubAdviserLayout";
 import ReportHeader from "./ReportHeader";
-import ReportDescription from "./ReportDescription";
 import ReportActions from "./ReportActions";
 import { ReportPageFooter } from "./ReportHeaderFooter";
 import { useDynamicReportData } from "../../hooks/useDynamicReportData";
@@ -167,14 +166,6 @@ const CommentSection = ({
   loading = false,
   type = "neutral",
 }) => {
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const commentsPerPage = 10;
-
-  // Reset to page 1 when comments array changes (prevents stale pagination)
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [comments?.length, type]);
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -207,73 +198,30 @@ const CommentSection = ({
   };
 
   // Deduplicate comments based on comment text to prevent visual duplicates
-  const uniqueComments = comments.filter((comment, index, self) =>
-    index === self.findIndex((c) => getCommentText(c) === getCommentText(comment))
+  const uniqueComments = comments.filter(
+    (comment, index, self) =>
+      index ===
+      self.findIndex((c) => getCommentText(c) === getCommentText(comment)),
   );
-
-  // Calculate pagination using deduplicated comments
-  const totalPages = Math.ceil(uniqueComments.length / commentsPerPage);
-  const startIndex = (currentPage - 1) * commentsPerPage;
-  const endIndex = startIndex + commentsPerPage;
-  const currentComments = uniqueComments.slice(startIndex, endIndex);
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
 
   return (
     <>
-      {type !== "neutral" && (
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-sm text-gray-600">
-            Total {title}: {uniqueComments.length} | Page {currentPage} of{" "}
-            {totalPages}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${currentPage === 1
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
-            >
-              Previous
-            </button>
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${currentPage === totalPages
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="mb-4">
+        <p className="text-sm text-gray-600">
+          Total {title}: {uniqueComments.length}
+        </p>
+      </div>
 
       <div className="space-y-2 comment-section-container">
-        {(type === "neutral" ? uniqueComments : currentComments).map(
-          (comment, index) => (
-            <div
-              key={`${type}-${startIndex + index}-${getCommentText(comment).substring(0, 20) || index}`}
-              className="flex gap-2 comment-item"
-            >
-              <span className="text-gray-600 mt-1">•</span>
-              <p className="text-gray-800 flex-1">{getCommentText(comment)}</p>
-            </div>
-          ),
-        )}
+        {uniqueComments.map((comment, index) => (
+          <div
+            key={`${type}-${index}-${getCommentText(comment).substring(0, 20) || index}`}
+            className="flex gap-2 comment-item"
+          >
+            <span className="text-gray-600 mt-1">•</span>
+            <p className="text-gray-800 flex-1">{getCommentText(comment)}</p>
+          </div>
+        ))}
       </div>
     </>
   );
@@ -294,7 +242,7 @@ const CompleteReport = ({
   const navigate = useNavigate();
   const { eventId } = useParams(); // Get eventId from URL if not provided as prop
   const { user } = useAuth();
-  
+
   // Check for dynamic=true in URL query parameters
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -336,8 +284,8 @@ const CompleteReport = ({
     }
   };
 
-  const SectionWrapper = ({ title, children }) => (
-    <div className="section-page mb-8">
+  const SectionWrapper = ({ title, children, className = "" }) => (
+    <div className={`section-page mb-8 ${className}`}>
       <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4 md:p-8">
         {title && (
           <div className="text-center mb-8">
@@ -649,134 +597,157 @@ const CompleteReport = ({
             </div>
           )}
 
-          {/* Report Header and Description - appears only once at top */}
-          <div
-            id="report-header-block"
-            className="bg-white rounded-lg shadow-sm overflow-hidden mb-8"
-          >
-            <ReportHeader />
-            <ReportDescription
-              title={formData?.title || "Sample Event Evaluation Report"}
-            />
-            <div className="p-4 md:p-8 text-center">
-              <h3 className="text-xl font-bold mb-2">
-                {formData?.title || "EVENT EVALUATION REPORT"}
-              </h3>
-              <p className="text-lg font-bold">EVALUATION RESULT</p>
-              <p className="text-base">College Level</p>
+          {/* Report Header and Event Title - First Page Content */}
+          <div className="bg-white rounded-lg mb-8 pb-4 print:bg-transparent print:shadow-none print:mb-0">
+            <div id="report-header-block">
+              <ReportHeader />
+            </div>
+
+            <div className="p-4 md:p-8 text-center mt-4 print:mt-16 print:pt-6">
+              <h1 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-6 print:!text-black print:!text-5xl print:!font-bold print:!block print:!visible print:!opacity-100">
+                {formData?.title || report?.title || "EVENT EVALUATION REPORT"}
+              </h1>
+
+              <div className="mx-auto h-1.5 w-1/2 bg-blue-600 rounded mb-6 print:bg-gray-400"></div>
+
+              <p className="text-gray-700 max-w-4xl mx-auto leading-relaxed text-base md:text-lg mb-8 print:!text-black print:!text-lg print:!font-medium print:!opacity-100">
+                This evaluation report serves as a guide for the institution to
+                acknowledge the impact of the said event on the welfare and
+                enjoyment of the students at La Verdad Christian College –
+                Apalit, Pampanga.
+              </p>
+
+              <div className="space-y-1">
+                <p className="text-xl font-bold uppercase tracking-wider text-blue-800 print:!text-black print:!block">
+                  Evaluation Result Summary
+                </p>
+                <p className="text-base font-medium text-gray-600 print:!text-black print:!block">
+                  College Level Breakdown
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Departmental Year Level Breakdowns */}
-          {(quantitativeData?.charts?.yearLevelBreakdown?.departments || [
-            {
-              name: "Higher Education Department",
-              currentYear:
-                quantitativeData?.charts?.yearLevelBreakdown?.currentYear,
-              previousYear:
-                quantitativeData?.charts?.yearLevelBreakdown?.previousYear,
-            },
-          ]).map((dept, deptIdx) => (
-            <SectionWrapper key={deptIdx} title="">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
-                {/* Previous Year */}
-                <div>
-                  <h5 className="font-bold text-lg mb-1">
-                    {dept.name} {dept.previousYear?.year || previousYear}
-                  </h5>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {dept.previousYear?.total !== undefined
-                      ? dept.previousYear.total
-                      : previousYearData}{" "}
-                    Responses
-                  </p>
-                  <div className="space-y-3">
-                    {dept.previousYear?.breakdown?.length > 0 ? (
-                      dept.previousYear.breakdown.map((yearLevel, idx) => {
-                        const maxCount = Math.max(
-                          ...dept.previousYear.breakdown.map((y) => y.count),
-                          1,
-                        );
-                        return (
-                          <div key={idx} className="flex items-center gap-3">
-                            <div
-                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
-                              style={{
-                                width: `${Math.max(
-                                  (yearLevel.count / maxCount) * 70,
-                                  20,
-                                )}%`,
-                                minWidth: "100px",
-                              }}
-                            >
-                              {yearLevel.name}
+          <div className="print-page-break-after-forced">
+            {(
+              quantitativeData?.charts?.yearLevelBreakdown?.departments || [
+                {
+                  name: "Higher Education Department",
+                  currentYear:
+                    quantitativeData?.charts?.yearLevelBreakdown?.currentYear,
+                  previousYear:
+                    quantitativeData?.charts?.yearLevelBreakdown?.previousYear,
+                },
+              ]
+            ).map((dept, deptIdx) => (
+              <SectionWrapper
+                key={deptIdx}
+                title=""
+                className="print:shadow-none print:bg-transparent"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+                  {/* Previous Year */}
+                  <div>
+                    <h5 className="font-bold text-lg mb-1 print-no-break-after print:text-black">
+                      {dept.name} {dept.previousYear?.year || previousYear}
+                    </h5>
+                    <p className="text-sm text-gray-500 mb-4 print:text-black">
+                      {dept.previousYear?.total !== undefined
+                        ? dept.previousYear.total
+                        : previousYearData}{" "}
+                      Responses
+                    </p>
+                    <div className="space-y-3">
+                      {dept.previousYear?.breakdown?.length > 0 ? (
+                        dept.previousYear.breakdown.map((yearLevel, idx) => {
+                          const maxCount = Math.max(
+                            ...dept.previousYear.breakdown.map((y) => y.count),
+                            1,
+                          );
+                          return (
+                            <div key={idx} className="flex items-center gap-3">
+                              <div
+                                className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                                style={{
+                                  width: `${Math.max(
+                                    (yearLevel.count / maxCount) * 70,
+                                    20,
+                                  )}%`,
+                                  minWidth: "100px",
+                                }}
+                              >
+                                {yearLevel.name}
+                              </div>
+                              <span className="text-gray-700 text-sm font-medium">
+                                {yearLevel.count}
+                              </span>
                             </div>
-                            <span className="text-gray-700 text-sm font-medium">
-                              {yearLevel.count}
-                            </span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-gray-400 text-sm italic">
-                        No year level data available
-                      </div>
-                    )}
+                          );
+                        })
+                      ) : (
+                        <div className="text-gray-400 text-sm italic">
+                          No year level data available
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Current Year */}
-                <div>
-                  <h5 className="font-bold text-lg mb-1">
-                    {dept.name} {dept.currentYear?.year || currentYear}
-                  </h5>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {dept.currentYear?.total !== undefined
-                      ? dept.currentYear.total
-                      : currentYearData}{" "}
-                    Responses
-                  </p>
-                  <div className="space-y-3">
-                    {dept.currentYear?.breakdown?.length > 0 ? (
-                      dept.currentYear.breakdown.map((yearLevel, idx) => {
-                        const maxCount = Math.max(
-                          ...dept.currentYear.breakdown.map((y) => y.count),
-                          1,
-                        );
-                        return (
-                          <div key={idx} className="flex items-center gap-3">
-                            <div
-                              className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
-                              style={{
-                                width: `${Math.max(
-                                  (yearLevel.count / maxCount) * 70,
-                                  20,
-                                )}%`,
-                                minWidth: "100px",
-                              }}
-                            >
-                              {yearLevel.name}
+                  {/* Current Year */}
+                  <div>
+                    <h5 className="font-bold text-lg mb-1 print-no-break-after print:text-black">
+                      {dept.name} {dept.currentYear?.year || currentYear}
+                    </h5>
+                    <p className="text-sm text-gray-500 mb-4 print:text-black">
+                      {dept.currentYear?.total !== undefined
+                        ? dept.currentYear.total
+                        : currentYearData}{" "}
+                      Responses
+                    </p>
+                    <div className="space-y-3">
+                      {dept.currentYear?.breakdown?.length > 0 ? (
+                        dept.currentYear.breakdown.map((yearLevel, idx) => {
+                          const maxCount = Math.max(
+                            ...dept.currentYear.breakdown.map((y) => y.count),
+                            1,
+                          );
+                          return (
+                            <div key={idx} className="flex items-center gap-3">
+                              <div
+                                className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                                style={{
+                                  width: `${Math.max(
+                                    (yearLevel.count / maxCount) * 70,
+                                    20,
+                                  )}%`,
+                                  minWidth: "100px",
+                                }}
+                              >
+                                {yearLevel.name}
+                              </div>
+                              <span className="text-gray-700 text-sm font-medium">
+                                {yearLevel.count}
+                              </span>
                             </div>
-                            <span className="text-gray-700 text-sm font-medium">
-                              {yearLevel.count}
-                            </span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-gray-400 text-sm italic">
-                        No year level data available
-                      </div>
-                    )}
+                          );
+                        })
+                      ) : (
+                        <div className="text-gray-400 text-sm italic">
+                          No year level data available
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </SectionWrapper>
-          ))}
+              </SectionWrapper>
+            ))}
+          </div>
 
           {/* Quantitative Ratings Section */}
-          <SectionWrapper title="Quantitative Ratings" showLiveIndicator={true}>
-
+          <SectionWrapper
+            title="Quantitative Ratings"
+            showLiveIndicator={true}
+            className="print-page-break-before-forced"
+          >
             {/* Per-Question Visualizations */}
             {loading ? (
               <div className="flex items-center justify-center h-64">
@@ -788,268 +759,327 @@ const CompleteReport = ({
                 <p>No question data available</p>
               </div>
             ) : (
-              <div className="space-y-12 questions-grid-container">
-                {qualitativeData.questionBreakdown.map((question, idx) => (
-                  <div
-                    key={question.questionId || idx}
-                    className="border-b border-gray-200 pb-8 last:border-0 question-block"
-                  >
-                    <h5 className="text-lg font-bold mb-1">
-                      {idx + 1}. {question.questionTitle}
-                    </h5>
-                    <p className="text-sm text-gray-500 mb-6">
-                      {question.responseCount} responses
-                    </p>
+              <div className="space-y-4">
+                {(() => {
+                  const chunks = [];
+                  const array = qualitativeData.questionBreakdown;
+                  // Chunk questions into groups of 4 for 4 questions per page
+                  for (let i = 0; i < array.length; i += 4) {
+                    chunks.push(array.slice(i, i + 4));
+                  }
 
-                    {/* Scale Question - Rating Distribution */}
-                    {question.questionType === "scale" &&
-                      question.ratingDistribution && (
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
-                          <div className="w-64 h-64">
-                            <ResponsiveContainer width="100%" height={256}>
-                              <PieChart>
-                                <Pie
-                                  data={question.ratingDistribution.filter(
-                                    (d) => d.count > 0,
-                                  )}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={0}
-                                  outerRadius={50}
-                                  fill="#8884d8"
-                                  dataKey="count"
-                                  labelLine={false}
-                                  label={renderCustomizedLabel}
-                                  isAnimationActive={false}
-                                >
-                                  {question.ratingDistribution
-                                    .filter((d) => d.count > 0)
-                                    .map((entry, index) => {
-                                      // Find original index to maintain consistent colors with legend
-                                      const originalIndex =
-                                        question.ratingDistribution.findIndex(
-                                          (d) => d.name === entry.name,
-                                        );
-                                      return (
-                                        <Cell
-                                          key={`cell-${index}`}
-                                          fill={
-                                            COLORS[
-                                            originalIndex % COLORS.length
-                                            ]
-                                          }
-                                        />
-                                      );
-                                    })}
-                                </Pie>
-                                <Tooltip />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-2">
-                            {question.ratingDistribution.map((entry, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-3"
-                              >
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{
-                                    backgroundColor:
-                                      COLORS[index % COLORS.length],
-                                  }}
-                                ></div>
-                                <span className="text-sm text-gray-700">
-                                  {entry.name.replace(/ Star/g, "")}:{" "}
-                                  {entry.count} ({entry.value}%)
-                                </span>
+                  return chunks.map((group, groupIdx) => (
+                    <div
+                      key={groupIdx}
+                      className={
+                        groupIdx > 0 ? "print-page-break-before-forced" : ""
+                      }
+                    >
+                      <div className="qualitative-questions-wrapper space-y-4">
+                        {group.map((question, idx) => {
+                          const globalIdx = groupIdx * 4 + idx;
+                          return (
+                            <div
+                              key={question.questionId || globalIdx}
+                              className="pb-2 question-block print:border-0 print:mb-2"
+                            >
+                              <div className="print-keep-together">
+                                <h5 className="text-lg font-bold mb-0.5 print-no-break-after print:text-base">
+                                  {globalIdx + 1}. {question.questionTitle}
+                                </h5>
+                                <p className="text-sm text-gray-500 mb-2 print:text-black print:text-xs">
+                                  {question.responseCount} responses
+                                </p>
                               </div>
-                            ))}
-                            <p className="text-sm font-medium text-gray-800 mt-2">
-                              Average:{" "}
-                              {question.averageRating?.toFixed(2) || "N/A"} /{" "}
-                              {question.scaleMax || 5}
-                            </p>
-                          </div>
-                        </div>
-                      )}
 
-                    {/* Text Question - Sentiment Breakdown */}
-                    {(question.questionType === "paragraph" ||
-                      question.questionType === "short_answer") &&
-                      question.sentimentBreakdown && (
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
-                          <div className="w-64 h-64">
-                            <ResponsiveContainer width="100%" height={256}>
-                              <PieChart>
-                                <Pie
-                                  data={[
-                                    {
-                                      name: "Positive",
-                                      value:
-                                        question.sentimentBreakdown.positive
-                                          ?.count || 0,
-                                      color: SENTIMENT_COLORS.positive,
-                                    },
-                                    {
-                                      name: "Neutral",
-                                      value:
-                                        question.sentimentBreakdown.neutral
-                                          ?.count || 0,
-                                      color: SENTIMENT_COLORS.neutral,
-                                    },
-                                    {
-                                      name: "Negative",
-                                      value:
-                                        question.sentimentBreakdown.negative
-                                          ?.count || 0,
-                                      color: SENTIMENT_COLORS.negative,
-                                    },
-                                  ].filter((d) => d.value > 0)}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={0}
-                                  outerRadius={50}
-                                  fill="#8884d8"
-                                  dataKey="value"
-                                  labelLine={false}
-                                  label={renderCustomizedLabel}
-                                >
-                                  {[
-                                    { name: "Positive", value: question.sentimentBreakdown.positive?.count || 0, color: SENTIMENT_COLORS.positive },
-                                    { name: "Neutral", value: question.sentimentBreakdown.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
-                                    { name: "Negative", value: question.sentimentBreakdown.negative?.count || 0, color: SENTIMENT_COLORS.negative }
-                                  ].filter(d => d.value > 0).map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                  ))}
-                                </Pie>
-                                <Tooltip />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{
-                                  backgroundColor: SENTIMENT_COLORS.positive,
-                                }}
-                              ></div>
-                              <span className="text-sm text-gray-700">
-                                Positive:{" "}
-                                {question.sentimentBreakdown.positive?.count ||
-                                  0}{" "}
-                                (
-                                {question.sentimentBreakdown.positive
-                                  ?.percentage || 0}
-                                %)
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{
-                                  backgroundColor: SENTIMENT_COLORS.neutral,
-                                }}
-                              ></div>
-                              <span className="text-sm text-gray-700">
-                                Neutral:{" "}
-                                {question.sentimentBreakdown.neutral?.count ||
-                                  0}{" "}
-                                (
-                                {question.sentimentBreakdown.neutral
-                                  ?.percentage || 0}
-                                %)
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{
-                                  backgroundColor: SENTIMENT_COLORS.negative,
-                                }}
-                              ></div>
-                              <span className="text-sm text-gray-700">
-                                Negative:{" "}
-                                {question.sentimentBreakdown.negative?.count ||
-                                  0}{" "}
-                                (
-                                {question.sentimentBreakdown.negative
-                                  ?.percentage || 0}
-                                %)
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                              {/* Scale Question - Rating Distribution */}
+                              {question.questionType === "scale" &&
+                                question.ratingDistribution && (
+                                  <div className="flex flex-col md:flex-row items-center justify-center gap-2 print-chart-container print:items-start print:justify-start">
+                                    <div className="w-64 h-64 print:w-64 print:h-64 print:p-0">
+                                      <ResponsiveContainer
+                                        width="100%"
+                                        height="100%"
+                                      >
+                                        <PieChart>
+                                          <Pie
+                                            data={question.ratingDistribution.filter(
+                                              (d) => d.count > 0,
+                                            )}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={0}
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="count"
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                            isAnimationActive={false}
+                                          >
+                                            {question.ratingDistribution
+                                              .filter((d) => d.count > 0)
+                                              .map((entry, index) => {
+                                                const originalIndex =
+                                                  question.ratingDistribution.findIndex(
+                                                    (d) =>
+                                                      d.name === entry.name,
+                                                  );
+                                                return (
+                                                  <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={
+                                                      COLORS[
+                                                        originalIndex %
+                                                          COLORS.length
+                                                      ]
+                                                    }
+                                                  />
+                                                );
+                                              })}
+                                          </Pie>
+                                          <Tooltip />
+                                        </PieChart>
+                                      </ResponsiveContainer>
+                                    </div>
 
-                    {/* Multiple Choice - Option Distribution */}
-                    {question.questionType === "multiple_choice" &&
-                      question.optionDistribution && (
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-8 print-chart-container">
-                          <div className="w-64 h-64">
-                            <ResponsiveContainer width="100%" height={256}>
-                              <PieChart>
-                                <Pie
-                                  data={question.optionDistribution.filter(
-                                    (d) => d.count > 0,
-                                  )}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={0}
-                                  outerRadius={50}
-                                  fill="#8884d8"
-                                  dataKey="count"
-                                  labelLine={false}
-                                  label={renderCustomizedLabel}
-                                  isAnimationActive={false}
-                                >
-                                  {question.optionDistribution
-                                    .filter((d) => d.count > 0)
-                                    .map((entry, index) => {
-                                      const originalIndex =
-                                        question.optionDistribution.findIndex(
-                                          (d) => d.name === entry.name,
-                                        );
-                                      return (
-                                        <Cell
-                                          key={`cell-${index}`}
-                                          fill={
-                                            COLORS[
-                                            originalIndex % COLORS.length
-                                            ]
-                                          }
-                                        />
-                                      );
-                                    })}
-                                </Pie>
-                                <Tooltip />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-2">
-                            {question.optionDistribution.map((entry, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-3"
-                              >
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{
-                                    backgroundColor:
-                                      COLORS[index % COLORS.length],
-                                  }}
-                                ></div>
-                                <span className="text-sm text-gray-700">
-                                  {entry.name}: {entry.count} ({entry.value}%)
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                ))}
+                                    <div className="space-y-2">
+                                      {question.ratingDistribution.map(
+                                        (entry, index) => (
+                                          <div
+                                            key={index}
+                                            className="flex items-center gap-3"
+                                          >
+                                            <div
+                                              className="w-3 h-3 rounded-full"
+                                              style={{
+                                                backgroundColor:
+                                                  COLORS[index % COLORS.length],
+                                              }}
+                                            ></div>
+                                            <span className="text-sm text-gray-700">
+                                              {entry.name.replace(/ Star/g, "")}
+                                              : {entry.count} ({entry.value}%)
+                                            </span>
+                                          </div>
+                                        ),
+                                      )}
+                                      {question.averageRating && (
+                                        <p className="text-sm font-medium text-gray-800 mt-2">
+                                          Average:{" "}
+                                          {question.averageRating?.toFixed(2) ||
+                                            "N/A"}{" "}
+                                          / {question.scaleMax || 5}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                              {/* Text Question - Sentiment Breakdown */}
+                              {(question.questionType === "paragraph" ||
+                                question.questionType === "short_answer") &&
+                                question.sentimentBreakdown && (
+                                  <div className="flex flex-col md:flex-row items-center justify-center gap-2 print-chart-container print:items-start print:justify-start">
+                                    <div className="w-64 h-64 print:w-64 print:h-64 print:p-0">
+                                      <ResponsiveContainer
+                                        width="100%"
+                                        height="100%"
+                                      >
+                                        <PieChart>
+                                          <Pie
+                                            data={[
+                                              {
+                                                name: "Positive",
+                                                value:
+                                                  question.sentimentBreakdown
+                                                    .positive?.count || 0,
+                                              },
+                                              {
+                                                name: "Neutral",
+                                                value:
+                                                  question.sentimentBreakdown
+                                                    .neutral?.count || 0,
+                                              },
+                                              {
+                                                name: "Negative",
+                                                value:
+                                                  question.sentimentBreakdown
+                                                    .negative?.count || 0,
+                                              },
+                                            ].filter((d) => d.value > 0)}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={0}
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                            isAnimationActive={false}
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                          >
+                                            {[
+                                              {
+                                                name: "Positive",
+                                                color: "#10b981",
+                                              },
+                                              {
+                                                name: "Neutral",
+                                                color: "#f59e0b",
+                                              },
+                                              {
+                                                name: "Negative",
+                                                color: "#ef4444",
+                                              },
+                                            ].map((entry, index) => (
+                                              <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                              />
+                                            ))}
+                                          </Pie>
+                                          <Tooltip />
+                                        </PieChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className="w-3 h-3 rounded-full"
+                                          style={{
+                                            backgroundColor:
+                                              SENTIMENT_COLORS.positive,
+                                          }}
+                                        ></div>
+                                        <span className="text-sm text-gray-700">
+                                          Positive:{" "}
+                                          {question.sentimentBreakdown.positive
+                                            ?.count || 0}{" "}
+                                          (
+                                          {question.sentimentBreakdown.positive
+                                            ?.percentage || 0}
+                                          %)
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className="w-3 h-3 rounded-full"
+                                          style={{
+                                            backgroundColor:
+                                              SENTIMENT_COLORS.neutral,
+                                          }}
+                                        ></div>
+                                        <span className="text-sm text-gray-700">
+                                          Neutral:{" "}
+                                          {question.sentimentBreakdown.neutral
+                                            ?.count || 0}{" "}
+                                          (
+                                          {question.sentimentBreakdown.neutral
+                                            ?.percentage || 0}
+                                          %)
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className="w-3 h-3 rounded-full"
+                                          style={{
+                                            backgroundColor:
+                                              SENTIMENT_COLORS.negative,
+                                          }}
+                                        ></div>
+                                        <span className="text-sm text-gray-700">
+                                          Negative:{" "}
+                                          {question.sentimentBreakdown.negative
+                                            ?.count || 0}{" "}
+                                          (
+                                          {question.sentimentBreakdown.negative
+                                            ?.percentage || 0}
+                                          %)
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                              {/* Multiple Choice - Option Distribution */}
+                              {question.questionType === "multiple_choice" &&
+                                question.optionDistribution && (
+                                  <div className="flex flex-col md:flex-row items-center justify-center gap-2 print-chart-container print:items-start print:justify-start">
+                                    <div className="w-64 h-64 print:w-64 print:h-64 print:p-0">
+                                      <ResponsiveContainer
+                                        width="100%"
+                                        height="100%"
+                                      >
+                                        <PieChart>
+                                          <Pie
+                                            data={question.optionDistribution.filter(
+                                              (d) => d.count > 0,
+                                            )}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={0}
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="count"
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                            isAnimationActive={false}
+                                          >
+                                            {question.optionDistribution
+                                              .filter((d) => d.count > 0)
+                                              .map((entry, index) => {
+                                                const originalIndex =
+                                                  question.optionDistribution.findIndex(
+                                                    (d) =>
+                                                      d.name === entry.name,
+                                                  );
+                                                return (
+                                                  <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={
+                                                      COLORS[
+                                                        originalIndex %
+                                                          COLORS.length
+                                                      ]
+                                                    }
+                                                  />
+                                                );
+                                              })}
+                                          </Pie>
+                                          <Tooltip />
+                                        </PieChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {question.optionDistribution.map(
+                                        (entry, index) => (
+                                          <div
+                                            key={index}
+                                            className="flex items-center gap-3"
+                                          >
+                                            <div
+                                              className="w-3 h-3 rounded-full"
+                                              style={{
+                                                backgroundColor:
+                                                  COLORS[index % COLORS.length],
+                                              }}
+                                            ></div>
+                                            <span className="text-sm text-gray-700">
+                                              {entry.name}: {entry.count} (
+                                              {entry.value}%)
+                                            </span>
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             )}
             {onViewQuantitative && (
@@ -1065,7 +1095,11 @@ const CompleteReport = ({
           </SectionWrapper>
 
           {/* Qualitative Comments Section */}
-          <SectionWrapper title="Qualitative Comments" showLiveIndicator={true}>
+          <SectionWrapper
+            title="Qualitative Comments"
+            showLiveIndicator={true}
+            className="print-page-break-before-forced"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-12">
               {/* Sentiment Pie Chart */}
               <div className="h-64 print-chart-container">
@@ -1209,7 +1243,10 @@ const CompleteReport = ({
           </SectionWrapper>
 
           {/* Detailed Comments - Each type on its own page */}
-          <SectionWrapper title="Qualitative Comments - Positive">
+          <SectionWrapper
+            title="Qualitative Comments - Positive"
+            className="print-page-break-before-forced print-page-break-after-forced"
+          >
             <p className="text-gray-600 mb-6 text-center">
               These are the positive comments comprising the{" "}
               {sentiment.positive?.percentage || 0}% from the report summary
@@ -1222,7 +1259,10 @@ const CompleteReport = ({
             />
           </SectionWrapper>
 
-          <SectionWrapper title="Qualitative Comments - Neutral">
+          <SectionWrapper
+            title="Qualitative Comments - Neutral"
+            className="print-page-break-before-forced print-page-break-after-forced"
+          >
             <p className="text-gray-600 mb-6 text-center">
               These are the neutral comments comprising the{" "}
               {sentiment.neutral?.percentage || 0}% from the report summary
@@ -1235,7 +1275,10 @@ const CompleteReport = ({
             />
           </SectionWrapper>
 
-          <SectionWrapper title="Qualitative Comments - Negative">
+          <SectionWrapper
+            title="Qualitative Comments - Negative"
+            className="print-page-break-before-forced"
+          >
             <p className="text-gray-600 mb-6 text-center">
               These are the negative comments comprising the{" "}
               {sentiment.negative?.percentage || 0}% from the report summary
@@ -1257,9 +1300,12 @@ const CompleteReport = ({
               </div>
             )}
           </SectionWrapper>
-          
+
           {qualitativeData?.previousYearData && (
-            <SectionWrapper title="Qualitative Comments - Previous Year">
+            <SectionWrapper
+              title="Qualitative Comments - Previous Year"
+              className="print-page-break-before-forced"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start mb-12">
                 {/* Previous Year Sentiment Pie Chart */}
                 <div className="h-64 print-chart-container">
@@ -1267,9 +1313,27 @@ const CompleteReport = ({
                     <PieChart>
                       <Pie
                         data={[
-                          { name: "Positive", value: qualitativeData.previousYearData.sentiment?.positive?.count || 0, color: SENTIMENT_COLORS.positive },
-                          { name: "Neutral", value: qualitativeData.previousYearData.sentiment?.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
-                          { name: "Negative", value: qualitativeData.previousYearData.sentiment?.negative?.count || 0, color: SENTIMENT_COLORS.negative },
+                          {
+                            name: "Positive",
+                            value:
+                              qualitativeData.previousYearData.sentiment
+                                ?.positive?.count || 0,
+                            color: SENTIMENT_COLORS.positive,
+                          },
+                          {
+                            name: "Neutral",
+                            value:
+                              qualitativeData.previousYearData.sentiment
+                                ?.neutral?.count || 0,
+                            color: SENTIMENT_COLORS.neutral,
+                          },
+                          {
+                            name: "Negative",
+                            value:
+                              qualitativeData.previousYearData.sentiment
+                                ?.negative?.count || 0,
+                            color: SENTIMENT_COLORS.negative,
+                          },
                         ]}
                         cx="50%"
                         cy="50%"
@@ -1281,9 +1345,27 @@ const CompleteReport = ({
                         isAnimationActive={false}
                       >
                         {[
-                          { name: "Positive", value: qualitativeData.previousYearData.sentiment?.positive?.count || 0, color: SENTIMENT_COLORS.positive },
-                          { name: "Neutral", value: qualitativeData.previousYearData.sentiment?.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
-                          { name: "Negative", value: qualitativeData.previousYearData.sentiment?.negative?.count || 0, color: SENTIMENT_COLORS.negative },
+                          {
+                            name: "Positive",
+                            value:
+                              qualitativeData.previousYearData.sentiment
+                                ?.positive?.count || 0,
+                            color: SENTIMENT_COLORS.positive,
+                          },
+                          {
+                            name: "Neutral",
+                            value:
+                              qualitativeData.previousYearData.sentiment
+                                ?.neutral?.count || 0,
+                            color: SENTIMENT_COLORS.neutral,
+                          },
+                          {
+                            name: "Negative",
+                            value:
+                              qualitativeData.previousYearData.sentiment
+                                ?.negative?.count || 0,
+                            color: SENTIMENT_COLORS.negative,
+                          },
                         ].map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
@@ -1298,15 +1380,38 @@ const CompleteReport = ({
                     Report Summary
                   </h5>
                   <p className="text-sm text-gray-500 mb-6 text-center md:text-left italic">
-                    Comparing against: <strong>{qualitativeData.previousYearData.title}</strong> ({new Date(qualitativeData.previousYearData.date).toLocaleDateString()})
+                    Comparing against:{" "}
+                    <strong>{qualitativeData.previousYearData.title}</strong> (
+                    {new Date(
+                      qualitativeData.previousYearData.date,
+                    ).toLocaleDateString()}
+                    )
                   </p>
 
                   {/* Legend */}
                   <div className="flex gap-6 mb-8 justify-center md:justify-start">
                     {[
-                      { name: "Positive", value: qualitativeData.previousYearData.sentiment?.positive?.count || 0, color: SENTIMENT_COLORS.positive },
-                      { name: "Neutral", value: qualitativeData.previousYearData.sentiment?.neutral?.count || 0, color: SENTIMENT_COLORS.neutral },
-                      { name: "Negative", value: qualitativeData.previousYearData.sentiment?.negative?.count || 0, color: SENTIMENT_COLORS.negative },
+                      {
+                        name: "Positive",
+                        value:
+                          qualitativeData.previousYearData.sentiment?.positive
+                            ?.count || 0,
+                        color: SENTIMENT_COLORS.positive,
+                      },
+                      {
+                        name: "Neutral",
+                        value:
+                          qualitativeData.previousYearData.sentiment?.neutral
+                            ?.count || 0,
+                        color: SENTIMENT_COLORS.neutral,
+                      },
+                      {
+                        name: "Negative",
+                        value:
+                          qualitativeData.previousYearData.sentiment?.negative
+                            ?.count || 0,
+                        color: SENTIMENT_COLORS.negative,
+                      },
                     ].map((entry, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <div
@@ -1323,18 +1428,32 @@ const CompleteReport = ({
                   <div className="space-y-6 text-sm text-gray-800 leading-relaxed">
                     <p>
                       <span className="font-bold">
-                        {qualitativeData.previousYearData.sentiment?.positive?.percentage || 0}%
-                      </span> of the responses resulted to positive citing informative sessions and engaging speakers such as the keynote address and workshop activities.
+                        {qualitativeData.previousYearData.sentiment?.positive
+                          ?.percentage || 0}
+                        %
+                      </span>{" "}
+                      of the responses resulted to positive citing informative
+                      sessions and engaging speakers such as the keynote address
+                      and workshop activities.
                     </p>
                     <p>
                       <span className="font-bold">
-                        {qualitativeData.previousYearData.sentiment?.neutral?.percentage || 0}%
-                      </span> of the responses resulted into neutral, providing balanced feedback without strong positive or negative sentiments.
+                        {qualitativeData.previousYearData.sentiment?.neutral
+                          ?.percentage || 0}
+                        %
+                      </span>{" "}
+                      of the responses resulted into neutral, providing balanced
+                      feedback without strong positive or negative sentiments.
                     </p>
                     <p>
                       <span className="font-bold">
-                        {qualitativeData.previousYearData.sentiment?.negative?.percentage || 0}%
-                      </span> of the responses resulted into negative particularly regarding venue ventilation and audio quality, suggesting areas that need improvement.
+                        {qualitativeData.previousYearData.sentiment?.negative
+                          ?.percentage || 0}
+                        %
+                      </span>{" "}
+                      of the responses resulted into negative particularly
+                      regarding venue ventilation and audio quality, suggesting
+                      areas that need improvement.
                     </p>
                   </div>
                 </div>
@@ -1347,22 +1466,37 @@ const CompleteReport = ({
                 </h4>
                 <div className="space-y-6 text-gray-800 max-w-3xl mx-auto">
                   <p>
-                    ★ Moderate Success: The event received {qualitativeData.previousYearData.sentiment?.positive?.percentage || 0}% positive feedback. While generally well-received, there is room for improvement to achieve excellence.
+                    ★ Moderate Success: The event received{" "}
+                    {qualitativeData.previousYearData.sentiment?.positive
+                      ?.percentage || 0}
+                    % positive feedback. While generally well-received, there is
+                    room for improvement to achieve excellence.
                   </p>
                   <p>
-                    • Strengths to Maintain: Participants particularly appreciated the informative sessions and engaging speakers. These elements should be prioritized in future planning.
+                    • Strengths to Maintain: Participants particularly
+                    appreciated the informative sessions and engaging speakers.
+                    These elements should be prioritized in future planning.
                   </p>
                   <p>
-                    • Areas Requiring Attention: Responses highlighted concerns about venue ventilation and audio quality. These areas should be prioritized for improvement.
+                    • Areas Requiring Attention: Responses highlighted concerns
+                    about venue ventilation and audio quality. These areas
+                    should be prioritized for improvement.
                   </p>
                   <p>
-                    • Recommendation - Facilities: Ensure that the venue has adequate ventilation and sound systems are tested thoroughly before the event.
+                    • Recommendation - Facilities: Ensure that the venue has
+                    adequate ventilation and sound systems are tested thoroughly
+                    before the event.
                   </p>
                   <p>
-                    ⚠ Action Required: With {qualitativeData.previousYearData.sentiment?.negative?.percentage || 0}% negative feedback, address the logistical issues raised to prevent recurrence in future events.
+                    ⚠ Action Required: With{" "}
+                    {qualitativeData.previousYearData.sentiment?.negative
+                      ?.percentage || 0}
+                    % negative feedback, address the logistical issues raised to
+                    prevent recurrence in future events.
                   </p>
                   <p className="font-medium mt-8">
-                    Disclaimer: This is a system-generated recommendation based on previous year's data.
+                    Disclaimer: This is a system-generated recommendation based
+                    on previous year's data.
                   </p>
                 </div>
               </div>

@@ -302,10 +302,11 @@ const ReportActions = ({
           <body>
             <!-- Header -->
             <div class="print-header">
-              ${headerBase64
-          ? `<img src="${headerBase64}" alt="Header" />`
-          : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
-        }
+              ${
+                headerBase64
+                  ? `<img src="${headerBase64}" alt="Header" />`
+                  : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
+              }
             </div>
             
             <!-- Title Section -->
@@ -321,10 +322,11 @@ const ReportActions = ({
             
             <!-- Footer -->
             <div class="print-footer">
-              ${footerBase64
-          ? `<img src="${footerBase64}" alt="Footer" />`
-          : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
-        }
+              ${
+                footerBase64
+                  ? `<img src="${footerBase64}" alt="Footer" />`
+                  : `<div style="width: 100%; height: 30px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
+              }
             </div>
           </body>
         </html>
@@ -433,24 +435,34 @@ const ReportActions = ({
 
       // Header template - using the header.png image
       const headerTemplate = `
+        <style>
+          html { -webkit-print-color-adjust: exact; }
+          body { margin: 0; padding: 0; }
+        </style>
         <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
-          ${headerBase64
-          ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: 80px; display: block; object-fit: cover;" />`
-          : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);"></div>`
-        }
+          ${
+            headerBase64
+              ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: 80px; display: block; object-fit: cover; margin: 0; padding: 0;" />`
+              : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%); margin: 0;"></div>`
+          }
         </div>
       `;
 
       // Footer template - using the footer.png image with page numbers
       const footerTemplate = `
+        <style>
+          html { -webkit-print-color-adjust: exact; }
+          body { margin: 0; padding: 0; }
+        </style>
         <div style="width: 100%; margin: 0; padding: 0; position: relative; font-size: 10px;">
-          ${footerBase64
-          ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: 50px; display: block; object-fit: cover;" />`
-          : `<div style="width: 100%; height: 40px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);"></div>`
-        }
+          ${
+            footerBase64
+              ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: 50px; display: block; object-fit: cover; margin: 0; padding: 0;" />`
+              : `<div style="width: 100%; height: 40px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%); margin: 0;"></div>`
+          }
           <div style="
             position: absolute;
-            bottom: 15px;
+            bottom: 12px;
             right: 30px;
             font-size: 10px;
             color: #ffffff;
@@ -724,6 +736,10 @@ const ReportActions = ({
             <title>${reportTitle}</title>
             <style>
               ${styles}
+              @page {
+                margin-top: 110px !important;
+                margin-bottom: 70px !important;
+              }
               img { max-width: 100% !important; }
               /* Remove default margins */
               body { margin: 0; padding: 0; }
@@ -810,51 +826,194 @@ const ReportActions = ({
               }
 
               /* ========================================
-                 AGGRESSIVE OVERRIDES - COMPACT LAYOUT
-                 Multiple charts per page, no forced breaks
+                 FIRST PAGE LAYOUT - Title & Year Comparison
                  ======================================== */
-              * {
-                page-break-before: auto !important;
-                page-break-after: auto !important;
-                break-before: auto !important;
-                break-after: auto !important;
+              /* Keep title and year comparison together on first page */
+              #report-header-block {
+                page-break-after: avoid !important;
               }
               
-              .section-page,
-              .print-chart-container,
-              .question-block,
-              .mb-16,
-              .mb-12 {
-                page-break-before: auto !important;
-                page-break-after: auto !important;
+              .print-title,
+              .print-description {
+                page-break-after: avoid !important;
+              }
+              
+              /* Force page break after year level breakdown section */
+              .print-page-break-after-forced {
+                page-break-after: always !important;
+              }
+              
+              /* ========================================
+                 4 QUESTIONS PER PAGE LAYOUT - ULTRA COMPACT
+                 ======================================== */
+              /* Qualitative questions wrapper - single column per page */
+              .qualitative-questions-wrapper {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0.25rem !important;
+              }
+              
+              /* Question block - keep intact, no breaks inside - ULTRA COMPACT */
+              .question-block {
                 page-break-inside: avoid !important;
-                break-before: auto !important;
-                break-after: auto !important;
-                margin-bottom: 10px !important;
+                break-inside: avoid !important;
+                margin-bottom: 0.75rem !important;
+                padding-bottom: 0.5rem !important;
+                padding-top: 0.25rem !important;
+                border-bottom: 1px solid #e5e7eb !important;
+                display: block !important;
               }
               
-              /* Compact chart sizing */
-              .print-chart-container,
-              .recharts-wrapper {
-                max-height: 200px !important;
-                margin-bottom: 8px !important;
+              .question-block:last-child {
+                border-bottom: none !important;
+                margin-bottom: 0 !important;
+              }
+              
+              /* After every 4th question in a group, that's the end of page so naturally breaks */
+              /* The wrapper div with print-page-break-before-forced ensures page breaks */
+              
+              /* ULTRA COMPACT chart sizing for PDF - 4 questions per page */
+              .print-chart-container {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                max-height: 100px !important;
+                height: 100px !important;
+                margin-bottom: 0.25rem !important;
+                margin-top: 0.25rem !important;
+                padding: 0 !important;
+                width: 110px !important;
+                min-width: 110px !important;
+                flex-shrink: 0 !important;
+              }
+              
+              .print-chart-container .recharts-wrapper {
+                max-height: 100px !important;
+                height: 100px !important;
+                margin-bottom: 0 !important;
+                margin-top: 0 !important;
+                width: 110px !important;
+              }
+              
+              .print-chart-container svg {
+                height: 100px !important;
+                width: 110px !important;
               }
               
               .w-64.h-64 {
-                width: 180px !important;
-                height: 180px !important;
+                width: 80px !important;
+                height: 80px !important;
               }
               
-              /* Compact spacing */
-              .space-y-12 { gap: 0.5rem !important; }
-              .gap-12 { gap: 0.75rem !important; }
-              .gap-8 { gap: 0.5rem !important; }
-              .pb-8 { padding-bottom: 0.5rem !important; }
-              .mb-16 { margin-bottom: 0.75rem !important; }
-              .mb-12 { margin-bottom: 0.5rem !important; }
+              .h-64.print-chart-container {
+                height: 100px !important;
+              }
               
-              /* Grid layouts more compact */
-              .grid { gap: 0.5rem !important; }
+              /* Space saving overrides - AGGRESSIVE */
+              .space-y-12 { gap: 0 !important; }
+              .gap-12 { gap: 0 !important; }
+              .grid { gap: 0 !important; }
+              .mb-16 { margin-bottom: 0 !important; }
+              .mb-12 { margin-bottom: 0 !important; }
+              .mb-8 { margin-bottom: 0.25rem !important; }
+              .mb-6 { margin-bottom: 0.15rem !important; }
+              .mb-4 { margin-bottom: 0.1rem !important; }
+              .mt-8 { margin-top: 0 !important; }
+              .mt-6 { margin-top: 0 !important; }
+              .mt-4 { margin-top: 0 !important; }
+              .mt-2 { margin-top: 0 !important; }
+              
+              /* Question specific styling - VERY COMPACT */
+              .question-block h5 { 
+                font-size: 9pt !important; 
+                margin-bottom: 0.15rem !important; 
+                margin-top: 0 !important;
+                font-weight: bold !important;
+                page-break-after: avoid !important;
+                line-height: 1.1 !important;
+              }
+              
+              .question-block p { 
+                font-size: 8pt !important; 
+                margin-bottom: 0.15rem !important;
+                margin-top: 0 !important;
+                page-break-after: avoid !important;
+                line-height: 1.1 !important;
+              }
+              
+              /* Reduce padding in sections */
+              .section-page {
+                padding: 0 !important;
+                margin-bottom: 0 !important;
+                margin-top: 0 !important;
+              }
+              
+              /* Section wrapper - reduce spacing */
+              .print\:shadow-none {
+                padding: 0 !important;
+                margin-bottom: 0 !important;
+                margin-top: 0 !important;
+              }
+              
+              /* Print-keep-together class to group title and response count */
+              .print-keep-together {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin-bottom: 0.15rem !important;
+              }
+              
+              /* Flex containers in questions - COMPACT with legend on RIGHT */
+              .flex.flex-col.md\\:flex-row.items-center.justify-center.gap-2 {
+                flex-direction: row !important;
+                gap: 0.5rem !important;
+                align-items: flex-start !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
+              }
+              
+              /* Chart wrapper in flex container */
+              .flex.flex-col.md\\:flex-row.items-center.justify-center.gap-2 > div:first-child {
+                flex-shrink: 0 !important;
+                width: 110px !important;
+              }
+              
+              /* Legend wrapper in flex container */
+              .flex.flex-col.md\\:flex-row.items-center.justify-center.gap-2 > div:last-child {
+                flex: 1 !important;
+                padding-left: 0.5rem !important;
+              }
+              
+              /* Legend styling in charts - ULTRA COMPACT */
+              .space-y-2 {
+                gap: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+              }
+              
+              .space-y-2 > div {
+                margin-bottom: 0.05rem !important;
+                padding-bottom: 0 !important;
+                line-height: 1.1 !important;
+                font-size: 7pt !important;
+              }
+              
+              /* Legend items - compress */
+              .space-y-2 span {
+                font-size: 7pt !important;
+                line-height: 1.1 !important;
+              }
+              
+              /* Chart wrapper compactness */
+              .flex.flex-col.md\\:flex-row {
+                margin: 0 !important;
+                padding: 0 !important;
+                gap: 0.25rem !important;
+              }
+              
+              /* Responsive container - remove extra spacing */
+              .recharts-responsive-container {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
             </style>
           </head>
           <body>
@@ -884,8 +1043,14 @@ const ReportActions = ({
       document.body.removeChild(loadingToast);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to generate PDF");
+        let errorMessage = "Failed to generate PDF";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const blob = await response.blob();
@@ -893,8 +1058,9 @@ const ReportActions = ({
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
-      a.download = `evaluation-report-${new Date().toISOString().split("T")[0]
-        }.pdf`;
+      a.download = `evaluation-report-${
+        new Date().toISOString().split("T")[0]
+      }.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -902,11 +1068,13 @@ const ReportActions = ({
     } catch (error) {
       console.error("Error generating PDF:", error);
       // Safely remove loading toast if it exists
-      const toast = document.querySelector("div[style*='z-index: 9999']");
-      if (toast && toast.parentNode) {
-        toast.parentNode.removeChild(toast);
+      const loadingToast = document.querySelector(
+        "div[style*='z-index: 9999']",
+      );
+      if (loadingToast && loadingToast.parentNode) {
+        loadingToast.parentNode.removeChild(loadingToast);
       }
-      toast.error("Failed to download PDF. Please check console for details.");
+      toast.error(`Failed to download PDF: ${error.message}`);
     }
   };
 
@@ -984,8 +1152,9 @@ const ReportActions = ({
           <button
             onClick={handlePrint}
             disabled={loading}
-            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             title="Print report"
           >
             <Printer size={20} className="text-gray-600" />
@@ -993,8 +1162,9 @@ const ReportActions = ({
           <button
             onClick={handleDownload}
             disabled={loading}
-            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+            className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
             title="Download as PDF"
           >
             <Download size={20} className="text-gray-600" />

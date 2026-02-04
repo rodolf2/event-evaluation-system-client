@@ -4,14 +4,14 @@ import {
   Globe,
   Shield,
   Database,
-  FileText,
+
   History,
   Save,
   Activity,
   Lock,
   Plus,
   Trash2,
-  BookOpen,
+
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -306,45 +306,7 @@ function Settings() {
           </div>
         </div>
 
-        {/* NLP Engine Card */}
-        <div className="bg-white rounded-lg shadow-md p-6 flex flex-col h-full">
-          <div className="flex items-start gap-3 mb-1">
-            <FileText className="w-6 h-6 text-gray-700 mt-1" />
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">NLP & Sentiment Engine</h2>
-              <p className="text-gray-500 text-sm">Manage TextBlob dictionaries for student feedback analysis.</p>
-            </div>
-          </div>
 
-          <div className="mt-6 bg-gray-50/50 rounded-xl p-4 border border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100/50 rounded-xl flex items-center justify-center">
-                <Database className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <div className="font-bold text-gray-800">Internal Dictionary v1.0.0</div>
-                <div className="text-xs text-gray-500">Last updated: 1/6/2026 by System</div>
-              </div>
-            </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-              Active
-            </span>
-          </div>
-
-          <div className="mt-8 flex items-center justify-between">
-            <div>
-              <div className="font-bold text-gray-800">Lexicon Management</div>
-              <p className="text-sm text-gray-500">Manage the list of words used for sentiment analysis.</p>
-            </div>
-            <Link 
-              to="/mis/lexicon-management"
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors"
-            >
-              <BookOpen className="w-5 h-5" />
-              Manage Words
-            </Link>
-          </div>
-        </div>
 
 
 

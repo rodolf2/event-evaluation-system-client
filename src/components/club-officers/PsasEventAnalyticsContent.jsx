@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
@@ -40,6 +40,19 @@ function PsasEventAnalyticsContent() {
   const [sortOption, setSortOption] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Optimize: Track in-flight requests and cache them
+  const requestCacheRef = useRef({});
+  const abortControllerRef = useRef(null);
+
+  // Clear cache on logout
+  useEffect(() => {
+    if (!token) {
+      // Clear all cached analytics data when user logs out
+      requestCacheRef.current = {};
+      console.log("[SECURITY] Analytics cache cleared on logout");
+    }
+  }, [token]);
 
   // Fetch available forms for the current user
   useEffect(() => {
@@ -129,6 +142,20 @@ function PsasEventAnalyticsContent() {
         return;
       }
 
+      // Check if data is already cached locally
+      if (requestCacheRef.current[formId]) {
+        console.log(`[CACHE HIT] Loading cached analytics for form ${formId}`);
+        setAnalyticsData(requestCacheRef.current[formId]);
+        setLoading(false);
+        return;
+      }
+
+      // Cancel previous request if switching forms quickly
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       setLoading(true);
       try {
         if (!token) {
@@ -142,7 +169,14 @@ function PsasEventAnalyticsContent() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          signal: abortControllerRef.current.signal,
         });
+
+        // Don't process if request was aborted
+        if (abortControllerRef.current.signal.aborted) {
+          console.log(`[ABORT] Request cancelled for form ${formId}`);
+          return;
+        }
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -154,11 +188,20 @@ function PsasEventAnalyticsContent() {
         const result = await response.json();
 
         if (result.success && result.data) {
+          // Cache the result locally
+          requestCacheRef.current[formId] = result.data;
+
           setAnalyticsData(result.data);
         } else {
           throw new Error("Invalid response format");
         }
       } catch (error) {
+        // Don't log error if request was intentionally aborted
+        if (error.name === "AbortError") {
+          console.log(`[ABORT] Request aborted for form ${formId}`);
+          return;
+        }
+
         console.error("Failed to fetch event analytics:", error);
 
         // If we get a CastError, it means the formId is not a valid ObjectId

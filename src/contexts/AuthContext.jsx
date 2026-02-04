@@ -3,9 +3,11 @@ import { AuthContext } from "./AuthContextDefinition";
 import { toast } from "react-hot-toast";
 
 // Session timeout configuration
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 1 minutes
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes inactivity
 const CHECK_INTERVAL_MS = 60 * 1000; // Check every 60 seconds
 const ACTIVITY_KEY = "lastActivityTime";
+const TOKEN_EXPIRY_WARNING_MS = 5 * 60 * 1000; // Warn when 5 minutes left
+const TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000; // Refresh when 2 minutes left
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -37,7 +39,8 @@ export const AuthProvider = ({ children }) => {
     // But for now, stick to existing logic to minimize diff.
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
       const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -72,7 +75,7 @@ export const AuthProvider = ({ children }) => {
         // Set default profile picture if none exists
         if (!user.profilePicture) {
           user.profilePicture = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            user.name
+            user.name,
           )}&background=random`;
         }
         localStorage.setItem("user", JSON.stringify(user));
@@ -130,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       "Your session has expired due to inactivity. Please log in again.",
       {
         duration: 5000,
-      }
+      },
     );
     // Redirect to login with session expired message
     window.location.href = "/login?error=session_expired";
