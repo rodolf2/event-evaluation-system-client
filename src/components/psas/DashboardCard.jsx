@@ -10,7 +10,7 @@ import {
   FileCheck,
 } from "lucide-react";
 
-const DashboardCard = ({ image, title, buttonText, link }) => {
+const DashboardCard = ({ image, title, buttonText, link, gradientColor }) => {
   const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
 
@@ -76,7 +76,7 @@ const DashboardCard = ({ image, title, buttonText, link }) => {
   // Render CSS gradient fallback
   const renderGradientFallback = () => (
     <div
-      className={`rounded-md mb-3 w-full h-48 bg-linear-to-br ${getGradientColor(title)} flex flex-col items-center justify-center`}
+      className={`rounded-md mb-3 w-full h-48 bg-linear-to-br ${gradientColor || getGradientColor(title)} flex flex-col items-center justify-center`}
     >
       <div className="bg-white/20 rounded-full p-4">
         <CardIcon className="w-10 h-10 text-white" />

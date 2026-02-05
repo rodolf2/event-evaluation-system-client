@@ -891,9 +891,9 @@ function UserRoles() {
                       onClick={() => handleChoiceSelect("ITSS")}
                       className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
                     >
-                      <div className="font-medium text-gray-900">Make ITSS</div>
+                      <div className="font-medium text-gray-900">Make ITSS Coordinator</div>
                       <div className="text-sm text-gray-500">
-                        Responsible for Student User Management and onboarding.
+                        Responsible for Student Management and onboarding.
                       </div>
                     </button>
                   </>
@@ -1023,6 +1023,7 @@ function UserRoles() {
                 }`}
               >
                 {confirmAction === "DISABLE" && <Ban className="w-8 h-8" />}
+                {confirmAction === "ENABLE" && <UserCheck className="w-8 h-8" />}
                 {confirmAction === "ELEVATE" && (
                   <ArrowUpCircle className="w-8 h-8" />
                 )}

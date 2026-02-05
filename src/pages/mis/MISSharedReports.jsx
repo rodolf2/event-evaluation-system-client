@@ -322,13 +322,7 @@ const MISSharedReports = () => {
     <MisLayout>
       {view === "list" && (
         <div className="p-8 bg-gray-100 min-h-full">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Shared Reports</h1>
-            <p className="text-gray-600 mt-1">
-              View evaluation reports shared with the MIS team
-            </p>
-          </div>
+
 
           {/* Search and Sort Bar */}
           <div className="flex flex-wrap items-center gap-4 mb-6">

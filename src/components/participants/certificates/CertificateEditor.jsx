@@ -41,6 +41,17 @@ const CertificateEditor = ({ initialData }) => {
   const [, setForceUpdate] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState(null); // 'elements' | 'properties' | null
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    const checkDraft = () => {
+      const draft = localStorage.getItem("certificate_draft");
+      setHasDraft(!!draft);
+    };
+    checkDraft();
+    window.addEventListener("storage", checkDraft);
+    return () => window.removeEventListener("storage", checkDraft);
+  }, []);
 
   const historyRef = useRef([]);
   const redoRef = useRef([]);
@@ -60,6 +71,28 @@ const CertificateEditor = ({ initialData }) => {
       console.error("Error updating canvas history:", err);
     }
   }, []);
+
+  const saveDraft = useCallback(() => {
+    if (fabricCanvas.current) {
+      const json = JSON.stringify(fabricCanvas.current.toJSON(["selectable"]));
+      localStorage.setItem("certificate_draft", json);
+      setHasDraft(true);
+    }
+  }, []);
+
+  const loadDraft = useCallback(() => {
+    const draft = localStorage.getItem("certificate_draft");
+    if (!draft || !fabricCanvas.current) return;
+
+    if (
+      confirm("Load auto-saved draft? This will replace your current canvas.")
+    ) {
+      fabricCanvas.current.loadFromJSON(draft, () => {
+        fabricCanvas.current.renderAll();
+        pushHistory();
+      });
+    }
+  }, [pushHistory]);
 
   useEffect(() => {
     let resizeObserver;
@@ -89,13 +122,24 @@ const CertificateEditor = ({ initialData }) => {
           pushHistory();
         });
       } else {
-        historyRef.current = [];
-        pushHistory();
+        const draft = localStorage.getItem("certificate_draft");
+        if (draft) {
+          canvas.loadFromJSON(draft, () => {
+            canvas.renderAll();
+            pushHistory();
+          });
+        } else {
+          historyRef.current = [];
+          pushHistory();
+        }
       }
+
+
 
       const updateSelection = () => {
         setActiveObject(canvas.getActiveObject());
         setForceUpdate((f) => f + 1);
+        saveDraft(); // Auto-save on selection change/modification
       };
 
       canvas.on({
@@ -105,6 +149,8 @@ const CertificateEditor = ({ initialData }) => {
         "selection:created": updateSelection,
         "selection:updated": updateSelection,
         "selection:cleared": updateSelection,
+        "text:changed": updateSelection, // Capture text edits
+        "path:created": updateSelection // Capture drawing
       });
 
       canvas.on("object:selected", (e) => {
@@ -430,6 +476,8 @@ const CertificateEditor = ({ initialData }) => {
     alert(`Template data for "${name}.json" has been downloaded.`);
   };
 
+
+
   const handleBackgroundUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -440,13 +488,17 @@ const CertificateEditor = ({ initialData }) => {
       fabric.Image.fromURL(
         f.target.result,
         (img) => {
+          img.set({
+            scaleX: BASE_WIDTH / img.width,
+            scaleY: BASE_HEIGHT / img.height,
+            left: 0,
+            top: 0,
+            originX: "left",
+            originY: "top",
+          });
           fabricCanvas.current.setBackgroundImage(
             img,
-            fabricCanvas.current.renderAll.bind(fabricCanvas.current),
-            {
-              scaleX: fabricCanvas.current.width / img.width,
-              scaleY: fabricCanvas.current.height / img.height,
-            }
+            fabricCanvas.current.renderAll.bind(fabricCanvas.current)
           );
         },
         { crossOrigin: "anonymous" }
@@ -710,6 +762,14 @@ const CertificateEditor = ({ initialData }) => {
               Download JSON
             </button>
           </div>
+          {hasDraft && (
+             <button
+               onClick={loadDraft}
+               className="w-full mt-2 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100 flex items-center justify-center gap-2"
+             >
+               <Upload size={16} /> Load Auto-Saved Draft
+             </button>
+           )}
         </div>
       </div>
     );

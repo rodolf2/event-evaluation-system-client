@@ -74,6 +74,17 @@ const CertificateEditor = ({
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    const checkDraft = () => {
+      const draft = localStorage.getItem("certificate_draft");
+      setHasDraft(!!draft);
+    };
+    checkDraft();
+    window.addEventListener("storage", checkDraft);
+    return () => window.removeEventListener("storage", checkDraft);
+  }, []);
 
   const {
     pushHistory: rawPushHistory,
@@ -98,6 +109,60 @@ const CertificateEditor = ({
       rawRedo(fabricCanvas.current);
     }
   }, [rawRedo]);
+
+  const centerAndFitCanvas = useCallback(() => {
+    const canvas = fabricCanvas.current;
+    if (!canvas || canvas.destroyed) return;
+    const outer = wrapperRef.current;
+    if (!outer) return;
+
+    // Padding to ensure it doesn't touch edges
+    const padding = 32;
+    const availableWidth = outer.clientWidth - padding;
+    const availableHeight = outer.clientHeight - padding;
+
+    if (availableWidth <= 0 || availableHeight <= 0) return;
+
+    const scaleX = availableWidth / BASE_WIDTH;
+    const scaleY = availableHeight / BASE_HEIGHT;
+    let scale = Math.min(scaleX, scaleY);
+    scale = Math.min(scale, 1.2);
+
+    const finalWidth = BASE_WIDTH * scale;
+    const finalHeight = BASE_HEIGHT * scale;
+
+    try {
+      canvas.setDimensions({ width: finalWidth, height: finalHeight });
+      canvas.setViewportTransform([scale, 0, 0, scale, 0, 0]);
+      canvas.requestRenderAll();
+    } catch (err) {
+      console.warn("CertificateEditor centerAndFitCanvas error:", err);
+    }
+  }, [BASE_WIDTH, BASE_HEIGHT]);
+
+  const saveDraft = useCallback(() => {
+    if (fabricCanvas.current) {
+      const json = JSON.stringify(fabricCanvas.current.toJSON(["selectable"]));
+      localStorage.setItem("certificate_draft", json);
+      setHasDraft(true);
+    }
+  }, []);
+
+  const loadDraft = useCallback(() => {
+    const draft = localStorage.getItem("certificate_draft");
+    if (!draft || !fabricCanvas.current) return;
+
+    if (
+      confirm("Load auto-saved draft? This will replace your current canvas.")
+    ) {
+      fabricCanvas.current.loadFromJSON(draft, () => {
+        fabricCanvas.current.renderAll();
+        centerAndFitCanvas();
+        pushHistory();
+        toast.success("Draft loaded successfully");
+      });
+    }
+  }, [pushHistory, centerAndFitCanvas]);
 
   // Create refs for functions to prevent unnecessary re-initialization
   const cloneObjectRef = useRef();
@@ -149,70 +214,15 @@ const CertificateEditor = ({
           !canvas.destroyed &&
           fabricCanvas.current === canvas;
 
-        /**
-         * Fit the certificate canvas into the visible wrapper and scaled it.
-         */
-        const centerAndFitCanvas = () => {
-          if (!safeHasCanvas()) return;
-          const outer = wrapperRef.current;
-          if (!outer) return;
-
-          // Padding to ensure it doesn't touch edges (16px total horizontal/vertical)
-          const padding = 32;
-          const availableWidth = outer.clientWidth - padding;
-          const availableHeight = outer.clientHeight - padding;
-
-          if (availableWidth <= 0 || availableHeight <= 0) return;
-
-          // Calculate scale to fit the certificate within the available space
-          const scaleX = availableWidth / BASE_WIDTH;
-          const scaleY = availableHeight / BASE_HEIGHT;
-
-          // Fit fully visible
-          let scale = Math.min(scaleX, scaleY);
-
-          // Limit max scale to 1 to avoid pixelation if that's desired,
-          // generally for certificates we want to see the whole thing so upscaling on big screens is fine
-          // but let's cap at 1.5x to avoid extreme blurriness on massive screens if generic
-          scale = Math.min(scale, 1.2);
-
-          const finalWidth = BASE_WIDTH * scale;
-          const finalHeight = BASE_HEIGHT * scale;
-
-          try {
-            if (!safeHasCanvas()) return;
-            canvas.setDimensions({ width: finalWidth, height: finalHeight });
-            canvas.setViewportTransform([scale, 0, 0, scale, 0, 0]);
-            canvas.requestRenderAll();
-          } catch (err) {
-            console.warn(
-              "CertificateEditor centerAndFitCanvas error (ignored):",
-              err,
-            );
-          }
-        };
-
-        const handleResize = () => {
-          if (!safeHasCanvas()) return;
-          try {
-            centerAndFitCanvas();
-          } catch (err) {
-            console.warn(
-              "CertificateEditor handleResize error (ignored):",
-              err,
-            );
-          }
-        };
-
         // Initial fit/center
-        handleResize();
+        centerAndFitCanvas();
 
         // Observe container size changes using wrapperRef
         if (typeof ResizeObserver !== "undefined") {
           resizeObserver = new ResizeObserver(() => {
             // Guard every callback so Fabric internals never crash the app
             try {
-              window.requestAnimationFrame(() => handleResize());
+              window.requestAnimationFrame(() => centerAndFitCanvas());
             } catch (err) {
               console.warn(
                 "CertificateEditor ResizeObserver callback error (ignored):",
@@ -256,16 +266,24 @@ const CertificateEditor = ({
           if (e && e.target) handleTextAutoShrink(e.target);
           updateSelection();
           rawPushHistory(canvas);
+          saveDraft();
         };
 
         canvas.on({
           "object:modified": handleModification,
           "object:added": (e) => {
-            if (e.target && e.target.type === "textbox") handleTextAutoShrink(e.target);
+            if (e.target && e.target.type === "textbox")
+              handleTextAutoShrink(e.target);
             handleModification();
           },
           "object:removed": handleModification,
-          "text:changed": (e) => handleTextAutoShrink(e.target),
+          "text:changed": (e) => {
+            handleTextAutoShrink(e.target);
+            saveDraft();
+          },
+          "path:created": () => {
+            handleModification();
+          },
           "selection:created": updateSelection,
           "selection:updated": updateSelection,
           "selection:cleared": updateSelection,
@@ -1348,14 +1366,15 @@ const CertificateEditor = ({
       // Helper function to set background image
       const setBackgroundImage = (img) => {
         // Calculate the scaling factors to cover the entire canvas
-        const scaleX = canvas.width / img.width;
-        const scaleY = canvas.height / img.height;
+        // Calculate the scaling factors to cover the entire canvas correctly
+        const scaleX = BASE_WIDTH / img.width;
+        const scaleY = BASE_HEIGHT / img.height;
         const scale = Math.max(scaleX, scaleY);
         console.log("Background scaling factor:", scale);
 
         // Center the image
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+        const centerX = BASE_WIDTH / 2;
+        const centerY = BASE_HEIGHT / 2;
 
         img.set({
           scaleX: scale,
@@ -1939,7 +1958,15 @@ const CertificateEditor = ({
               </div>
               <PropertiesPanel />
             </div>
-            <div className="shrink-0 pb-35">
+            <div className="shrink-0 pb-35 space-y-2">
+              {hasDraft && (
+                <button
+                  onClick={loadDraft}
+                  className="w-full px-4 py-2 bg-amber-50 border border-amber-200 text-sm text-amber-700 rounded-md hover:bg-amber-100 text-center transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Load Auto-Saved Draft
+                </button>
+              )}
               <button
                 onClick={clearCanvas}
                 className="w-full px-4 py-2 bg-white border border-gray-300 text-sm text-gray-700 rounded-md hover:bg-gray-100 text-center transition-colors"

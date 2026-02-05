@@ -38,7 +38,7 @@ export const getSidebarConfig = (user) => ({
     },
     {
       iconComponent: Settings,
-      label: "System Config",
+      label: "System Configuration",
       path: "/mis/settings",
     },
     { iconComponent: FileText, label: "Audit Logs", path: "/mis/audit-logs" },

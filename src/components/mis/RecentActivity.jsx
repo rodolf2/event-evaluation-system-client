@@ -29,7 +29,7 @@ const RecentActivity = () => {
 
     try {
       setLoading(true);
-      const response = await fetch("/api/activities?limit=5", {
+      const response = await fetch("/api/mis/recent-activity?limit=5", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -40,7 +40,6 @@ const RecentActivity = () => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Handle 503 specifically or generic error
         if (response.status === 503) {
           throw new Error("Service unavailable");
         }
@@ -61,13 +60,8 @@ const RecentActivity = () => {
       // Fallback to some default activities if API fails
       setActivities([
         {
-          action: "Welcome Aboard!",
-          description: "First access to MIS Portal",
-          createdAt: new Date(),
-        },
-        {
-          action: "System Active",
-          description: "MIS Dashboard initialized",
+          action: "System Ready",
+          description: "MIS Dashboard initialized and ready",
           createdAt: new Date(),
         },
       ]);
@@ -109,9 +103,16 @@ const RecentActivity = () => {
               key={activity._id || i}
               className="bg-white shadow-sm rounded-lg p-4 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 items-start hover:shadow-md transition-shadow duration-200 border border-gray-100"
             >
-              <span className="font-bold text-gray-900 text-sm tracking-wide uppercase">
-                {activity.action}
-              </span>
+              <div className="flex flex-col">
+                  <span className="font-bold text-gray-900 text-sm tracking-wide uppercase truncate" title={activity.action}>
+                    {activity.action}
+                  </span>
+                  <span className="text-xs text-gray-400 mt-1">
+                    {new Date(activity.createdAt).toLocaleString(undefined, {
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </span>
+              </div>
               <span className="text-gray-600 text-sm leading-relaxed break-words">
                 {activity.description}
               </span>

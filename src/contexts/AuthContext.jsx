@@ -74,11 +74,12 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Explicitly check for auth failures
-      if (response.status === 401 || response.status === 403) {
-        console.error("Authentication failed (401/403), logging out");
+      if (response.status === 401) {
+        console.error("Authentication failed (401), logging out");
         removeToken();
         return;
       }
+
 
       // Ignore other server errors/rate limits (e.g., 429, 500, 502) to prevent accidental logout
       if (!response.ok) {

@@ -14,7 +14,7 @@ export const headerConfig = {
     "*certificates": "Certificates",
     "/psas/analytics": "Event Analytics",
     "*reports": "Reports",
-    "/psas/student-management": "Student User Management",
+    "/psas/student-management": "Student Management",
     "/psas/system-controls": "System Settings",
   },
   defaultTitle: "Home",
@@ -31,7 +31,7 @@ export const getSidebarConfig = (user) => {
   if (user?.position === "ITSS") {
     menuItems.push({
       iconComponent: Users,
-      label: "Students",
+      label: "Student Management",
       path: "/psas/student-management",
     });
     return {
@@ -50,7 +50,7 @@ export const getSidebarConfig = (user) => {
   if (user?.position === "PSAS Head") {
     menuItems.push({
       iconComponent: Users,
-      label: "Students",
+      label: "Student Management",
       path: "/psas/student-management",
     });
   }

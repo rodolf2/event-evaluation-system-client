@@ -124,7 +124,7 @@ const EvaluationStart = () => {
               {form?.title || "Event Evaluation Form"}
             </h1>
           </div>
-          <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 text-base md:text-xl">
+          <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 text-base md:text-xl font-bold">
             <p className="mb-4">
               The Event Evaluation Form is now open for submission. Answer it on
               the given time frame so that your response is seen by the

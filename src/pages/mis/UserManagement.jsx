@@ -224,6 +224,13 @@ function UserManagement() {
       return;
     }
 
+    // STRICT VALIDATION: Ensure email matches @laverdad.edu.ph
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@laverdad\.edu\.ph$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error("Invalid email. Must be a @laverdad.edu.ph address.");
+      return;
+    }
+
     setIsSubmitting(true);
     setSuccess("");
 
@@ -269,6 +276,14 @@ function UserManagement() {
       toast.error("Please enter an email address.");
       return;
     }
+
+    // STRICT VALIDATION: Check before opening confirmation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@laverdad\.edu\.ph$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error("Invalid email. Must be a @laverdad.edu.ph address.");
+      return;
+    }
+    
     setShowConfirmModal(true);
   };
 

@@ -24,17 +24,19 @@ const TIME_RANGES = [
   { id: "all", label: "All Time" },
 ];
 
-// Event type filter options
-const EVENT_TYPES = [
-  { id: "", label: "All Event Types" },
-  { id: "auth", label: "Authentication" },
-  { id: "user", label: "User Changes" },
-  { id: "form", label: "Form Actions" },
-  { id: "certificate", label: "Certificate Actions" },
-  { id: "notification", label: "Notification Actions" },
-  { id: "system", label: "System Events" },
-  { id: "security", label: "Security Events" },
-];
+// Category labels mapping
+const CATEGORY_LABELS = {
+  auth: "Authentication",
+  user: "User Management",
+  form: "Forms",
+  evaluation: "Evaluations",
+  certificate: "Certificates",
+  report: "Reports",
+  notification: "Notifications",
+  system: "System",
+  security: "Security",
+  settings: "Settings",
+};
 
 function AuditLogs() {
   const { token } = useAuth();
@@ -51,11 +53,29 @@ function AuditLogs() {
     eventType: "",
     timeRange: "24h",
   });
+  const [eventTypes, setEventTypes] = useState([]);
   const [stats, setStats] = useState({
     totalEvents: 0,
     roleChanges: 0,
     trend: 0,
   });
+
+  const fetchFilterOptions = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      const response = await fetch("/api/mis/audit-logs/filter-options", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      if (data.success && data.data?.categories) {
+        setEventTypes(data.data.categories);
+      }
+    } catch (error) {
+      console.error("Error fetching filter options:", error);
+    }
+  }, [token]);
 
   const fetchLogs = useCallback(async () => {
     if (!token) return;
@@ -128,7 +148,25 @@ function AuditLogs() {
 
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchFilterOptions();
+  }, [fetchStats, fetchFilterOptions]);
+
+  // Debounce search
+  const [localSearch, setLocalSearch] = useState(filters.search);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setFilters((prev) => {
+        if (prev.search !== localSearch) {
+          setPagination((prevP) => ({ ...prevP, page: 1 }));
+          return { ...prev, search: localSearch };
+        }
+        return prev;
+      });
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [localSearch]);
 
   const handleExportPDF = async () => {
     try {
@@ -227,14 +265,80 @@ function AuditLogs() {
       SSO_SYNC: { title: "SSO Sync", desc: "Bulk update" },
       CONFIG_UPDATE: { title: "Config Update", desc: "Settings changed" },
       SETTINGS_UPDATE: { title: "Settings Updated", desc: "System configuration modified" },
+      SYSTEM_SETTINGS_UPDATE: { title: "System Settings Updated", desc: "Configuration changed" },
     };
 
     const mapped = actionMap[log.action] || {
-      title: log.action,
+      title: log.action.replace(/_/g, " "),
       desc: log.description,
     };
     const isFailed =
       log.action?.includes("FAILED") || log.severity === "critical";
+
+    // Helper to format metadata details
+    const renderDetails = () => {
+      if (!log.metadata) return null;
+
+      // System Settings Updates
+      if (log.action === "SYSTEM_SETTINGS_UPDATE" && log.metadata.changes) {
+        return (
+          <div className="mt-1 text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+            <div className="font-semibold mb-1">Changes:</div>
+            <ul className="space-y-1">
+              {Object.entries(log.metadata.changes).map(([key, change]) => (
+                <li key={key} className="flex flex-col sm:flex-row sm:items-baseline gap-1">
+                  <span className="font-mono text-gray-500">{key}:</span>
+                  <span className="break-all">
+                    <span className="text-red-600 bg-red-50 px-1 rounded">
+                      {JSON.stringify(change.old)}
+                    </span>
+                    {" → "}
+                    <span className="text-green-600 bg-green-50 px-1 rounded">
+                      {JSON.stringify(change.new)}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      }
+
+      // Role Changes
+      if (log.action === "ROLE_CHANGE") {
+        return (
+          <div className="mt-1 text-xs text-gray-600">
+             <span className="font-semibold">Target:</span> {log.userEmail || "Unknown"}
+             <br/>
+             <span className="font-semibold">Role:</span> {log.metadata.oldValue} → {log.metadata.newValue}
+          </div>
+        );
+      }
+      
+      // User Activation/Suspension
+      if (log.action === "USER_ACTIVATED" || log.action === "USER_SUSPENDED") {
+         return (
+          <div className="mt-1 text-xs text-gray-600">
+             <span className="font-semibold">Target:</span> {log.metadata?.targetName ? `${log.metadata.targetName} (${log.userEmail})` : (log.userEmail || "Unknown")}
+             <br/>
+             <span className="font-semibold">Status:</span> {log.action === "USER_ACTIVATED" ? "Active" : "Suspended"}
+          </div>
+        );
+      }
+
+       // User Created/Deleted
+       if (log.action === "USER_CREATE" || log.action === "USER_DELETE") {
+         const targetEmail = log.metadata?.newValue?.email || log.metadata?.oldValue?.email || "Unknown";
+         const targetRole = log.metadata?.newValue?.role || log.metadata?.oldValue?.role || "";
+         return (
+          <div className="mt-1 text-xs text-gray-600">
+             <span className="font-semibold">Target:</span> {targetEmail} {targetRole && `(${targetRole})`}
+          </div>
+        );
+      }
+
+      return null;
+    };
 
     return (
       <div>
@@ -245,38 +349,10 @@ function AuditLogs() {
           {mapped.title}
         </div>
         <div className="text-sm text-gray-500">{mapped.desc}</div>
+        {renderDetails()}
       </div>
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center">
-            <SkeletonText lines={1} width="medium" height="h-8" />
-            <div className="flex gap-3">
-              <div className="w-28 h-10 bg-gray-200 rounded-lg animate-pulse" />
-              <div className="w-28 h-10 bg-gray-200 rounded-lg animate-pulse" />
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText lines={2} width="full" height="h-8" />
-            </div>
-          ))}
-        </div>
-
-        {/* Table Skeleton */}
-        <SkeletonTable rows={8} columns={3} />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -345,11 +421,8 @@ function AuditLogs() {
             <input
               type="text"
               placeholder="Search by Actor or Action..."
-              value={filters.search}
-              onChange={(e) => {
-                setFilters((prev) => ({ ...prev, search: e.target.value }));
-                setPagination((prev) => ({ ...prev, page: 1 }));
-              }}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -369,9 +442,11 @@ function AuditLogs() {
                 }}
                 className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               >
-                {EVENT_TYPES.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.label}
+                <option value="">All Event Types</option>
+                {eventTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {CATEGORY_LABELS[type] ||
+                      type.charAt(0).toUpperCase() + type.slice(1)}
                   </option>
                 ))}
               </select>
@@ -405,7 +480,11 @@ function AuditLogs() {
 
       {/* Logs Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {logs.length === 0 ? (
+        {isLoading ? (
+          <div className="p-6">
+            <SkeletonTable rows={8} columns={3} />
+          </div>
+        ) : logs.length === 0 ? (
           <div className="p-8 text-center">
             <Activity className="mx-auto h-12 w-12 text-gray-400" />
             <p className="text-gray-500 mt-4">No audit logs found</p>

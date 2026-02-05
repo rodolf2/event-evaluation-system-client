@@ -279,9 +279,10 @@ function Home() {
                   // [ITSS VIEW] Single Card
                   <div className="sm:col-span-2">
                     <DashboardCard
-                      title="Student User Management"
+                      title="Student Management"
                       buttonText="Manage Students"
                       link="/psas/student-management"
+                      gradientColor="from-blue-600 to-blue-800"
                     />
                   </div>
                 ) : (

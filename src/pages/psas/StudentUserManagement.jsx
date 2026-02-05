@@ -172,6 +172,12 @@ function StudentUserManagement() {
     setConfirmModalOpen(true);
   };
 
+  const handleToggleStatusClick = (user) => {
+    setSelectedUser(user);
+    setConfirmAction("TOGGLE_STATUS");
+    setConfirmModalOpen(true);
+  };
+
   const handleElevationSubmit = () => {
     setElevationModalOpen(false);
     setConfirmAction("ELEVATE");
@@ -198,6 +204,12 @@ function StudentUserManagement() {
         elevationDate: null,
       };
       successMessage = `Removed PBOO role from ${selectedUser.name}`;
+    } else if (confirmAction === "TOGGLE_STATUS") {
+      const newStatus = !selectedUser.isActive;
+      payload = {
+        isActive: newStatus,
+      };
+      successMessage = `User ${newStatus ? "enabled" : "disabled"} successfully`;
     }
 
     try {
@@ -233,48 +245,7 @@ function StudentUserManagement() {
   };
 
   const handleAddStudent = async () => {
-    const normalizedEmail = newStudentEmail.trim();
-
-    if (!normalizedEmail) {
-      toast.error("Please enter an email address");
-      return;
-    }
-
-    if (!normalizedEmail.endsWith("@student.laverdad.edu.ph")) {
-      toast.error("Email must be a @student.laverdad.edu.ph address");
-      return;
-    }
-
-    setIsProvisioning(true);
-    try {
-      const response = await fetch("/api/users/provision", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          email: newStudentEmail.trim(),
-          role: "student",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("Student added successfully");
-        setAddStudentModalOpen(false);
-        setNewStudentEmail("");
-        fetchUsers();
-      } else {
-        toast.error(data.message || "Failed to add student");
-      }
-    } catch (error) {
-      console.error("Error adding student:", error);
-      toast.error("An error occurred while adding the student");
-    } finally {
-      setIsProvisioning(false);
-    }
+    // ... existed code ...
   };
 
   const SkeletonText = ({ lines = 1, width = "full", height = "h-4" }) => (
@@ -300,28 +271,48 @@ function StudentUserManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Student User Management
-            </h1>
-            <p className="text-gray-600 mt-1">
-              View registered student accounts.
-            </p>
+      {/* Header - Only visible to ITSS */}
+      {currentUser?.position === "ITSS" && (
+        <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-200 mb-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5 bg-gray-50 p-1 rounded-xl border border-gray-100 w-full max-w-sm">
+              <div className="p-2 bg-blue-50 rounded-lg border border-blue-100 shadow-xs">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              
+              <div className="relative flex-1 pl-1">
+                <input
+                  type="email"
+                  value={newStudentEmail}
+                  onChange={(e) => setNewStudentEmail(e.target.value)}
+                  placeholder="Enter student email..."
+                  className="w-full py-1.5 bg-transparent border-none text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 font-medium text-sm"
+                />
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pr-2.5">
+                  <Mail className="w-4 h-4 text-gray-300" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (!newStudentEmail.trim()) {
+                    toast.error("Please enter a student email first");
+                    return;
+                  }
+                  setAddStudentModalOpen(true);
+                }}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all duration-300 shadow-md shadow-blue-50 font-bold active:scale-[0.98] group shrink-0"
+                disabled={isProvisioning}
+              >
+                <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-bold">Add Student</span>
+              </button>
+            </div>
           </div>
-          {currentUser?.position === "ITSS" && (
-            <button
-              onClick={() => setAddStudentModalOpen(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
-            >
-              <UserPlus className="w-5 h-5" />
-              Add Student
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -511,6 +502,25 @@ function StudentUserManagement() {
                             </button>
                           )}
                         </>
+                      )}
+
+                      {/* ITSS can Disable/Enable Student and PBOO Accounts */}
+                      {currentUser?.position === "ITSS" && (user.role === "student" || user.role === "club-officer") && (
+                         <button
+                           onClick={() => handleToggleStatusClick(user)}
+                           className={`p-2 rounded-lg transition ${
+                             user.isActive
+                               ? "text-red-500 hover:text-red-700 hover:bg-red-50"
+                               : "text-green-500 hover:text-green-700 hover:bg-green-50"
+                           }`}
+                           title={user.isActive ? "Disable Account" : "Enable Account"}
+                         >
+                           {user.isActive ? (
+                             <Ban className="w-5 h-5" />
+                           ) : (
+                             <UserCheck className="w-5 h-5" />
+                           )}
+                         </button>
                       )}
                     </div>
                   </td>
@@ -723,6 +733,7 @@ function StudentUserManagement() {
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 {confirmAction === "ELEVATE" && "Confirm Elevation"}
                 {confirmAction === "REMOVE_PBOO" && "Remove PBOO Role?"}
+                {confirmAction === "TOGGLE_STATUS" && (selectedUser?.isActive ? "Disable Student?" : "Enable Student?")}
               </h3>
 
               <p className="text-gray-600 mb-6">
@@ -734,6 +745,8 @@ function StudentUserManagement() {
                   }) for ${selectedProgram}?`}
                 {confirmAction === "REMOVE_PBOO" &&
                   `This will revert ${selectedUser?.name} to a regular Student role.`}
+                {confirmAction === "TOGGLE_STATUS" &&
+                  `Are you sure you want to ${selectedUser?.isActive ? "disable" : "enable"} ${selectedUser?.name}?`}
               </p>
 
               <div className="flex gap-3 w-full">
@@ -746,7 +759,7 @@ function StudentUserManagement() {
                 <button
                   onClick={handleConfirmAction}
                   className={`flex-1 px-4 py-2 rounded-lg text-white ${
-                    confirmAction === "REMOVE_PBOO"
+                    confirmAction === "REMOVE_PBOO" || (confirmAction === "TOGGLE_STATUS" && selectedUser?.isActive)
                       ? "bg-red-600 hover:bg-red-700"
                       : "bg-blue-600 hover:bg-blue-700"
                   }`}
@@ -759,60 +772,62 @@ function StudentUserManagement() {
         </div>
       )}
 
-      {/* Add Student Modal (ITSS Only) */}
+      {/* Add Student Confirmation Modal (ITSS Only) */}
       {addStudentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">
-                Add New Student
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center border-b border-blue-900">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                Confirm Addition
               </h3>
               <button
                 onClick={() => setAddStudentModalOpen(false)}
-                className="text-white/80 hover:text-white"
+                className="text-blue-100 hover:text-white transition-colors"
+                disabled={isProvisioning}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6">
-              <p className="text-sm text-gray-600 mb-4">
-                Enter the student's email address. They will be added as a
-                Student role.
+            
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                <Mail className="w-8 h-8 text-blue-600" />
+              </div>
+              <p className="text-gray-600 mb-2">Are you sure you want to add this student?</p>
+              <p className="text-xl font-bold text-gray-900 break-all bg-gray-50 p-3 rounded-lg border border-gray-100">
+                {newStudentEmail}
+              </p>
+              
+              <p className="text-xs text-gray-500 mt-4 italic">
+                This will provision a new student account with default permissions.
               </p>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Student Email
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      value={newStudentEmail}
-                      onChange={(e) => setNewStudentEmail(e.target.value)}
-                      placeholder="e.g. student.name@school.edu"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    />
-                    <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 justify-end pt-2">
-                  <button
-                    onClick={() => setAddStudentModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleAddStudent}
-                    disabled={isProvisioning}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <Check className="w-4 h-4" />
-                    {isProvisioning ? "Adding..." : "Add Student"}
-                  </button>
-                </div>
+              <div className="flex gap-3 justify-center mt-8">
+                <button
+                  onClick={() => setAddStudentModalOpen(false)}
+                  className="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  disabled={isProvisioning}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddStudent}
+                  disabled={isProvisioning}
+                  className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 font-medium transition-all shadow-lg shadow-blue-200"
+                >
+                  {isProvisioning ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Confirm Add
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

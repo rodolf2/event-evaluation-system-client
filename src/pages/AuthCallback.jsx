@@ -40,6 +40,8 @@ function AuthCallback() {
     if (token) {
       console.log("[AUTH-CALLBACK] Token found in URL, saving...");
       saveToken(token);
+      // Immediately clear the token from the URL to prevent it from lingering in history
+      window.history.replaceState({}, document.title, window.location.pathname);
     } else if (!isLoading && !user) {
       console.warn("[AUTH-CALLBACK] No token found and not logged in, redirecting to login");
       navigate("/login");
