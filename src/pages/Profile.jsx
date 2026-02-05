@@ -5,6 +5,8 @@ import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
 import ParticipantLayout from "../components/participants/ParticipantLayout";
 import ClubOfficerLayout from "../components/club-officers/ClubOfficerLayout";
+import MisLayout from "../components/mis/MisLayout";
+import ClubAdviserLayout from "../components/club-advisers/ClubAdviserLayout";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -58,7 +60,7 @@ const ToggleSwitch = ({ label, enabled, setEnabled }) => (
 );
 
 function Profile() {
-  const { user, token, refreshUserData } = useAuth();
+  const { user, token, refreshUserData, updateUser } = useAuth();
   const [muteNotifications, setMuteNotifications] = useState(false);
   const [muteReminders, setMuteReminders] = useState(false);
   const [acquiredBadges, setAcquiredBadges] = useState([]);
@@ -375,7 +377,11 @@ function Profile() {
         ? ClubOfficerLayout
         : user.role === "psas"
           ? PSASLayout
-          : null; // senior-management uses external layout
+          : user.role === "mis"
+            ? MisLayout
+            : user.role === "club-adviser"
+              ? ClubAdviserLayout
+              : null; // senior-management uses external layout
 
   const content = (
     <>
