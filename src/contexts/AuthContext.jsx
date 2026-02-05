@@ -158,10 +158,7 @@ export const AuthProvider = ({ children }) => {
       clearInterval(sessionCheckIntervalRef.current);
       sessionCheckIntervalRef.current = null;
     }
-    localStorage.removeItem(ACTIVITY_KEY);
-    // localStorage.removeItem("token"); // No longer needed
-    localStorage.removeItem("user");
-    // setToken(null);
+    localStorage.clear();
     setUser(null);
     toast.error(
       "Your session has expired due to inactivity. Please log in again.",
@@ -266,13 +263,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const removeToken = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem(ACTIVITY_KEY);
+    // Securely clear all localStorage data
+    localStorage.clear();
+    
+    // Clear interval if running
     if (sessionCheckIntervalRef.current) {
       clearInterval(sessionCheckIntervalRef.current);
       sessionCheckIntervalRef.current = null;
     }
+    
+    // Reset state
     setToken(null);
     setUser(null);
 
