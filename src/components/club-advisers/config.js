@@ -6,6 +6,7 @@ export const headerConfig = {
     "/club-adviser/home": "Home",
     "/club-adviser/reports": "Reports",
     "/club-adviser/profile": "Profile",
+    "/club-adviser/notifications": "Notifications",
   },
   defaultTitle: "Club Adviser Portal",
   notificationPath: "/club-adviser/notifications",

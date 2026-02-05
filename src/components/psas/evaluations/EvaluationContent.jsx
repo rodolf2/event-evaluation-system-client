@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -11,6 +11,7 @@ import uploadIcon from "../../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
 import EvaluatorShareModal from "../../shared/EvaluatorShareModal";
 import ConfirmationModal from "../../shared/ConfirmationModal";
+import Pagination from "../../shared/Pagination";
 
 const EvaluationContent = ({
   searchTerm,
@@ -23,10 +24,23 @@ const EvaluationContent = ({
   onReopenForm,
   onCloseForm,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  // Reset to first page when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy]);
+
+  const totalPages = Math.ceil(evaluationForms.length / itemsPerPage);
+  const paginatedForms = evaluationForms.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
-    <div className="p-6 md:p-5 bg-white flex flex-col">
-      <div className="shrink-0">
+    <div className="p-6 md:p-5 bg-white flex flex-col min-h-screen">
+      <div className="flex-1">
         <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
         <div className="mb-7">
           <div
@@ -76,7 +90,7 @@ const EvaluationContent = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 mb-5">
             <h2 className="text-3xl font-semibold text-gray-800">
               Recent Evaluations
@@ -110,7 +124,7 @@ const EvaluationContent = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {evaluationForms.map((form) => (
+            {paginatedForms.map((form) => (
               <RecentEvaluationCard
                 key={form.id}
                 form={form}
@@ -119,6 +133,12 @@ const EvaluationContent = ({
               />
             ))}
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
     </div>

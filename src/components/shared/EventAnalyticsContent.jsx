@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Search, ChevronDown, X, FileBarChart, Calendar } from "lucide-react";
+import { Search, ChevronDown, X, FileBarChart, Calendar, RefreshCw } from "lucide-react";
 import { SkeletonCard, SkeletonText, SkeletonBase } from "./SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
 import {
@@ -36,6 +36,8 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   const [sortOption, setSortOption] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Optimize: Track in-flight requests and cache them
   const requestCacheRef = useRef({});
@@ -53,7 +55,10 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   // Fetch available forms for the current user
   useEffect(() => {
     const fetchAvailableForms = async () => {
-      if (!token) return;
+      if (!token) {
+        setFormsLoading(false);
+        return;
+      }
 
       try {
         const response = await fetch("/api/forms?limit=1000", {
@@ -192,6 +197,11 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
           // Cache the result locally
           requestCacheRef.current[formId] = result.data;
           setAnalyticsData(result.data);
+          
+          // Set last updated time from server
+          if (result.data.lastUpdated) {
+            setLastUpdated(new Date(result.data.lastUpdated));
+          }
         } else {
           throw new Error("Invalid response format");
         }
@@ -566,6 +576,83 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
     navigate(`${basePath}/reports/${formId}?dynamic=true`);
   };
 
+  const handleRefreshAnalytics = async () => {
+    if (!formId || isRefreshing) return;
+
+    setIsRefreshing(true);
+    const toastId = toast.loading("Refreshing analytics...");
+
+    try {
+      const response = await fetch(`/api/analytics/form/${formId}/refresh`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Analytics refreshed successfully!", { id: toastId });
+        
+        // Clear local cache and refetch data
+        delete requestCacheRef.current[formId];
+        
+        // Refetch analytics data with force refresh
+        const analyticsResponse = await fetch(
+          `/api/analytics/form/${formId}?refresh=true`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (analyticsResponse.ok) {
+          const analyticsResult = await analyticsResponse.json();
+          if (analyticsResult.success && analyticsResult.data) {
+            setAnalyticsData(analyticsResult.data);
+            if (analyticsResult.data.lastUpdated) {
+              setLastUpdated(new Date(analyticsResult.data.lastUpdated));
+            }
+          }
+        }
+      } else {
+        toast.error(result.message || "Failed to refresh analytics", {
+          id: toastId,
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing analytics:", error);
+      toast.error("An error occurred while refreshing", { id: toastId });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const formatTimestamp = (date) => {
+    if (!date) return "Never";
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   // Filter and sort forms
   const filteredAndSortedForms = [...availableForms]
     .filter((form) =>
@@ -592,7 +679,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
     <div className="p-6 min-h-screen flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        {/* Form Selector */}
+        {/* Form Selector + Refresh Button */}
         {availableForms.length > 0 && (
           <div className="flex flex-col sm:flex-row items-end gap-3 w-full lg:w-auto">
             <div className="flex flex-col gap-1 w-full sm:w-[350px]">
@@ -697,7 +784,33 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
                   <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                 </div>
               </div>
+
             )}
+
+            {/* Refresh Button + Last Updated */}
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400 ml-1">
+                Data Status
+              </span>
+              <div className="flex items-center gap-2">
+                {lastUpdated && (
+                  <span className="text-xs text-gray-500 px-2 py-1.5">
+                    Updated {formatTimestamp(lastUpdated)}
+                  </span>
+                )}
+                <button
+                  onClick={handleRefreshAnalytics}
+                  disabled={isRefreshing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg shadow-xs hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Refresh analytics data"
+                >
+                  <RefreshCw 
+                    className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`}
+                  />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

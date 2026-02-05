@@ -254,6 +254,9 @@ const NotificationDetail = ({ notification, onBack }) => {
         ? "Higher Education Department"
         : "Prefect of Student Affairs and Services Department";
 
+    // Check if this is a "Form Published" success notification for the publisher
+    const isPublisherView = notification.type === "success" && notification.title?.toLowerCase().includes("published");
+
     return (
       <div className="bg-white rounded-xl shadow-md p-8 min-h-[600px]">
         <button
@@ -269,23 +272,41 @@ const NotificationDetail = ({ notification, onBack }) => {
           <span className="text-gray-600 font-medium">{departmentText}</span>
         </div>
 
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">
-            Hi {user?.name || "User"}, answer this evaluation now!
-          </h1>
-          <p className="text-lg text-gray-600 mb-2">
-            The Event Evaluation Form for the <strong>{formTitle}</strong> is
-            now open.
-          </p>
-          <p className="text-gray-600 mb-2">
-            Answer it now on the given timeframe to ensure that your voice is
-            heard by the Institution.
-          </p>
-          <p className="text-gray-600 mb-4">
-            Looking forward to your response!
-          </p>
-          <p className="text-gray-700 font-medium">Thanks be to God!</p>
-        </div>
+        {isPublisherView ? (
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">
+              Form Successfully Published!
+            </h1>
+            <p className="text-lg text-gray-600 mb-2">
+              The evaluation form <strong>{formTitle}</strong> has been successfully shared with the participants.
+            </p>
+            <p className="text-gray-600 mb-2">
+              You can now monitor the responses and view real-time analytics for this event.
+            </p>
+            <p className="text-gray-600 mb-6">
+              Thank you for your hard work!
+            </p>
+            <p className="text-gray-700 font-medium">To God be the Glory!</p>
+          </div>
+        ) : (
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">
+              Hi {user?.name || "User"}, answer this evaluation now!
+            </h1>
+            <p className="text-lg text-gray-600 mb-2">
+              The Event Evaluation Form for the <strong>{formTitle}</strong> is
+              now open.
+            </p>
+            <p className="text-gray-600 mb-2">
+              Answer it now on the given timeframe to ensure that your voice is
+              heard by the Institution.
+            </p>
+            <p className="text-gray-600 mb-4">
+              Looking forward to your response!
+            </p>
+            <p className="text-gray-700 font-medium">Thanks be to God!</p>
+          </div>
+        )}
 
         <div className="flex flex-col items-center max-w-2xl mx-auto px-4">
           {/* Calendar Icon with Dates and Button */}
@@ -310,17 +331,30 @@ const NotificationDetail = ({ notification, onBack }) => {
                   {formatDateTime(form?.eventEndDate)}
                 </span>
               </div>
-              {/* Submit Button */}
-              <button
-                onClick={() =>
-                  navigate(
-                    `/evaluations/start/${notification.relatedEntity.id}`,
-                  )
-                }
-                className="bg-[#1E3A8A] hover:bg-[#15306e] text-white font-semibold py-3 px-8 rounded-lg transition-colors mt-4"
-              >
-                Submit an Evaluation
-              </button>
+              {/* Conditional Button based on view */}
+              {isPublisherView ? (
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/club-officer/analytics?formId=${notification.relatedEntity.id}`,
+                    )
+                  }
+                  className="bg-[#1E3A8A] hover:bg-[#15306e] text-white font-semibold py-3 px-8 rounded-lg transition-colors mt-4"
+                >
+                  View Event Analytics
+                </button>
+              ) : (
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/evaluations/start/${notification.relatedEntity.id}`,
+                    )
+                  }
+                  className="bg-[#1E3A8A] hover:bg-[#15306e] text-white font-semibold py-3 px-8 rounded-lg transition-colors mt-4"
+                >
+                  Submit an Evaluation
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -562,6 +596,7 @@ function Notifications() {
               from,
               title: notification.title,
               preview: notification.message,
+              type: notification.type,
               date: notification.createdAt
                 ? new Date(notification.createdAt).toLocaleString()
                 : "",

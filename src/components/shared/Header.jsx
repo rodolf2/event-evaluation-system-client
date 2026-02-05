@@ -106,6 +106,9 @@ const Header = ({
     if (user?.role === "club-officer") {
       return "/club-officer/notifications";
     }
+    if (user?.role === "club-adviser") { // Added support for club-adviser
+      return "/club-adviser/notifications";
+    }
     if (user?.role === "senior-management") {
       return "/senior-management/notifications";
     }
@@ -115,9 +118,7 @@ const Header = ({
     if (user?.role === "mis") {
       return "/mis/notifications";
     }
-    return config.notificationPath
-      ? `/psas/notifications`
-      : `/student/notifications`;
+    return config.notificationPath || `/student/notifications`;
   };
 
   const notificationLink = getNotificationLink();

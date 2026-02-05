@@ -437,11 +437,7 @@ function Profile() {
                         },
                         body: JSON.stringify({ muteNotifications: newValue }),
                       });
-                      const updatedUser = {
-                        ...user,
-                        muteNotifications: newValue,
-                      };
-                      localStorage.setItem("user", JSON.stringify(updatedUser));
+                      updateUser({ muteNotifications: newValue });
                     } catch (error) {
                       console.error(
                         "Error updating notification preference:",
@@ -466,8 +462,7 @@ function Profile() {
                         },
                         body: JSON.stringify({ muteReminders: newValue }),
                       });
-                      const updatedUser = { ...user, muteReminders: newValue };
-                      localStorage.setItem("user", JSON.stringify(updatedUser));
+                      updateUser({ muteReminders: newValue });
                     } catch (error) {
                       console.error(
                         "Error updating reminder preference:",

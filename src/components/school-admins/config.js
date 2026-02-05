@@ -6,6 +6,7 @@ export const headerConfig = {
     "/senior-management/home": "Home",
     "/senior-management/reports": "Reports",
     "/senior-management/profile": "Profile",
+    "/senior-management/notifications": "Notifications",
   },
   defaultTitle: "Senior Management Portal",
   notificationPath: "/senior-management/notifications",

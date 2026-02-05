@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import { useAuth } from "../../contexts/useAuth";
 import { useSocket } from "../../contexts/SocketContext";
 import toast from "react-hot-toast";
+import CalendarIcon from "../../assets/icons/calendar.svg";
 
 const NotificationItem = ({
   notification,
@@ -127,10 +128,36 @@ const NotificationItem = ({
 
 const NotificationDetail = ({ notification, onBack }) => {
   const [reminder, setReminder] = useState(null);
+  const [form, setForm] = useState(null);
   const [allReminders, setAllReminders] = useState([]);
   const [selectedDateReminders, setSelectedDateReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const { token, user } = useAuth();
+  const navigate = useNavigate();
+
+  const isFormNotification =
+    notification.relatedEntity && notification.relatedEntity.type === "form";
+  const isReminderNotification =
+    notification.relatedEntity &&
+    notification.relatedEntity.type === "reminder";
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }) +
+      " - " +
+      date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    );
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -145,11 +172,7 @@ const NotificationDetail = ({ notification, onBack }) => {
           setAllReminders(remindersResult);
         }
 
-        // If this notif is for a specific reminder, fetch its details
-        if (
-          notification.relatedEntity &&
-          notification.relatedEntity.type === "reminder"
-        ) {
+        if (isReminderNotification) {
           const response = await fetch(
             `/api/reminders/${notification.relatedEntity.id}`,
             {
@@ -166,16 +189,31 @@ const NotificationDetail = ({ notification, onBack }) => {
               setSelectedDateReminders([result.data]);
             }
           }
+        } else if (isFormNotification) {
+          const response = await fetch(
+            `/api/forms/${notification.relatedEntity.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setForm(result.data);
+            }
+          }
         }
       } catch (error) {
-        console.error("Error fetching reminder details:", error);
+        console.error("Error fetching notification details:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [notification, token]);
+  }, [notification, token, isFormNotification, isReminderNotification]);
 
   if (loading) {
     return (
@@ -282,6 +320,103 @@ const NotificationDetail = ({ notification, onBack }) => {
 
     return { month, year, days };
   };
+
+  // Form notification detail view
+  if (isFormNotification && user?.role === "psas") {
+    const formTitle = form?.title || "Evaluation Form";
+    const creatorRole = form?.createdBy?.role;
+    const departmentText =
+      creatorRole === "club-officer"
+        ? "Higher Education Department"
+        : "Prefect of Student Affairs and Services Department";
+
+    // Check if this is a "Form Published" success notification for the publisher
+    const isPublisherView = notification.type === "success" && notification.title?.toLowerCase().includes("published");
+
+    return (
+      <div className="bg-white rounded-xl shadow-md p-8 min-h-[600px]">
+        <button
+          onClick={onBack}
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          Back
+        </button>
+
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-gray-300 rounded-full shrink-0"></div>
+          <span className="text-gray-600 font-medium">{departmentText}</span>
+        </div>
+
+        {isPublisherView ? (
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">
+              Form Successfully Published!
+            </h1>
+            <p className="text-lg text-gray-600 mb-2">
+              The evaluation form <strong>{formTitle}</strong> has been successfully shared with the participants.
+            </p>
+            <p className="text-gray-600 mb-2">
+              You can now monitor the responses and view real-time analytics for this event.
+            </p>
+            <p className="text-gray-600 mb-6">
+              Thank you for your hard work!
+            </p>
+            <p className="text-gray-700 font-medium">To God be the Glory!</p>
+          </div>
+        ) : (
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">
+              Evaluation Form Update
+            </h1>
+            <p className="text-lg text-gray-600 mb-2">
+              Regarding the evaluation form: <strong>{formTitle}</strong>
+            </p>
+            <p className="text-gray-600 mb-4">
+              You can view the form details and analytics below.
+            </p>
+            <p className="text-gray-700 font-medium">To God be the Glory!</p>
+          </div>
+        )}
+
+        <div className="flex flex-col items-center max-w-2xl mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div className="w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center sm:-mt-4">
+              <img
+                src={CalendarIcon}
+                alt="Calendar"
+                className="w-32 h-32 sm:w-40 sm:h-40"
+              />
+            </div>
+            <div className="space-y-4 pt-4 text-center sm:text-left">
+              <div>
+                <span className="font-bold text-gray-800">Form Opens:</span>{" "}
+                <span className="text-gray-600">
+                  {formatDateTime(form?.eventStartDate)}
+                </span>
+              </div>
+              <div>
+                <span className="font-bold text-gray-800">Form Closes:</span>{" "}
+                <span className="text-gray-600">
+                  {formatDateTime(form?.eventEndDate)}
+                </span>
+              </div>
+              <button
+                onClick={() =>
+                  navigate(
+                    `/psas/analytics?formId=${notification.relatedEntity.id}`,
+                  )
+                }
+                className="bg-[#1E3A8A] hover:bg-[#15306e] text-white font-semibold py-3 px-8 rounded-lg transition-colors mt-4"
+              >
+                View Event Analytics
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { month, year, days } = renderCalendar(
     reminder?.date || notification.date,
@@ -458,6 +593,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
               from,
               title: notification.title,
               preview: notification.message,
+              type: notification.type,
               date: notification.createdAt
                 ? new Date(notification.createdAt).toLocaleString()
                 : "",

@@ -207,7 +207,6 @@ const Certificates = () => {
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Show certificate viewer if requested

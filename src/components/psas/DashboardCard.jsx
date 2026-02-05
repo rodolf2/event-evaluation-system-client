@@ -16,7 +16,11 @@ const DashboardCard = ({ image, title, buttonText, link, gradientColor }) => {
 
   // Generate consistent gradient color based on title
   const getGradientColor = (title) => {
+    // Primary system color gradient
+    const systemGradient = "from-[#1E3A8A] to-[#1e40af]"; // Blue-900 to Blue-800
+    
     const colors = [
+      systemGradient,
       "from-blue-600 to-blue-800",
       "from-indigo-600 to-indigo-800",
       "from-purple-600 to-purple-800",

@@ -124,6 +124,7 @@ const NotificationItem = ({
 
 const NotificationDetail = ({ notification, onBack }) => {
   const [reminder, setReminder] = useState(null);
+  const [form, setForm] = useState(null); // Fix: Add missing form state
   const [allReminders, setAllReminders] = useState([]);
   const [selectedDateReminders, setSelectedDateReminders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -560,6 +561,7 @@ const Notifications = () => {
             from,
             title: notification.title,
             preview: notification.message,
+            type: notification.type,
             date: notification.createdAt
               ? new Date(notification.createdAt).toLocaleString()
               : "",

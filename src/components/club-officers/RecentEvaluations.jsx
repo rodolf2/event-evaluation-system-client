@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
+import Pagination from "../shared/Pagination";
 
 const RecentEvaluations = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     if (token) {
@@ -17,7 +20,7 @@ const RecentEvaluations = () => {
   const fetchRecentEvaluations = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/forms?limit=5", {
+      const response = await fetch("/api/forms?limit=100", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -32,7 +35,7 @@ const RecentEvaluations = () => {
       if (result.success) {
         // Get the forms data (could be in result.data or result.data.forms)
         const forms = result.data.forms || result.data || [];
-        setEvaluations(forms.slice(0, 5)); // Ensure max 5 items
+        setEvaluations(forms);
       } else {
         throw new Error(result.message || "Failed to fetch recent evaluations");
       }
@@ -47,6 +50,12 @@ const RecentEvaluations = () => {
   const handleEvaluationClick = (formId) => {
     navigate(`/club-officer/form-creation?formId=${formId}`);
   };
+
+  const totalPages = Math.ceil(evaluations.length / itemsPerPage);
+  const paginatedEvaluations = evaluations.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading) {
     return (
@@ -75,8 +84,8 @@ const RecentEvaluations = () => {
         Recent Evaluations
       </h3>
       <div className="space-y-2">
-        {evaluations.length > 0 ? (
-          evaluations.map((evaluation) => (
+        {paginatedEvaluations.length > 0 ? (
+          paginatedEvaluations.map((evaluation) => (
             <div
               key={evaluation._id}
               onClick={() => handleEvaluationClick(evaluation._id)}
@@ -109,6 +118,11 @@ const RecentEvaluations = () => {
           </div>
         )}
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };

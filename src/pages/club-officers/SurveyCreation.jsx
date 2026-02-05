@@ -20,6 +20,7 @@ import uploadIcon from "../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../assets/icons/blankform-icon.svg";
 import EvaluatorShareModal from "../../components/shared/EvaluatorShareModal";
 import ConfirmationModal from "../../components/shared/ConfirmationModal";
+import Pagination from "../../components/shared/Pagination";
 
 const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -265,6 +266,8 @@ const SurveyCreation = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   const fetchEvaluations = useCallback(async () => {
     try {
@@ -304,6 +307,11 @@ const SurveyCreation = () => {
       fetchEvaluations();
     }
   }, [token, fetchEvaluations]);
+
+  // Reset to first page when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy]);
 
   const handleCreateNew = () => {
     navigate("/club-officer/form-creation?new=true");
@@ -456,6 +464,12 @@ const SurveyCreation = () => {
       }
       return 0;
     });
+
+  const totalPages = Math.ceil(filteredEvaluations.length / itemsPerPage);
+  const paginatedEvaluations = filteredEvaluations.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading) {
     return (
@@ -721,7 +735,7 @@ const SurveyCreation = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredEvaluations.map((evaluation) => (
+                {paginatedEvaluations.map((evaluation) => (
                   <SurveyEvaluationCard
                     key={evaluation._id}
                     evaluation={evaluation}
@@ -730,6 +744,12 @@ const SurveyCreation = () => {
                   />
                 ))}
               </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
             </div>
           </div>
         </div>

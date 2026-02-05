@@ -854,6 +854,16 @@ function App() {
                 }
               />
               <Route
+                path="/mis/reports/:eventId"
+                element={
+                  isAuthorized("mis") ? (
+                    <CompleteReport />
+                  ) : (
+                    <Navigate to={getHomeRoute()} />
+                  )
+                }
+              />
+              <Route
                 path="/mis/audit-logs"
                 element={
                   isAuthorized("mis") ? (

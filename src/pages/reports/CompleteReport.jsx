@@ -279,7 +279,9 @@ const CompleteReport = ({
           ? "/club-officer/reports"
           : user?.role === "club-adviser"
             ? "/club-adviser/reports"
-            : "/psas/reports";
+            : user?.role === "mis"
+              ? "/mis/reports"
+              : "/psas/reports";
       navigate(reportsPath);
     }
   };
