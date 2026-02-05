@@ -51,7 +51,7 @@ const ChartsSection = ({
             <ul className="space-y-3">
               <li className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <span className="w-3 h-3 bg-[#1e3a8a] rounded-full mr-3"></span>
+                  <span className="w-3 h-3 bg-[#10B981] rounded-full mr-3"></span>
                   <span className="text-sm font-medium text-[#1F1F1F]">
                     Positive
                   </span>
@@ -63,7 +63,7 @@ const ChartsSection = ({
               </li>
               <li className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <span className="w-3 h-3 bg-[#3b82f6] rounded-full mr-3"></span>
+                  <span className="w-3 h-3 bg-[#F59E0B] rounded-full mr-3"></span>
                   <span className="text-sm font-medium text-[#1F1F1F]">
                     Neutral
                   </span>
@@ -75,7 +75,7 @@ const ChartsSection = ({
               </li>
               <li className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <span className="w-3 h-3 bg-[#93c5fd] rounded-full mr-3"></span>
+                  <span className="w-3 h-3 bg-[#EF4444] rounded-full mr-3"></span>
                   <span className="text-sm font-medium text-[#1F1F1F]">
                     Negative
                   </span>

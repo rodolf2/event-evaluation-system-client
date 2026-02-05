@@ -66,9 +66,9 @@ const ReportModal = ({ report, onClose }) => {
 
   const preparePieChartData = (summary) => {
     return [
-      { name: 'Positive', value: summary?.positive || 0, color: '#10B981' },
-      { name: 'Neutral', value: summary?.neutral || 0, color: '#F59E0B' },
-      { name: 'Negative', value: summary?.negative || 0, color: '#EF4444' },
+      { name: 'Positive', value: summary?.positive || 0, fill: '#10B981' },
+      { name: 'Neutral', value: summary?.neutral || 0, fill: '#F59E0B' },
+      { name: 'Negative', value: summary?.negative || 0, fill: '#EF4444' },
     ].filter(item => item.value > 0);
   };
 
@@ -202,7 +202,7 @@ const ReportModal = ({ report, onClose }) => {
                             dataKey="value"
                           >
                             {preparePieChartData(detailedReport.qualitativeReport.summary).map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
                             ))}
                           </Pie>
                           <Tooltip formatter={(value) => [value, 'Comments']} />
@@ -296,7 +296,11 @@ const ReportModal = ({ report, onClose }) => {
                             <YAxis domain={[0, 5]} />
                             <Tooltip formatter={(value) => [value?.toFixed(2), 'Average Rating']} />
                             <Legend />
-                            <Bar dataKey="rating" fill="#3B82F6" name="Average Rating" />
+                            <Bar dataKey="rating" name="Average Rating">
+                              {prepareBarChartData(detailedReport.quantitativeReport).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={index === 0 ? "#1E3A8A" : "#3B82F6"} />
+                              ))}
+                            </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>

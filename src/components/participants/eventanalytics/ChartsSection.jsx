@@ -44,15 +44,15 @@ const ChartsSection = ({
           <div className="w-full sm:w-1/2 sm:pl-4">
             <ul className="text-base space-y-2">
               <li className="flex items-center">
-                <span className="w-3 h-3 bg-blue-900 rounded-full mr-3"></span>
+                <span className="w-3 h-3 bg-[#10B981] rounded-full mr-3"></span>
                 Positive
               </li>
               <li className="flex items-center">
-                <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
+                <span className="w-3 h-3 bg-[#F59E0B] rounded-full mr-3"></span>
                 Neutral
               </li>
               <li className="flex items-center">
-                <span className="w-3 h-3 bg-blue-300 rounded-full mr-3"></span>
+                <span className="w-3 h-3 bg-[#EF4444] rounded-full mr-3"></span>
                 Negative
               </li>
             </ul>

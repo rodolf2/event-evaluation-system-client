@@ -23,25 +23,24 @@ import {
 } from "recharts";
 
 const COLORS = [
-  "#3B82F6", // Blue (Positive)
-  "#9CA3AF", // Gray (Neutral)
-  "#EF4444", // Red (Negative)
-  "#0088FE", // Blue
+  "#1E3A8A", // Deep Blue
+  "#3B82F6", // Blue
+  "#60A5FA", // Light Blue
+  "#93C5FD", // Lighter Blue
   "#00C49F", // Teal
   "#FFBB28", // Yellow
   "#FF8042", // Orange
-  "#8884d8", // Purple
-  "#FF6B6B", // Red
+  "#8884D8", // Purple
   "#4ECDC4", // Turquoise
-  "#45B7D1", // Light Blue
+  "#45B7D1", // Light Blue (Alternative)
   "#96CEB4", // Sage
   "#FFEEAD", // Pale Yellow
 ];
 
 const SENTIMENT_COLORS = {
-  positive: "#3B82F6",
-  neutral: "#9CA3AF",
-  negative: "#EF4444",
+  positive: "#10B981", // Green
+  neutral: "#F59E0B",  // Orange
+  negative: "#EF4444", // Red
 };
 
 const renderCustomizedLabel = ({
@@ -713,7 +712,7 @@ const CompleteReport = ({
                           return (
                             <div key={idx} className="flex items-center gap-3">
                               <div
-                                className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                                className="bg-blue-400 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
                                 style={{
                                   width: `${Math.max(
                                     (yearLevel.count / maxCount) * 70,

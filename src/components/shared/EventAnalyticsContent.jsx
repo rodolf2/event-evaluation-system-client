@@ -486,7 +486,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
     datasets: [
       {
         data: [responseRate, 100 - responseRate],
-        backgroundColor: ["#3B82F6", "#E5E7EB"],
+        backgroundColor: ["#1E3A8A", "#E5E7EB"],
         borderWidth: 0,
       },
     ],
@@ -501,8 +501,8 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
           responseBreakdown.neutral.percentage,
           responseBreakdown.negative.percentage,
         ],
-        backgroundColor: ["#1E3A8A", "#3B82F6", "#93C5FD"],
-        hoverBackgroundColor: ["#1E40AF", "#2563EB", "#60A5FA"],
+        backgroundColor: ["#10B981", "#F59E0B", "#EF4444"],
+        hoverBackgroundColor: ["#059669", "#D97706", "#DC2626"],
       },
     ],
   };
