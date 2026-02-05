@@ -92,7 +92,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   return (
     <aside
       data-tour="sidebar"
-      className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-30
+      className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-50
         ${isOpen
           ? "top-0 left-0 w-1/2 h-full lg:w-64 lg:h-[95vh]"
           : "top-0 -left-1/2 lg:left-5 w-1/2 lg:w-24 h-full lg:h-[95vh]"

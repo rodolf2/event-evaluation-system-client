@@ -126,7 +126,7 @@ const Header = ({
   return (
     <header
       data-tour="header"
-      className={`sticky top-0 flex items-center justify-between bg-white shadow-sm p-4 rounded-lg z-20 hover:shadow-lg ${className}`}
+      className={`sticky top-0 flex items-center justify-between bg-white shadow-sm p-4 rounded-lg z-40 hover:shadow-lg ${className}`}
     >
       {/* Hamburger + Title */}
       <div className="flex items-center gap-3">

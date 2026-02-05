@@ -9,6 +9,9 @@ import { useAuth } from "../../contexts/useAuth";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import ClubAdviserLayout from "../../components/club-advisers/ClubAdviserLayout";
 
+import { useEffect } from "react";
+import Pagination from "../../components/shared/Pagination";
+
 const NegativeComments = ({ report, onBack, isGeneratedReport = false }) => {
   const navigate = useNavigate();
   const { eventId } = useParams();
@@ -28,12 +31,20 @@ const NegativeComments = ({ report, onBack, isGeneratedReport = false }) => {
 
   // Use dynamic data hook
   const {
-    qualitativeData,
+    commentsData,
+    commentsPagination,
     formData,
     loading,
     error,
     refreshData,
+    fetchCommentsData,
+    updateFilters,
   } = useDynamicReportData(reportId, effectivelyGenerated);
+
+  // Set initial filter for negative comments
+  useEffect(() => {
+    updateFilters({ commentType: "negative" });
+  }, [updateFilters]);
 
   // If rendered as child component (with props), don't use PSASLayout
   // If accessed via direct routing (no props), use PSASLayout
@@ -55,10 +66,9 @@ const NegativeComments = ({ report, onBack, isGeneratedReport = false }) => {
     }
   };
 
-  // Get negative comments from sentiment analysis
-  const negativeComments = (qualitativeData?.categorizedComments?.negative || []).map(c => 
-    typeof c === 'string' ? c : (c.comment || c.text || "")
-  ).filter(c => c && c.trim() !== "");
+  const handlePageChange = (newPage) => {
+    fetchCommentsData({ page: newPage });
+  };
 
   const content = (
     <>
@@ -85,25 +95,36 @@ const NegativeComments = ({ report, onBack, isGeneratedReport = false }) => {
                 <p className="text-xl font-semibold">EVALUATION RESULT</p>
                 <p className="text-lg">College Level</p>
               </div>
-              <h4 className="text-xl font-bold mb-4">Negative Comments</h4>
-              <p className="text-sm text-gray-600 mb-6">Total Negative Comments: {negativeComments.length}</p>
+              <h4 className="text-xl font-bold mb-2">Negative Comments</h4>
+              <p className="text-sm text-gray-600 mb-6">Total Negative Comments: {commentsPagination.total}</p>
               
               {loading ? (
                  <div className="flex items-center justify-center py-12">
                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                  </div>
-              ) : negativeComments.length === 0 ? (
+              ) : !commentsData || commentsData.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <p>No negative comments found for this report.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {negativeComments.map((comment, index) => (
-                    <div key={index} className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
-                      <p className="text-gray-800">{comment}</p>
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <div className="space-y-4">
+                    {commentsData.map((comment, index) => (
+                      <div key={comment.id || index} className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                        <p className="text-gray-800">{comment.comment}</p>
+                        {comment.questionTitle && (
+                          <p className="text-xs text-gray-500 mt-2 italic">Question: {comment.questionTitle}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Pagination 
+                    currentPage={commentsPagination.page}
+                    totalPages={commentsPagination.pages}
+                    onPageChange={handlePageChange}
+                  />
+                </>
               )}
             </main>
             <div className="bg-blue-900 text-white text-center py-4 rounded-b-lg">

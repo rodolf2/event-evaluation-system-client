@@ -13,7 +13,7 @@ const ProfileModal = ({ isOpen, onClose, position }) => {
 
   return (
     <div
-      className="absolute mt-2 w-86 bg-white rounded-lg shadow-lg py-4 z-50"
+      className="absolute mt-2 w-86 bg-white rounded-lg shadow-lg py-4 z-70"
       style={position}
       onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
     >

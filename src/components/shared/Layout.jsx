@@ -61,7 +61,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
 
       {isProfileModalOpen && (
         <div
-          className="fixed inset-0 bg-[#F4F4F5]/60 z-40"
+          className="fixed inset-0 bg-[#F4F4F5]/60 z-60"
           onClick={() => setProfileModalOpen(false)}
         />
       )}

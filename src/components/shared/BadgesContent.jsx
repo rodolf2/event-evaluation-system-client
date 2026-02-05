@@ -8,7 +8,7 @@ const BadgeModal = ({ badge, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#F4F4F5]/60"
+      className="fixed inset-0 z-70 flex items-center justify-center bg-[#F4F4F5]/60"
       onClick={onClose}
     >
       <div
@@ -55,7 +55,7 @@ const LockedBadgeModal = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#F4F4F5]/60"
+      className="fixed inset-0 z-70 flex items-center justify-center bg-[#F4F4F5]/60"
       onClick={onClose}
     >
       <div

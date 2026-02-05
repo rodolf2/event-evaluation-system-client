@@ -4,16 +4,28 @@ import { useAuth } from "../contexts/useAuth";
 /**
  * Custom hook for managing dynamic report data
  */
-export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
+export const useDynamicReportData = (
+  reportId,
+  isGeneratedReport = false,
+  reportSnapshot = null,
+) => {
   const { token } = useAuth();
   const [quantitativeData, setQuantitativeData] = useState(null);
   const [qualitativeData, setQualitativeData] = useState(null);
   const [commentsData, setCommentsData] = useState(null);
   const [formData, setFormData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(
+    isGeneratedReport && !reportSnapshot ? true : false,
+  );
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isLiveData, setIsLiveData] = useState(!isGeneratedReport);
+  const [commentsPagination, setCommentsPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0,
+  });
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
@@ -45,12 +57,12 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch quantitative data: ${response.status}`
+            `Failed to fetch quantitative data: ${response.status}`,
           );
         }
 
@@ -60,7 +72,7 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
           setLastUpdated(new Date().toISOString());
         } else {
           throw new Error(
-            result.message || "Failed to fetch quantitative data"
+            result.message || "Failed to fetch quantitative data",
           );
         }
       } catch (err) {
@@ -68,7 +80,7 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
         setError(err.message);
       }
     },
-    [reportId, token, filters, isGeneratedReport]
+    [reportId, token, filters, isGeneratedReport],
   );
 
   // Fetch qualitative data
@@ -92,12 +104,12 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch qualitative data: ${response.status}`
+            `Failed to fetch qualitative data: ${response.status}`,
           );
         }
 
@@ -113,7 +125,7 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
         setError(err.message);
       }
     },
-    [reportId, token, filters.sentiment, filters.keyword, isGeneratedReport]
+    [reportId, token, filters.sentiment, filters.keyword, isGeneratedReport],
   );
 
   // Fetch comments data
@@ -127,6 +139,8 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
           type: filters.commentType,
           department: filters.department,
           ratingRange: filters.ratingFilter,
+          page: queryFilters.page || commentsPagination.page,
+          limit: queryFilters.limit || commentsPagination.limit,
           ...queryFilters,
           useSnapshot: isGeneratedReport ? "true" : "false",
         });
@@ -138,7 +152,7 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -147,7 +161,10 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
 
         const result = await response.json();
         if (result.success) {
-          setCommentsData(result.data);
+          setCommentsData(result.data.comments);
+          if (result.data.pagination) {
+            setCommentsPagination(result.data.pagination);
+          }
           setLastUpdated(new Date().toISOString());
         } else {
           throw new Error(result.message || "Failed to fetch comments data");
@@ -163,8 +180,10 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
       filters.commentType,
       filters.department,
       filters.ratingFilter,
+      commentsPagination.page,
+      commentsPagination.limit,
       isGeneratedReport,
-    ]
+    ],
   );
 
   // Fetch form data
@@ -202,31 +221,53 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   }, []);
 
-  // Apply filters and refetch data
-  const applyFilters = useCallback(() => {
-    setLoading(true);
-    Promise.all([
-      fetchQuantitativeData(),
-      fetchQualitativeData(),
-      fetchCommentsData(),
-      fetchFormData(),
-    ]).finally(() => {
-      setLoading(false);
-    });
-  }, [
-    fetchQuantitativeData,
-    fetchQualitativeData,
-    fetchCommentsData,
-    fetchFormData,
-  ]);
+  // Apply filters and refresh all data
+  const applyFilters = useCallback(
+    (newFilters = {}) => {
+      // Don't apply filters for generated reports
+      if (isGeneratedReport && reportSnapshot) {
+        return;
+      }
+
+      const mergedFilters = { ...filters, ...newFilters };
+      setFilters(mergedFilters);
+      setLoading(true);
+
+      // Reset pagination state locally
+      setCommentsPagination((prev) => ({ ...prev, page: 1 }));
+
+      Promise.all([
+        fetchQuantitativeData(mergedFilters),
+        fetchQualitativeData(mergedFilters),
+        fetchCommentsData({ ...mergedFilters, page: 1 }),
+        fetchFormData(),
+      ]).finally(() => {
+        setLoading(false);
+      });
+    },
+    [
+      filters,
+      fetchQuantitativeData,
+      fetchQualitativeData,
+      fetchCommentsData,
+      fetchFormData,
+      isGeneratedReport,
+      reportSnapshot,
+    ],
+  );
 
   // Refresh all data
   const refreshData = useCallback(() => {
+    // Don't refresh for generated reports - they use embedded snapshots
+    if (isGeneratedReport && reportSnapshot) {
+      return;
+    }
+
     setLoading(true);
     Promise.all([
       fetchQuantitativeData(),
       fetchQualitativeData(),
-      fetchCommentsData(),
+      fetchCommentsData({ page: 1 }),
       fetchFormData(),
     ]).finally(() => {
       setLoading(false);
@@ -236,6 +277,8 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
     fetchQualitativeData,
     fetchCommentsData,
     fetchFormData,
+    isGeneratedReport,
+    reportSnapshot,
   ]);
 
   // Auto-refresh every 60 seconds (only for live data, not generated reports)
@@ -251,17 +294,25 @@ export const useDynamicReportData = (reportId, isGeneratedReport = false) => {
     }
   }, [reportId, refreshData, loading, isGeneratedReport]);
 
-  // Initial data fetch
+  // Initialize with snapshot data for generated reports
   useEffect(() => {
-    if (reportId) {
+    if (isGeneratedReport && reportSnapshot?.analytics) {
+      // Use embedded snapshot data directly
+      setQuantitativeData(reportSnapshot.analytics.quantitativeData);
+      setQualitativeData(reportSnapshot.analytics.sentimentBreakdown);
+      setFormData(reportSnapshot.metadata);
+      setLoading(false);
+    } else if (reportId && !isGeneratedReport) {
+      // Only fetch for live data
       refreshData();
     }
-  }, [reportId]);
+  }, [reportId, isGeneratedReport, reportSnapshot]);
 
   return {
     quantitativeData,
     qualitativeData,
     commentsData,
+    commentsPagination,
     formData,
     loading,
     error,
