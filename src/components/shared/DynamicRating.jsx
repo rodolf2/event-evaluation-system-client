@@ -1,9 +1,9 @@
 import React from 'react';
 
-const DynamicRating = ({ type, scale, icon, startLabel, endLabel }) => {
+const DynamicRating = ({ type, scale, low = 1, icon, startLabel, endLabel }) => {
   const renderStars = () => {
     const stars = [];
-    for (let i = 1; i <= scale; i++) {
+    for (let i = low; i <= scale; i++) {
       stars.push(
         <div key={i} className="flex flex-col items-center">
           <span className="text-sm text-gray-600">{i}</span>
@@ -18,7 +18,7 @@ const DynamicRating = ({ type, scale, icon, startLabel, endLabel }) => {
 
   const renderHearts = () => {
     const hearts = [];
-    for (let i = 1; i <= scale; i++) {
+    for (let i = low; i <= scale; i++) {
       hearts.push(
         <div key={i} className="flex flex-col items-center">
           <span className="text-sm text-gray-600">{i}</span>
@@ -33,12 +33,13 @@ const DynamicRating = ({ type, scale, icon, startLabel, endLabel }) => {
 
   const renderEmojis = () => {
     const emojis = ['😡', '😟', '😐', '😊', '😄'];
-    const emojiScale = Math.min(scale, 5); // Limit to 5 emojis
+    const rangeSize = scale - low + 1;
+    const emojiScale = Math.min(rangeSize, 5); // Limit to 5 emojis
     const selectedEmojis = emojis.slice(0, emojiScale);
 
     return selectedEmojis.map((emoji, index) => (
       <div key={index} className="flex flex-col items-center">
-        <span className="text-sm text-gray-600">{index + 1}</span>
+        <span className="text-sm text-gray-600">{low + index}</span>
         <div className="w-8 h-8 flex items-center justify-center mt-1 text-2xl">
           {emoji}
         </div>
@@ -48,7 +49,7 @@ const DynamicRating = ({ type, scale, icon, startLabel, endLabel }) => {
 
   const renderLikertScale = () => {
     const range = [];
-    for (let i = 1; i <= scale; i++) {
+    for (let i = low; i <= scale; i++) {
       range.push(i);
     }
     return (

@@ -436,41 +436,81 @@ const ReportActions = ({
       // Header template - using the header.png image
       const headerTemplate = `
         <style>
-          html { -webkit-print-color-adjust: exact; }
+          html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           body { margin: 0; padding: 0; }
-        </style>
-        <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
-          ${
-            headerBase64
-              ? `<img src="${headerBase64}" alt="Header" style="width: 100%; height: 80px; display: block; object-fit: cover; margin: 0; padding: 0;" />`
-              : `<div style="width: 100%; height: 60px; background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%); margin: 0;"></div>`
+          .header-container {
+            width: 100%;
+            height: 70px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);
           }
+          .header-title {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Times New Roman', Times, serif;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+          }
+          .header-divider {
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+          }
+        </style>
+        <div class="header-container">
+          <div class="header-title">LA VERDAD CHRISTIAN COLLEGE - APALIT, PAMPANGA</div>
         </div>
+        <div class="header-divider"></div>
       `;
 
-      // Footer template - using the footer.png image with page numbers
+      // Footer template - using a styled footer with page numbers
       const footerTemplate = `
         <style>
-          html { -webkit-print-color-adjust: exact; }
+          html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           body { margin: 0; padding: 0; }
-        </style>
-        <div style="width: 100%; margin: 0; padding: 0; position: relative; font-size: 10px;">
-          ${
-            footerBase64
-              ? `<img src="${footerBase64}" alt="Footer" style="width: 100%; height: 50px; display: block; object-fit: cover; margin: 0; padding: 0;" />`
-              : `<div style="width: 100%; height: 40px; background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%); margin: 0;"></div>`
+          .footer-container {
+            width: 100%;
+            height: 50px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);
+            position: relative;
           }
-          <div style="
+          .footer-text {
+            color: #ffffff;
+            font-size: 10px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+          }
+          .footer-divider {
             position: absolute;
-            bottom: 12px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+          }
+          .page-info {
+            position: absolute;
             right: 30px;
+            bottom: 12px;
             font-size: 10px;
             color: #ffffff;
             font-family: Arial, sans-serif;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-          ">
-            Page <span class="pageNumber"></span> of <span class="totalPages"></span>
-          </div>
+          }
+        </style>
+        <div class="footer-container">
+          <div class="footer-divider"></div>
+          <div class="footer-text">MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 | info@laverdad.edu.ph</div>
+          <div class="page-info">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>
         </div>
       `;
 
@@ -846,58 +886,58 @@ const ReportActions = ({
               /* ========================================
                  4 QUESTIONS PER PAGE LAYOUT - ULTRA COMPACT
                  ======================================== */
-              /* Qualitative questions wrapper - single column per page */
-              .qualitative-questions-wrapper {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 0.25rem !important;
-              }
+               /* Qualitative questions wrapper - single column per page */
+               .qualitative-questions-wrapper {
+                 display: flex !important;
+                 flex-direction: column !important;
+                 gap: 0.5rem !important;
+               }
               
-              /* Question block - keep intact, no breaks inside - ULTRA COMPACT */
-              .question-block {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                margin-bottom: 0.75rem !important;
-                padding-bottom: 0.5rem !important;
-                padding-top: 0.25rem !important;
-                border-bottom: 1px solid #e5e7eb !important;
-                display: block !important;
-              }
-              
-              .question-block:last-child {
-                border-bottom: none !important;
-                margin-bottom: 0 !important;
-              }
+               /* Question block - keep intact, no breaks inside */
+               .question-block {
+                 page-break-inside: avoid !important;
+                 break-inside: avoid !important;
+                 margin-bottom: 1.5rem !important;
+                 padding-bottom: 1rem !important;
+                 padding-top: 0.5rem !important;
+                 border-bottom: 1px solid #e5e7eb !important;
+                 display: block !important;
+               }
+               
+               .question-block:last-child {
+                 border-bottom: none !important;
+                 margin-bottom: 0 !important;
+               }
               
               /* After every 4th question in a group, that's the end of page so naturally breaks */
               /* The wrapper div with print-page-break-before-forced ensures page breaks */
               
-              /* ULTRA COMPACT chart sizing for PDF - 4 questions per page */
-              .print-chart-container {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                max-height: 100px !important;
-                height: 100px !important;
-                margin-bottom: 0.25rem !important;
-                margin-top: 0.25rem !important;
-                padding: 0 !important;
-                width: 110px !important;
-                min-width: 110px !important;
-                flex-shrink: 0 !important;
-              }
-              
-              .print-chart-container .recharts-wrapper {
-                max-height: 100px !important;
-                height: 100px !important;
-                margin-bottom: 0 !important;
-                margin-top: 0 !important;
-                width: 110px !important;
-              }
-              
-              .print-chart-container svg {
-                height: 100px !important;
-                width: 110px !important;
-              }
+               /* Chart sizing for PDF - 4 questions per page */
+               .print-chart-container {
+                 page-break-inside: avoid !important;
+                 break-inside: avoid !important;
+                 max-height: 150px !important;
+                 height: 150px !important;
+                 margin-bottom: 0.5rem !important;
+                 margin-top: 0.5rem !important;
+                 padding: 0 !important;
+                 width: 150px !important;
+                 min-width: 150px !important;
+                 flex-shrink: 0 !important;
+               }
+               
+               .print-chart-container .recharts-wrapper {
+                 max-height: 150px !important;
+                 height: 150px !important;
+                 margin-bottom: 0 !important;
+                 margin-top: 0 !important;
+                 width: 150px !important;
+               }
+               
+               .print-chart-container svg {
+                 height: 150px !important;
+                 width: 150px !important;
+               }
               
               .w-64.h-64 {
                 width: 80px !important;

@@ -533,6 +533,7 @@ const EvaluationForm = () => {
             <DynamicRatingInput
               type={questionTypeInfo.type}
               scale={question.high || 5}
+              low={question.low || 1}
               icon={questionTypeInfo.icon}
               startLabel={question.lowLabel}
               endLabel={question.highLabel}

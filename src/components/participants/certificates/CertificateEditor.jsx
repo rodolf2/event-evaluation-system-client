@@ -42,6 +42,7 @@ const CertificateEditor = ({ initialData }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState(null); // 'elements' | 'properties' | null
   const [hasDraft, setHasDraft] = useState(false);
+  const [localFontSize, setLocalFontSize] = useState(24); // Local state for font size input
 
   useEffect(() => {
     const checkDraft = () => {
@@ -52,6 +53,13 @@ const CertificateEditor = ({ initialData }) => {
     window.addEventListener("storage", checkDraft);
     return () => window.removeEventListener("storage", checkDraft);
   }, []);
+
+  // Sync local font size when active object changes
+  useEffect(() => {
+    if (activeObject && (activeObject.type === "textbox" || activeObject.type === "i-text" || activeObject.type === "text")) {
+      setLocalFontSize(activeObject.fontSize || 24);
+    }
+  }, [activeObject]);
 
   const historyRef = useRef([]);
   const redoRef = useRef([]);
@@ -519,6 +527,39 @@ const CertificateEditor = ({ initialData }) => {
 
     const getProp = (prop, fallback) => activeObject?.get(prop) ?? fallback;
 
+    // Dedicated Font Size Input Component
+    const FontSizeInput = ({ fontSize, onUpdate }) => {
+      const [localValue, setLocalValue] = useState(fontSize);
+
+      useEffect(() => {
+        setLocalValue(fontSize);
+      }, [fontSize]);
+
+      const commit = () => {
+        const newSize = parseInt(localValue, 10) || 1;
+        if (newSize !== fontSize) {
+          onUpdate(newSize);
+        }
+      };
+
+      return (
+        <input
+          disabled={!isText}
+          type="number"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              commit();
+              e.target.blur();
+            }
+          }}
+          className="w-20 p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+        />
+      );
+    };
+
     return (
       <div className="space-y-4">
         <div>
@@ -622,14 +663,9 @@ const CertificateEditor = ({ initialData }) => {
               <option>Inter</option> <option>Arial</option>{" "}
               <option>Times New Roman</option> <option>Courier New</option>
             </select>
-            <input
-              disabled={!isText}
-              type="number"
-              value={getProp("fontSize", 24)}
-              onChange={(e) =>
-                updateProperty("fontSize", parseInt(e.target.value, 10) || 1)
-              }
-              className="w-20 p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
+            <FontSizeInput
+              fontSize={getProp("fontSize", 24)}
+              onUpdate={(newSize) => updateProperty("fontSize", newSize)}
             />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-1 mb-2">

@@ -511,7 +511,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                         } else {
                           clientType = "Numeric Ratings";
                           ratingScale = q.high || 5;
-                          emojiStyle = "Default";
+                          // Use q.icon from backend, fallback to Default
+                          emojiStyle = q.icon || "Default";
                         }
                         break;
                       default:
@@ -929,7 +930,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 } else {
                   clientType = "Numeric Ratings";
                   ratingScale = q.high || 5;
-                  emojiStyle = "Default";
+                  emojiStyle = q.icon || "Default";
                 }
                 break;
               default:
@@ -1066,7 +1067,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
               } else {
                 clientType = "Numeric Ratings";
                 ratingScale = q.high || 5;
-                emojiStyle = "Default";
+                emojiStyle = q.icon || "Default";
               }
               break;
             default:
@@ -1799,10 +1800,10 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           backendQuestion.highLabel = q.likertEndLabel || "";
           break;
         case "Numeric Ratings":
-          type = "scale";
-          backendQuestion.low = 1;
-          backendQuestion.high = q.ratingScale || 5;
-          backendQuestion.icon = q.emojiStyle || "star";
+        type = "scale";
+        backendQuestion.low = 1;
+        backendQuestion.high = q.ratingScale || 5;
+        backendQuestion.icon = q.emojiStyle || "Default";
           // Labels are not typically used for numeric ratings, so they can be omitted or set to default
           backendQuestion.lowLabel = "";
           backendQuestion.highLabel = "";
@@ -1903,6 +1904,19 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     // Get certificate information for publishing
     // NOTE: certificate linkage is currently handled separately; no-op placeholder removed
 
+    // Check if there's customized certificate canvas data in localStorage
+    const savedTemplatePayload = localStorage.getItem(`certificateTemplate_${currentFormId || FormSessionManager.getCurrentFormId()}`);
+    let certificateCanvasData = null;
+    if (savedTemplatePayload) {
+      try {
+        const parsed = JSON.parse(savedTemplatePayload);
+        certificateCanvasData = parsed.canvasData;
+        console.log("Found customized certificate canvas data to include in publish");
+      } catch (e) {
+        console.error("Failed to parse saved certificate template:", e);
+      }
+    }
+
     // Check if this is from temporary extracted data
     const tempFormData = localStorage.getItem("tempFormData");
     let formData;
@@ -1923,6 +1937,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         selectedStudents: finalSelectedStudents, // Include selected students or CSV data
         isCertificateLinked: isCertificateLinked,
         linkedCertificateId: linkedCertificateId,
+        certificateCanvasData: certificateCanvasData,
       };
 
       // If there was a file in the temporary data, we need to upload it now
@@ -2000,6 +2015,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         selectedStudents: finalSelectedStudents,
         isCertificateLinked: isCertificateLinked,
         linkedCertificateId: linkedCertificateId,
+        certificateCanvasData: certificateCanvasData,
       };
     }
 
@@ -2085,6 +2101,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         linkedCertificateId,
         linkedCertificateType,
         certificateTemplateName,
+        certificateCanvasData,
       };
 
       const publishResponse = await fetch(

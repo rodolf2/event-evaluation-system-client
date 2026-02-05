@@ -31,6 +31,7 @@ import SliderIcon from "../../assets/icons/slider.svg";
 const DynamicRatingInput = ({
   type,
   scale,
+  low = 1,
   icon = "star",
   startLabel,
   endLabel,
@@ -70,26 +71,41 @@ const DynamicRatingInput = ({
     return gradients[icon]?.[position - 1] || "#E5E7EB";
   };
 
-  const getNumbersToShow = (scale) => {
-    if (scale === 3) return [1, 2, 3];
-    if (scale === 4) return [1, 2, 3, 4];
-    return [1, 2, 3, 4, 5];
+  const getNumbersToShow = (low, high) => {
+    const numbers = [];
+    for (let i = low; i <= high; i++) {
+      numbers.push(i);
+    }
+    return numbers;
   };
 
-  const getIconIndices = (scale) => {
-    if (scale === 3) return [0, 2, 4];
-    if (scale === 4) return [0, 1, 3, 4];
-    return [0, 1, 2, 3, 4];
+  const getIconIndices = (low, high) => {
+    const rangeSize = high - low + 1;
+    const indices = [];
+    if (rangeSize <= 5) {
+      if (rangeSize === 3) return [0, 2, 4];
+      if (rangeSize === 4) return [0, 1, 3, 4];
+      return [0, 1, 2, 3, 4];
+    }
+    // For rangeSize > 5, we repeat icons or map them spread out
+    for (let i = 0; i < rangeSize; i++) {
+      indices.push(Math.floor((i / (rangeSize - 1)) * 4));
+    }
+    return indices;
   };
 
-  const numbersToShow = getNumbersToShow(scale);
-  const iconIndices = getIconIndices(scale);
-  const emojiList = emojiStylesMap[icon] || emojiStylesMap.Star;
+  const numbersToShow = getNumbersToShow(low || 1, scale || 5);
+  const iconIndices = getIconIndices(low || 1, scale || 5);
+  const normalizedIcon =
+    Object.keys(emojiStylesMap).find(
+      (key) => key.toLowerCase() === (icon || "").toLowerCase()
+    ) || "Default";
+  const emojiList = emojiStylesMap[normalizedIcon];
 
   // Calculate the exact position percentage for the thumb to center it on icons
   // Icons have fixed width with justify-between, so we need to account for that
   const getThumbPosition = (currentValue) => {
-    const index = currentValue - 1;
+    const index = currentValue - low;
     const totalIcons = numbersToShow.length;
 
     if (totalIcons === 1) return 50; // Single icon: center
@@ -113,11 +129,10 @@ const DynamicRatingInput = ({
       const offsetX = e.clientX - rect.left;
       const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
 
-      // Update drag position for smooth thumb movement
-      setDragPosition(percentage * 100);
-
       // Update the actual value (snapped to nearest rating)
-      const newValue = Math.round(percentage * (numbersToShow.length - 1)) + 1;
+      const rangeSize = numbersToShow.length;
+      const step = Math.round(percentage * (rangeSize - 1));
+      const newValue = low + step;
       onChange(newValue);
     },
     [isDragging, numbersToShow.length, onChange]
@@ -246,10 +261,7 @@ const DynamicRatingInput = ({
   };
 
   const renderLikertScale = () => {
-    const range = [];
-    for (let i = 1; i <= scale; i++) {
-      range.push(i);
-    }
+    const range = numbersToShow;
     return (
       <div className="w-full flex flex-col mt-2">
         {/* Labels Row - Always visible above */}

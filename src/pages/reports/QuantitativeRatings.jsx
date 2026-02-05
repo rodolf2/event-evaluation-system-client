@@ -63,20 +63,23 @@ const QuantitativeRatings = ({ report, onBack, isGeneratedReport = false }) => {
       rating: q.averageRating || 0,
       totalResponses: q.responseCount || 0,
       average: q.averageRating || 0,
-      scaleMax: q.scaleMax || 5
+      scaleMax: q.scaleMax || 5,
+      scaleMin: q.scaleMin || 1
     }));
 
-  const getRatingColor = (rating, max = 5) => {
-    const ratio = rating / max;
+  const getRatingColor = (rating, max = 5, min = 1) => {
+    const range = max - min;
+    const ratio = range > 0 ? (rating - min) / range : 1;
     if (ratio >= 0.9) return "text-green-600";
     if (ratio >= 0.8) return "text-blue-600";
     if (ratio >= 0.7) return "text-yellow-600";
     return "text-red-600";
   };
 
-  const getRatingStars = (rating, max = 5) => {
+  const getRatingStars = (rating, max = 5, min = 1) => {
     // Normalize to 5 stars if max is different
-    const normalizedRating = (rating / max) * 5;
+    const range = max - min;
+    const normalizedRating = range > 0 ? ((rating - min) / range) * 5 : 5;
     const fullStars = Math.floor(normalizedRating);
     const hasHalfStar = normalizedRating % 1 >= 0.5;
     const emptyStars = Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0));
@@ -177,14 +180,14 @@ const QuantitativeRatings = ({ report, onBack, isGeneratedReport = false }) => {
                         <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                           <td className="border border-gray-300 px-4 py-3 font-medium">{item.category}</td>
                           <td className="border border-gray-300 px-4 py-3 text-center">
-                            <span className={`font-bold ${getRatingColor(item.rating, item.scaleMax)}`}>
+                            <span className={`font-bold ${getRatingColor(item.rating, item.scaleMax, item.scaleMin)}`}>
                               {item.rating.toFixed(1)}
                             </span>
                           </td>
                           <td className="border border-gray-300 px-4 py-3 text-center">{item.average.toFixed(1)}</td>
                           <td className="border border-gray-300 px-4 py-3">
                             <div className="flex items-center justify-center">
-                              {getRatingStars(item.rating, item.scaleMax)}
+                              {getRatingStars(item.rating, item.scaleMax, item.scaleMin)}
                             </div>
                           </td>
                         </tr>

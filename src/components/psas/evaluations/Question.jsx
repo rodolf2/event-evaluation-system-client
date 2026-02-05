@@ -131,15 +131,24 @@ const Question = memo(function Question(props) {
     }));
 
   const getNumbersToShow = (scale) => {
-    if (scale === 3) return [1, 2, 3];
-    if (scale === 4) return [1, 2, 3, 4];
-    return [1, 2, 3, 4, 5];
+    const numbers = [];
+    for (let i = 1; i <= scale; i++) {
+      numbers.push(i);
+    }
+    return numbers;
   };
 
   const getIconIndices = (scale) => {
-    if (scale === 3) return [0, 2, 4];
-    if (scale === 4) return [0, 1, 3, 4];
-    return [0, 1, 2, 3, 4];
+    const indices = [];
+    if (scale <= 5) {
+      if (scale === 3) return [0, 2, 4];
+      if (scale === 4) return [0, 1, 3, 4];
+      return [0, 1, 2, 3, 4];
+    }
+    for (let i = 0; i < scale; i++) {
+      indices.push(Math.floor((i / (scale - 1)) * 4));
+    }
+    return indices;
   };
 
   const numbersToShow = getNumbersToShow(ratingScale || 5);
@@ -280,7 +289,7 @@ const Question = memo(function Question(props) {
                 }
                 className="p-2 border border-gray-300 rounded-md"
               >
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                   <option key={n} value={n}>
                     {n}
                   </option>
@@ -297,7 +306,7 @@ const Question = memo(function Question(props) {
                 }
                 className="p-2 border border-gray-300 rounded-md"
               >
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                   <option key={n} value={n}>
                     {n}
                   </option>

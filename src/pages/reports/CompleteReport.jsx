@@ -796,7 +796,7 @@ const CompleteReport = ({
                               {question.questionType === "scale" &&
                                 question.ratingDistribution && (
                                   <div className="flex flex-col md:flex-row items-center justify-center gap-2 print-chart-container print:items-start print:justify-start">
-                                    <div className="w-64 h-64 print:w-64 print:h-64 print:p-0">
+                                    <div className="w-48 h-48 print:w-48 print:h-48 print:p-0">
                                       <ResponsiveContainer
                                         width="100%"
                                         height="100%"
@@ -809,7 +809,7 @@ const CompleteReport = ({
                                             cx="50%"
                                             cy="50%"
                                             innerRadius={0}
-                                            outerRadius={80}
+                                            outerRadius={60}
                                             fill="#8884d8"
                                             dataKey="count"
                                             labelLine={false}
@@ -838,6 +838,7 @@ const CompleteReport = ({
                                               })}
                                           </Pie>
                                           <Tooltip />
+                                          <Legend />
                                         </PieChart>
                                       </ResponsiveContainer>
                                     </div>
@@ -863,12 +864,12 @@ const CompleteReport = ({
                                           </div>
                                         ),
                                       )}
-                                      {question.averageRating && (
+                                      {question.averageRating !== undefined && (
                                         <p className="text-sm font-medium text-gray-800 mt-2">
                                           Average:{" "}
                                           {question.averageRating?.toFixed(2) ||
-                                            "N/A"}{" "}
-                                          / {question.scaleMax || 5}
+                                            "0.00"}{" "}
+                                          (Scale: {question.scaleMin || 1} - {question.scaleMax || 5})
                                         </p>
                                       )}
                                     </div>
@@ -880,7 +881,7 @@ const CompleteReport = ({
                                 question.questionType === "short_answer") &&
                                 question.sentimentBreakdown && (
                                   <div className="flex flex-col md:flex-row items-center justify-center gap-2 print-chart-container print:items-start print:justify-start">
-                                    <div className="w-64 h-64 print:w-64 print:h-64 print:p-0">
+                                    <div className="w-48 h-48 print:w-48 print:h-48 print:p-0">
                                       <ResponsiveContainer
                                         width="100%"
                                         height="100%"
@@ -910,7 +911,7 @@ const CompleteReport = ({
                                             cx="50%"
                                             cy="50%"
                                             innerRadius={0}
-                                            outerRadius={80}
+                                            outerRadius={60}
                                             fill="#8884d8"
                                             dataKey="value"
                                             isAnimationActive={false}
@@ -938,6 +939,7 @@ const CompleteReport = ({
                                             ))}
                                           </Pie>
                                           <Tooltip />
+                                          <Legend />
                                         </PieChart>
                                       </ResponsiveContainer>
                                     </div>
@@ -1004,7 +1006,7 @@ const CompleteReport = ({
                               {question.questionType === "multiple_choice" &&
                                 question.optionDistribution && (
                                   <div className="flex flex-col md:flex-row items-center justify-center gap-2 print-chart-container print:items-start print:justify-start">
-                                    <div className="w-64 h-64 print:w-64 print:h-64 print:p-0">
+                                    <div className="w-48 h-48 print:w-48 print:h-48 print:p-0">
                                       <ResponsiveContainer
                                         width="100%"
                                         height="100%"
@@ -1017,7 +1019,7 @@ const CompleteReport = ({
                                             cx="50%"
                                             cy="50%"
                                             innerRadius={0}
-                                            outerRadius={80}
+                                            outerRadius={60}
                                             fill="#8884d8"
                                             dataKey="count"
                                             labelLine={false}
@@ -1046,6 +1048,7 @@ const CompleteReport = ({
                                               })}
                                           </Pie>
                                           <Tooltip />
+                                          <Legend />
                                         </PieChart>
                                       </ResponsiveContainer>
                                     </div>

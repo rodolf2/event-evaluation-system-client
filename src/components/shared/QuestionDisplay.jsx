@@ -117,6 +117,7 @@ const QuestionDisplay = ({
           <DynamicRating
             type="Numeric Ratings"
             scale={clientQuestion.ratingScale}
+            low={clientQuestion.low || 1}
             icon={clientQuestion.icon}
           />
         );
@@ -126,6 +127,7 @@ const QuestionDisplay = ({
           <DynamicRating
             type="Likert Scale"
             scale={clientQuestion.likertEnd}
+            low={clientQuestion.likertStart}
             startLabel={clientQuestion.likertStartLabel}
             endLabel={clientQuestion.likertEndLabel}
           />
