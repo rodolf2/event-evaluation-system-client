@@ -283,7 +283,8 @@ export const useDynamicReportData = (
 
   // Auto-refresh every 60 seconds (only for live data, not generated reports)
   useEffect(() => {
-    if (reportId && !isGeneratedReport) {
+    // CRITICAL: Block all auto-refreshes for snapshotted reports
+    if (reportId && !isGeneratedReport && !reportSnapshot) {
       const interval = setInterval(() => {
         if (!loading) {
           refreshData();
@@ -292,18 +293,30 @@ export const useDynamicReportData = (
 
       return () => clearInterval(interval);
     }
-  }, [reportId, refreshData, loading, isGeneratedReport]);
+  }, [reportId, refreshData, loading, isGeneratedReport, reportSnapshot]);
 
   // Initialize with snapshot data for generated reports
   useEffect(() => {
     if (isGeneratedReport && reportSnapshot?.analytics) {
       // Use embedded snapshot data directly
       setQuantitativeData(reportSnapshot.analytics.quantitativeData);
-      setQualitativeData(reportSnapshot.analytics.sentimentBreakdown);
+      
+      // Ensure qualitativeData has the full structure expected by CompleteReport.jsx
+      setQualitativeData({
+        sentimentBreakdown: reportSnapshot.analytics.sentimentBreakdown,
+        categorizedComments: reportSnapshot.analytics.categorizedComments || {
+          positive: [],
+          neutral: [],
+          negative: []
+        },
+        questionBreakdown: reportSnapshot.analytics.questionBreakdown || []
+      });
+      
       setFormData(reportSnapshot.metadata);
       setLoading(false);
-    } else if (reportId && !isGeneratedReport) {
-      // Only fetch for live data
+    } else if (reportId) {
+      // Fetch data: either for live data (!isGeneratedReport) OR
+      // for generated reports that don't have an embedded snapshot
       refreshData();
     }
   }, [reportId, isGeneratedReport, reportSnapshot]);
