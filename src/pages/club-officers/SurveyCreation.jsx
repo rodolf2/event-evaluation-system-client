@@ -354,7 +354,17 @@ const SurveyCreation = () => {
         const responseData = await response.json();
         const extractedData = responseData.data;
 
-        toast.success("Google Form data extracted successfully!");
+        toast.success("Google Form data extracted successfully!", {
+          duration: 5000,
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
 
         const tempData = {
           title: extractedData.title,
@@ -415,7 +425,17 @@ const SurveyCreation = () => {
 
       const result = await response.json();
       if (result.success) {
-        toast.success("Form reopened successfully! It is now published and available for another 7 days.");
+        toast.success("Form reopened successfully! It is now published and available for another 7 days.", {
+          duration: 8000,
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
         fetchEvaluations();
       } else {
         toast.error(result.message || "Failed to reopen form");
@@ -437,7 +457,17 @@ const SurveyCreation = () => {
 
       const result = await response.json();
       if (result.success) {
-        toast.success("Form closed successfully. New responses will no longer be accepted.");
+        toast.success("Form closed successfully. New responses will no longer be accepted.", {
+          duration: 8000,
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
         fetchEvaluations();
       } else {
         toast.error(result.message || "Failed to close form");
@@ -821,7 +851,7 @@ const SurveyCreation = () => {
                       Extracting...
                     </>
                   ) : (
-                    "Import Form"
+                    "Upload Form"
                   )}
                 </button>
               </div>

@@ -357,7 +357,17 @@ const StudentList = () => {
         return;
       }
 
-      toast.success(`Successfully assigned ${selectedStudents.length} students to the form!`);
+      toast.success(`Successfully assigned ${selectedStudents.length} students to the form!`, {
+        duration: 5000,
+        style: {
+          background: "#10B981",
+          color: "#FFFFFF",
+        },
+        iconTheme: {
+          primary: "#FFFFFF",
+          secondary: "#10B981",
+        },
+      });
 
       // Clear local selection state
       setSelected([]);

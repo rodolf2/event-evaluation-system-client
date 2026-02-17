@@ -163,7 +163,21 @@ function App() {
     <SocketProvider>
       <NotificationProvider>
         <OnboardingProvider>
-          <Toaster position="top-center" reverseOrder={false} />
+          <Toaster 
+            position="top-center" 
+            reverseOrder={false}
+            toastOptions={{
+              style: {
+                zIndex: 99999,
+              },
+              containerStyle: {
+                zIndex: 99999,
+              }
+            }}
+            containerStyle={{
+              zIndex: 99999,
+            }}
+          />
           {token && user && <NotificationPopup />}
           <OnboardingWrapper />
 
@@ -903,9 +917,7 @@ function App() {
                 path="/mis/profile"
                 element={
                   isAuthorized("mis") ? (
-                    <MisLayout>
-                      <Profile />
-                    </MisLayout>
+                    <Profile />
                   ) : (
                     <Navigate to={getHomeRoute()} />
                   )

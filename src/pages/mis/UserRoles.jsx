@@ -7,11 +7,9 @@ import {
   Clock,
   Building,
   AlertCircle,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ArrowUpCircle,
-  ArrowDownCircle,
+
   Ban,
   X,
   UserCheck,
@@ -20,6 +18,8 @@ import {
   BarChart3,
   FileText,
   Share2,
+  Pencil,
+  ChevronDown,
 } from "lucide-react";
 import {
   SkeletonTable,
@@ -48,6 +48,28 @@ const ROLE_COLORS = {
     text: "text-teal-700",
     label: "Club Adviser",
   },
+};
+
+// Available roles for dropdown
+const ROLE_OPTIONS = [
+  { value: "student", label: "Student" },
+  { value: "club-officer", label: "PBOO" },
+  { value: "psas", label: "PSAS Staff" },
+  { value: "mis", label: "MIS Staff" },
+  { value: "club-adviser", label: "Club Adviser" },
+];
+
+// Available positions for staff
+const POSITION_OPTIONS = {
+  psas: [
+    { value: "PSAS Staff", label: "PSAS Staff" },
+    { value: "PSAS Head", label: "PSAS Head" },
+    { value: "ITSS", label: "ITSS" },
+  ],
+  mis: [
+    { value: "MIS Staff", label: "MIS Staff" },
+    { value: "MIS Head", label: "MIS Head" },
+  ],
 };
 
 // Filter options
@@ -85,13 +107,15 @@ function UserRoles() {
   });
 
   // Modal States
-  const [choiceModalOpen, setChoiceModalOpen] = useState(false);
-  const [selectedChoice, setSelectedChoice] = useState(null);
-  const [elevationModalOpen, setElevationModalOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedProgram, setSelectedProgram] = useState(PROGRAMS[0]);
   const [confirmAction, setConfirmAction] = useState(null); // 'ELEVATE', 'REMOVE_PBOO', 'DISABLE', 'ELEVATE_HEAD', 'REMOVE_HEAD'
+
+  // Role change dropdown states
+  const [roleChangeModalOpen, setRoleChangeModalOpen] = useState(false);
+  const [selectedNewRole, setSelectedNewRole] = useState("");
+  const [selectedNewPosition, setSelectedNewPosition] = useState("");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -197,37 +221,6 @@ function UserRoles() {
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
 
   // Handlers
-  const handleElevateClick = (user) => {
-    setSelectedUser(user);
-    setSelectedChoice(null);
-    setChoiceModalOpen(true);
-  };
-
-  const handleChoiceSelect = (choice) => {
-    setSelectedChoice(choice);
-    setChoiceModalOpen(false);
-    
-    // If we're removing head status, go straight to confirm
-    if (choice === "DEMOTE_STAY" || choice === "DEMOTE_TRANSFER") {
-      setConfirmAction("REMOVE_HEAD");
-      setConfirmModalOpen(true);
-    } else if (choice === "Head" || choice === "ITSS") {
-      // Elevating PSAS to Head or ITSS
-      setConfirmAction("ELEVATE_HEAD");
-      setConfirmModalOpen(true);
-    } else {
-      // Otherwise proceed to elevation input (PBOO flow)
-      setSelectedProgram(PROGRAMS[0]);
-      setElevationModalOpen(true);
-    }
-  };
-
-  const handleRemovePBOOClick = (user) => {
-    setSelectedUser(user);
-    setConfirmAction("REMOVE_PBOO");
-    setConfirmModalOpen(true);
-  };
-
   const handleDisableClick = (user) => {
     setSelectedUser(user);
     setConfirmAction("DISABLE");
@@ -240,24 +233,86 @@ function UserRoles() {
     setConfirmModalOpen(true);
   };
 
-  const handleElevateHeadClick = (user) => {
+  // Role change dropdown handler
+  const handleRoleChangeClick = (user) => {
     setSelectedUser(user);
-    // Open choice modal to allow selecting between Head and ITSS
-    setChoiceModalOpen(true);
+    setSelectedNewRole(user.role);
+    setSelectedNewPosition(user.position || "");
+    setRoleChangeModalOpen(true);
   };
 
-  const handleRemoveHeadClick = (user) => {
-    setSelectedUser(user);
-    // Directly go to confirmation (no transfer option)
-    setSelectedChoice("DEMOTE_STAY");
-    setConfirmAction("REMOVE_HEAD");
-    setConfirmModalOpen(true);
-  };
+  const handleRoleChangeSubmit = async () => {
+    if (!selectedUser) return;
 
-  const handleElevationSubmit = () => {
-    setElevationModalOpen(false);
-    setConfirmAction("ELEVATE");
-    setConfirmModalOpen(true);
+    const payload = {
+      role: selectedNewRole,
+    };
+
+    // Set appropriate position based on role
+    if (selectedNewRole === "psas" || selectedNewRole === "mis") {
+      payload.position = selectedNewPosition || (selectedNewRole === "psas" ? "PSAS Staff" : "MIS Staff");
+      
+      // Set permissions based on position
+      if (selectedNewPosition === "PSAS Head" || selectedNewPosition === "MIS Head") {
+        payload.permissions = {
+          canViewReports: true,
+          canViewAnalytics: selectedNewPosition === "PSAS Head",
+        };
+        payload.elevationDate = new Date().toISOString();
+      } else if (selectedNewPosition === "ITSS") {
+        payload.permissions = {
+          canViewReports: false,
+          canViewAnalytics: false,
+        };
+        payload.elevationDate = new Date().toISOString();
+      } else {
+        payload.permissions = {
+          canViewReports: false,
+          canViewAnalytics: false,
+        };
+        payload.elevationDate = null;
+      }
+    } else if (selectedNewRole === "club-officer") {
+      payload.program = selectedProgram;
+      payload.elevationDate = new Date().toISOString();
+      payload.position = null;
+    } else if (selectedNewRole === "student") {
+      payload.program = null;
+      payload.elevationDate = null;
+      payload.position = null;
+    } else if (selectedNewRole === "club-adviser") {
+      payload.position = "Club Adviser";
+    }
+
+    try {
+      const response = await fetch(`/api/users/${selectedUser._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`Changed ${selectedUser.name}'s role to ${ROLE_OPTIONS.find(r => r.value === selectedNewRole)?.label || selectedNewRole}`);
+        fetchUsers();
+
+        if (selectedUser._id === currentUser?._id) {
+          await refreshUserData();
+        }
+      } else {
+        toast.error(data.message || "Failed to update user role");
+      }
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      toast.error("An error occurred while updating the user role");
+    } finally {
+      setRoleChangeModalOpen(false);
+      setSelectedUser(null);
+    }
   };
 
   const handleConfirmAction = async () => {
@@ -266,57 +321,7 @@ function UserRoles() {
     let payload = {};
     let successMessage = "";
 
-    if (confirmAction === "ELEVATE") {
-      payload = {
-        role: "club-officer",
-        program: selectedProgram,
-        elevationDate: new Date().toISOString(),
-      };
-      successMessage = `Elevated ${selectedUser.name} to PBOO (${selectedProgram})`;
-    } else if (confirmAction === "REMOVE_PBOO") {
-      payload = {
-        role: "student",
-        program: null,
-        elevationDate: null,
-      };
-      successMessage = `Removed PBOO role from ${selectedUser.name}`;
-    } else if (confirmAction === "ELEVATE_HEAD") {
-      const isMis = selectedUser.role === "mis";
-      // Determine position: if MIS, it's MIS Head. If PSAS, check choice (ITSS or PSAS Head)
-      // Default to PSAS Head if no choice made (legacy safety)
-      let targetPosition = isMis ? "MIS Head" : "PSAS Head";
-      if (!isMis && selectedChoice === "ITSS") {
-        targetPosition = "ITSS";
-      }
-
-      payload = {
-        position: targetPosition,
-        permissions: {
-          canViewReports: true, 
-          // ITSS also needs some permissions, but backend strictly handles provisioning restrictions
-          canViewAnalytics: !isMis && targetPosition !== "ITSS", // Only PSAS Head gets analytics, ITSS does not
-        },
-        elevationDate: new Date().toISOString(),
-      };
-      successMessage = `Elevated ${selectedUser.name} to ${payload.position}`;
-    } else if (confirmAction === "REMOVE_HEAD") {
-      const shouldTransfer = selectedChoice === "DEMOTE_TRANSFER";
-      const isCurrentlyMis = selectedUser.role === "mis";
-      const finalRole = shouldTransfer ? (isCurrentlyMis ? "psas" : "mis") : selectedUser.role;
-      
-      payload = {
-        role: finalRole,
-        position: finalRole === "mis" ? "MIS Staff" : "PSAS Staff",
-        permissions: {
-          canViewReports: false,
-          canViewAnalytics: false,
-        },
-        elevationDate: null,
-      };
-      successMessage = shouldTransfer 
-        ? `Demoted ${selectedUser.name} and transferred to ${finalRole.toUpperCase()} Department`
-        : `Removed Head status from ${selectedUser.name}`;
-    } else if (confirmAction === "DISABLE") {
+    if (confirmAction === "DISABLE") {
       payload = {
         isActive: false,
       };
@@ -571,32 +576,6 @@ function UserRoles() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-2">
-
-                      {(user.role === "psas" || user.role === "mis") && 
-                      user.isActive && 
-                      currentUser?.position === "MIS Head" && (
-                        <>
-                          {user.position !== "MIS Head" &&
-                            user.position !== "PSAS Head" &&
-                            user.position !== "ITSS" ? (
-                            <button
-                              onClick={() => handleElevateHeadClick(user)}
-                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
-                              title={`Elevate to ${user.role === "mis" ? "MIS" : "PSAS"} Head`}
-                            >
-                              <ArrowUpCircle className="w-5 h-5" />
-                            </button>
-                          ) : user._id !== currentUser?._id && (
-                            <button
-                              onClick={() => handleRemoveHeadClick(user)}
-                              className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
-                              title="Remove Head Status"
-                            >
-                              <ArrowDownCircle className="w-5 h-5" />
-                            </button>
-                          )}
-                        </>
-                      )}
                     {/* Disable/Enable Actions - Available to MIS Staff for ALL users (except Head/Self) */}
                     {/* Also available to PSAS Head/ITSS for Students/PBOOs only */}
                     {((currentUser?.role === "mis") || 
@@ -707,7 +686,9 @@ function UserRoles() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">{getRoleBadge(user)}</td>
+                  <td className="px-6 py-4">
+                    {getRoleBadge(user)}
+                  </td>
                   <td className="px-6 py-4">{getRemarks(user)}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -729,30 +710,15 @@ function UserRoles() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-
-                      {(user.role === "mis" || user.role === "psas") && 
-                      currentUser?.position === "MIS Head" && (
-                        <>
-                          {user.position !== "MIS Head" &&
-                          user.position !== "PSAS Head" &&
-                          user.position !== "ITSS" ? (
-                            <button
-                              onClick={() => handleElevateHeadClick(user)}
-                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
-                              title={`Elevate ${user.role === "mis" ? "MIS" : "PSAS"} Staff`}
-                            >
-                              <ArrowUpCircle className="w-5 h-5" />
-                            </button>
-                          ) : user._id !== currentUser?._id && (
-                            <button
-                              onClick={() => handleRemoveHeadClick(user)}
-                              className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition"
-                              title="Remove Position"
-                            >
-                              <ArrowDownCircle className="w-5 h-5" />
-                            </button>
-                          )}
-                        </>
+                      {/* MIS Head Edit Role */}
+                      {currentUser?.position === "MIS Head" && user._id !== currentUser?._id && (
+                        <button
+                          onClick={() => handleRoleChangeClick(user)}
+                          className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                          title="Edit Role"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
                       )}
                       {/* Disable/Enable Actions */}
                       {((currentUser?.role === "mis") || 
@@ -850,163 +816,9 @@ function UserRoles() {
         </div>
       </div>
 
-      {/* Choice Selection Modal */}
-      {choiceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">
-                {selectedUser?.position?.includes("Head") 
-                  ? "Demote from Head" 
-                  : selectedUser?.role === "student" 
-                    ? "Elevate to PBOO" 
-                    : "Elevate Role"}
-              </h3>
-              <button
-                onClick={() => setChoiceModalOpen(false)}
-                className="text-white/80 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-600 mb-4">
-                Select an option for <strong>{selectedUser?.name}</strong>.
-              </p>
 
-              <div className="space-y-3">
 
-                {selectedUser?.role === "psas" ? (
-                  <>
-                     <button
-                      onClick={() => handleChoiceSelect("Head")}
-                      className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
-                    >
-                      <div className="font-medium text-gray-900">Make PSAS Head</div>
-                      <div className="text-sm text-gray-500">
-                        Full authority over evaluations, certificates, and reports.
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleChoiceSelect("ITSS")}
-                      className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
-                    >
-                      <div className="font-medium text-gray-900">Make ITSS Coordinator</div>
-                      <div className="text-sm text-gray-500">
-                        Responsible for Student Management and onboarding.
-                      </div>
-                    </button>
-                  </>
-                ) : selectedUser?.role === "mis" ? (
-                  <button
-                    onClick={() => handleChoiceSelect("Head")}
-                    className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
-                  >
-                    <div className="font-medium text-gray-900">Make MIS Head</div>
-                    <div className="text-sm text-gray-500">
-                      Full authority over system configuration and user management.
-                    </div>
-                  </button>
-                ) : selectedUser?.role === "student" ? (
-                  <>
-                    <button
-                      onClick={() => handleChoiceSelect("Executive")}
-                      className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
-                    >
-                      <div className="font-medium text-gray-900">
-                        Presidents, VPs, and Secretaries
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Designated for top-level student organization leaders.
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleChoiceSelect("Officer")}
-                      className="w-full text-left p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
-                    >
-                      <div className="font-medium text-gray-900">
-                        Other Officers
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Designated for other student organization committee members.
-                      </div>
-                    </button>
-                  </>
-                ) : null}
-              </div>
 
-              <div className="flex gap-3 justify-end mt-6">
-                <button
-                  onClick={() => setChoiceModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Elevation Input Modal */}
-      {elevationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-white">
-                Elevate to PBOO
-              </h3>
-              <button
-                onClick={() => setElevationModalOpen(false)}
-                className="text-white/80 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-600 mb-4">
-                Select the program designated for{" "}
-                <strong>{selectedUser?.name}</strong>.
-              </p>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Designated Program
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedProgram}
-                    onChange={(e) => setSelectedProgram(e.target.value)}
-                    className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                  >
-                    {PROGRAMS.map((prog) => (
-                      <option key={prog} value={prog}>
-                        {prog}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setElevationModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleElevationSubmit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Proceed
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Confirmation Modal */}
       {confirmModalOpen && (
@@ -1017,53 +829,18 @@ function UserRoles() {
                 className={`p-3 rounded-full mb-4 ${
                   confirmAction === "DISABLE"
                     ? "bg-red-100 text-red-600"
-                    : confirmAction === "REMOVE_HEAD" || confirmAction === "REMOVE_PBOO"
-                    ? "bg-orange-100 text-orange-600"
                     : "bg-blue-100 text-blue-600"
                 }`}
               >
-                {confirmAction === "DISABLE" && <Ban className="w-8 h-8" />}
-                {confirmAction === "ENABLE" && <UserCheck className="w-8 h-8" />}
-                {confirmAction === "ELEVATE" && (
-                  <ArrowUpCircle className="w-8 h-8" />
-                )}
-                {confirmAction === "REMOVE_PBOO" && (
-                  <ArrowDownCircle className="w-8 h-8" />
-                )}
-                {confirmAction === "ELEVATE_HEAD" && (
-                  <ArrowUpCircle className="w-8 h-8" />
-                )}
-                {confirmAction === "REMOVE_HEAD" && (
-                  <ArrowDownCircle className="w-8 h-8" />
-                )}
+                {confirmAction === "DISABLE" ? <Ban className="w-8 h-8" /> : <UserCheck className="w-8 h-8" />}
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {confirmAction === "ELEVATE" && "Confirm Elevation"}
-                {confirmAction === "ELEVATE_HEAD" && "Elevate to Head?"}
-                {confirmAction === "REMOVE_HEAD" && "Remove Head Status?"}
-                {confirmAction === "REMOVE_PBOO" && "Remove PBOO Role?"}
                 {confirmAction === "DISABLE" && "Disable User Access?"}
                 {confirmAction === "ENABLE" && "Reactivate User?"}
               </h3>
 
               <p className="text-gray-600 mb-6">
-                {confirmAction === "ELEVATE" &&
-                  `Are you sure you want to elevate ${selectedUser?.name} to PBOO (${selectedChoice === "Executive"
-                    ? "Presidents, VPs, and Secretaries"
-                    : "Other Officers"
-                  }) for ${selectedProgram}?`}
-                {confirmAction === "ELEVATE_HEAD" &&
-                  `This will elevate ${selectedUser?.name} to ${selectedUser?.role === "mis" ? "MIS" : "PSAS"
-                  } Head, granting access to full reports.`}
-                {confirmAction === "REMOVE_HEAD" &&
-                  `This will remove ${
-                    selectedUser?.position === "PSAS Head"
-                      ? "Head status"
-                      : selectedUser?.position
-                  } from ${selectedUser?.name} and revert their permissions.`}
-                {confirmAction === "REMOVE_PBOO" &&
-                  `This will revert ${selectedUser?.name} to a regular Student role.`}
                 {confirmAction === "DISABLE" &&
                   `This will disable access for ${selectedUser?.name}. They won't be able to log in.`}
                 {confirmAction === "ENABLE" &&
@@ -1082,12 +859,126 @@ function UserRoles() {
                   className={`flex-1 px-4 py-2 rounded-lg text-white ${
                     confirmAction === "DISABLE"
                       ? "bg-red-600 hover:bg-red-700"
-                      : confirmAction === "REMOVE_HEAD" || confirmAction === "REMOVE_PBOO"
-                      ? "bg-orange-600 hover:bg-orange-700"
                       : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
                   Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role Change Modal */}
+      {roleChangeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">
+                Change User Role
+              </h3>
+              <button
+                onClick={() => setRoleChangeModalOpen(false)}
+                className="text-white/80 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-600 mb-4">
+                Change role for <strong>{selectedUser?.name}</strong>
+              </p>
+
+              {/* Role Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Role
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedNewRole}
+                    onChange={(e) => {
+                      setSelectedNewRole(e.target.value);
+                      // Reset position when role changes
+                      if (e.target.value === "psas") {
+                        setSelectedNewPosition("PSAS Staff");
+                      } else if (e.target.value === "mis") {
+                        setSelectedNewPosition("MIS Staff");
+                      } else {
+                        setSelectedNewPosition("");
+                      }
+                    }}
+                    className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                  >
+                    {ROLE_OPTIONS.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Position Selection for PSAS/MIS */}
+              {(selectedNewRole === "psas" || selectedNewRole === "mis") && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Position
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedNewPosition}
+                      onChange={(e) => setSelectedNewPosition(e.target.value)}
+                      className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                    >
+                      {POSITION_OPTIONS[selectedNewRole]?.map((pos) => (
+                        <option key={pos.value} value={pos.value}>
+                          {pos.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  </div>
+                </div>
+              )}
+
+              {/* Program Selection for PBOO */}
+              {selectedNewRole === "club-officer" && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Designated Program
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedProgram}
+                      onChange={(e) => setSelectedProgram(e.target.value)}
+                      className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                    >
+                      {PROGRAMS.map((prog) => (
+                        <option key={prog} value={prog}>
+                          {prog}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  onClick={() => setRoleChangeModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRoleChangeSubmit}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Save Changes
                 </button>
               </div>
             </div>

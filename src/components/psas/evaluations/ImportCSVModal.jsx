@@ -133,6 +133,7 @@ const ImportCSVModal = ({
             if (uploadData.success && uploadData.url) {
               // Ensure student data is included
               const students = uploadData.students || [];
+              const warnings = uploadData.warnings || [];
 
               const uploadResult = {
                 url: uploadData.url,
@@ -146,6 +147,16 @@ const ImportCSVModal = ({
               onFileUpload(uploadResult);
               importedFileIds.push(fileItem.id);
               successCount++;
+
+              if (warnings.length > 0) {
+                toast(
+                  `Imported ${students.length} students. Skipped ${warnings.length} rows:\n${warnings.slice(0, 3).join('\n')}${warnings.length > 3 ? '\n...' : ''}`,
+                  {
+                    duration: 6000,
+                    icon: '⚠️',
+                  }
+                );
+              }
             }
           }
         } catch (error) {
@@ -175,6 +186,7 @@ const ImportCSVModal = ({
           }
 
           const students = proxyData.students || [];
+          const warnings = proxyData.warnings || [];
 
           if (students.length === 0) {
             toast.error(
@@ -195,6 +207,16 @@ const ImportCSVModal = ({
           onFileUpload(linkResult);
           importedLinkIds.push(linkItem.id);
           successCount++;
+
+          if (warnings.length > 0) {
+             toast(
+               `Imported ${students.length} students. Skipped ${warnings.length} rows:\n${warnings.slice(0, 3).join('\n')}${warnings.length > 3 ? '\n...' : ''}`,
+               {
+                 duration: 6000,
+                 icon: '⚠️',
+               }
+             );
+           }
         } catch (error) {
           console.error("Error importing link:", linkItem.url, error);
           toast.error(

@@ -167,7 +167,17 @@ const CertificateEditor = ({
         fabricCanvas.current.renderAll();
         centerAndFitCanvas();
         pushHistory();
-        toast.success("Draft loaded successfully");
+        toast.success("Draft loaded successfully", {
+          duration: 5000,
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
       });
     }
   }, [pushHistory, centerAndFitCanvas]);

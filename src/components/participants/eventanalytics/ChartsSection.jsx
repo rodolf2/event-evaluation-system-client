@@ -1,4 +1,10 @@
 import { Doughnut, Bar } from "react-chartjs-2";
+import {
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+  ResponsiveContainer,
+} from "recharts";
 
 const ChartsSection = ({
   responseRate,
@@ -18,8 +24,34 @@ const ChartsSection = ({
           Response Rate
         </h3>
         <div className="relative h-60 w-full max-w-[280px] flex justify-center items-center my-3">
-          <Doughnut data={responseRateData} options={responseRateOptions} />
-          <div className="absolute text-center">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadialBarChart
+              cx="50%"
+              cy="80%"
+              innerRadius="70%"
+              outerRadius="120%"
+              barSize={30}
+              data={[
+                { name: "Response Rate", value: responseRate, fill: "#1e3a8a" },
+              ]}
+              startAngle={180}
+              endAngle={0}
+            >
+              <PolarAngleAxis
+                type="number"
+                domain={[0, 100]}
+                angleAxisId={0}
+                tick={false}
+              />
+              <RadialBar
+                background={{ fill: "#e5e7eb" }}
+                clockWise
+                dataKey="value"
+                cornerRadius={10}
+              />
+            </RadialBarChart>
+          </ResponsiveContainer>
+          <div className="absolute top-[70%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
             <p className="text-3xl font-bold">{responseRate}%</p>
           </div>
         </div>

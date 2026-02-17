@@ -167,6 +167,11 @@ const CommentSection = ({
   const [currentPage, setCurrentPage] = React.useState(1);
   const commentsPerPage = 10;
 
+  // Reset to page 1 if comments change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [comments]);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -211,20 +216,18 @@ const CommentSection = ({
   const endIndex = startIndex + commentsPerPage;
   const paginatedComments = uniqueComments.slice(startIndex, endIndex);
 
-  // Reset to page 1 if comments change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [comments]);
+
 
   return (
     <>
       <div className="mb-4">
         <p className="text-sm text-gray-600">
-          Total Unique {title}: {uniqueComments.length}
+          Total {title}: {uniqueComments.length}
         </p>
       </div>
 
-      <div className="space-y-2 comment-section-container">
+      {/* Screen View (Paginated) - Hidden in Print */}
+      <div className="space-y-2 comment-section-container print:hidden">
         {paginatedComments.map((comment, index) => (
           <div
             key={`${type}-${startIndex + index}-${getCommentText(comment).substring(0, 20) || index}`}
@@ -236,7 +239,21 @@ const CommentSection = ({
         ))}
       </div>
 
-      {/* Pagination Controls */}
+      {/* Print View (All Comments) - Hidden on Screen, Visible on Print */}
+      <div className="hidden print:block space-y-2 print-comments-container">
+        {uniqueComments.map((comment, index) => (
+          <div
+            key={`print-${type}-${index}`}
+            className="flex gap-2 comment-item break-inside-avoid"
+            style={{ pageBreakInside: "avoid" }}
+          >
+            <span className="text-gray-600 mt-1">•</span>
+            <p className="text-gray-800 flex-1">{getCommentText(comment)}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination Controls - Hidden in Print */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-6 print:hidden">
           <button
@@ -287,10 +304,11 @@ const CompleteReport = ({
   const queryParams = new URLSearchParams(location.search);
   const isDynamicQuery = queryParams.get("dynamic") === "true";
 
-  // A report is generated if:
-  // 1. the isGeneratedReport prop is true OR
-  // 2. it's NOT a dynamic query from the analytics page
-  const effectivelyGenerated = isGeneratedReport || !isDynamicQuery;
+  // A report should behave as a frozen snapshot if:
+  // 1. the isGeneratedReport prop is true (saved/generated report) OR
+  // 2. it is opened from the live analytics page with ?dynamic=true
+  // In both cases, we disable live auto-refresh and treat data as a snapshot.
+  const effectivelyGenerated = isGeneratedReport || isDynamicQuery;
 
   const reportId = report?.formId || eventId;
 
@@ -341,18 +359,6 @@ const CompleteReport = ({
       </div>
     </div>
   );
-
-  // Helper to get year data
-  const currentYear = new Date().getFullYear();
-  const previousYear = currentYear - 1;
-  const currentYearData =
-    quantitativeData?.charts?.yearData?.find(
-      (d) => d.name === String(currentYear),
-    )?.value || 0;
-  const previousYearData =
-    quantitativeData?.charts?.yearData?.find(
-      (d) => d.name === String(previousYear),
-    )?.value || 0;
 
   // Helper to get sentiment data
   const sentiment = qualitativeData?.sentimentBreakdown || {
@@ -649,13 +655,13 @@ const CompleteReport = ({
             </div>
 
             <div className="p-4 md:p-8 text-center mt-4 print:mt-16 print:pt-6">
-              <h1 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-6 print:!text-black print:!text-5xl print:!font-bold print:!block print:!visible print:!opacity-100">
+              <h1 className="text-3xl md:text-5xl font-extrabold text-black mb-6 print:text-black! print:text-5xl! print:font-bold! print:block! print:visible! print:opacity-100!">
                 {formData?.title || report?.title || "EVENT EVALUATION REPORT"}
               </h1>
 
-              <div className="mx-auto h-1.5 w-1/2 bg-blue-600 rounded mb-6 print:bg-gray-400"></div>
+              <div className="mx-auto h-1.5 w-1/2 bg-gray-400 rounded mb-6 print:bg-gray-400"></div>
 
-              <p className="text-gray-700 max-w-4xl mx-auto leading-relaxed text-base md:text-lg mb-8 print:!text-black print:!text-lg print:!font-medium print:!opacity-100">
+              <p className="text-gray-700 max-w-4xl mx-auto leading-relaxed text-base md:text-lg mb-8 print:text-black! print:text-lg! print:font-medium! print:opacity-100!">
                 This evaluation report serves as a guide for the institution to
                 acknowledge the impact of the said event on the welfare and
                 enjoyment of the students at La Verdad Christian College –
@@ -663,128 +669,269 @@ const CompleteReport = ({
               </p>
 
               <div className="space-y-1">
-                <p className="text-xl font-bold uppercase tracking-wider text-blue-800 print:!text-black print:!block">
+                <p className="text-xl font-bold uppercase tracking-wider text-black print:text-black! print:block!">
                   Evaluation Result Summary
                 </p>
-                <p className="text-base font-medium text-gray-600 print:!text-black print:!block">
-                  College Level Breakdown
+                <p className="text-base font-medium text-gray-600 print:text-black! print:block!">
+                  Response Breakdown
                 </p>
               </div>
             </div>
           </div>
 
           <div className="print-page-break-after-forced">
-            {(
-              quantitativeData?.charts?.yearLevelBreakdown?.departments || [
-                {
-                  name: "Higher Education Department",
-                  currentYear:
-                    quantitativeData?.charts?.yearLevelBreakdown?.currentYear,
-                  previousYear:
-                    quantitativeData?.charts?.yearLevelBreakdown?.previousYear,
-                },
-              ]
-            ).map((dept, deptIdx) => (
-              <SectionWrapper
-                key={deptIdx}
-                title=""
-                className="print:shadow-none print:bg-transparent"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
-                  {/* Previous Year */}
-                  <div>
-                    <h5 className="font-bold text-lg mb-1 print-no-break-after print:text-black">
-                      {dept.name} {dept.previousYear?.year || previousYear}
-                    </h5>
-                    <p className="text-sm text-gray-500 mb-4 print:text-black">
-                      {dept.previousYear?.total !== undefined
-                        ? dept.previousYear.total
-                        : previousYearData}{" "}
-                      Responses
-                    </p>
-                    <div className="space-y-3">
-                      {dept.previousYear?.breakdown?.length > 0 ? (
-                        dept.previousYear.breakdown.map((yearLevel, idx) => {
-                          const maxCount = Math.max(
-                            ...dept.previousYear.breakdown.map((y) => y.count),
-                            1,
-                          );
-                          return (
-                            <div key={idx} className="flex items-center gap-3">
-                              <div
-                                className="bg-blue-400 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
-                                style={{
-                                  width: `${Math.max(
-                                    (yearLevel.count / maxCount) * 70,
-                                    20,
-                                  )}%`,
-                                  minWidth: "100px",
-                                }}
-                              >
-                                {yearLevel.name}
-                              </div>
-                              <span className="text-gray-700 text-sm font-medium">
-                                {yearLevel.count}
-                              </span>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="text-gray-400 text-sm italic">
-                          No year level data available
-                        </div>
-                      )}
-                    </div>
-                  </div>
+            {/* Dynamic Column Breakdowns - renders a section for each CSV column */}
+            {/* Dynamic Column Breakdowns - renders a section for each CSV column */}
+            {quantitativeData?.charts?.columnBreakdowns &&
+            Object.keys(quantitativeData.charts.columnBreakdowns).length > 0 ? (
+              Object.entries(quantitativeData.charts.columnBreakdowns).map(
+                ([columnName, breakdownData], colIdx) => {
+                  const displayName =
+                    columnName.charAt(0).toUpperCase() +
+                    columnName.slice(1).replace(/([A-Z])/g, " $1");
 
-                  {/* Current Year */}
-                  <div>
-                    <h5 className="font-bold text-lg mb-1 print-no-break-after print:text-black">
-                      {dept.name} {dept.currentYear?.year || currentYear}
-                    </h5>
-                    <p className="text-sm text-gray-500 mb-4 print:text-black">
-                      {dept.currentYear?.total !== undefined
-                        ? dept.currentYear.total
-                        : currentYearData}{" "}
-                      Responses
-                    </p>
-                    <div className="space-y-3">
-                      {dept.currentYear?.breakdown?.length > 0 ? (
-                        dept.currentYear.breakdown.map((yearLevel, idx) => {
-                          const maxCount = Math.max(
-                            ...dept.currentYear.breakdown.map((y) => y.count),
-                            1,
-                          );
-                          return (
-                            <div key={idx} className="flex items-center gap-3">
-                              <div
-                                className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
-                                style={{
-                                  width: `${Math.max(
-                                    (yearLevel.count / maxCount) * 70,
-                                    20,
-                                  )}%`,
-                                  minWidth: "100px",
-                                }}
-                              >
-                                {yearLevel.name}
+                  // Check if this is a comparison (nested objects with 'current' and 'previous')
+                  const isComparison = Object.values(breakdownData)[0]?.current !== undefined;
+
+                  if (isComparison) {
+                    // COMPARISON VIEW
+                    const entries = Object.entries(breakdownData).sort(
+                      (a, b) => b[1].current.count - a[1].current.count
+                    );
+                    const maxCount = Math.max(
+                      ...entries.map(([, data]) => Math.max(data.current.count, data.previous.count)),
+                      1
+                    );
+
+                    return (
+                      <SectionWrapper
+                        key={colIdx}
+                        title=""
+                        className="print:shadow-none print:bg-transparent"
+                      >
+                         <div className="mb-8">
+                          <h5 className="font-bold text-lg mb-1 text-black print:text-black">
+                            {displayName} (Comparison)
+                          </h5>
+                          <div className="space-y-6 mt-4">
+                            {entries.map(([value, data], idx) => (
+                              <div key={idx} className="border-b border-gray-100 pb-4 last:border-0">
+                                <div className="flex justify-between items-end mb-1">
+                                  <span className="font-medium text-gray-800">{value}</span>
+                                  {data.change.count !== 0 && (
+                                     <span className={`text-xs font-bold ${data.change.count > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                       {data.change.count > 0 ? '↑' : '↓'} {Math.abs(data.change.count)}
+                                     </span>
+                                  )}
+                                </div>
+                                
+                                {/* Current Year Bar */}
+                                <div className="flex items-center gap-3 mb-1">
+                                  <div className="w-20 text-xs text-gray-500">Current</div>
+                                  <div
+                                    className="bg-blue-600 h-6 rounded-r-full flex items-center px-2 text-white text-xs transition-all duration-500"
+                                    style={{
+                                      width: `${Math.max((data.current.count / maxCount) * 60, 5)}%`,
+                                      minWidth: "40px",
+                                    }}
+                                  >
+                                    {data.current.count}
+                                  </div>
+                                </div>
+
+                                {/* Previous Year Bar */}
+                                <div className="flex items-center gap-3">
+                                  <div className="w-20 text-xs text-gray-500">Previous</div>
+                                  <div
+                                    className="bg-gray-300 h-6 rounded-r-full flex items-center px-2 text-gray-700 text-xs transition-all duration-500"
+                                    style={{
+                                      width: `${Math.max((data.previous.count / maxCount) * 60, 5)}%`,
+                                      minWidth: "40px",
+                                    }}
+                                  >
+                                    {data.previous.count}
+                                  </div>
+                                </div>
                               </div>
-                              <span className="text-gray-700 text-sm font-medium">
-                                {yearLevel.count}
-                              </span>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="text-gray-400 text-sm italic">
-                          No year level data available
+                            ))}
+                          </div>
                         </div>
-                      )}
+                      </SectionWrapper>
+                    );
+                  } else {
+                    // STANDARD SINGLE VIEW (Existing logic)
+                    const breakdown = breakdownData;
+                    const entries = Object.entries(breakdown).sort(
+                      (a, b) => b[1].responded - a[1].responded
+                    );
+                    const maxResponded = Math.max(
+                      ...entries.map(([, data]) => data.responded),
+                      1
+                    );
+                    const totalResponded = entries.reduce(
+                      (sum, [, data]) => sum + data.responded,
+                      0
+                    );
+
+                    return (
+                      <SectionWrapper
+                        key={colIdx}
+                        title=""
+                        className="print:shadow-none print:bg-transparent"
+                      >
+                        <div className="mb-8">
+                          <h5 className="font-bold text-lg mb-1 text-black print:text-black">
+                            {displayName}
+                          </h5>
+                          <p className="text-sm text-gray-500 mb-6 print:text-black">
+                            {totalResponded} Responses
+                          </p>
+                          <div className="space-y-3">
+                            {entries.map(([value, data], idx) => (
+                              <div key={idx} className="flex items-center gap-3">
+                                <div
+                                  className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                                  style={{
+                                    width: `${Math.max(
+                                      (data.responded / maxResponded) * 70,
+                                      15
+                                    )}%`,
+                                    minWidth: "100px",
+                                  }}
+                                >
+                                  {value}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-700 text-sm font-medium">
+                                    {data.responded}
+                                  </span>
+                                  <span className="text-gray-400 text-xs">
+                                    / {data.count} ({data.responseRate}%)
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </SectionWrapper>
+                    );
+                  }
+                }
+              )
+            ) : (
+              /* Fallback: Original yearLevelBreakdown rendering for forms without CSV column data */
+              (
+                quantitativeData?.charts?.yearLevelBreakdown?.departments || [
+                  {
+                    name: "Higher Education Department",
+                    currentYear:
+                      quantitativeData?.charts?.yearLevelBreakdown?.currentYear,
+                    previousYear:
+                      quantitativeData?.charts?.yearLevelBreakdown?.previousYear,
+                  },
+                ]
+              ).map((dept, deptIdx) => (
+                <SectionWrapper
+                  key={deptIdx}
+                  title=""
+                  className="print:shadow-none print:bg-transparent"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+                    {/* Previous Year */}
+                    <div>
+                      <h5 className="font-bold text-lg mb-1 print-no-break-after print:text-black">
+                        {dept.name} {dept.previousYear?.year || ""}
+                      </h5>
+                      <p className="text-sm text-gray-500 mb-4 print:text-black">
+                        {dept.previousYear?.total !== undefined
+                          ? dept.previousYear.total
+                          : 0}{" "}
+                        Responses
+                      </p>
+                      <div className="space-y-3">
+                        {dept.previousYear?.breakdown?.length > 0 ? (
+                          dept.previousYear.breakdown.map((yearLevel, idx) => {
+                            const maxCount = Math.max(
+                              ...dept.previousYear.breakdown.map((y) => y.count),
+                              1,
+                            );
+                            return (
+                              <div key={idx} className="flex items-center gap-3">
+                                <div
+                                  className="bg-blue-400 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                                  style={{
+                                    width: `${Math.max(
+                                      (yearLevel.count / maxCount) * 70,
+                                      20,
+                                    )}%`,
+                                    minWidth: "100px",
+                                  }}
+                                >
+                                  {yearLevel.name}
+                                </div>
+                                <span className="text-gray-700 text-sm font-medium">
+                                  {yearLevel.count}
+                                </span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-gray-400 text-sm italic">
+                            No year level data available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Current Year */}
+                    <div>
+                      <h5 className="font-bold text-lg mb-1 print-no-break-after print:text-black">
+                        {dept.name} {dept.currentYear?.year || ""}
+                      </h5>
+                      <p className="text-sm text-gray-500 mb-4 print:text-black">
+                        {dept.currentYear?.total !== undefined
+                          ? dept.currentYear.total
+                          : 0}{" "}
+                        Responses
+                      </p>
+                      <div className="space-y-3">
+                        {dept.currentYear?.breakdown?.length > 0 ? (
+                          dept.currentYear.breakdown.map((yearLevel, idx) => {
+                            const maxCount = Math.max(
+                              ...dept.currentYear.breakdown.map((y) => y.count),
+                              1,
+                            );
+                            return (
+                              <div key={idx} className="flex items-center gap-3">
+                                <div
+                                  className="bg-blue-600 h-8 rounded-r-full flex items-center px-3 text-white text-xs font-medium transition-all duration-500"
+                                  style={{
+                                    width: `${Math.max(
+                                      (yearLevel.count / maxCount) * 70,
+                                      20,
+                                    )}%`,
+                                    minWidth: "100px",
+                                  }}
+                                >
+                                  {yearLevel.name}
+                                </div>
+                                <span className="text-gray-700 text-sm font-medium">
+                                  {yearLevel.count}
+                                </span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-gray-400 text-sm italic">
+                            No year level data available
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </SectionWrapper>
-            ))}
+                </SectionWrapper>
+              ))
+            )}
           </div>
 
           {/* Quantitative Ratings Section */}

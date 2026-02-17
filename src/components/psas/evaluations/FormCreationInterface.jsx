@@ -13,7 +13,6 @@ import {
   Palette,
   ChevronLeft,
   X,
-  XCircle,
 } from "lucide-react";
 import { LuUndo, LuRedo } from "react-icons/lu";
 import { DayPicker } from "react-day-picker";
@@ -1573,6 +1572,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         try {
           // Convert CSV students to attendee format
           const attendeeList = csvData.students.map((student) => ({
+            ...student, // Preserve dynamic fields from CSV (e.g. department, program)
             name: student.name,
             email: student.email.toLowerCase().trim(),
             hasResponded: false,
@@ -1600,7 +1600,17 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             await response.json();
 
             toast.success(
-              `Attendee list updated in database (${attendeeList.length} students)`
+              `Attendee list updated in database (${attendeeList.length} students)`,
+              {
+                style: {
+                  background: "#10B981",
+                  color: "#FFFFFF",
+                },
+                iconTheme: {
+                  primary: "#FFFFFF",
+                  secondary: "#10B981",
+                },
+              }
             );
           } else {
             console.error(
@@ -1621,7 +1631,17 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setHasUnsavedChanges(true);
       toast.success(
         `Recipient list loaded: ${csvData.students.length} students from ${csvData.filename || "CSV"
-        }`
+        }`,
+        {
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        }
       );
     } catch (error) {
       console.error("CSV upload/parse error:", error);
@@ -1883,19 +1903,32 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       const errorMessage = `Please fix the following before publishing:\n• ${validationErrors.join(
         "\n• "
       )}`;
-      toast.error(errorMessage, {
-        duration: 5000,
-        style: {
-          alignItems: "flex-start",
-          maxWidth: "500px",
-          padding: "16px",
-        },
-        icon: (
-          <div style={{ marginTop: "4px" }}>
-            <XCircle size={20} color="#ef4444" />
+      toast.error(
+        (t) => (
+          <div className="relative w-full">
+            <div className="whitespace-pre-line text-white pr-6">
+              {errorMessage}
+            </div>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="absolute -top-3 -right-3 text-white border-2 border-white rounded-full bg-red-500 hover:bg-white hover:text-red-500 transition-colors p-1"
+            >
+              <X size={16} />
+            </button>
           </div>
-        )
-      });
+        ),
+        {
+          duration: Infinity,
+          style: {
+            alignItems: "flex-start",
+            maxWidth: "500px",
+            padding: "16px",
+            background: "#EF4444",
+            color: "#FFFFFF",
+          },
+          icon: null
+        }
+      );
       return;
     }
 
@@ -1958,7 +1991,16 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           if (uploadResponse.ok) {
             const uploadData = await uploadResponse.json();
             if (uploadData.success && uploadData.data && uploadData.data.form) {
-              toast.success("Form published successfully!");
+              toast.success("Form published successfully!", {
+                style: {
+                  background: "#10B981",
+                  color: "#FFFFFF",
+                },
+                iconTheme: {
+                  primary: "#FFFFFF",
+                  secondary: "#10B981",
+                },
+              });
               // Comprehensive cleanup then go back to dashboard
               FormSessionManager.clearAllFormData();
 
@@ -2119,7 +2161,16 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       const publishData = await publishResponse.json();
 
       if (publishResponse.ok && publishData.success) {
-        toast.success("Form published successfully!");
+        toast.success("Form published successfully!", {
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
 
         // Clear persistent storage immediately to prevent restoration on reload
         FormSessionManager.clearAllFormData();
@@ -2269,7 +2320,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                       "en-US",
                       { month: "short", day: "numeric", year: "numeric" }
                     )}`
-                    : "Set Event Dates"}
+                    : "Set Evaluation Period"}
                 </button>
 
                 {/* Dropdown Calendar */}
@@ -2316,6 +2367,11 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                         }
                         .custom-calendar .rdp-range_end .rdp-day_button {
                           border-radius: 0 6px 6px 0;
+                        }
+                        .custom-calendar .rdp-today:not(.rdp-selected) .rdp-day_button {
+                          font-weight: bold;
+                          border: 2px solid #1F3463;
+                          color: #1F3463;
                         }
                       `}
                     </style>

@@ -45,7 +45,17 @@ const EventCreationForm = ({ onEventCreated, onClose }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        toast.success("Event created successfully!");
+        toast.success("Event created successfully!", {
+          duration: 5000,
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
         onEventCreated?.(data);
         onClose?.();
       } else {

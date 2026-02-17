@@ -400,119 +400,20 @@ const ReportActions = ({
       const reportTitle = formData.title || "Evaluation Report";
 
       // Convert header image to base64 for embedding in the PDF
-      let headerBase64 = "";
-      let footerBase64 = "";
-
-      try {
-        // Get header image from the page
-        const headerImg = document.querySelector("#report-header img");
-        if (headerImg && headerImg.complete) {
-          const canvas = document.createElement("canvas");
-          canvas.width = headerImg.naturalWidth || 800;
-          canvas.height = headerImg.naturalHeight || 80;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(headerImg, 0, 0);
-          headerBase64 = canvas.toDataURL("image/png");
-        }
-      } catch (e) {
-        console.warn("Could not convert header to base64:", e);
-      }
-
-      try {
-        // Get footer image from the page
-        const footerImg = document.querySelector("#report-footer img");
-        if (footerImg && footerImg.complete) {
-          const canvas = document.createElement("canvas");
-          canvas.width = footerImg.naturalWidth || 800;
-          canvas.height = footerImg.naturalHeight || 40;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(footerImg, 0, 0);
-          footerBase64 = canvas.toDataURL("image/png");
-        }
-      } catch (e) {
-        console.warn("Could not convert footer to base64:", e);
-      }
-
-      // Header template - using the header.png image
+      // Build the POST data
+      // Removed image header/footer as requested by user to prevent layout issues
+      
+      // Simple text header
       const headerTemplate = `
-        <style>
-          html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body { margin: 0; padding: 0; }
-          .header-container {
-            width: 100%;
-            height: 70px;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #1e3a5f 100%);
-          }
-          .header-title {
-            color: #ffffff;
-            font-size: 18px;
-            font-weight: bold;
-            font-family: 'Times New Roman', Times, serif;
-            text-align: center;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-          }
-          .header-divider {
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
-          }
-        </style>
-        <div class="header-container">
-          <div class="header-title">LA VERDAD CHRISTIAN COLLEGE - APALIT, PAMPANGA</div>
-        </div>
-        <div class="header-divider"></div>
-      `;
+        <div style="width:100%;height:30px;font-size:10px;text-align:center;color:#666;border-bottom:1px solid #ddd;margin-bottom:10px;display:flex;justify-content:center;align-items:center;">
+          <span>LA VERDAD CHRISTIAN COLLEGE - APALIT, PAMPANGA</span>
+        </div>`;
 
-      // Footer template - using a styled footer with page numbers
+      // Simple footer with page numbers
       const footerTemplate = `
-        <style>
-          html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body { margin: 0; padding: 0; }
-          .footer-container {
-            width: 100%;
-            height: 50px;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);
-            position: relative;
-          }
-          .footer-text {
-            color: #ffffff;
-            font-size: 10px;
-            font-family: Arial, sans-serif;
-            text-align: center;
-          }
-          .footer-divider {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
-          }
-          .page-info {
-            position: absolute;
-            right: 30px;
-            bottom: 12px;
-            font-size: 10px;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-          }
-        </style>
-        <div class="footer-container">
-          <div class="footer-divider"></div>
-          <div class="footer-text">MacArthur Highway, Sampaloc, Apalit, Pampanga 2016 | info@laverdad.edu.ph</div>
-          <div class="page-info">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>
-        </div>
-      `;
+        <div style="width:100%;height:30px;font-size:9px;text-align:center;color:#999;border-top:1px solid #ddd;margin-top:10px;display:flex;justify-content:center;align-items:center;">
+          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>`;
 
       // Import html2canvas for capturing HTML components (used for charts only now)
       const html2canvas = (await import("html2canvas")).default;
@@ -520,11 +421,128 @@ const ReportActions = ({
       // --- Cloning and Content Preparation ---
       const clone = reportElement.cloneNode(true);
 
-      // Remove in-content header and footer since they now appear via Puppeteer templates on every page
+      // Remove in-content header and footer since they appear via Puppeteer templates on every page
       const headerBlock = clone.querySelector("#report-header-block");
       const footerBlock = clone.querySelector("#report-footer-block");
       if (headerBlock) headerBlock.remove();
       if (footerBlock) footerBlock.remove();
+
+
+      // Debug: log the clone structure
+      const allH1s = clone.querySelectorAll("h1");
+      const allH4s = clone.querySelectorAll("h4");
+      const allH5s = clone.querySelectorAll("h5");
+      console.log("Clone debug - h1 count:", allH1s.length, "h4 count:", allH4s.length, "h5 count:", allH5s.length);
+
+      // Force proper styling on the evaluation title (h1)
+      allH1s.forEach((h1) => {
+        // STRIP ALL CLASSES to avoid Tailwind conflicts and ensure visibility
+        h1.removeAttribute("class");
+        
+        // Apply inline styles to match original design (text-3xl font-extrabold text-blue-900)
+        h1.style.display = "block";
+        h1.style.visibility = "visible";
+        h1.style.fontSize = "24pt"; // Approx text-3xl
+        h1.style.fontWeight = "800"; // font-extrabold
+        h1.style.textAlign = "center";
+        h1.style.color = "#000000"; // Changed to black as requested
+        h1.style.margin = "16px auto";
+        h1.style.opacity = "1";
+        h1.style.lineHeight = "1.2";
+        h1.style.position = "relative"; // Ensure stacking context
+        h1.style.zIndex = "1000";       // Force above potential overlaps
+        h1.style.backgroundColor = "white"; // Ensure opaque background if needed? No, that might cover logo.
+      });
+
+      // Force styling on all h2 titles (EVALUATION RESULT SUMMARY)
+      const allH2s = clone.querySelectorAll("h2");
+      allH2s.forEach((h2) => {
+        h2.removeAttribute("class");
+        h2.style.fontSize = "18pt"; // Approx text-2xl
+        h2.style.fontWeight = "bold";
+        h2.style.textAlign = "center";
+        h2.style.color = "#000000"; // Black
+        h2.style.textTransform = "uppercase";
+        h2.style.marginBottom = "8px";
+        h2.style.display = "block";
+        h2.style.visibility = "visible";
+      });
+
+      // Force styling on all h3 titles (Section headers like "Qualitative Comments")
+      const allH3s = clone.querySelectorAll("h3");
+      allH3s.forEach((h3) => {
+        h3.removeAttribute("class");
+        h3.style.fontSize = "14pt"; // Approx text-xl
+        h3.style.fontWeight = "bold";
+        h3.style.color = "#000000"; // Black
+        h3.style.borderBottom = "2px solid #000000"; // Black border
+        h3.style.paddingBottom = "8px";
+        h3.style.marginBottom = "24px";
+        h3.style.display = "block";
+        h3.style.visibility = "visible";
+        h3.style.pageBreakAfter = "avoid";
+      });
+
+      // Fix the title wrapper div
+      const titleWrapper = clone.querySelector(".text-center.mt-4");
+      if (titleWrapper) {
+        titleWrapper.removeAttribute("class"); // Strip classes
+        titleWrapper.style.textAlign = "center";
+        titleWrapper.style.marginTop = "0";
+        titleWrapper.style.marginBottom = "10px";
+        titleWrapper.style.display = "block";
+      }
+
+      // Force styling on all h4 section titles
+      allH4s.forEach((h4) => {
+        // STRIP ALL CLASSES
+        h4.removeAttribute("class");
+        
+        // Match original design (text-xl font-bold)
+        h4.style.display = "block";
+        h4.style.visibility = "visible";
+        h4.style.fontSize = "16pt"; // Approx text-xl
+        h4.style.fontWeight = "bold"; // font-bold
+        h4.style.textAlign = "center"; // text-center
+        h4.style.color = "#000000";
+        h4.style.margin = "15px 0 12px 0";
+        h4.style.opacity = "1";
+        h4.style.lineHeight = "1.3";
+      });
+
+      // Force h4 parent wrappers to be visible
+      allH4s.forEach((h4) => {
+        const parent = h4.parentElement;
+        if (parent) {
+          parent.removeAttribute("class"); 
+          parent.style.display = "block";
+          parent.style.visibility = "visible";
+          parent.style.overflow = "visible"; 
+          parent.style.opacity = "1";
+          parent.style.marginBottom = "15px";
+        }
+      });
+
+      // Force styling on h5 titles
+      allH5s.forEach((h5) => {
+        h5.removeAttribute("class");
+        
+        // Match original design (text-lg font-bold)
+        h5.style.display = "block";
+        h5.style.visibility = "visible";
+        h5.style.fontSize = "12pt"; // Approx text-lg
+        h5.style.fontWeight = "bold";
+        h5.style.color = "#000000";
+        h5.style.margin = "10px 0";
+        h5.style.lineHeight = "1.4";
+      });
+
+      // CRITICAL: Remove overflow-hidden from ALL elements
+      const allOverflowHidden = clone.querySelectorAll(".overflow-hidden");
+      allOverflowHidden.forEach((el) => {
+        el.className = el.className.replace(/\boverflow-hidden\b/g, "overflow-visible");
+        el.style.overflow = "visible";
+      });
 
       // Rasterize Charts using html2canvas - More reliable for Recharts
       // Find all chart containers with multiple selectors for better coverage
@@ -777,14 +795,37 @@ const ReportActions = ({
             <style>
               ${styles}
               @page {
-                margin-top: 110px !important;
-                margin-bottom: 70px !important;
+                margin-top: 40px !important;
+                margin-bottom: 30px !important;
               }
+
+              /* Ensure overflow-visible works for replaced elements */
+              .overflow-visible {
               img { max-width: 100% !important; }
               /* Remove default margins */
               body { margin: 0; padding: 0; }
+              /* Ensure overflow-visible works for replaced elements */
+              h1 { width: 100% !important; margin: 0 auto; }
+              
+              /* Ensure comments don't break awkwardly */
+              .comment-item { page-break-inside: avoid; break-inside: avoid; }
+              
+              .overflow-visible {
+                overflow: visible !important;
+              }
+
+              /* IMPORTANT: Define .hidden FIRST so it can be overridden */
+              .hidden { display: none !important; }
+
               /* Hide screen-only elements */
               .print\\:hidden { display: none !important; }
+              
+              /* Show print-only elements - MUST be defined AFTER .hidden */
+              .print\\:block { display: block !important; }
+              
+              /* Override overflow-hidden so section content is never clipped */
+              .overflow-hidden { overflow: visible !important; }
+              
               /* Ensure charts are visible in print */
               .recharts-wrapper { display: block !important; }
               .recharts-responsive-container { display: block !important; width: 100% !important; }
@@ -806,17 +847,36 @@ const ReportActions = ({
               /* Orphan/Widow Control */
               p, li, span { orphans: 3; widows: 3; }
 
-              /* Individual comment items */
+              /* Individual comment items - COMPACT for PDF */
               .comment-item {
                 break-inside: avoid;
                 page-break-inside: avoid;
-                margin-bottom: 0.5rem;
+                margin-bottom: 0.1rem !important;
+                padding: 0.1rem 0 !important;
+                line-height: 1.3 !important;
               }
 
-              /* Comment section container - allow breaks between comments */
+              .comment-item p {
+                margin: 0 !important;
+                padding: 0 !important;
+                font-size: 10pt !important;
+                line-height: 1.3 !important;
+              }
+
+              .comment-item span {
+                font-size: 10pt !important;
+                line-height: 1.3 !important;
+              }
+
+              /* Comment section container - compact spacing */
               .comment-section-container {
                 break-inside: auto;
                 page-break-inside: auto;
+                gap: 0 !important;
+              }
+
+              .comment-section-container.space-y-2 > * + * {
+                margin-top: 0.15rem !important;
               }
 
               /* Question blocks - keep question with chart but allow multiple per page */
@@ -845,8 +905,35 @@ const ReportActions = ({
 
               /* Keep headers with content */
               h4, h5 {
-                page-break-after: avoid;
-                break-after: avoid;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+              }
+
+              /* Section titles - ensure visible and properly sized */
+              .section-page h4 {
+                font-size: 16pt !important;
+                font-weight: bold !important;
+                margin-bottom: 0.75rem !important;
+                margin-top: 0.5rem !important;
+                text-align: center !important;
+                display: block !important;
+                visibility: visible !important;
+                color: #000 !important;
+                min-height: 1.5em !important;
+              }
+
+              .section-page > div > div.text-center {
+                margin-bottom: 0.75rem !important;
+                padding: 0.25rem 0 !important;
+                display: block !important;
+                visibility: visible !important;
+                min-height: 2em !important;
+              }
+
+              /* Override text-lg for section heading */
+              .section-page .text-lg.font-bold {
+                font-size: 16pt !important;
+                display: block !important;
               }
 
               /* Additional spacing improvements for print */
@@ -881,6 +968,18 @@ const ReportActions = ({
               /* Force page break after year level breakdown section */
               .print-page-break-after-forced {
                 page-break-after: always !important;
+                page-break-inside: auto !important;
+              }
+
+              /* Each comparison entry (Department, Program items) - avoid being cut off */
+              .print-page-break-after-forced .border-b {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              /* Section wrappers inside the first-page div - allow breaking between them */
+              .print-page-break-after-forced .section-page {
+                page-break-inside: auto !important;
               }
               
               /* ========================================
@@ -912,40 +1011,52 @@ const ReportActions = ({
               /* After every 4th question in a group, that's the end of page so naturally breaks */
               /* The wrapper div with print-page-break-before-forced ensures page breaks */
               
-               /* Chart sizing for PDF - 4 questions per page */
+               /* Chart+Legend container - let it auto-size when it's a flex wrapper */
                .print-chart-container {
                  page-break-inside: avoid !important;
                  break-inside: avoid !important;
-                 max-height: 150px !important;
-                 height: 150px !important;
                  margin-bottom: 0.5rem !important;
                  margin-top: 0.5rem !important;
                  padding: 0 !important;
-                 width: 150px !important;
-                 min-width: 150px !important;
-                 flex-shrink: 0 !important;
+                 /* Do NOT constrain width/height — the outer wrapper holds chart + legend */
+                 height: auto !important;
+                 max-height: none !important;
+                 width: 100% !important;
+                 min-width: auto !important;
                }
                
-               .print-chart-container .recharts-wrapper {
-                 max-height: 150px !important;
-                 height: 150px !important;
-                 margin-bottom: 0 !important;
-                 margin-top: 0 !important;
-                 width: 150px !important;
+               /* Inner chart recharts wrapper - fixed size */
+               .print-chart-container .recharts-wrapper,
+               .print-chart-container .recharts-responsive-container {
+                 max-height: 140px !important;
+                 height: 140px !important;
+                 width: 140px !important;
+                 margin: 0 !important;
                }
                
-               .print-chart-container svg {
-                 height: 150px !important;
-                 width: 150px !important;
+               .print-chart-container svg.recharts-surface {
+                 height: 140px !important;
+                 width: 140px !important;
                }
               
-              .w-64.h-64 {
-                width: 80px !important;
-                height: 80px !important;
-              }
-              
+              /* Report Summary sentiment chart - larger than per-question charts */
               .h-64.print-chart-container {
-                height: 100px !important;
+                height: 300px !important;
+                width: 300px !important;
+                min-height: 300px !important;
+                min-width: 300px !important;
+              }
+
+              .h-64.print-chart-container .recharts-wrapper,
+              .h-64.print-chart-container .recharts-responsive-container {
+                height: 300px !important;
+                width: 300px !important;
+                max-height: 300px !important;
+              }
+
+              .h-64.print-chart-container svg.recharts-surface {
+                height: 300px !important;
+                width: 300px !important;
               }
               
               /* Space saving overrides - AGGRESSIVE */
@@ -1001,52 +1112,64 @@ const ReportActions = ({
                 margin-bottom: 0.15rem !important;
               }
               
-              /* Flex containers in questions - COMPACT with legend on RIGHT */
+              /* Flex containers in questions - chart LEFT, legend RIGHT */
               .flex.flex-col.md\\:flex-row.items-center.justify-center.gap-2 {
                 flex-direction: row !important;
-                gap: 0.5rem !important;
-                align-items: flex-start !important;
+                gap: 1rem !important;
+                align-items: center !important;
                 justify-content: flex-start !important;
                 width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                min-height: auto !important;
+                overflow: visible !important;
               }
               
-              /* Chart wrapper in flex container */
+              /* Chart wrapper - fixed size on the left */
               .flex.flex-col.md\\:flex-row.items-center.justify-center.gap-2 > div:first-child {
                 flex-shrink: 0 !important;
-                width: 110px !important;
+                width: 140px !important;
+                height: 140px !important;
+                min-width: 140px !important;
+                min-height: 140px !important;
               }
               
-              /* Legend wrapper in flex container */
+              /* Legend wrapper - beside the chart */
               .flex.flex-col.md\\:flex-row.items-center.justify-center.gap-2 > div:last-child {
                 flex: 1 !important;
                 padding-left: 0.5rem !important;
-              }
-              
-              /* Legend styling in charts - ULTRA COMPACT */
-              .space-y-2 {
-                gap: 0 !important;
                 display: flex !important;
                 flex-direction: column !important;
+                justify-content: center !important;
               }
               
+              /* Legend styling - compact items */
               .space-y-2 > div {
-                margin-bottom: 0.05rem !important;
+                margin-bottom: 0.1rem !important;
                 padding-bottom: 0 !important;
-                line-height: 1.1 !important;
-                font-size: 7pt !important;
+                line-height: 1.2 !important;
+                font-size: 8pt !important;
               }
               
-              /* Legend items - compress */
+              /* Legend item text */
               .space-y-2 span {
-                font-size: 7pt !important;
-                line-height: 1.1 !important;
+                font-size: 8pt !important;
+                line-height: 1.2 !important;
+              }
+
+              /* Legend color dots */
+              .space-y-2 .w-3.h-3 {
+                width: 8px !important;
+                height: 8px !important;
+                min-width: 8px !important;
+                flex-shrink: 0 !important;
               }
               
               /* Chart wrapper compactness */
               .flex.flex-col.md\\:flex-row {
                 margin: 0 !important;
                 padding: 0 !important;
-                gap: 0.25rem !important;
+                gap: 0.5rem !important;
               }
               
               /* Responsive container - remove extra spacing */

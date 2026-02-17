@@ -79,7 +79,17 @@ const CertificateCustomizer = ({ formId, onSave, onClose }) => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success("Certificate customizations saved successfully");
+        toast.success("Certificate customizations saved successfully", {
+          duration: 5000,
+          style: {
+            background: "#10B981",
+            color: "#FFFFFF",
+          },
+          iconTheme: {
+            primary: "#FFFFFF",
+            secondary: "#10B981",
+          },
+        });
         if (onSave) onSave(customizations);
         if (onClose) onClose();
       } else {
