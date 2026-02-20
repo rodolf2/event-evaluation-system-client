@@ -300,16 +300,16 @@ function ClubOfficerEvaluationsContent() {
           <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
           <div className="mb-7">
             <div
-              className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
+              className="mb-8 text-white p-6 rounded-xl shadow-lg relative"
               style={{
                 background:
                   "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
               }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
-                <div className="flex flex-col items-center gap-5">
-                  <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center w-full">
-                    <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
+                    <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
                     <SkeletonText
                       lines={1}
                       width="medium"
@@ -327,9 +327,9 @@ function ClubOfficerEvaluationsContent() {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-5">
-                  <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center w-full">
-                    <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
+                    <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
                     <SkeletonText
                       lines={1}
                       width="medium"

@@ -94,7 +94,6 @@ const PROGRAMS = [
 
 function UserRoles() {
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -120,40 +119,41 @@ function UserRoles() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   const { token, user: currentUser, refreshUserData } = useAuth();
   const socket = useSocket();
 
-
-  const updateStats = useCallback((userList) => {
-    const totalUsers = userList.length;
-    const activePBOOs = userList.filter(
-      (u) => u.role === "club-officer" && u.isActive,
-    ).length;
-    const facultyStaff = userList.filter(
-      (u) => u.role === "psas" || u.role === "mis",
-    ).length;
-    const suspended = userList.filter((u) => !u.isActive).length;
-
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const newUsersWeek = userList.filter(
-      (u) => new Date(u.createdAt) > oneWeekAgo,
-    ).length;
-
-    setStats({
-      totalUsers,
-      activePBOOs,
-      facultyStaff,
-      suspended,
-      newUsersWeek,
-    });
-  }, []);
+  const fetchStats = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await fetch("/api/users/stats/user-management", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  }, [token]);
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/users?limit=0", {
+      // Build query string
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: rowsPerPage,
+      });
+
+      if (searchQuery) params.append("search", searchQuery);
+      if (selectedFilter !== "all") params.append("role", selectedFilter);
+
+      const response = await fetch(`/api/users?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -167,7 +167,8 @@ function UserRoles() {
           elevationDate: u.elevationDate || null,
         }));
         setUsers(userList);
-        updateStats(userList);
+        setTotalPages(data.data.pagination.totalPages);
+        setTotalUsers(data.data.pagination.totalUsers);
       }
     } catch (error) {
       console.error(error);
@@ -175,7 +176,7 @@ function UserRoles() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, updateStats]);
+  }, [token, currentPage, rowsPerPage, searchQuery, selectedFilter]);
 
   // Real-time listener
   useEffect(() => {
@@ -183,42 +184,26 @@ function UserRoles() {
       socket.on("user-updated", (updatedUser) => {
         console.log("👥 Real-time user update received:", updatedUser);
         fetchUsers();
+        fetchStats();
       });
 
       return () => {
         socket.off("user-updated");
       };
     }
-  }, [socket, fetchUsers]);
+  }, [socket, fetchUsers, fetchStats]);
 
+  // Debounce search to prevent too many API calls
   useEffect(() => {
-    fetchUsers();
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 500);
+    return () => clearTimeout(timer);
   }, [fetchUsers]);
 
-  // Filter logic
   useEffect(() => {
-    let filtered = users;
-    if (selectedFilter !== "all") {
-      filtered = filtered.filter((user) => user.role === selectedFilter);
-    }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (user) =>
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          user._id.toLowerCase().includes(query),
-      );
-    }
-    setFilteredUsers(filtered);
-    setCurrentPage(1); // Reset to first page when filtering
-  }, [searchQuery, selectedFilter, users]);
-
-  // Pagination Logic
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const paginatedUsers = filteredUsers.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
+    fetchStats();
+  }, [fetchStats]);
 
   // Handlers
   const handleDisableClick = (user) => {
@@ -545,7 +530,7 @@ function UserRoles() {
         {/* Mobile Card Layout */}
         <div className="block lg:hidden">
           <div className="divide-y divide-gray-200">
-            {paginatedUsers.map((user) => (
+            {users.map((user) => (
               <div key={user._id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -655,7 +640,7 @@ function UserRoles() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {paginatedUsers.map((user) => (
+              {users.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -710,8 +695,11 @@ function UserRoles() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      {/* MIS Head Edit Role */}
-                      {currentUser?.position === "MIS Head" && user._id !== currentUser?._id && (
+                      {/* MIS Head Edit Role (except student/PBOO) */}
+                      {currentUser?.position === "MIS Head" && 
+                       user._id !== currentUser?._id && 
+                       user.role !== "student" && 
+                       user.role !== "club-officer" && (
                         <button
                           onClick={() => handleRoleChangeClick(user)}
                           className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
@@ -755,7 +743,7 @@ function UserRoles() {
 
 
         {/* Empty state */}
-        {filteredUsers.length === 0 && (
+        {users.length === 0 && (
           <div className="text-center py-12">
             <Users className="mx-auto h-12 w-12 text-gray-400" />
             <p className="text-gray-500 mt-4">
@@ -790,7 +778,7 @@ function UserRoles() {
               <option value={50}>50</option>
             </select>
             <span className="text-gray-700 text-sm">
-              {filteredUsers.length} total
+              {totalUsers} total
             </span>
           </div>
 
@@ -803,7 +791,7 @@ function UserRoles() {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <span className="text-sm text-gray-600">
-              Page {currentPage} of {Math.max(1, totalPages)}
+              {currentPage} / {Math.max(1, totalPages)}
             </span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -813,6 +801,7 @@ function UserRoles() {
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
+
         </div>
       </div>
 
@@ -836,15 +825,13 @@ function UserRoles() {
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {confirmAction === "DISABLE" && "Disable User Access?"}
-                {confirmAction === "ENABLE" && "Reactivate User?"}
+                {confirmAction === "DISABLE" ? "Disable User Access?" : "Reactivate User?"}
               </h3>
 
               <p className="text-gray-600 mb-6">
-                {confirmAction === "DISABLE" &&
-                  `This will disable access for ${selectedUser?.name}. They won't be able to log in.`}
-                {confirmAction === "ENABLE" &&
-                  `This will restore access for ${selectedUser?.name}. They will be able to log in again.`}
+                {confirmAction === "DISABLE"
+                  ? `This will disable access for ${selectedUser?.name}. They won't be able to log in.`
+                  : `This will restore access for ${selectedUser?.name}. They will be able to log in again.`}
               </p>
 
               <div className="flex gap-3 w-full">
@@ -911,7 +898,12 @@ function UserRoles() {
                     }}
                     className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                   >
-                    {ROLE_OPTIONS.map((role) => (
+                    {ROLE_OPTIONS.filter(role => {
+                      if (currentUser?.position === "MIS Head") {
+                        return role.value !== "student" && role.value !== "club-officer";
+                      }
+                      return true;
+                    }).map((role) => (
                       <option key={role.value} value={role.value}>
                         {role.label}
                       </option>

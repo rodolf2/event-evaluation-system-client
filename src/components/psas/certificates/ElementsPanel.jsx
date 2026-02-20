@@ -1,4 +1,4 @@
-import { Bold, Italic, Underline, Trash2, Copy, Plus, Upload, Loader2 } from "lucide-react";
+import { Bold, Italic, Underline, Trash2, Copy, Plus, Upload, Loader2, Link, Image } from "lucide-react";
 
 const ElementsPanel = ({
   onAddText,
@@ -13,22 +13,24 @@ const ElementsPanel = ({
 }) => {
   return (
     <div>
-      <h3 className="font-bold text-lg mb-4">Elements</h3>
+
 
       <div className="mb-6">
         <h4 className="font-semibold text-gray-700 mb-2">Text</h4>
-        <button
-          onClick={() => onAddText(true)}
-          className="text-left text-2xl font-bold w-full p-2 hover:bg-gray-100 rounded-md"
-        >
-          Headline
-        </button>
-        <button
-          onClick={() => onAddText(false)}
-          className="text-left text-base w-full p-2 hover:bg-gray-100 rounded-md"
-        >
-          Body Text
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => onAddText(true)}
+            className="text-left text-2xl font-bold w-full p-2 bg-white border border-gray-300 shadow-sm hover:shadow-md hover:bg-gray-50 rounded-md transition-all"
+          >
+            Headline
+          </button>
+          <button
+            onClick={() => onAddText(false)}
+            className="text-left text-base w-full p-2 bg-white border border-gray-300 shadow-sm hover:shadow-md hover:bg-gray-50 rounded-md transition-all"
+          >
+            Body Text
+          </button>
+        </div>
       </div>
 
       <div className="mb-6">
@@ -37,7 +39,7 @@ const ElementsPanel = ({
           <button
             onClick={() => fileInputRef.current.click()}
             disabled={isUploadingImage}
-            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 p-2 bg-white border border-gray-300 shadow-sm hover:shadow-md hover:bg-gray-50 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed text-sm transition-all"
             title="Upload image file from your device"
           >
             {isUploadingImage ? (
@@ -56,19 +58,22 @@ const ElementsPanel = ({
           />
           <button
             onClick={onAddImageFromUrl}
-            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 text-xs"
+            className="flex items-center justify-center gap-2 p-2 bg-white border border-gray-300 shadow-sm hover:shadow-md hover:bg-gray-50 rounded-md text-sm transition-all"
             title="Load image from web URL (direct image links only)"
           >
+            <Link size={16} />
             From URL
           </button>
           <button
             onClick={() => bgInputRef.current.click()}
             disabled={isUploadingBackground}
-            className="flex items-center justify-center gap-2 p-2 border rounded-md hover:bg-gray-100 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 p-2 bg-white border border-gray-300 shadow-sm hover:shadow-md hover:bg-gray-50 rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed text-sm transition-all"
           >
             {isUploadingBackground ? (
               <Loader2 size={16} className="animate-spin" />
-            ) : null}
+            ) : (
+              <Image size={16} />
+            )}
             {isUploadingBackground ? 'Setting...' : 'Set Background'}
           </button>
           <input

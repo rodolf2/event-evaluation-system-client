@@ -24,11 +24,33 @@ const CertificateGallery = ({ onTemplateSelect, onBlankCanvas, isFromEvaluation 
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
           {isFromEvaluation ? "Choose a Certificate Template" : "Create a Certificate"}
         </h2>
-        <div onClick={onBlankCanvas} className="rounded-lg p-4 cursor-pointer hover:shadow-xl transition-shadow h-[330px]" style={{ background: "linear-gradient(180deg, #002474, #324BA3)" }}>
-          <div className="bg-white rounded-md p-16 flex items-center justify-center h-[80%]">
-            <Plus size={56} className="text-blue-700" />
+        <div className="mb-7">
+          <div
+            className="mb-8 text-white p-6 rounded-xl shadow-lg relative"
+            style={{
+              background:
+                "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+            }}
+          >
+            <div className="flex justify-center px-4">
+              <div
+                className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative z-10 w-full max-w-5xl"
+                onClick={onBlankCanvas}
+              >
+                <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <Plus className="w-8 h-8 sm:w-12 sm:h-12 text-blue-700" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-center px-4 mt-3">
+              <div className="text-center">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
+                  Blank Canvas
+                </h3>
+              </div>
+            </div>
           </div>
-          <p className="text-center text-white text-xl font-semibold mt-4">Blank Canvas</p>
         </div>
       </div>
 

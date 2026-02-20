@@ -68,7 +68,7 @@ const CertificateEditor = ({
   const [snapLines, setSnapLines] = useState([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
-  const [localFontSize, setLocalFontSize] = useState(24); // Local state for font size input
+
 
   // Save as Template modal state
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
@@ -87,12 +87,7 @@ const CertificateEditor = ({
     return () => window.removeEventListener("storage", checkDraft);
   }, []);
 
-  // Sync local font size when active object changes
-  useEffect(() => {
-    if (activeObject && (activeObject.type === "textbox" || activeObject.type === "i-text" || activeObject.type === "text")) {
-      setLocalFontSize(activeObject.fontSize || 24);
-    }
-  }, [activeObject]);
+
 
   const {
     pushHistory: rawPushHistory,
@@ -190,6 +185,7 @@ const CertificateEditor = ({
     let mounted = true;
     // Capture ref value for cleanup
     const wrapperElement = wrapperRef.current;
+    const containerElement = canvasContainerRef.current;
 
     const initFabric = async () => {
       // Ensure clean canvas element before initialization
@@ -379,11 +375,16 @@ const CertificateEditor = ({
           const obj = e.target;
           if (!obj) return;
 
-          const snapThreshold = 12; // Increased threshold for better snapping
-          const canvasWidth = canvas.getWidth();
-          const canvasHeight = canvas.getHeight();
+          // Calculate current scale to adjust threshold
+          const vpt = canvas.viewportTransform;
+          const scale = vpt ? vpt[0] : 1;
+          const snapThreshold = 15 / scale; // Adjust threshold based on zoom
 
-          // Calculate object bounds
+          // Use logical dimensions for snapping
+          const canvasWidth = BASE_WIDTH;
+          const canvasHeight = BASE_HEIGHT;
+
+          // Calculate object bounds in logical coordinates
           const objLeft = obj.left;
           const objRight = obj.left + obj.getScaledWidth();
           const objTop = obj.top;
@@ -630,7 +631,7 @@ const CertificateEditor = ({
           try {
             if (resizeObserver) {
               // Unobserve the parent container
-              const parentContainer = canvasContainerRef.current?.parentElement;
+              const parentContainer = containerElement?.parentElement;
               if (parentContainer) {
                 resizeObserver.unobserve(parentContainer);
               }
@@ -673,7 +674,7 @@ const CertificateEditor = ({
         try {
           if (resizeObserver) {
             // Unobserve the parent container
-            const parentContainer = canvasContainer?.parentElement;
+            const parentContainer = containerElement?.parentElement;
             if (parentContainer) {
               resizeObserver.unobserve(parentContainer);
             }
@@ -692,12 +693,21 @@ const CertificateEditor = ({
         }
       }
     };
-  }, [certificateSize, initialData, pushHistory, redo, undo, rawPushHistory]);
+  }, [
+    certificateSize,
+    initialData,
+    pushHistory,
+    redo,
+    undo,
+    rawPushHistory,
+    centerAndFitCanvas,
+    saveDraft,
+  ]);
 
   // Handle responsive behavior - auto-hide panels on mobile
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth < 768; // md breakpoint
+      const mobile = window.innerWidth < 1024; // lg breakpoint
       setIsMobile(mobile);
       if (mobile && showPanels) {
         setShowPanels(false);
@@ -1836,7 +1846,7 @@ const CertificateEditor = ({
               Redo
             </button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+          <div className="flex flex-col gap-2 mt-2">
             <button
               onClick={downloadPDF}
               className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -1857,7 +1867,7 @@ const CertificateEditor = ({
 
   return (
     <div
-      className="w-full h-screen bg-transparent font-sans overflow-hidden"
+      className="w-full h-[calc(100vh-180px)] min-h-[400px] bg-transparent font-sans overflow-hidden"
       style={{ overflowX: "hidden" }}
     >
       <div
@@ -1866,17 +1876,20 @@ const CertificateEditor = ({
       >
         {/* Left Sidebar - Elements Panel */}
         {showPanels && !isMobile && (
-          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 overflow-y-auto max-h-screen">
-            {/* Back to Gallery button - only in preview mode */}
-            {isPreviewMode && (
-              <button
-                onClick={handleBackToGallery}
-                className="flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors mb-2"
-                title="Back to Gallery"
-              >
-                <ChevronLeft size={18} />
-              </button>
-            )}
+          <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-b lg:border-r lg:border-b-0 shrink-0 overflow-y-auto max-h-screen [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {/* Header with Back button and Title */}
+            <div className="flex items-center gap-3 mb-2 px-1">
+              {isPreviewMode && (
+                <button
+                  onClick={handleBackToGallery}
+                  className="flex items-center justify-center w-8 h-8 text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
+                  title="Back to Gallery"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+              )}
+              <h3 className="font-bold text-lg text-gray-800">Elements</h3>
+            </div>
             <ElementsPanel
               onAddText={addText}
               onAddImage={handleImageUpload}
@@ -1979,7 +1992,7 @@ const CertificateEditor = ({
         {/* Right Sidebar - Properties Panel */}
         {showPanels && !isMobile && (
           <div className="w-full lg:w-60 xl:w-72 2xl:w-80 p-3 lg:p-4 flex flex-col gap-3 bg-white border-t lg:border-l lg:border-t-0 shrink-0 overflow-hidden max-h-screen">
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
               <div className="flex items-center justify-between mb-3 sticky top-0 z-30 bg-white pb-2">
                 <h3 className="text-sm font-semibold text-gray-700">
                   Properties
@@ -2004,7 +2017,7 @@ const CertificateEditor = ({
               </div>
               <PropertiesPanel />
             </div>
-            <div className="shrink-0 pb-35 space-y-2">
+            <div className="shrink-0 pb-4 space-y-2">
               {hasDraft && (
                 <button
                   onClick={loadDraft}

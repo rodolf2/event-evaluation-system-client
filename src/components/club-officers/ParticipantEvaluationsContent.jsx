@@ -45,7 +45,6 @@ function ParticipantEvaluationsContent() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">My Evaluations</h2>
 
         {evaluations.length === 0 ? (
           <div className="text-center py-12">

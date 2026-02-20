@@ -12,7 +12,7 @@ const Header = ({
   className = "",
   isProfileModalOpen = false,
 }) => {
-  const { user, token, refreshUserData } = useAuth();
+  const { user, token } = useAuth();
   const socket = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showBadge, setShowBadge] = useState(false);
@@ -52,20 +52,19 @@ const Header = ({
     } catch (error) {
       console.error("Error fetching unread count:", error);
     }
-  }, [token]);
+  }, [token, lastUnreadCount]);
 
   // Initial data fetch
   useEffect(() => {
-    refreshUserData();
     fetchUnreadCount();
-  }, [refreshUserData, token, fetchUnreadCount]);
+  }, [fetchUnreadCount]);
 
   // Real-time updates via socket (replaces polling)
   useEffect(() => {
     if (socket) {
       socket.on("user-updated", () => {
         console.log("👤 User updated via socket");
-        refreshUserData();
+        // refreshUserData(); // Removed as per instruction
       });
       socket.on("notification-received", () => {
         console.log("🔔 Notification received via socket");
@@ -76,7 +75,7 @@ const Header = ({
         socket.off("notification-received");
       };
     }
-  }, [socket, refreshUserData, fetchUnreadCount]);
+  }, [socket, fetchUnreadCount]);
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -106,7 +105,8 @@ const Header = ({
     if (user?.role === "club-officer") {
       return "/club-officer/notifications";
     }
-    if (user?.role === "club-adviser") { // Added support for club-adviser
+    if (user?.role === "club-adviser") {
+      // Added support for club-adviser
       return "/club-adviser/notifications";
     }
     if (user?.role === "senior-management") {
@@ -137,7 +137,7 @@ const Header = ({
         >
           <Menu className="w-6 h-6 text-gray-700" />
         </button>
-        <h1 className="font-semibold text-gray-700 text-lg">
+        <h1 className="font-semibold text-gray-700 text-sm sm:text-base md:text-lg truncate max-w-[150px] sm:max-w-none">
           {getPageTitle()}
         </h1>
       </div>

@@ -155,81 +155,82 @@ const Evaluations = () => {
     <ClubOfficerLayout>
       <div className="bg-gray-100 min-h-screen pb-8">
         <div className="max-w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 mb-5">
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full max-w-2xl">
-              <div className="flex-1 relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+              <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search evaluations..."
+                  placeholder="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500 relative">
-                  <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
-                  <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    className="bg-transparent py-2 pr-6 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm"
-                  >
-                    <option value="desc">Latest First</option>
-                    <option value="asc">Oldest First</option>
-                  </select>
-                  <div className="absolute right-2 pointer-events-none">
-                    <svg
-                      className="h-3 w-3 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+              <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+                <div className="relative min-w-[140px]">
+                  <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
+                    <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value)}
+                      className="bg-transparent py-2 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm font-medium"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                      <option value="desc">Latest First</option>
+                      <option value="asc">Oldest First</option>
+                    </select>
+                    <div className="absolute right-3 pointer-events-none">
+                      <svg
+                        className="h-4 w-4 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
                   </div>
                 </div>
+
+                {filteredEvaluations.length > itemsPerPage && (
+                  <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
+                    <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`p-1.5 rounded-md transition-colors ${currentPage === 1
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "hover:bg-gray-100 text-gray-700"
+                          }`}
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`p-1.5 rounded-md transition-colors ${currentPage === totalPages
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "hover:bg-gray-100 text-gray-700"
+                          }`}
+                        aria-label="Next page"
+                      >
+                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Pagination Controls - Notification Style */}
-            {filteredEvaluations.length > itemsPerPage && (
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-sm text-gray-600 mr-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <div className="flex items-center">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`p-2 rounded-full transition-colors ${currentPage === 1
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                      }`}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`p-2 rounded-full transition-colors ${currentPage === totalPages
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                      }`}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {filteredEvaluations.length === 0 ? (

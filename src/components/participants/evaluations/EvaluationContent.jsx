@@ -22,45 +22,45 @@ const EvaluationContent = ({
         <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
         <div className="mb-7">
           <div
-            className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
+            className="mb-8 text-white p-6 rounded-xl shadow-lg relative"
             style={{
               background:
                 "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
             }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
-              <div className="flex flex-col items-center gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+              <div className="flex flex-col items-center gap-3">
                 <div
-                  className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                  className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
                   onClick={onCreateNew}
                 >
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mx-auto">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
                     <img
                       src={blankFormIcon}
                       alt="Blank Form"
-                      className="w-10 h-10 sm:w-16 sm:h-16"
+                      className="w-8 h-8 sm:w-12 sm:h-12"
                     />
                   </div>
                 </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
                   Blank Form
                 </h3>
               </div>
 
-              <div className="flex flex-col items-center gap-5">
+              <div className="flex flex-col items-center gap-3">
                 <div
-                  className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                  className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
                   onClick={onShowUploadModal}
                 >
-                  <div className="w-24 h-24 sm:w-30 sm:h-32 flex items-center justify-center mx-auto">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
                     <img
                       src={uploadIcon}
                       alt="Upload"
-                      className="w-10 h-10 sm:w-16 sm:h-16"
+                      className="w-8 h-8 sm:w-12 sm:h-12"
                     />
                   </div>
                 </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
                   Upload Form
                 </h3>
               </div>
@@ -71,7 +71,6 @@ const EvaluationContent = ({
 
       {/* Recent Evaluations Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <h2 className="text-2xl font-bold text-gray-800">My Evaluations</h2>
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">
           <div className="flex-1 relative">
             <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />

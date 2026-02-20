@@ -6,6 +6,8 @@ import {
   Users,
   RotateCcw,
   Lock,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import uploadIcon from "../../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
@@ -39,50 +41,50 @@ const EvaluationContent = ({
   );
 
   return (
-    <div className="p-6 md:p-5 bg-white flex flex-col min-h-screen">
+    <div className="p-3 sm:p-5 md:p-6 bg-white flex flex-col min-h-screen">
       <div className="flex-1">
-        <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
+        <h2 className="text-2xl sm:text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
         <div className="mb-7">
           <div
-            className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
+            className="mb-8 text-white p-4 sm:p-6 rounded-xl shadow-lg relative"
             style={{
               background:
                 "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
             }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
-              <div className="flex flex-col items-center gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-5xl mx-auto">
+              <div className="flex flex-col items-center gap-2 sm:gap-3">
                 <div
-                  className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                  className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
                   onClick={onCreateNew}
                 >
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mx-auto">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center mx-auto">
                     <img
                       src={blankFormIcon}
                       alt="Blank Form"
-                      className="w-10 h-10 sm:w-16 sm:h-16"
+                      className="w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12"
                     />
                   </div>
                 </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
+                <h3 className="text-base sm:text-lg md:text-2xl font-bold text-white text-center">
                   Blank Form
                 </h3>
               </div>
-
-              <div className="flex flex-col items-center gap-5">
+  
+              <div className="flex flex-col items-center gap-2 sm:gap-3">
                 <div
-                  className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                  className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
                   onClick={onShowUploadModal}
                 >
-                  <div className="w-24 h-24 sm:w-30 sm:h-32 flex items-center justify-center mx-auto">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center mx-auto">
                     <img
                       src={uploadIcon}
                       alt="Upload"
-                      className="w-10 h-10 sm:w-16 sm:h-16"
+                      className="w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12"
                     />
                   </div>
                 </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
+                <h3 className="text-base sm:text-lg md:text-2xl font-bold text-white text-center">
                   Upload a Form
                 </h3>
               </div>
@@ -90,55 +92,100 @@ const EvaluationContent = ({
           </div>
         </div>
 
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 mb-5">
-            <h2 className="text-3xl font-semibold text-gray-800">
-              Recent Evaluations
-            </h2>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-              <div className="flex-1 relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search evaluations..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+        <div className="flex flex-col gap-4 mb-6">
+          <h3 className="text-xl font-bold text-gray-800">Recent Evaluations</h3>
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+            <div className="relative w-full lg:max-w-md xl:max-w-xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+              {/* Filter/Sort Dropdown */}
+              <div className="relative min-w-[160px]">
+                <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
+                  <Filter className="w-4 h-4 text-gray-400 mr-2 shrink-0" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="bg-transparent py-2 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm font-medium"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="title">Title A-Z</option>
+                    <option value="responses">Most Responses</option>
+                  </select>
+                  <div className="absolute right-3 pointer-events-none">
+                    <svg
+                      className="h-4 w-4 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="newest">Newest</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="title">Title A-Z</option>
-                  <option value="responses">Most Responses</option>
-                </select>
-              </div>
+              {/* Compact Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
+                  <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`p-1.5 rounded-md transition-colors ${currentPage === 1
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`p-1.5 rounded-md transition-colors ${currentPage === totalPages
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {paginatedForms.map((form) => (
-              <RecentEvaluationCard
-                key={form.id}
-                form={form}
-                onReopenForm={onReopenForm}
-                onCloseForm={onCloseForm}
-              />
-            ))}
-          </div>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          {paginatedForms.map((form) => (
+            <RecentEvaluationCard
+              key={form.id}
+              form={form}
+              onReopenForm={onReopenForm}
+              onCloseForm={onCloseForm}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -222,12 +269,12 @@ const RecentEvaluationCard = ({ form, onReopenForm, onCloseForm }) => {
             </span>
           </div>
         )}
-        <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
-          <div className="text-center mb-4 shrink-0 relative">
-            <h2 className="text-2xl font-bold text-gray-800 line-clamp-2 h-16 flex items-center justify-center">
+        <div className="bg-white p-4 rounded-t-lg grow flex flex-col">
+          <div className="text-center mb-3 shrink-0 relative">
+            <h2 className="text-lg font-bold text-gray-800 line-clamp-2 h-12 flex items-center justify-center">
               {form.title}
             </h2>
-            <p className="text-gray-500 text-sm line-clamp-2">
+            <p className="text-gray-500 text-xs line-clamp-2">
               {form.description || "No description provided"}
             </p>
 
@@ -283,16 +330,16 @@ const RecentEvaluationCard = ({ form, onReopenForm, onCloseForm }) => {
 
           {/* Fixed preview section */}
           <div className="grow">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-3">
               <input
                 type="text"
                 placeholder="Sample question..."
-                className="w-full pr-6 py-3 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                className="w-full pr-6 py-2 text-xs border border-gray-300 rounded-lg bg-gray-50"
                 disabled
                 value="Sample question preview"
               />
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center">
                 <input
                   type="radio"
@@ -326,14 +373,14 @@ const RecentEvaluationCard = ({ form, onReopenForm, onCloseForm }) => {
 
         {/* Fixed footer */}
         <div
-          className="p-4 rounded-b-lg shrink-0"
+          className="p-3 rounded-b-lg shrink-0"
           style={{
             background: isClosed
               ? "linear-gradient(-0.15deg, #4B5563 38%, #1F2937 100%)"
               : "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
           }}
         >
-          <h3 className="text-lg font-bold text-white line-clamp-1">
+          <h3 className="text-base font-bold text-white line-clamp-1">
             {form.title}
           </h3>
           <div className="mt-2 text-sm text-white/80 flex items-center justify-between">

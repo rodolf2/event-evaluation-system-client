@@ -1,19 +1,45 @@
 import { Bell, ChevronDown, Menu } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import { useSocket } from "../../contexts/SocketContext";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { api } from "../../api";
 
 const Header = ({ onMenuClick, onProfileClick }) => {
-  const { user, refreshUserData } = useAuth();
+  const { user, token, refreshUserData } = useAuth();
   const socket = useSocket();
   const location = useLocation();
   const profileRef = useRef(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      if (!token) return;
+
+      const response = await fetch(`${api.baseURL}/api/notifications/stats`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setUnreadCount(result.data.unread || 0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+    }
+  }, [token]);
 
   // Initial data fetch
   useEffect(() => {
     refreshUserData();
-  }, [refreshUserData]);
+    fetchUnreadCount();
+  }, [refreshUserData, fetchUnreadCount]);
 
   // Real-time updates via socket (replaces polling)
   useEffect(() => {
@@ -22,11 +48,16 @@ const Header = ({ onMenuClick, onProfileClick }) => {
         console.log("👤 User updated via socket");
         refreshUserData();
       });
+      socket.on("notification-received", () => {
+        console.log("🔔 Notification received via socket");
+        fetchUnreadCount();
+      });
       return () => {
         socket.off("user-updated");
+        socket.off("notification-received");
       };
     }
-  }, [socket, refreshUserData]);
+  }, [socket, refreshUserData, fetchUnreadCount]);
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -62,8 +93,13 @@ const Header = ({ onMenuClick, onProfileClick }) => {
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
-        <Link to="/student/notifications">
+        <Link to="/student/notifications" className="relative">
           <Bell className="w-5 h-5 text-gray-600" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </Link>
         <div className="relative">
           <div

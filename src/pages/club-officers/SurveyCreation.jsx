@@ -84,12 +84,12 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
             </span>
           </div>
         )}
-        <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
-          <div className="text-center mb-4 shrink-0 relative">
-            <h2 className="text-2xl font-bold text-gray-800 line-clamp-2 h-16 flex items-center justify-center">
+        <div className="bg-white p-4 rounded-t-lg grow flex flex-col">
+          <div className="text-center mb-2 shrink-0 relative">
+            <h2 className="text-lg font-bold text-gray-800 line-clamp-2 h-12 flex items-center justify-center">
               {evaluation.title}
             </h2>
-            <p className="text-gray-500 text-sm line-clamp-2">
+            <p className="text-gray-500 text-xs line-clamp-1 mb-2">
               {evaluation.description || "No description provided"}
             </p>
 
@@ -97,14 +97,14 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
             <div className="absolute top-0 right-0">
               <button
                 onClick={toggleMenu}
-                className="menu-button p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                className="menu-button p-1 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
                 title="Actions"
               >
-                <MoreVertical size={20} />
+                <MoreVertical size={16} />
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
+                <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
                   {evaluation.status === "published" && !isExpired && (
                     <>
                       <button
@@ -113,9 +113,9 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
                           setShowShareModal(true);
                           setShowMenu(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2 text-sm"
                       >
-                        <Users size={16} />
+                        <Users size={14} />
                         Share with Evaluators
                       </button>
                       <button
@@ -124,9 +124,9 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
                           setShowCloseConfirm(true);
                           setShowMenu(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2 text-sm"
                       >
-                        <Lock size={16} />
+                        <Lock size={14} />
                         Close Form
                       </button>
                     </>
@@ -138,9 +138,9 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
                         setShowReopenConfirm(true);
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 flex items-center gap-2 text-sm"
                     >
-                      <RotateCcw size={16} />
+                      <RotateCcw size={14} />
                       Reopen Form
                     </button>
                   )}
@@ -151,42 +151,42 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
 
           {/* Fixed preview section */}
           <div className="grow">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-2">
               <input
                 type="text"
                 placeholder="Sample question..."
-                className="w-full pr-6 py-3 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                className="w-full pr-4 py-2 text-xs border border-gray-300 rounded-lg bg-gray-50"
                 disabled
                 value="Sample question preview"
               />
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center">
                 <input
                   type="radio"
                   name={`option-${evaluation._id}`}
-                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500"
                   disabled
                 />
-                <label className="ml-3 text-gray-700 text-sm">Option 1</label>
+                <label className="ml-2 text-gray-700 text-xs">Option 1</label>
               </div>
               <div className="flex items-center">
                 <input
                   type="radio"
                   name={`option-${evaluation._id}`}
-                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500"
                   disabled
                 />
-                <label className="ml-3 text-gray-700 text-sm">Option 2</label>
+                <label className="ml-2 text-gray-700 text-xs">Option 2</label>
               </div>
               <div className="flex items-center">
                 <input
                   type="radio"
                   name={`option-${evaluation._id}`}
-                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500"
                   disabled
                 />
-                <label className="ml-3 text-gray-700 text-sm">Option 3</label>
+                <label className="ml-2 text-gray-700 text-xs">Option 3</label>
               </div>
             </div>
           </div>
@@ -194,25 +194,25 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
 
         {/* Fixed footer */}
         <div
-          className="p-4 rounded-b-lg shrink-0"
+          className="p-3 rounded-b-lg shrink-0"
           style={{
-            background: isClosed 
-              ? "linear-gradient(-0.15deg, #4B5563 38%, #1F2937 100%)" 
+            background: isClosed
+              ? "linear-gradient(-0.15deg, #4B5563 38%, #1F2937 100%)"
               : "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
           }}
         >
-          <h3 className="text-lg font-bold text-white line-clamp-1">
+          <h3 className="text-sm font-bold text-white line-clamp-1">
             {evaluation.title}
           </h3>
-          <div className="mt-2 text-sm text-white/80 flex items-center justify-between">
+          <div className="mt-1 text-xs text-white/80 flex items-center justify-between">
             <div>
               <span>{evaluation.responseCount || 0} responses</span>
-              <span className="mx-2">•</span>
+              <span className="mx-1">•</span>
               <span>
                 {isClosed ? "Closed" : (evaluation.status === "published" ? "Published" : "Draft")}
               </span>
             </div>
-            <span className="text-xs">
+            <span className="text-[10px]">
               {new Date(evaluation.createdAt).toLocaleDateString()}
             </span>
           </div>
@@ -516,10 +516,10 @@ const SurveyCreation = () => {
                     "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
                 }}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
-                  <div className="flex flex-col items-center gap-5">
-                    <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center w-full">
-                      <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
+                      <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
                       <SkeletonText
                         lines={1}
                         width="medium"
@@ -537,9 +537,9 @@ const SurveyCreation = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-5">
-                    <div className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center w-full">
-                      <SkeletonBase className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full bg-gray-200" />
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
+                      <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
                       <SkeletonText
                         lines={1}
                         width="medium"
@@ -578,7 +578,7 @@ const SurveyCreation = () => {
               </div>
 
               {/* Evaluation Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, index) => (
                   <div
                     key={index}
@@ -691,39 +691,39 @@ const SurveyCreation = () => {
                     "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
                 }}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-10xl mx-auto">
-                  <div className="flex flex-col items-center gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                  <div className="flex flex-col items-center gap-3">
                     <div
-                      className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                      className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
                       onClick={handleCreateNew}
                     >
-                      <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mx-auto">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
                         <img
                           src={blankFormIcon}
                           alt="Blank Form"
-                          className="w-10 h-10 sm:w-16 sm:h-16"
+                          className="w-8 h-8 sm:w-12 sm:h-12"
                         />
                       </div>
                     </div>
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
                       Blank Form
                     </h3>
                   </div>
 
-                  <div className="flex flex-col items-center gap-5">
+                  <div className="flex flex-col items-center gap-3">
                     <div
-                      className="bg-white rounded-xl shadow-lg p-8 sm:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
+                      className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
                       onClick={handleShowUploadModal}
                     >
-                      <div className="w-24 h-24 sm:w-30 sm:h-32 flex items-center justify-center mx-auto">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
                         <img
                           src={uploadIcon}
                           alt="Upload"
-                          className="w-10 h-10 sm:w-16 sm:h-16"
+                          className="w-8 h-8 sm:w-12 sm:h-12"
                         />
                       </div>
                     </div>
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
                       Upload a Form
                     </h3>
                   </div>
@@ -732,39 +732,39 @@ const SurveyCreation = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 mb-5">
-                <h2 className="text-3xl font-semibold text-gray-800">
-                  Recent Evaluations
-                </h2>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-                  <div className="flex-1 relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search evaluations..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
+              <div className="flex flex-col gap-4 mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Recent Evaluations</h3>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full">
+                    <div className="relative w-full sm:max-w-md">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search evaluations..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-400" />
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="newest">Newest</option>
-                      <option value="oldest">Oldest</option>
-                      <option value="title">Title A-Z</option>
-                      <option value="responses">Most Responses</option>
-                    </select>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <Filter className="w-4 h-4 text-gray-400" />
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value="newest">Newest</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="title">Title A-Z</option>
+                        <option value="responses">Most Responses</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {paginatedEvaluations.map((evaluation) => (
                   <SurveyEvaluationCard
                     key={evaluation._id}

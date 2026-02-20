@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Filter,
@@ -66,15 +66,45 @@ function StudentUserManagement() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   // Role change dropdown states
   const [roleChangeModalOpen, setRoleChangeModalOpen] = useState(false);
   const [selectedNewRole, setSelectedNewRole] = useState("");
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await fetch("/api/users/stats/student-management", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  }, [token]);
+
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/users?role=student,club-officer&limit=0", {
+      
+      // Build query string
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: rowsPerPage,
+        role: "student,club-officer", // Always fetch students/PBOOs
+      });
+
+      if (searchQuery) params.append("search", searchQuery);
+      
+      if (selectedFilter === "active") params.append("isActive", "true");
+      if (selectedFilter === "inactive") params.append("isActive", "false");
+      if (selectedFilter === "club-officer") params.append("role", "club-officer");
+
+      const response = await fetch(`/api/users?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -82,24 +112,9 @@ function StudentUserManagement() {
       const data = await response.json();
 
       if (data.success) {
-        // The API returns { data: { users: [], pagination: {} } }
-        // We need to access data.data.users
-        const userList = data.data.users || [];
-        setUsers(userList);
-        
-        // Calculate stats
-        const now = new Date();
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-        setStats({
-          totalStudents: userList.length,
-          activeStudents: userList.filter((u) => u.isActive && u.role === "student").length,
-          activePBOOs: userList.filter((u) => u.isActive && u.role === "club-officer").length,
-          newStudentsWeek: userList.filter(
-            (u) => new Date(u.createdAt) > oneWeekAgo
-          ).length,
-        });
-
+        setUsers(data.data.users || []);
+        setTotalPages(data.data.pagination.totalPages);
+        setTotalUsers(data.data.pagination.totalUsers);
       } else {
         toast.error("Failed to fetch students");
       }
@@ -109,42 +124,19 @@ function StudentUserManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [token, currentPage, rowsPerPage, searchQuery, selectedFilter]);
 
+  // Debounce search to prevent too many API calls
   useEffect(() => {
-    fetchUsers();
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 500);
+    return () => clearTimeout(timer);
   }, [fetchUsers]);
 
-  /* calculateStats moved inside */
-
-  // Filter users
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      // Search filter
-      const matchesSearch =
-        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Status/Role filter
-      let matchesFilter = true;
-      if (selectedFilter === "active") {
-        matchesFilter = user.isActive;
-      } else if (selectedFilter === "inactive") {
-        matchesFilter = !user.isActive;
-      } else if (selectedFilter === "club-officer") {
-        matchesFilter = user.role === "club-officer";
-      }
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [users, searchQuery, selectedFilter]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
-  const paginatedUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    return filteredUsers.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredUsers, currentPage, rowsPerPage]);
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const formatLastActive = (date) => {
     if (!date) return "Never";
@@ -195,6 +187,7 @@ function StudentUserManagement() {
       if (data.success) {
         toast.success(successMessage);
         fetchUsers(); // Refresh the list
+        fetchStats(); // Refresh stats
         
         // If we updated our own account (unlikely for PSAS Head elevating students, but good practice)
         if (selectedUser._id === currentUser?._id) {
@@ -249,6 +242,7 @@ function StudentUserManagement() {
       if (data.success) {
         toast.success(`Changed ${selectedUser.name}'s role to ${STUDENT_ROLE_OPTIONS.find(r => r.value === selectedNewRole)?.label || selectedNewRole}`);
         fetchUsers();
+        fetchStats();
 
         if (selectedUser._id === currentUser?._id) {
           await refreshUserData();
@@ -266,7 +260,36 @@ function StudentUserManagement() {
   };
 
   const handleAddStudent = async () => {
-    // ... existed code ...
+    try {
+      if (!newStudentEmail) return;
+      
+      const response = await fetch("/api/users/provision", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: newStudentEmail,
+          role: "student",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Student added successfully");
+        setAddStudentModalOpen(false);
+        setNewStudentEmail("");
+        fetchUsers();
+        fetchStats();
+      } else {
+        toast.error(data.message || "Failed to add student");
+      }
+    } catch (error) {
+      console.error("Error adding student:", error);
+      toast.error("An error occurred");
+    }
   };
 
   const SkeletonText = ({ lines = 1, width = "full", height = "h-4" }) => (
@@ -335,50 +358,50 @@ function StudentUserManagement() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-sm">Total Students</span>
-            <Users className="w-5 h-5 text-gray-400" />
+            <span className="text-gray-600 text-xs sm:text-sm">Total Students</span>
+            <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-bold text-gray-800">
+            <span className="text-xl sm:text-3xl font-bold text-gray-800">
               {stats.totalStudents.toLocaleString()}
             </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-sm">Active Students</span>
+            <span className="text-gray-600 text-xs sm:text-sm">Active Students</span>
             <div className="w-2 h-2 rounded-full bg-green-500"></div>
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-bold text-gray-800">
+            <span className="text-xl sm:text-3xl font-bold text-gray-800">
               {stats.activeStudents.toLocaleString()}
             </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-sm">Active PBOOs</span>
+            <span className="text-gray-600 text-xs sm:text-sm">Active PBOOs</span>
             <div className="w-2 h-2 rounded-full bg-orange-500"></div>
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-bold text-gray-800">
+            <span className="text-xl sm:text-3xl font-bold text-gray-800">
               {stats.activePBOOs.toLocaleString()}
             </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-sm">New This Week</span>
+            <span className="text-gray-600 text-xs sm:text-sm">New This Week</span>
             <div className="w-2 h-2 rounded-full bg-blue-500"></div>
           </div>
           <div className="mt-2">
-            <span className="text-3xl font-bold text-gray-800">
+            <span className="text-xl sm:text-3xl font-bold text-gray-800">
               {stats.newStudentsWeek.toLocaleString()}
             </span>
           </div>
@@ -386,8 +409,8 @@ function StudentUserManagement() {
       </div>
 
       {/* Search and Tabs */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Search */}
           <div className="relative w-full lg:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -396,16 +419,16 @@ function StudentUserManagement() {
               placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
 
           {/* Filter Dropdown */}
-          <div className="relative">
+          <div className="relative w-full lg:w-auto">
             <select
               value={selectedFilter}
               onChange={(e) => setSelectedFilter(e.target.value)}
-              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="appearance-none w-full bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm"
             >
               {FILTER_OPTIONS.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -420,103 +443,103 @@ function StudentUserManagement() {
 
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+        <div className="overflow-x-auto -mx-px"> {/* Fixed horizontal scrolling */}
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   User Identity
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Department
                 </th>
-                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Program
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Year Level
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Last Active
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginatedUsers.map((user) => (
+            <tbody className="bg-white divide-y divide-gray-200">
+              {users.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50 transition">
-                  <td className="px-6 py-4">
+                  <td className="px-4 sm:px-6 py-4">
                     <div className="flex items-center gap-3">
                       {user.profilePicture || user.avatar ? (
                         <img
                           src={user.profilePicture || user.avatar}
                           alt={user.name}
-                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200"
                            onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.parentNode.innerHTML =
-                              '<svg class="w-10 h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>';
+                              '<svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>';
                           }}
                         />
                       ) : (
-                        <CircleUser className="w-10 h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" />
+                        <CircleUser className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" />
                       )}
-                      <div>
-                        <div className="font-bold text-gray-900">
+                      <div className="overflow-hidden">
+                        <div className="font-bold text-gray-900 text-sm">
                           {user.name}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 truncate max-w-[140px] sm:max-w-[200px]" title={user.email}>
                           {user.email}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${user.role === "club-officer" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${user.role === "club-officer" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
                       {user.role === "club-officer" ? "PBOO" : "Student"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600">
                     {user.department || "-"}
                   </td>
-                   <td className="px-6 py-4 text-sm text-gray-600">
+                   <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600">
                     {user.program || "-"}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600 whitespace-nowrap">
                     {user.yearLevel || user.year || "-"}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                        <span
                         className={`w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"}`}
                       />
-                      <span className={`text-sm ${user.isActive ? "text-green-600" : "text-red-600"}`}>
+                      <span className={`text-xs sm:text-sm ${user.isActive ? "text-green-600" : "text-red-600"}`}>
                         {user.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600 whitespace-nowrap">
                     {formatLastActive(user.lastLogin || user.updatedAt)}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
 
-                      {/* PSAS Head & ITSS can Edit Role */}
-                      {(currentUser?.position === "PSAS Head" || currentUser?.position === "ITSS") && user.isActive && (
+                      {/* ITSS can Edit Role */}
+                      {currentUser?.position === "ITSS" && user.isActive && (
                         <button
                           onClick={() => handleRoleChangeClick(user)}
                           className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition"
                           title="Edit Role"
                         >
-                          <Pencil className="w-5 h-5" />
+                          <Pencil className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       )}
 
@@ -532,9 +555,9 @@ function StudentUserManagement() {
                            title={user.isActive ? "Disable Account" : "Enable Account"}
                          >
                            {user.isActive ? (
-                             <Ban className="w-5 h-5" />
+                             <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
                            ) : (
-                             <UserCheck className="w-5 h-5" />
+                             <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                            )}
                          </button>
                       )}
@@ -547,7 +570,7 @@ function StudentUserManagement() {
         </div>
 
         {/* Empty state */}
-        {filteredUsers.length === 0 && (
+        {users.length === 0 && (
           <div className="text-center py-12">
             <Users className="mx-auto h-12 w-12 text-gray-400" />
             <p className="text-gray-500 mt-4">
@@ -568,7 +591,7 @@ function StudentUserManagement() {
         {/* Pagination Controls */}
          <div className="flex flex-col md:flex-row justify-between items-center p-4 border-t border-gray-200">
           <div className="flex items-center gap-2 mb-4 md:mb-0">
-            <span className="text-gray-700 text-sm">Rows per page:</span>
+            <span className="text-gray-700 text-sm">Rows:</span>
             <select
               value={rowsPerPage}
               onChange={(e) => {
@@ -582,7 +605,7 @@ function StudentUserManagement() {
               <option value={50}>50</option>
             </select>
              <span className="text-gray-700 text-sm">
-              {filteredUsers.length} total
+              {totalUsers} total
             </span>
           </div>
 
@@ -595,7 +618,7 @@ function StudentUserManagement() {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <span className="text-sm text-gray-600">
-              Page {currentPage} of {Math.max(1, totalPages)}
+              {currentPage} / {Math.max(1, totalPages)}
             </span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -608,8 +631,6 @@ function StudentUserManagement() {
         </div>
       </div>
 
-
-
       {/* Confirmation Modal */}
       {confirmModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
@@ -617,23 +638,28 @@ function StudentUserManagement() {
             <div className="flex flex-col items-center text-center">
               <div
                 className={`p-3 rounded-full mb-4 ${
-                  (confirmAction === "TOGGLE_STATUS" && selectedUser?.isActive)
-                    ? "bg-red-100 text-red-600"
+                  confirmAction === "TOGGLE_STATUS"
+                    ? (selectedUser?.isActive ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600")
                     : "bg-blue-100 text-blue-600"
                 }`}
               >
-                {confirmAction === "TOGGLE_STATUS" && (
-                   selectedUser?.isActive ? <Ban className="w-8 h-8" /> : <UserCheck className="w-8 h-8" />
+                {confirmAction === "TOGGLE_STATUS" ? (
+                  selectedUser?.isActive ? <Ban className="w-8 h-8" /> : <UserCheck className="w-8 h-8" />
+                ) : (
+                  <Check className="w-8 h-8" />
                 )}
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {confirmAction === "TOGGLE_STATUS" && (selectedUser?.isActive ? "Disable Student?" : "Enable Student?")}
+                {confirmAction === "TOGGLE_STATUS" && (selectedUser?.isActive ? "Disable User Access?" : "Enable User Access?")}
               </h3>
 
               <p className="text-gray-600 mb-6">
-                {confirmAction === "TOGGLE_STATUS" &&
-                  `Are you sure you want to ${selectedUser?.isActive ? "disable" : "enable"} ${selectedUser?.name}?`}
+                {confirmAction === "TOGGLE_STATUS" && (
+                  selectedUser?.isActive 
+                    ? `This will disable access for ${selectedUser?.name}. They won't be able to log in.`
+                    : `This will restore access for ${selectedUser?.name}. They will be able to log in again.`
+                )}
               </p>
 
               <div className="flex gap-3 w-full">
@@ -646,9 +672,9 @@ function StudentUserManagement() {
                 <button
                   onClick={handleConfirmAction}
                   className={`flex-1 px-4 py-2 rounded-lg text-white ${
-                    (confirmAction === "TOGGLE_STATUS" && selectedUser?.isActive)
+                    selectedUser?.isActive
                       ? "bg-red-600 hover:bg-red-700"
-                      : "bg-blue-600 hover:bg-blue-700"
+                      : "bg-green-600 hover:bg-green-700"
                   }`}
                 >
                   Confirm
@@ -659,52 +685,32 @@ function StudentUserManagement() {
         </div>
       )}
 
-      {/* Add Student Confirmation Modal (ITSS Only) */}
+      {/* Add Student Confirmation Modal */}
       {addStudentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="bg-blue-950 px-6 py-4 flex justify-between items-center border-b border-blue-900">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
-                Confirm Addition
-              </h3>
-              <button
-                onClick={() => setAddStudentModalOpen(false)}
-                className="text-blue-100 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
-                <Mail className="w-8 h-8 text-blue-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F1F0F0]/80 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-3 rounded-full mb-4 bg-blue-100 text-blue-600">
+                <UserPlus className="w-8 h-8" />
               </div>
-              <p className="text-gray-600 mb-2">Are you sure you want to add this student?</p>
-              <p className="text-xl font-bold text-gray-900 break-all bg-gray-50 p-3 rounded-lg border border-gray-100">
-                {newStudentEmail}
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Add New Student?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to add/provision a student account for <strong>{newStudentEmail}</strong>?
               </p>
-              
-              <p className="text-xs text-gray-500 mt-4 italic">
-                This will provision a new student account with default permissions.
-              </p>
-
-              <div className="flex gap-3 justify-center mt-8">
+              <div className="flex gap-3 w-full">
                 <button
                   onClick={() => setAddStudentModalOpen(false)}
-                  className="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
-
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddStudent}
-
+                  className="flex-1 px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
                 >
-                    <>
-                      <Check className="w-4 h-4" />
-                      Confirm Add
-                    </>
+                  Confirm Add
                 </button>
               </div>
             </div>

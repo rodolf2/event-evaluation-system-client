@@ -10,7 +10,6 @@ import { useAuth } from "../../contexts/useAuth";
 function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
   const { isSidebarOpen, toggleSidebar } = useUI();
   const { user } = useAuth();
-  const [isMobile, setIsMobile] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
   const [modalPosition, setModalPosition] = useState({ top: 0, right: 0 });
   const location = useLocation();
@@ -43,13 +42,6 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
     }
   }, [isModalOpen]);
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   return (
     <div className={`flex min-h-screen ${backgroundColor} relative`}>
       <Sidebar
@@ -58,6 +50,14 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
         config={sidebarConfig}
         className="print:hidden"
       />
+
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-xs transition-opacity duration-300"
+          onClick={toggleSidebar}
+        />
+      )}
 
       {isProfileModalOpen && (
         <div

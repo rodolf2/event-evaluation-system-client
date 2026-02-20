@@ -190,7 +190,7 @@ const CertificateGallery = ({
         {!isFromEvaluation && (
           <div className="mb-6 sm:mb-8">
             <div
-              className="mb-6 sm:mb-8 text-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg relative"
+              className="mb-6 sm:mb-8 text-white p-4 sm:p-6 rounded-xl shadow-lg relative"
               style={{
                 background:
                   "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
@@ -198,14 +198,14 @@ const CertificateGallery = ({
             >
               <div className="flex justify-center px-4">
                 <div
-                  className="bg-white rounded-xl shadow-lg p-6 sm:p-8 md:p-12 lg:p-16 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative z-10 w-full max-w-md sm:max-w-lg md:max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl"
+                  className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative z-10 w-full max-w-5xl"
                   onClick={onBlankCanvas}
                 >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 flex items-center justify-center mx-auto mb-4 sm:mb-6 md:mb-8">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-4 sm:mb-6">
                     <img
                       src={plusIcon}
                       alt="Plus"
-                      className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18"
+                      className="w-8 h-8 sm:w-12 sm:h-12"
                     />
                   </div>
                 </div>
@@ -213,7 +213,7 @@ const CertificateGallery = ({
 
               <div className="flex justify-center px-4 mt-3">
                 <div className="text-center">
-                  <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
                     Blank Canvas
                   </h3>
                 </div>

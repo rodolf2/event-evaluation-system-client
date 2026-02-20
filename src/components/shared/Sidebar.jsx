@@ -44,6 +44,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   });
 
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [lockedItem, setLockedItem] = useState(null);
 
   const { menuItems = [], logo = {} } = config;
 
@@ -78,6 +79,9 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
     }
     if (!isOpen) {
       setHoveredItem(path);
+      if (lockedItem && lockedItem !== path) {
+        setLockedItem(null);
+      }
     }
   };
 
@@ -85,7 +89,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
     if (!isOpen) {
       timeoutRef.current = setTimeout(() => {
         setHoveredItem(null);
-      }, 300); // 300ms delay to allow moving to the submenu
+      }, 500); // 500ms delay for better hover stability
     }
   };
 
@@ -94,10 +98,10 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
       data-tour="sidebar"
       className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-50
         ${isOpen
-          ? "top-0 left-0 w-1/2 h-full lg:w-64 lg:h-[95vh]"
-          : "top-0 -left-1/2 lg:left-5 w-1/2 lg:w-24 h-full lg:h-[95vh]"
+          ? "top-0 left-0 w-72 max-w-[85vw] h-full lg:w-64 lg:h-[95vh]"
+          : "top-0 -left-full lg:left-5 w-72 lg:w-24 h-full lg:h-[95vh]"
         }
-        bg-[#1F3463] text-white flex flex-col items-center py-6 lg:rounded-[15px] ${className}`}
+        bg-[#1F3463] text-white flex flex-col items-center py-4 sm:py-6 ${isOpen ? "overflow-y-auto" : "overflow-visible"} scrollbar-hide lg:rounded-[15px] ${className}`}
     >
       {/* Mobile Close Button - positioned at top right */}
       <button
@@ -109,7 +113,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
       </button>
 
       {/* Logo and Text */}
-      <div className="flex items-center gap-3 mb-8 w-full px-6 pr-14 lg:pr-6">
+      <div className="flex items-center gap-3 mb-4 lg:mb-8 w-full px-6 pr-14 lg:pr-6 shrink-0">
         <img
           src={logoConfig.src}
           alt={logoConfig.alt}
@@ -163,6 +167,10 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
                   if (item.subItems) {
                     if (isOpen) {
                       toggleExpanded(item.path);
+                    } else {
+                      // Lock/Unlock floating sub-menu when collapsed
+                      setLockedItem(lockedItem === item.path ? null : item.path);
+                      setHoveredItem(item.path);
                     }
                   } else {
                     navigate(item.path);
@@ -193,12 +201,21 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
               )}
 
               {/* Sub-items (Floating Style - When Closed) */}
-              {item.subItems && !isOpen && hoveredItem === item.path && (
-                <div className="absolute left-full top-0 ml-2 w-48 bg-[#1F3463] rounded-lg shadow-xl py-2 z-50 border border-gray-700">
-                  <div className="px-4 py-2 border-b border-gray-700 mb-2">
-                    <span className="font-semibold text-white">
-                      {item.label}
-                    </span>
+              {item.subItems && !isOpen && (hoveredItem === item.path || lockedItem === item.path) && (
+                <div 
+                  className="absolute left-full top-0 ml-2 w-48 bg-[#1F3463] rounded-lg shadow-xl py-2 z-50 border border-gray-700
+                    before:content-[''] before:absolute before:right-full before:top-0 before:h-full before:w-2"
+                  onMouseEnter={() => {
+                    if (timeoutRef.current) {
+                      clearTimeout(timeoutRef.current);
+                      timeoutRef.current = null;
+                    }
+                    setHoveredItem(item.path);
+                  }}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <div className="px-4 py-2 mb-2 border-b border-gray-700">
+                    <span className="text-white font-bold text-sm uppercase tracking-wider">{item.label}</span>
                   </div>
                   {item.subItems.map((subItem) => (
                     <SubMenuItem
@@ -209,6 +226,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
                         e.stopPropagation();
                         navigate(subItem.path);
                         setHoveredItem(null);
+                        setLockedItem(null);
                       }}
                     />
                   ))}

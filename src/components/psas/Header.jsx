@@ -17,7 +17,7 @@ const Header = ({ onMenuClick, onProfileClick }) => {
     try {
       if (!token) return;
 
-      const response = await fetch(`${api.baseURL}/api/notifications`, {
+      const response = await fetch(`${api.baseURL}/api/notifications/stats`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -27,9 +27,7 @@ const Header = ({ onMenuClick, onProfileClick }) => {
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          // Count unread notifications
-          const unread = result.data.filter((notif) => !notif.isRead).length;
-          setUnreadCount(unread);
+          setUnreadCount(result.data.unread || 0);
         }
       }
     } catch (error) {
@@ -111,7 +109,10 @@ const Header = ({ onMenuClick, onProfileClick }) => {
             onClick={handleProfileClick}
           >
             <img
-              src={user?.profilePicture || "https://via.placeholder.com/32x32?text=U"}
+              src={
+                user?.profilePicture ||
+                "https://via.placeholder.com/32x32?text=U"
+              }
               alt="User"
               className="w-8 h-8 rounded-full object-cover"
             />

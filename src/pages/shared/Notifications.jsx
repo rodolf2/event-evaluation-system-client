@@ -344,8 +344,25 @@ const NotificationDetail = ({ notification, onBack }) => {
         </button>
 
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-gray-300 rounded-full shrink-0"></div>
-          <span className="text-gray-600 font-medium">{departmentText}</span>
+          {notification.creatorProfile ? (
+            <img
+              src={notification.creatorProfile}
+              alt={notification.from}
+              className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-200"
+            />
+          ) : (
+             <div className="w-12 h-12 bg-gray-300 rounded-full shrink-0 flex items-center justify-center text-gray-600 font-bold border border-gray-400">
+               {notification.from ? notification.from.charAt(0).toUpperCase() : "S"}
+             </div>
+          )}
+          <div className="flex flex-col">
+            <span className="text-gray-800 font-semibold text-lg">
+              {notification.from}
+            </span>
+             <span className="text-gray-500 text-sm font-medium">
+              {departmentText}
+            </span>
+          </div>
         </div>
 
         {isPublisherView ? (
@@ -439,10 +456,25 @@ const NotificationDetail = ({ notification, onBack }) => {
       </button>
 
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 bg-gray-200 rounded-full shrink-0"></div>
-        <span className="text-gray-600 font-medium">
-          Evaluation System for School and Program Events - LVCC Apalit
-        </span>
+        {notification.creatorProfile ? (
+          <img
+            src={notification.creatorProfile}
+            alt={notification.from}
+            className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-200"
+          />
+        ) : (
+          <div className="w-12 h-12 bg-gray-200 rounded-full shrink-0 flex items-center justify-center text-gray-500 font-bold border border-gray-300">
+            {notification.from ? notification.from.charAt(0).toUpperCase() : "S"}
+          </div>
+        )}
+        <div className="flex flex-col">
+          <span className="text-gray-800 font-semibold text-lg">
+            {notification.from}
+          </span>
+          <span className="text-gray-500 text-sm font-medium">
+             {notification.creatorRole ? notification.creatorRole.replace("-", " ").replace(/\b\w/g, c => c.toUpperCase()) : "System Notification"}
+          </span>
+        </div>
       </div>
 
       <div className="text-center mb-12">
@@ -589,7 +621,6 @@ const Notifications = ({ layout: LayoutComponent }) => {
               (notification.isSystemGenerated ? "System" : "System");
 
             return {
-              id: notification._id,
               from,
               title: notification.title,
               preview: notification.message,
@@ -599,6 +630,10 @@ const Notifications = ({ layout: LayoutComponent }) => {
                 : "",
               read: !!notification.isRead,
               relatedEntity: notification.relatedEntity,
+              creatorProfile:
+                notification.createdBy?.profilePicture ||
+                notification.createdBy?.avatar,
+              creatorRole: notification.createdBy?.role,
             };
           });
 
@@ -650,6 +685,15 @@ const Notifications = ({ layout: LayoutComponent }) => {
 
   // Handle clicking on a notification to navigate to the relevant page
   const handleNotificationClick = (notification) => {
+    // For roles that share this component but don't have dedicated pages for these items,
+    // we show the details in-place using the existing NotificationDetail component.
+    const rolesWithInPlaceView = ["mis", "senior-management", "club-adviser"];
+    
+    if (rolesWithInPlaceView.includes(user?.role)) {
+      setViewingNotification(notification);
+      return;
+    }
+
     // Determine the base path based on user role
     const rolePrefix =
       user?.role === "student"
@@ -658,9 +702,7 @@ const Notifications = ({ layout: LayoutComponent }) => {
           ? "/club-officer"
           : user?.role === "psas"
             ? "/psas"
-            : user?.role === "senior-management"
-              ? "/senior-management"
-              : "";
+            : "";
 
     if (notification.relatedEntity?.type === "reminder") {
       navigate(`${rolePrefix}/reminders`);
