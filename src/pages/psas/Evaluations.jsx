@@ -19,7 +19,7 @@ const Evaluations = () => {
     localStorage.getItem("evaluationsView") || "dashboard"
   );
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
+  const [filterOption, setFilterOption] = useState("newest");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [loading, setLoading] = useState(true);
@@ -234,6 +234,9 @@ const Evaluations = () => {
           uploadedFiles: extractedData.uploadedFiles || [],
           uploadedLinks: extractedData.uploadedLinks || [],
           file: null, // No file to keep
+          // Preserve scraped response data for report generation
+          scrapedResponseData: extractedData.scrapedResponseData || null,
+          googleFormId: extractedData.googleFormId || null,
         };
 
         localStorage.setItem("tempFormData", JSON.stringify(tempData));
@@ -279,17 +282,31 @@ const Evaluations = () => {
     .filter((form) =>
       form.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
+    .filter((form) => {
+      if (["available", "upcoming", "closed", "published"].includes(filterOption)) {
+        const now = new Date();
+        const endDate = form.eventEndDate ? new Date(form.eventEndDate) : null;
+        const isExpired = endDate && now > endDate;
+        const isClosedStatus = form.status === "closed" || (form.status === "published" && isExpired);
+        const isPublished = form.status === "published" && !isExpired;
+        
+        if (filterOption === "available" || filterOption === "published") return isPublished;
+        if (filterOption === "closed") return isClosedStatus;
+        if (filterOption === "upcoming") return false; // same as above
+      }
+      return true;
+    })
     .sort((a, b) => {
-      if (sortBy === "newest") {
+      if (filterOption === "newest") {
         return b.createdAtRaw - a.createdAtRaw;
-      } else if (sortBy === "oldest") {
+      } else if (filterOption === "oldest") {
         return a.createdAtRaw - b.createdAtRaw;
-      } else if (sortBy === "title") {
+      } else if (filterOption === "title") {
         return a.title.localeCompare(b.title);
-      } else if (sortBy === "responses") {
+      } else if (filterOption === "responses") {
         return b.responses - a.responses;
       }
-      return 0;
+      return b.createdAtRaw - a.createdAtRaw; // default fallback sort
     });
 
   if (loading) {
@@ -298,55 +315,20 @@ const Evaluations = () => {
         <div className="p-6 md:p-5 bg-white flex flex-col">
           {/* Header Section - Match the actual gradient layout */}
           <div className="mb-8">
-            <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
-            <div className="mb-7">
-              <div
-                className="mb-8 text-white p-6 rounded-xl shadow-lg relative"
-                style={{
-                  background:
-                    "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-                }}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
-                      <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
-                      <SkeletonText
-                        lines={1}
-                        width="medium"
-                        height="h-6"
-                        className="bg-gray-200 text-gray-800"
-                      />
-                    </div>
-                    <div className="text-center w-full">
-                      <SkeletonText
-                        lines={1}
-                        width="large"
-                        height="h-8"
-                        className="text-white bg-white/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
-                      <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
-                      <SkeletonText
-                        lines={1}
-                        width="medium"
-                        height="h-6"
-                        className="bg-gray-200 text-gray-800"
-                      />
-                    </div>
-                    <div className="text-center w-full">
-                      <SkeletonText
-                        lines={1}
-                        width="large"
-                        height="h-8"
-                        className="text-white bg-white/20"
-                      />
-                    </div>
-                  </div>
+            <h2 className="text-lg text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
+                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="h-3 bg-gray-200 rounded w-32" />
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
+                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-28" />
+                  <div className="h-3 bg-gray-200 rounded w-36" />
                 </div>
               </div>
             </div>
@@ -368,76 +350,50 @@ const Evaluations = () => {
                 </div>
               </div>
 
-              {/* Evaluation Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 8 }).map((_, index) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+                {Array.from({ length: 10 }).map((_, index) => (
                   <div
                     key={index}
-                    className="rounded-lg shadow-md h-full flex flex-col"
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 sm:p-3 h-full flex flex-col"
                   >
-                    <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
-                      <div className="text-center mb-4">
-                        <SkeletonText
-                          lines={2}
-                          height="h-6"
-                          className="bg-gray-300"
-                        />
-                        <SkeletonText
-                          lines={1}
-                          height="h-4"
-                          className="bg-gray-300 mt-2"
-                        />
+                    <div className="text-center mb-2">
+                      <SkeletonText
+                        lines={1}
+                        height="h-4"
+                        className="bg-gray-200 w-3/4 mx-auto"
+                      />
+                      <SkeletonText
+                        lines={1}
+                        height="h-3"
+                        className="bg-gray-100 w-1/2 mx-auto mt-1"
+                      />
+                    </div>
+                    <div className="grow mt-1 scale-[0.9] origin-top">
+                      <div className="mb-1.5">
+                        <SkeletonBase className="w-full h-6 rounded bg-gray-50" />
                       </div>
-                      <div className="grow">
-                        <div className="flex justify-between items-center mb-4">
-                          <SkeletonBase className="w-full pr-6 py-3 text-sm rounded-lg bg-gray-300" />
+                      <div className="space-y-1">
+                        <div className="flex items-center">
+                          <SkeletonBase className="h-3 w-3 rounded-full bg-gray-100 mr-2" />
+                          <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-16" />
                         </div>
-                        <div className="space-y-3">
-                          <div className="flex items-center">
-                            <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText
-                              lines={1}
-                              height="h-4"
-                              className="ml-3 bg-gray-300"
-                            />
-                          </div>
-                          <div className="flex items-center">
-                            <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText
-                              lines={1}
-                              height="h-4"
-                              className="ml-3 bg-gray-300"
-                            />
-                          </div>
-                          <div className="flex items-center">
-                            <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText
-                              lines={1}
-                              height="h-4"
-                              className="ml-3 bg-gray-300"
-                            />
-                          </div>
+                        <div className="flex items-center">
+                          <SkeletonBase className="h-3 w-3 rounded-full bg-gray-100 mr-2" />
+                          <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-16" />
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 rounded-b-lg bg-linear-to-r from-blue-800 to-blue-900">
+                    <div className="mt-3 pt-2 border-t border-gray-50 flex items-center justify-between">
                       <SkeletonText
                         lines={1}
-                        height="h-6"
-                        className="bg-white/20"
+                        height="h-3"
+                        className="bg-gray-200 w-1/3"
                       />
-                      <div className="mt-2 flex items-center justify-between">
-                        <SkeletonText
-                          lines={1}
-                          height="h-4"
-                          className="bg-white/20"
-                        />
-                        <SkeletonText
-                          lines={1}
-                          height="h-3"
-                          className="bg-white/20"
-                        />
-                      </div>
+                      <SkeletonText
+                        lines={1}
+                        height="h-2"
+                        className="bg-gray-100 w-1/4"
+                      />
                     </div>
                   </div>
                 ))}
@@ -468,8 +424,8 @@ const Evaluations = () => {
           <EvaluationContent
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
+            filterOption={filterOption}
+            setFilterOption={setFilterOption}
             evaluationForms={filteredAndSortedForms}
             onCreateNew={handleCreateNew}
             onShowUploadModal={handleShowUploadModal}

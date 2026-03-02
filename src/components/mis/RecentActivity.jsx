@@ -101,9 +101,9 @@ const RecentActivity = () => {
           activities.map((activity, i) => (
             <div
               key={activity._id || i}
-              className="bg-white shadow-sm rounded-lg p-4 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 items-start hover:shadow-md transition-shadow duration-200 border border-gray-100"
+              className="bg-white shadow-sm rounded-lg p-4 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 items-start hover:shadow-md transition-shadow duration-200 border border-gray-100 overflow-hidden"
             >
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                   <span className="font-bold text-gray-900 text-sm tracking-wide uppercase truncate" title={activity.action}>
                     {activity.action}
                   </span>
@@ -113,7 +113,7 @@ const RecentActivity = () => {
                     })}
                   </span>
               </div>
-              <span className="text-gray-600 text-sm leading-relaxed break-words">
+              <span className="text-gray-600 text-sm leading-relaxed break-all min-w-0">
                 {activity.description}
               </span>
             </div>

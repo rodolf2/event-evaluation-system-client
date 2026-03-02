@@ -162,89 +162,39 @@ const Certificates = () => {
   // Loading skeleton
   if (loading) {
     return (
-      <Layout backgroundColor="bg-white">
+      <Layout>
         <div className="p-4 sm:p-6 md:p-8 min-h-[80vh]">
           {/* Header Section - Match CertificateGallery gradient layout */}
           <div className="shrink-0 mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
+            <h2 className="text-lg font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
               Create a Certificate
             </h2>
             <div className="mb-6 sm:mb-8">
-              <div
-                className="mb-6 sm:mb-8 text-white p-4 sm:p-6 md:p-8 rounded-xl shadow-lg relative"
-                style={{
-                  background:
-                    "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-                }}
-              >
-                <div className="flex justify-center px-4">
-                  <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 md:p-12 lg:p-16 text-center cursor-pointer relative z-10 w-full max-w-md sm:max-w-lg md:max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
-                    <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 mx-auto mb-4 sm:mb-6 md:mb-8 rounded-full bg-gray-200" />
-                  </div>
-                </div>
-                <div className="flex justify-center px-4">
-                  <div className="text-center">
-                    <SkeletonText
-                      lines={1}
-                      width="large"
-                      height="h-8"
-                      className="text-white bg-white/20"
-                    />
-                  </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse max-w-xs">
+                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="h-3 bg-gray-200 rounded w-32" />
                 </div>
               </div>
             </div>
 
-            {/* Choose a template section */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
-                <SkeletonText
-                  lines={1}
-                  width="large"
-                  height="h-8"
-                  className="bg-gray-300"
-                />
-                <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                  <SkeletonBase className="w-48 h-10 rounded-lg bg-gray-300" />
-                  <SkeletonBase className="w-32 h-10 rounded-lg bg-gray-300" />
-                  <SkeletonBase className="w-32 h-10 rounded-lg bg-gray-300" />
-                </div>
-              </div>
-
-              {/* Template Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {Array.from({ length: 12 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="bg-white rounded-xl shadow-md overflow-hidden"
-                  >
-                    {/* Template Preview */}
-                    <div className="bg-linear-to-br from-gray-100 to-gray-200 aspect-4/3 flex items-center justify-center overflow-hidden border border-gray-300">
-                      <SkeletonBase className="w-full h-full bg-gray-300" />
-                    </div>
-
-                    {/* Template Info */}
-                    <div className="p-3 sm:p-4">
-                      <SkeletonText
-                        lines={1}
-                        height="h-4"
-                        className="mb-1 bg-gray-300"
-                      />
-                      <SkeletonText
-                        lines={2}
-                        height="h-3"
-                        className="mb-3 bg-gray-300"
-                      />
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-1 sm:gap-2">
-                        <SkeletonBase className="flex-1 h-8 rounded-lg bg-gray-300" />
-                        <SkeletonBase className="h-8 w-8 rounded-lg bg-gray-300" />
-                      </div>
-                    </div>
+            {/* Certificate Template Skeletons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 mb-10">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-2.5"
+                >
+                  <div className="aspect-4/3 bg-gray-50 rounded-lg mb-3 overflow-hidden">
+                    <SkeletonBase className="w-full h-full" />
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-2">
+                    <SkeletonText className="h-3 w-3/4 mx-auto" height="h-3" />
+                    <SkeletonText className="h-2 w-1/2 mx-auto" height="h-2" />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -255,7 +205,7 @@ const Certificates = () => {
   // Editor view
   if (view === "editor") {
     return (
-      <Layout backgroundColor="bg-white">
+      <Layout>
         <CertificateEditor
           initialData={initialData}
           selectedTemplate={selectedTemplate}
@@ -271,8 +221,8 @@ const Certificates = () => {
 
   // Gallery view
   return (
-    <Layout backgroundColor="bg-white">
-      <div className="p-4 sm:p-6 md:p-8 bg-white min-h-[80vh]">
+    <Layout>
+      <div className="p-4 sm:p-6 md:p-8 min-h-[80vh]">
         <CertificateGallery
           onTemplateSelect={handleTemplatePreview}
           onBlankCanvas={handleBlankCanvas}

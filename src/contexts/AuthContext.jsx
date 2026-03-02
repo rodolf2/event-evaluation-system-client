@@ -12,8 +12,40 @@ const TOKEN_REFRESH_BUFFER_MS = 2 * 60 * 1000; // Refresh when 2 minutes left
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    const savedUserStr = localStorage.getItem("user");
+    const savedToken = localStorage.getItem("token");
+
+    if (!savedUserStr) return null;
+
+    try {
+      const parsedUser = JSON.parse(savedUserStr);
+
+      if (savedToken) {
+        try {
+          // Decode JWT payload to verify role
+          const base64Url = savedToken.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+          ).join(''));
+          const decodedToken = JSON.parse(jsonPayload);
+
+          // Anti-spoofing mechanism: enforce signed role
+          if (decodedToken.role && parsedUser.role !== decodedToken.role) {
+            console.warn("Role mismatch detected. Resetting to signed token role.");
+            parsedUser.role = decodedToken.role;
+            localStorage.setItem("user", JSON.stringify(parsedUser));
+          }
+        } catch (tokenError) {
+          console.error("Error decoding token for role verification:", tokenError);
+        }
+      }
+
+      return parsedUser;
+    } catch (e) {
+      console.error("Error parsing user from localStorage:", e);
+      return null;
+    }
   });
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [isLoading, setIsLoading] = useState(true); // Always start loading to check auth status

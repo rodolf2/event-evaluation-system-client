@@ -98,11 +98,11 @@ function StudentUserManagement() {
         role: "student,club-officer", // Always fetch students/PBOOs
       });
 
-      if (searchQuery) params.append("search", searchQuery);
+      if (searchQuery) params.set("search", searchQuery);
       
-      if (selectedFilter === "active") params.append("isActive", "true");
-      if (selectedFilter === "inactive") params.append("isActive", "false");
-      if (selectedFilter === "club-officer") params.append("role", "club-officer");
+      if (selectedFilter === "active") params.set("isActive", "true");
+      if (selectedFilter === "inactive") params.set("isActive", "false");
+      if (selectedFilter === "club-officer") params.set("role", "club-officer");
 
       const response = await fetch(`/api/users?${params.toString()}`, {
         headers: {

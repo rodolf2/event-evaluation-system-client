@@ -41,7 +41,7 @@ const Section = ({
       </div>
 
       <div
-        className={`w-full max-w-4xl bg-white rounded-lg shadow-sm p-6 sm:p-10 relative min-h-[220px] transition
+        className={`w-full max-w-4xl bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-10 relative min-h-[160px] sm:min-h-[180px] md:min-h-[220px] transition
           ${active
             ? "ring-2 ring-blue-500/40"
             : "hover:ring-1 hover:ring-gray-200"

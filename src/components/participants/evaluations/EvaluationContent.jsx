@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react";
 import uploadIcon from "../../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
@@ -15,11 +17,25 @@ const EvaluationContent = ({
   onCreateNew,
   onShowUploadModal
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Reset to first page when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy]);
+
+  const totalPages = Math.ceil(evaluationForms.length / itemsPerPage);
+  const paginatedForms = evaluationForms.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="p-4 md:p-8  min-h-screen">
       {/* Start an evaluation section - preserved */}
       <div className="shrink-0">
-        <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
+        <h2 className="text-lg text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
         <div className="mb-7">
           <div
             className="mb-8 text-white p-6 rounded-xl shadow-lg relative"
@@ -71,8 +87,8 @@ const EvaluationContent = ({
 
       {/* Recent Evaluations Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">
-          <div className="flex-1 relative">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-3 w-full">
+          <div className="flex-1 relative w-full lg:max-w-md xl:max-w-xl">
             <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -83,7 +99,7 @@ const EvaluationContent = ({
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -93,12 +109,45 @@ const EvaluationContent = ({
               <option value="oldest">Oldest</option>
               <option value="title">Title A-Z</option>
             </select>
+            
+            {/* Compact Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
+                <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`p-1.5 rounded-md transition-colors ${currentPage === 1
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`p-1.5 rounded-md transition-colors ${currentPage === totalPages
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {evaluationForms.map((form) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+        {paginatedForms.map((form) => (
           <RecentEvaluationCard key={form.id} form={form} />
         ))}
       </div>
@@ -112,25 +161,33 @@ const RecentEvaluationCard = ({ form }) => {
   };
 
   // Placeholder dates - replace with actual data if available
-  const openDate = form.createdAt || "August 14, 2025";
-  const closeDate = form.createdAt || "August 19, 2025";
+  const openDate = form.createdAt || "Aug 14, 2025";
+  const closeDate = form.createdAt || "Aug 19, 2025";
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 flex overflow-hidden"
+      className="bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden group h-full"
       onClick={handleCardClick}
     >
-      <div className="w-2 bg-blue-600"></div>
-      <div className="p-5 grow flex flex-col justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2">{form.title}</h3>
+      <div className="w-full h-1 bg-blue-600 transition-all duration-300 group-hover:h-1.5 shrink-0"></div>
+      <div className="p-3 sm:p-4 grow flex flex-col justify-between">
+        <div className="mb-2">
+          <h3 className="text-sm sm:text-base font-bold text-gray-800 line-clamp-2 leading-tight group-hover:text-blue-700 transition-colors">
+            {form.title}
+          </h3>
         </div>
-        <div className="flex justify-between items-center mt-4">
-          <div className="text-sm text-gray-500">
-            <p>Open: {openDate}</p>
-            <p>Closes: {closeDate}</p>
+        <div className="flex justify-between items-end mt-2">
+          <div className="text-[10px] sm:text-xs text-gray-500 space-y-0.5">
+            <p className="flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-blue-400"></span>
+              Open: {openDate}
+            </p>
+            <p className="flex items-center gap-1.5 text-gray-400">
+              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+              Closes: {closeDate}
+            </p>
           </div>
-          <ChevronRight className="w-6 h-6 text-gray-400" />
+          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </div>

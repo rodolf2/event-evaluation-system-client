@@ -28,11 +28,14 @@ if (import.meta.env.PROD) {
   // console.error is left active for critical telemetry if needed
 }
 
+import { Agentation } from "agentation";
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
       <UIProvider>
         <Router>
+          {import.meta.env.DEV && <Agentation />}
           <App />
         </Router>
       </UIProvider>

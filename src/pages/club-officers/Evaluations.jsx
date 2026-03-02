@@ -4,6 +4,7 @@ import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout"
 import {
   SkeletonCard,
   SkeletonText,
+  SkeletonBase,
 } from "../../components/shared/SkeletonLoader";
 import { Search, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
@@ -13,9 +14,9 @@ const Evaluations = () => {
   const [evaluations, setEvaluations] = useState([]);
   const [filteredEvaluations, setFilteredEvaluations] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [filterOption, setFilterOption] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 15;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
@@ -50,18 +51,42 @@ const Evaluations = () => {
   }, [fetchMyEvaluations]);
 
   useEffect(() => {
-    const filtered = evaluations.filter((evaluation) =>
+    let processEvaluations = evaluations.filter((evaluation) =>
       evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()),
     );
-    // Sort by eventStartDate
-    const sorted = [...filtered].sort((a, b) => {
+
+    // Apply status filters if a status option is selected
+    if (["available", "upcoming", "closed", "completed"].includes(filterOption)) {
+      processEvaluations = processEvaluations.filter((evaluation) => {
+        const isCompleted = evaluation.completed || false;
+        const now = new Date();
+        const startDate = evaluation.eventStartDate ? new Date(evaluation.eventStartDate) : null;
+        const endDate = evaluation.eventEndDate ? new Date(evaluation.eventEndDate) : null;
+        const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+        
+        const isUpcoming = startDate && now < startDate && !isSameDay(now, startDate);
+        const isExpired = endDate && now > endDate && !isSameDay(now, endDate);
+        const isAvailable = !isUpcoming && !isExpired && !isCompleted;
+        
+        if (filterOption === "available") return isAvailable;
+        if (filterOption === "upcoming") return isUpcoming && !isCompleted;
+        if (filterOption === "closed") return isExpired && !isCompleted;
+        if (filterOption === "completed") return isCompleted;
+        return true;
+      });
+    }
+
+    // Always sort by eventStartDate
+    const finalEvaluations = [...processEvaluations].sort((a, b) => {
       const dateA = new Date(a.eventStartDate || 0);
       const dateB = new Date(b.eventStartDate || 0);
-      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+      // If filterOption is 'oldest', sort ascending. Otherwise (latest or any status filter), sort descending by default.
+      return filterOption === "oldest" ? dateA - dateB : dateB - dateA;
     });
-    setFilteredEvaluations(sorted);
+
+    setFilteredEvaluations(finalEvaluations);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, evaluations, sortOrder]);
+  }, [searchQuery, evaluations, filterOption]);
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -89,7 +114,7 @@ const Evaluations = () => {
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="bg-gray-100 min-h-screen pb-8">
+        <div className="bg-gray-100 h-full">
           <div className="max-w-full">
             {/* Search and Filter Skeleton */}
             <div className="flex items-center mb-8 gap-4">
@@ -105,23 +130,22 @@ const Evaluations = () => {
             </div>
 
             {/* Evaluation Cards Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {Array.from({ length: 6 }).map((_, index) => (
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+              {Array.from({ length: 15 }).map((_, index) => (
                 <div
                   key={index}
-                  className="rounded-lg shadow-md overflow-hidden"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4 h-full flex flex-col"
                 >
-                  <div className="p-8 flex items-center h-full">
-                    <div className="grow space-y-4">
-                      <SkeletonText lines={1} width="large" height="h-8" />
-                      <div className="space-y-2">
-                        <SkeletonText lines={1} width="small" height="h-4" />
-                        <SkeletonText lines={1} width="medium" height="h-4" />
-                      </div>
+                  <div className="grow space-y-3">
+                    <SkeletonText lines={1} height="h-4" className="bg-gray-200 w-3/4" />
+                    <div className="space-y-1.5">
+                      <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-1/2" />
+                      <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-2/3" />
                     </div>
-                    <div className="ml-4">
-                      <div className="w-6 h-6 bg-gray-300 rounded-full animate-pulse"></div>
-                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-between items-center">
+                    <SkeletonBase className="w-4 h-4 rounded-full bg-gray-100" />
+                    <SkeletonBase className="w-8 h-8 rounded-lg bg-gray-50" />
                   </div>
                 </div>
               ))}
@@ -135,7 +159,7 @@ const Evaluations = () => {
   if (error) {
     return (
       <ClubOfficerLayout>
-        <div className="bg-gray-100 min-h-screen flex items-center justify-center">
+        <div className="bg-gray-100 h-full flex items-center justify-center">
           <div className="text-red-600 text-center">
             <p className="text-lg font-semibold">Error loading evaluations</p>
             <p>{error}</p>
@@ -153,7 +177,7 @@ const Evaluations = () => {
 
   return (
     <ClubOfficerLayout>
-      <div className="bg-gray-100 min-h-screen pb-8">
+      <div className="bg-gray-100 h-full">
         <div className="max-w-full">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
@@ -173,12 +197,20 @@ const Evaluations = () => {
                   <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
                     <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
                     <select
-                      value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value)}
+                      value={filterOption}
+                      onChange={(e) => setFilterOption(e.target.value)}
                       className="bg-transparent py-2 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm font-medium"
                     >
-                      <option value="desc">Latest First</option>
-                      <option value="asc">Oldest First</option>
+                      <optgroup label="Sort By Date">
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
+                      </optgroup>
+                      <optgroup label="Filter By Status">
+                        <option value="available">Available</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="closed">Closed</option>
+                        <option value="completed">Completed</option>
+                      </optgroup>
                     </select>
                     <div className="absolute right-3 pointer-events-none">
                       <svg
@@ -187,12 +219,7 @@ const Evaluations = () => {
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
@@ -242,7 +269,7 @@ const Evaluations = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
                 {currentItems.map((evaluation, index) => {
                   const isCompleted = evaluation.completed || false;
                   const now = new Date();
@@ -270,13 +297,11 @@ const Evaluations = () => {
                   return (
                     <div
                       key={evaluation._id || index}
-                      className={`rounded-lg shadow-md transition-all duration-300 ${isCompleted
-                          ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
-                          : isExpired
-                            ? "bg-gray-400 opacity-75 cursor-not-allowed"
-                            : isUpcoming
-                              ? "bg-blue-400 opacity-75 cursor-not-allowed"
-                              : "bg-[linear-gradient(-0.15deg,#324BA3_38%,#002474_100%)] hover:shadow-lg cursor-pointer"
+                      className={`rounded-xl shadow-sm border border-gray-100 transition-all duration-300 flex flex-col overflow-hidden group ${isCompleted
+                          ? "opacity-75"
+                          : isExpired || isUpcoming
+                            ? "opacity-75"
+                            : "hover:shadow-md cursor-pointer"
                         }`}
                       onClick={
                         isAvailable
@@ -285,47 +310,49 @@ const Evaluations = () => {
                           : undefined
                       }
                     >
-                      <div
-                        className={`rounded-r-lg ml-3 p-8 flex items-center h-full min-h-[220px] ${isCompleted ? "bg-green-50" : "bg-white"
-                          }`}
-                      >
-                        <div className="grow">
-                          <h3 className="font-bold text-xl mb-4 text-gray-800 line-clamp-2 h-14">
+                      <div className={`w-full h-1 shrink-0 transition-all duration-300 ${isCompleted
+                          ? "bg-green-500"
+                          : isExpired
+                            ? "bg-gray-400"
+                            : isUpcoming
+                              ? "bg-blue-400"
+                              : "bg-blue-600 group-hover:h-1.5"
+                        }`}></div>
+                      <div className="p-3 sm:p-4 grow flex flex-col justify-between bg-white h-full">
+                        <div className="mb-2">
+                          <h3 className="font-bold text-sm sm:text-base text-gray-800 line-clamp-2 leading-tight group-hover:text-blue-700 transition-colors">
                             {evaluation.title}
                           </h3>
                           {isCompleted && (
-                            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
-                              <Check className="h-4 w-4" />
+                            <div className="mt-1.5 bg-green-50 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-green-100 w-fit">
+                              <Check size={10} />
                               Completed
                             </div>
                           )}
                           {isExpired && !isCompleted && (
-                            <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            <div className="mt-1.5 bg-gray-50 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-gray-100 w-fit">
                               Closed
                             </div>
                           )}
                           {isUpcoming && !isCompleted && (
-                            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            <div className="mt-1.5 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-blue-100 w-fit">
                               Upcoming
                             </div>
                           )}
-                          <div className="text-sm text-gray-500 space-x-4">
-                            <span>
-                              Open: {formatDate(evaluation.eventStartDate)}
-                            </span>
-                            <span>
-                              Closes: {formatDate(evaluation.eventEndDate)}
-                            </span>
-                          </div>
                         </div>
-                        <div
-                          className={`ml-4 ${isCompleted ? "text-green-500" : "text-gray-400"
-                            }`}
-                        >
-                          {isCompleted ? (
-                            <Check className="h-6 w-6" />
-                          ) : (
-                            <ChevronRight className="h-6 w-6" />
+                        <div className="flex justify-between items-end mt-2">
+                          <div className="text-[10px] sm:text-[11px] text-gray-500 space-y-0.5">
+                            <p className="flex items-center gap-1.5">
+                              <span className={`w-1 h-1 rounded-full ${isCompleted ? "bg-green-400" : "bg-blue-400"}`}></span>
+                              Open: {formatDate(evaluation.eventStartDate)}
+                            </p>
+                            <p className="flex items-center gap-1.5 text-gray-400">
+                              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                              Closes: {formatDate(evaluation.eventEndDate)}
+                            </p>
+                          </div>
+                          {!isCompleted && !isExpired && !isUpcoming && (
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" />
                           )}
                         </div>
                       </div>

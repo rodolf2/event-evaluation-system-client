@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
 import {
@@ -23,7 +23,7 @@ const Certificates = () => {
   const [showCertificateViewer, setShowCertificateViewer] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   // Debounce search input
   useEffect(() => {
@@ -77,51 +77,9 @@ const Certificates = () => {
 
   // State for certificate thumbnails
   const [certificateThumbnails, setCertificateThumbnails] = useState({});
+  const fetchedCertificateIds = useRef(new Set());
+  const activeBlobUrls = useRef(new Set());
 
-  // Fetch certificate PDFs with authentication and create blob URLs
-  useEffect(() => {
-    const fetchCertificateThumbnails = async () => {
-      for (const cert of certificates) {
-        if (!certificateThumbnails[cert.certificateId]) {
-          try {
-            const response = await fetch(
-              `/api/certificates/download/${cert.certificateId}?inline=true`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              },
-            );
-
-            if (response.ok) {
-              const blob = await response.blob();
-              const blobUrl = URL.createObjectURL(blob);
-              setCertificateThumbnails((prev) => ({
-                ...prev,
-                [cert.certificateId]: blobUrl,
-              }));
-            }
-          } catch (error) {
-            console.error(
-              `Error loading thumbnail for ${cert.certificateId}:`,
-              error,
-            );
-          }
-        }
-      }
-    };
-
-    if (certificates.length > 0 && token) {
-      fetchCertificateThumbnails();
-    }
-
-    // Cleanup blob URLs on unmount
-    return () => {
-      Object.values(certificateThumbnails).forEach((url) => {
-        if (url) URL.revokeObjectURL(url);
-      });
-    };
-  }, [certificates, token]);
 
   const handleDownload = async (certificateId, certificate) => {
     try {
@@ -209,6 +167,72 @@ const Certificates = () => {
     setCurrentPage(pageNumber);
   };
 
+  // Fetch certificate PDFs only for the current page
+  useEffect(() => {
+    let active = true;
+
+    const fetchCertificateThumbnails = async () => {
+      // Create an array of promises for current items that don't have thumbnails yet
+      const fetchPromises = currentItems
+        .filter((cert) => !fetchedCertificateIds.current.has(cert.certificateId))
+        .map(async (cert) => {
+          fetchedCertificateIds.current.add(cert.certificateId);
+
+          try {
+            const response = await fetch(
+              `/api/certificates/download/${cert.certificateId}?inline=true`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            );
+
+            if (response.ok && active) {
+              const blob = await response.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              activeBlobUrls.current.add(blobUrl);
+              setCertificateThumbnails((prev) => ({
+                ...prev,
+                [cert.certificateId]: blobUrl,
+              }));
+            } else if (!response.ok) {
+                fetchedCertificateIds.current.delete(cert.certificateId);
+            }
+          } catch (error) {
+            console.error(
+              `Error loading thumbnail for ${cert.certificateId}:`,
+              error,
+            );
+            fetchedCertificateIds.current.delete(cert.certificateId);
+          }
+        });
+
+      if (fetchPromises.length > 0) {
+        await Promise.all(fetchPromises);
+      }
+    };
+
+    if (currentItems.length > 0 && token) {
+      fetchCertificateThumbnails();
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [currentItems, token]); // Only re-run when current items change
+
+  // Separate cleanup effect on unmount
+  useEffect(() => {
+    const urlsToCleanup = activeBlobUrls.current;
+    return () => {
+      urlsToCleanup.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      urlsToCleanup.clear();
+    };
+  }, []);
+
   // Show certificate viewer if requested
   if (showCertificateViewer && selectedCertificate) {
     return (
@@ -230,7 +254,7 @@ const Certificates = () => {
   if (loading) {
     return (
       <ParticipantLayout>
-        <div className="bg-gray-100 min-h-screen pb-8">
+        <div className="bg-gray-100 h-full">
           <div className="max-w-full px-4 md:px-8">
             {/* Search and Filter Skeleton */}
             <div className="flex items-center mb-8 gap-4">
@@ -246,21 +270,21 @@ const Certificates = () => {
             </div>
 
             {/* Certificate Cards Grid Skeleton */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 8 }).map((_, index) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
+              {Array.from({ length: 12 }).map((_, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-lg shadow-md p-4 text-center"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 text-center"
                 >
                   <div
-                    className="relative bg-gray-50 rounded-md mb-4 overflow-hidden"
+                    className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden"
                     style={{ aspectRatio: "1056/816" }}
                   >
                     <SkeletonBase className="w-full h-full" />
                   </div>
                   <div className="flex gap-2 justify-center">
-                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-16 animate-pulse"></div>
-                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-20 animate-pulse"></div>
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-7 w-16 animate-pulse"></div>
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-7 w-20 animate-pulse"></div>
                   </div>
                 </div>
               ))}
@@ -273,84 +297,88 @@ const Certificates = () => {
 
   return (
     <ParticipantLayout>
-      <div className="bg-gray-100 min-h-screen pb-8">
-        <div className="max-w-full">
-          <div className="flex items-center mb-8 gap-4">
-            <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+      <div className="h-full">
+        <div className="max-w-full px-4 md:px-8">
+          <div className="flex flex-col lg:flex-row lg:items-center mb-8 gap-4">
+            <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+              <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+                />
               </div>
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full p-3 pl-10 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="relative">
-              <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
-                <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
-                <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value)}
-                  className="bg-transparent py-3 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm"
-                >
-                  <option value="desc">Latest First</option>
-                  <option value="asc">Oldest First</option>
-                </select>
-                <div className="absolute right-3 pointer-events-none">
-                  <svg
-                    className="h-4 w-4 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
 
-            {/* Pagination Controls - Notification Style */}
-            {filteredCertificates.length > itemsPerPage && (
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-sm text-gray-600 mr-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <div className="flex items-center">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`p-2 rounded-full transition-colors ${
-                      currentPage === 1
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`p-2 rounded-full transition-colors ${
-                      currentPage === totalPages
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-200 text-gray-700"
-                    }`}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+              <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+                {/* Filter/Sort Dropdown */}
+                <div className="relative min-w-[160px]">
+                  <div className="flex items-center bg-white border border-gray-100 rounded-lg px-3 shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
+                    <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value)}
+                      className="bg-transparent py-2 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm font-medium"
+                    >
+                      <option value="desc">Latest First</option>
+                      <option value="asc">Oldest First</option>
+                    </select>
+                    <div className="absolute right-3 pointer-events-none">
+                      <svg
+                        className="h-4 w-4 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Compact Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
+                    <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          currentPage === 1
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          currentPage === totalPages
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                        aria-label="Next page"
+                      >
+                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {filteredCertificates.length === 0 ? (
@@ -363,14 +391,14 @@ const Certificates = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
               {currentItems.map((cert) => (
                 <div
                   key={cert._id}
-                  className="bg-white rounded-lg shadow-md p-4 text-center hover:shadow-lg transition-shadow duration-300"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center hover:shadow-md transition-all duration-300 group"
                 >
                   <div
-                    className="relative bg-gray-50 rounded-md mb-4 overflow-hidden flex items-center justify-center"
+                    className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden flex items-center justify-center border border-gray-50 group-hover:border-blue-100 transition-colors"
                     style={{ aspectRatio: "1056/816" }}
                   >
                     {certificateThumbnails[cert.certificateId] ? (
@@ -392,16 +420,16 @@ const Certificates = () => {
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => handleViewCertificate(cert)}
-                      className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                      className="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold hover:bg-green-700 transition-colors shadow-xs"
                     >
-                      <Eye size={14} />
+                      <Eye size={13} />
                       View
                     </button>
                     <button
                       onClick={() => handleDownload(cert.certificateId, cert)}
-                      className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+                      className="flex items-center gap-1 bg-[#2662D9] text-white px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold hover:bg-blue-700 transition-colors shadow-xs"
                     >
-                      <Download size={14} />
+                      <Download size={13} />
                       Download
                     </button>
                   </div>

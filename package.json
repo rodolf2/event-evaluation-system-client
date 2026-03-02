@@ -13,6 +13,7 @@
   "dependencies": {
     "@flaticon/flaticon-uicons": "^3.3.1",
     "@tailwindcss/vite": "^4.1.14",
+    "agentation": "^2.2.1",
     "axios": "^1.12.2",
     "dayjs": "^1.11.18",
     "fabric": "^6.7.1",

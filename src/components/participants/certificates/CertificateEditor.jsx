@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import toast from "react-hot-toast";
 import {
   Plus,
   Upload,
@@ -25,6 +26,7 @@ import {
   Sliders,
   X,
 } from "lucide-react";
+import ConfirmationModal from "../../shared/ConfirmationModal";
 
 const BASE_WIDTH = 800;
 const BASE_HEIGHT = 600;
@@ -43,6 +45,7 @@ const CertificateEditor = ({ initialData }) => {
   const [activeMobileTab, setActiveMobileTab] = useState(null); // 'elements' | 'properties' | null
   const [hasDraft, setHasDraft] = useState(false);
   const [localFontSize, setLocalFontSize] = useState(24); // Local state for font size input
+  const [showDraftModal, setShowDraftModal] = useState(false);
 
   useEffect(() => {
     const checkDraft = () => {
@@ -91,15 +94,32 @@ const CertificateEditor = ({ initialData }) => {
   const loadDraft = useCallback(() => {
     const draft = localStorage.getItem("certificate_draft");
     if (!draft || !fabricCanvas.current) return;
+    setShowDraftModal(true);
+  }, []);
 
-    if (
-      confirm("Load auto-saved draft? This will replace your current canvas.")
-    ) {
-      fabricCanvas.current.loadFromJSON(draft, () => {
-        fabricCanvas.current.renderAll();
-        pushHistory();
+  const confirmLoadDraft = useCallback(() => {
+    const draft = localStorage.getItem("certificate_draft");
+    if (!draft || !fabricCanvas.current) return;
+
+    setShowDraftModal(false);
+    const toastId = toast.loading("Loading draft...");
+
+    fabricCanvas.current.loadFromJSON(draft, () => {
+      fabricCanvas.current.renderAll();
+      pushHistory();
+      toast.success("Draft loaded successfully", {
+        id: toastId,
+        duration: 5000,
+        style: {
+          background: "#10B981",
+          color: "#FFFFFF",
+        },
+        iconTheme: {
+          primary: "#FFFFFF",
+          secondary: "#10B981",
+        },
       });
-    }
+    });
   }, [pushHistory]);
 
   useEffect(() => {
@@ -1047,6 +1067,18 @@ const CertificateEditor = ({ initialData }) => {
           </div>
         </div>
       )}
+
+      {/* Load Draft Modal */}
+      <ConfirmationModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onConfirm={confirmLoadDraft}
+        title="Load Draft"
+        message="Load auto-saved draft? This will replace your current canvas."
+        confirmText="Load"
+        cancelText="Cancel"
+        isDestructive={false}
+      />
     </div>
   );
 };

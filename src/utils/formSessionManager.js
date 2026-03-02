@@ -484,6 +484,80 @@ export class FormSessionManager {
     return forms;
   }
 
+  // Save scraped Google Forms response data (for report creation on publish)
+  static saveScrapedResponseData(scrapedData, googleFormId) {
+    const formId = this.getCurrentFormId();
+    if (!formId) {
+      console.warn('⚠️ FormSessionManager - No current form ID, cannot save scraped data');
+      return false;
+    }
+
+    const session = this.getFormSession(formId) || {
+      formId,
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString(),
+      data: {},
+    };
+
+    session.data.scrapedResponseData = scrapedData;
+    session.data.importedGoogleFormId = googleFormId;
+    session.data.scrapedDataSavedAt = new Date().toISOString();
+    session.lastActivity = new Date().toISOString();
+    
+    this.saveFormSession(formId, session);
+    console.log('✅ FormSessionManager - Saved scraped response data to session:', {
+      formId,
+      googleFormId,
+      hasData: !!scrapedData,
+      responseCount: scrapedData?.responseCount || 0
+    });
+    return true;
+  }
+
+  // Load scraped Google Forms response data
+  static loadScrapedResponseData() {
+    const formId = this.getCurrentFormId();
+    if (!formId) {
+      console.warn('⚠️ FormSessionManager - No current form ID, cannot load scraped data');
+      return null;
+    }
+
+    const session = this.getFormSession(formId);
+    if (session && session.data) {
+      const result = {
+        scrapedResponseData: session.data.scrapedResponseData || null,
+        importedGoogleFormId: session.data.importedGoogleFormId || null,
+        savedAt: session.data.scrapedDataSavedAt || null
+      };
+      console.log('📖 FormSessionManager - Loaded scraped response data:', {
+        formId,
+        hasData: !!result.scrapedResponseData,
+        responseCount: result.scrapedResponseData?.responseCount || 0,
+        googleFormId: result.importedGoogleFormId
+      });
+      return result;
+    }
+
+    return null;
+  }
+
+  // Clear scraped response data (after successful publish)
+  static clearScrapedResponseData() {
+    const formId = this.getCurrentFormId();
+    if (!formId) return false;
+
+    const session = this.getFormSession(formId);
+    if (session && session.data) {
+      delete session.data.scrapedResponseData;
+      delete session.data.importedGoogleFormId;
+      delete session.data.scrapedDataSavedAt;
+      session.lastActivity = new Date().toISOString();
+      this.saveFormSession(formId, session);
+      console.log('🧹 FormSessionManager - Cleared scraped response data for form:', formId);
+    }
+    return true;
+  }
+
   // Export form data (for backup/migration)
   static exportFormData() {
     const currentFormId = this.getCurrentFormId();

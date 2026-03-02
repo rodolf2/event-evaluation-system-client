@@ -230,7 +230,7 @@ const Question = memo(function Question(props) {
                   <img
                     src={emojiList[iconIndices[index]]}
                     alt={`Rating ${num}`}
-                    className="w-10 h-10 sm:w-12 mt-1"
+                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mt-1"
                   />
                 </div>
               ))}
@@ -369,7 +369,7 @@ const Question = memo(function Question(props) {
   const typeSelectBg = type && type !== "" ? "bg-[#F4F4F5]" : "bg-white";
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 mb-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-500 p-3 sm:p-6 md:p-8 mb-4">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4 mb-4">
         <div className="flex-1">
           <textarea
@@ -382,7 +382,7 @@ const Question = memo(function Question(props) {
               }))
             }
             placeholder="Write a question title..."
-            className="w-full text-lg font-medium border border-gray-300 rounded-md px-3 py-2 mb-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder:text-gray-400 resize-none overflow-hidden"
+            className="w-full text-base sm:text-lg font-medium border border-gray-300 rounded-md px-2 sm:px-3 py-2 mb-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder:text-gray-400 resize-none overflow-hidden"
             rows={1}
           />
           {/* Removed 'Optional' label per requirements; required toggle still functional */}

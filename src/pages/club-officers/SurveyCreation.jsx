@@ -260,14 +260,14 @@ const SurveyCreation = () => {
   const { token } = useAuth();
   const [evaluations, setEvaluations] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
+  const [filterOption, setFilterOption] = useState("newest");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   const fetchEvaluations = useCallback(async () => {
     try {
@@ -311,7 +311,7 @@ const SurveyCreation = () => {
   // Reset to first page when search or sort changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortBy]);
+  }, [searchQuery, filterOption]);
 
   const handleCreateNew = () => {
     navigate("/club-officer/form-creation?new=true");
@@ -374,6 +374,9 @@ const SurveyCreation = () => {
           uploadedFiles: extractedData.uploadedFiles || [],
           uploadedLinks: extractedData.uploadedLinks || [],
           file: null, // No file to keep
+          // Preserve scraped response data for report generation
+          scrapedResponseData: extractedData.scrapedResponseData || null,
+          googleFormId: extractedData.googleFormId || null,
         };
 
         localStorage.setItem("tempFormData", JSON.stringify(tempData));
@@ -482,17 +485,33 @@ const SurveyCreation = () => {
     .filter((evaluation) =>
       evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()),
     )
+    .filter((evaluation) => {
+      if (["available", "upcoming", "closed", "published"].includes(filterOption)) {
+        const now = new Date();
+        const endDate = evaluation.eventEndDate ? new Date(evaluation.eventEndDate) : null;
+        const isExpired = endDate && now > endDate;
+        const isClosedStatus = evaluation.status === "closed" || (evaluation.status === "published" && isExpired);
+        const isPublished = evaluation.status === "published" && !isExpired;
+        // Upcoming might not be easily determinable here without eventStartDate, so assuming published is roughly available/active for now in this context.
+        // Assuming "published" state is what available means.
+        
+        if (filterOption === "available" || filterOption === "published") return isPublished;
+        if (filterOption === "closed") return isClosedStatus;
+        if (filterOption === "upcoming") return false; // Without explicit start date in this view, difficult to ascertain 'upcoming'.
+      }
+      return true;
+    })
     .sort((a, b) => {
-      if (sortBy === "newest") {
+      if (filterOption === "newest") {
         return new Date(b.createdAt) - new Date(a.createdAt);
-      } else if (sortBy === "oldest") {
+      } else if (filterOption === "oldest") {
         return new Date(a.createdAt) - new Date(b.createdAt);
-      } else if (sortBy === "title") {
+      } else if (filterOption === "title") {
         return a.title.localeCompare(b.title);
-      } else if (sortBy === "responses") {
+      } else if (filterOption === "responses") {
         return (b.responseCount || 0) - (a.responseCount || 0);
       }
-      return 0;
+      return new Date(b.createdAt) - new Date(a.createdAt); // Default fallback sort
     });
 
   const totalPages = Math.ceil(filteredEvaluations.length / itemsPerPage);
@@ -507,55 +526,20 @@ const SurveyCreation = () => {
         <div className="p-6 md:p-5 flex flex-col">
           {/* Header Section - Match the actual gradient layout */}
           <div className="mb-8">
-            <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
-            <div className="mb-7">
-              <div
-                className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
-                style={{
-                  background:
-                    "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-                }}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
-                      <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
-                      <SkeletonText
-                        lines={1}
-                        width="medium"
-                        height="h-6"
-                        className="bg-gray-200 text-gray-800"
-                      />
-                    </div>
-                    <div className="text-center w-full">
-                      <SkeletonText
-                        lines={1}
-                        width="large"
-                        height="h-8"
-                        className="text-white bg-white/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center w-full">
-                      <SkeletonBase className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-gray-200" />
-                      <SkeletonText
-                        lines={1}
-                        width="medium"
-                        height="h-6"
-                        className="bg-gray-200 text-gray-800"
-                      />
-                    </div>
-                    <div className="text-center w-full">
-                      <SkeletonText
-                        lines={1}
-                        width="large"
-                        height="h-8"
-                        className="text-white bg-white/20"
-                      />
-                    </div>
-                  </div>
+            <h2 className="text-lg text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
+                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="h-3 bg-gray-200 rounded w-32" />
+                </div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
+                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-28" />
+                  <div className="h-3 bg-gray-200 rounded w-36" />
                 </div>
               </div>
             </div>
@@ -578,8 +562,8 @@ const SurveyCreation = () => {
               </div>
 
               {/* Evaluation Cards Grid */}
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 8 }).map((_, index) => (
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+                {Array.from({ length: 10 }).map((_, index) => (
                   <div
                     key={index}
                     className="rounded-lg shadow-md h-full flex flex-col"
@@ -682,58 +666,46 @@ const SurveyCreation = () => {
       <ClubOfficerLayout>
         <div className="p-6 md:p-5 flex flex-col">
           <div className="shrink-0">
-            <h2 className="text-3xl text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
-            <div className="mb-7">
+            <h2 className="text-lg text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
               <div
-                className="mb-8 text-white p-8 rounded-xl shadow-lg relative"
-                style={{
-                  background:
-                    "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-                }}
+                className="group bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full max-w-sm"
+                onClick={handleCreateNew}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                  <div className="flex flex-col items-center gap-3">
-                    <div
-                      className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
-                      onClick={handleCreateNew}
-                    >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
-                        <img
-                          src={blankFormIcon}
-                          alt="Blank Form"
-                          className="w-8 h-8 sm:w-12 sm:h-12"
-                        />
-                      </div>
-                    </div>
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-                      Blank Form
-                    </h3>
-                  </div>
+                <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                  <img
+                    src={blankFormIcon}
+                    alt="Blank Form"
+                    className="w-6 h-6"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-base">Blank Form</h3>
+                  <p className="text-sm text-gray-500">Create from scratch</p>
+                </div>
+              </div>
 
-                  <div className="flex flex-col items-center gap-3">
-                    <div
-                      className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
-                      onClick={handleShowUploadModal}
-                    >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
-                        <img
-                          src={uploadIcon}
-                          alt="Upload"
-                          className="w-8 h-8 sm:w-12 sm:h-12"
-                        />
-                      </div>
-                    </div>
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-                      Upload a Form
-                    </h3>
-                  </div>
+              <div
+                className="group bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full max-w-sm"
+                onClick={handleShowUploadModal}
+              >
+                <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                  <img
+                    src={uploadIcon}
+                    alt="Upload"
+                    className="w-6 h-6"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-base">Upload a Form</h3>
+                  <p className="text-sm text-gray-500">Import a Google Form</p>
                 </div>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-col gap-4 mb-4">
-                <h3 className="text-xl font-bold text-gray-800">Recent Evaluations</h3>
+                <h3 className="text-lg font-bold text-gray-800">Recent Evaluations</h3>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full">
                     <div className="relative w-full sm:max-w-md">
@@ -750,21 +722,27 @@ const SurveyCreation = () => {
                     <div className="flex items-center gap-2 ml-auto">
                       <Filter className="w-4 h-4 text-gray-400" />
                       <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
+                        value={filterOption}
+                        onChange={(e) => setFilterOption(e.target.value)}
                         className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                       >
-                        <option value="newest">Newest</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="title">Title A-Z</option>
-                        <option value="responses">Most Responses</option>
+                        <optgroup label="Sort By Date">
+                          <option value="newest">Newest First</option>
+                          <option value="oldest">Oldest First</option>
+                          <option value="title">Title A-Z</option>
+                          <option value="responses">Most Responses</option>
+                        </optgroup>
+                        <optgroup label="Filter By Status">
+                          <option value="available">Available</option>
+                          <option value="closed">Closed</option>
+                        </optgroup>
                       </select>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
                 {paginatedEvaluations.map((evaluation) => (
                   <SurveyEvaluationCard
                     key={evaluation._id}
@@ -786,8 +764,8 @@ const SurveyCreation = () => {
 
         {showUploadModal && (
           <div className="fixed inset-0 bg-[#F4F4F5]/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-8 w-full max-w-lg z-60">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">
+            <div className="bg-white rounded-lg p-4 sm:p-6 md:p-8 w-full max-w-lg z-60">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 sm:mb-6">
                 Import Google Form
               </h3>
 

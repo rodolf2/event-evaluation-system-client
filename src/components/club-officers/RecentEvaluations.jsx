@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
 import Pagination from "../shared/Pagination";
@@ -9,15 +9,15 @@ const RecentEvaluations = () => {
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (token) {
       fetchRecentEvaluations();
     }
-  }, [token]);
+  }, [token, fetchRecentEvaluations]);
 
-  const fetchRecentEvaluations = async () => {
+  const fetchRecentEvaluations = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/forms?limit=100", {
@@ -45,7 +45,7 @@ const RecentEvaluations = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   const handleEvaluationClick = (formId) => {
     navigate(`/club-officer/form-creation?formId=${formId}`);
@@ -92,7 +92,7 @@ const RecentEvaluations = () => {
               className="bg-white shadow rounded-md p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between hover:shadow-lg cursor-pointer transition-shadow"
             >
               <div className="flex-1">
-                <span className="font-medium text-gray-800 block">
+                <span className="font-medium text-gray-800 block line-clamp-2">
                   {evaluation.title}
                 </span>
                 <div className="flex items-center gap-2 mt-1">

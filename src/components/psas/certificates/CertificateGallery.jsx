@@ -82,7 +82,7 @@ const CertificateGallery = ({
   };
 
   const allTemplates = useMemo(() => {
-    const builtIn = templates || getAllTemplates();
+    const builtIn = templates || [];
     return [...customTemplates, ...builtIn];
   }, [customTemplates]);
 
@@ -180,7 +180,7 @@ const CertificateGallery = ({
   return (
     <div className="w-full flex flex-col min-h-[70vh]">
       <div className="shrink-0 mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
+        <h2 className="text-lg font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
           {isFromEvaluation
             ? "Link a Certificate Template"
             : "Create a Certificate"}
@@ -190,33 +190,19 @@ const CertificateGallery = ({
         {!isFromEvaluation && (
           <div className="mb-6 sm:mb-8">
             <div
-              className="mb-6 sm:mb-8 text-white p-4 sm:p-6 rounded-xl shadow-lg relative"
-              style={{
-                background:
-                  "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-              }}
+              className="group bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full max-w-sm"
+              onClick={onBlankCanvas}
             >
-              <div className="flex justify-center px-4">
-                <div
-                  className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative z-10 w-full max-w-5xl"
-                  onClick={onBlankCanvas}
-                >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                    <img
-                      src={plusIcon}
-                      alt="Plus"
-                      className="w-8 h-8 sm:w-12 sm:h-12"
-                    />
-                  </div>
-                </div>
+              <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                <img
+                  src={plusIcon}
+                  alt="Plus"
+                  className="w-6 h-6"
+                />
               </div>
-
-              <div className="flex justify-center px-4 mt-3">
-                <div className="text-center">
-                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                    Blank Canvas
-                  </h3>
-                </div>
+              <div>
+                <h3 className="font-semibold text-gray-800 text-base">Blank Canvas</h3>
+                <p className="text-sm text-gray-500">Start from scratch</p>
               </div>
             </div>
           </div>
@@ -225,7 +211,7 @@ const CertificateGallery = ({
         {/* Template Selection */}
         <div className="flex-1 overflow-y-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+            <h2 className="text-lg font-bold text-gray-800">
               Choose a template
             </h2>
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -270,7 +256,7 @@ const CertificateGallery = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4">
             {filteredTemplates.map((template) => {
               const isRecommended = recommendedTemplateIds.has(template.id);
               const isSelected = selectedTemplate?.id === template.id;
@@ -278,15 +264,15 @@ const CertificateGallery = ({
                 <div
                   key={template.id}
                   onClick={() => handleTemplateSelect(template)}
-                  className={`cursor-pointer group relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
+                  className={`cursor-pointer group relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-blue-200 transition-all duration-200 ${
                     isSelected
-                      ? "ring-2 ring-blue-500 ring-offset-2 shadow-xl"
+                      ? "ring-2 ring-blue-500 ring-offset-2 shadow-md"
                       : ""
                   }`}
                 >
                   {isRecommended && eventName && (
-                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold z-10">
-                      ⭐ Recommended
+                    <div className="absolute top-1.5 right-1.5 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold z-10 shadow-sm">
+                      Recommended
                     </div>
                   )}
 
@@ -294,20 +280,20 @@ const CertificateGallery = ({
                   {template.isOwner && (
                     <button
                       onClick={(e) => handleDeleteTemplate(e, template.id)}
-                      className="absolute top-2 right-2 p-1.5 bg-white/90 text-red-600 rounded-full shadow-sm hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all pointer-events-auto z-10"
+                      className="absolute top-1.5 right-1.5 p-1 bg-white/90 text-red-600 rounded shadow-sm hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all pointer-events-auto z-10"
                       title="Delete Template"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
 
                   {/* Category Badge */}
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium rounded-full uppercase tracking-wider z-10">
+                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/50 backdrop-blur-xs text-white text-[8px] font-medium rounded uppercase tracking-wider z-10">
                     {template.category || "General"}
                   </div>
 
                   {/* Template Preview */}
-                  <div className="bg-linear-to-br from-gray-100 to-gray-200 aspect-4/3 flex items-center justify-center overflow-hidden border border-gray-300 group-hover:border-blue-500 transition-all">
+                  <div className="bg-gray-50 aspect-4/3 flex items-center justify-center overflow-hidden border-b border-gray-100 group-hover:border-blue-100 transition-all">
                     {template.thumbnail || template.preview ? (
                       <img
                         src={template.thumbnail || template.preview}
@@ -315,29 +301,25 @@ const CertificateGallery = ({
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="text-gray-500 text-xs sm:text-sm p-3 sm:p-4 text-center">
+                      <div className="text-gray-400 text-[10px] p-2 text-center uppercase font-medium">
                         {template.name}
                       </div>
                     )}
                   </div>
 
                   {/* Template Info */}
-                  <div className="p-3 sm:p-4">
-                    <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-1 leading-tight text-center">
+                  <div className="p-2.5">
+                    <h3 className="font-semibold text-gray-800 text-[11px] sm:text-xs leading-tight line-clamp-1">
                       {template.name}
                     </h3>
-                    {template.description && (
-                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed ">
+                    {template.description ? (
+                      <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5">
                         {template.description}
                       </p>
-                    )}
-
-                    {isRecommended && eventName && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <p className="text-xs text-blue-600 font-medium">
-                          Works well for {eventName}
-                        </p>
-                      </div>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 mt-0.5 italic">
+                        No description
+                      </p>
                     )}
                   </div>
                 </div>

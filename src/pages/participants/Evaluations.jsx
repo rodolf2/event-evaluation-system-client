@@ -13,9 +13,9 @@ const Evaluations = () => {
   const [evaluations, setEvaluations] = useState([]);
   const [filteredEvaluations, setFilteredEvaluations] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [filterOption, setFilterOption] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 15;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
@@ -50,18 +50,42 @@ const Evaluations = () => {
   }, [fetchMyEvaluations]);
 
   useEffect(() => {
-    const filtered = evaluations.filter((evaluation) =>
+    let processEvaluations = evaluations.filter((evaluation) =>
       evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()),
     );
-    // Sort by eventStartDate
-    const sorted = [...filtered].sort((a, b) => {
+
+    // Apply status filters if a status option is selected
+    if (["available", "upcoming", "closed", "completed"].includes(filterOption)) {
+      processEvaluations = processEvaluations.filter((evaluation) => {
+        const isCompleted = evaluation.completed || false;
+        const now = new Date();
+        const startDate = evaluation.eventStartDate ? new Date(evaluation.eventStartDate) : null;
+        const endDate = evaluation.eventEndDate ? new Date(evaluation.eventEndDate) : null;
+        const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+        
+        const isUpcoming = startDate && now < startDate && !isSameDay(now, startDate);
+        const isExpired = endDate && now > endDate && !isSameDay(now, endDate);
+        const isAvailable = !isUpcoming && !isExpired && !isCompleted;
+        
+        if (filterOption === "available") return isAvailable;
+        if (filterOption === "upcoming") return isUpcoming && !isCompleted;
+        if (filterOption === "closed") return isExpired && !isCompleted;
+        if (filterOption === "completed") return isCompleted;
+        return true;
+      });
+    }
+
+    // Always sort by eventStartDate
+    const finalEvaluations = [...processEvaluations].sort((a, b) => {
       const dateA = new Date(a.eventStartDate || 0);
       const dateB = new Date(b.eventStartDate || 0);
-      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+      // If filterOption is 'oldest', sort ascending. Otherwise (latest or any status filter), sort descending by default.
+      return filterOption === "oldest" ? dateA - dateB : dateB - dateA;
     });
-    setFilteredEvaluations(sorted);
+
+    setFilteredEvaluations(finalEvaluations);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, evaluations, sortOrder]);
+  }, [searchQuery, evaluations, filterOption]);
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -89,7 +113,7 @@ const Evaluations = () => {
   if (loading) {
     return (
       <ParticipantLayout>
-        <div className="bg-gray-100 min-h-screen pb-8">
+        <div className="bg-gray-100 h-full">
           <div className="max-w-full">
             {/* Search and Filter Skeleton */}
             <div className="flex items-center mb-8 gap-4">
@@ -105,8 +129,8 @@ const Evaluations = () => {
             </div>
 
             {/* Evaluation Cards Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {Array.from({ length: 6 }).map((_, index) => (
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+              {Array.from({ length: 15 }).map((_, index) => (
                 <div
                   key={index}
                   className="rounded-lg shadow-md overflow-hidden"
@@ -135,7 +159,7 @@ const Evaluations = () => {
   if (error) {
     return (
       <ParticipantLayout>
-        <div className="bg-gray-100 min-h-screen flex items-center justify-center">
+        <div className="bg-gray-100 h-full flex items-center justify-center">
           <div className="text-red-600 text-center">
             <p className="text-lg font-semibold">Error loading evaluations</p>
             <p>{error}</p>
@@ -153,7 +177,7 @@ const Evaluations = () => {
 
   return (
     <ParticipantLayout>
-      <div className="bg-gray-100 min-h-screen pb-8">
+      <div className="bg-gray-100 h-full">
         <div className="max-w-full">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
@@ -173,12 +197,20 @@ const Evaluations = () => {
                   <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
                     <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
                     <select
-                      value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value)}
+                      value={filterOption}
+                      onChange={(e) => setFilterOption(e.target.value)}
                       className="bg-transparent py-2 pr-8 text-gray-700 appearance-none cursor-pointer focus:outline-none w-full text-sm font-medium"
                     >
-                      <option value="desc">Latest First</option>
-                      <option value="asc">Oldest First</option>
+                      <optgroup label="Sort By Date">
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
+                      </optgroup>
+                      <optgroup label="Filter By Status">
+                        <option value="available">Available</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="closed">Closed</option>
+                        <option value="completed">Completed</option>
+                      </optgroup>
                     </select>
                     <div className="absolute right-3 pointer-events-none">
                       <svg
@@ -187,12 +219,7 @@ const Evaluations = () => {
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
@@ -242,7 +269,7 @@ const Evaluations = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
                 {currentItems.map((evaluation, index) => {
                   const isCompleted = evaluation.completed || false;
                   const now = new Date();
@@ -286,40 +313,36 @@ const Evaluations = () => {
                       }
                     >
                       <div
-                        className={`rounded-r-lg ml-3 p-8 flex items-center h-full min-h-[220px] ${isCompleted ? "bg-green-50" : "bg-white"
-                          }`}
+                      className={`rounded-r-lg ml-3 p-5 sm:p-6 flex flex-col justify-between ${isCompleted ? "bg-green-50" : "bg-white"
+                        }`}
                       >
                         <div className="grow">
-                          <h3 className="font-bold text-xl mb-4 text-gray-800 line-clamp-2 h-14">
+                          <h3 className="font-bold text-lg mb-3 text-gray-800 line-clamp-2">
                             {evaluation.title}
                           </h3>
                           {isCompleted && (
-                            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            <div className="bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full text-sm font-medium mb-3 inline-flex items-center gap-1">
                               <Check className="h-4 w-4" />
                               Completed
                             </div>
                           )}
                           {isExpired && !isCompleted && (
-                            <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            <div className="bg-gray-100 text-gray-800 px-2.5 py-0.5 rounded-full text-sm font-medium mb-3 inline-flex items-center gap-1">
                               Closed
                             </div>
                           )}
                           {isUpcoming && !isCompleted && (
-                            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-4 inline-flex items-center gap-1">
+                            <div className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-sm font-medium mb-3 inline-flex items-center gap-1">
                               Upcoming
                             </div>
                           )}
-                          <div className="text-sm text-gray-500 space-x-4">
-                            <span>
-                              Open: {formatDate(evaluation.eventStartDate)}
-                            </span>
-                            <span>
-                              Closes: {formatDate(evaluation.eventEndDate)}
-                            </span>
+                          <div className="text-sm text-gray-500 space-y-1">
+                            <p>Open: {formatDate(evaluation.eventStartDate)}</p>
+                            <p>Closes: {formatDate(evaluation.eventEndDate)}</p>
                           </div>
                         </div>
                         <div
-                          className={`ml-4 ${isCompleted ? "text-green-500" : "text-gray-400"
+                          className={`mt-4 flex justify-end w-full ${isCompleted ? "text-green-500" : "text-gray-400"
                             }`}
                         >
                           {isCompleted ? (

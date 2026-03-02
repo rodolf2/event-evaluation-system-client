@@ -26,29 +26,15 @@ const CertificateGallery = ({ onTemplateSelect, onBlankCanvas, isFromEvaluation 
         </h2>
         <div className="mb-7">
           <div
-            className="mb-8 text-white p-6 rounded-xl shadow-lg relative"
-            style={{
-              background:
-                "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-            }}
+            className="group bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] max-w-md"
+            onClick={onBlankCanvas}
           >
-            <div className="flex justify-center px-4">
-              <div
-                className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] relative z-10 w-full max-w-5xl"
-                onClick={onBlankCanvas}
-              >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                  <Plus className="w-8 h-8 sm:w-12 sm:h-12 text-blue-700" />
-                </div>
-              </div>
+            <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+              <Plus className="w-6 h-6 text-blue-700" />
             </div>
-
-            <div className="flex justify-center px-4 mt-3">
-              <div className="text-center">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-                  Blank Canvas
-                </h3>
-              </div>
+            <div>
+              <h3 className="font-semibold text-gray-800 text-base">Blank Canvas</h3>
+              <p className="text-sm text-gray-500">Start from scratch</p>
             </div>
           </div>
         </div>
@@ -81,13 +67,17 @@ const CertificateGallery = ({ onTemplateSelect, onBlankCanvas, isFromEvaluation 
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
           {filteredTemplates.map((template) => (
             <div key={template.id} onClick={() => onTemplateSelect(template)} className="cursor-pointer group">
-              <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow aspect-4/3 flex items-center justify-center overflow-hidden">
-                <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 hover:shadow-md hover:border-blue-200 transition-all duration-200 overflow-hidden">
+                <div className="aspect-4/3 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
+                  <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                </div>
+                <div className="p-2 pb-1">
+                  <p className="text-center text-gray-800 font-semibold text-xs sm:text-sm line-clamp-1">{template.name}</p>
+                </div>
               </div>
-              <p className="text-center text-gray-700 font-semibold mt-2">{template.name}</p>
             </div>
           ))}
         </div>

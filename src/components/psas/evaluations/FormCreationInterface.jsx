@@ -60,7 +60,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [formWasPublished, setFormWasPublished] = useState(false);
 
   // UI state
-  const [showMenu, setShowMenu] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -86,6 +85,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
   const [linkedCertificateType, setLinkedCertificateType] =
     useState("completion");
   const [certificateTemplateName, setCertificateTemplateName] = useState(null);
+  // Store scraped response data from Google Forms import for report generation
+  const [scrapedResponseData, setScrapedResponseData] = useState(null);
+  const [importedGoogleFormId, setImportedGoogleFormId] = useState(null);
   // Initialization flag no longer controls the Publish button UI; keep internal-only usage if needed.
 
   // Form session context
@@ -154,7 +156,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
       setHasUnsavedChanges(false);
       setHasShownRecipientsToast(false);
       setFormWasPublished(false);
-      setShowMenu(false);
       setShowDatePicker(false);
       setShowImportModal(false);
       setShowSuccessScreen(false);
@@ -982,6 +983,19 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           setUploadedFiles(tempData.uploadedFiles || []);
           setUploadedLinks(tempData.uploadedLinks || []);
 
+          // Store scraped response data for report generation when publishing
+          // Save to BOTH React state AND FormSessionManager for persistence
+          if (tempData.scrapedResponseData) {
+            setScrapedResponseData(tempData.scrapedResponseData);
+            console.log("[FORM-CREATION] Stored scraped response data in state:", tempData.scrapedResponseData);
+            
+            // CRITICAL: Also save to FormSessionManager so it persists across page refreshes
+            FormSessionManager.saveScrapedResponseData(tempData.scrapedResponseData, tempData.googleFormId);
+          }
+          if (tempData.googleFormId) {
+            setImportedGoogleFormId(tempData.googleFormId);
+          }
+
           // Save to FormSessionManager so it persists
           const formDataToSave = {
             formTitle: tempData.title || "Untitled Form",
@@ -1118,6 +1132,19 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         setSections(reconstructedSections);
         setUploadedFiles(tempData.uploadedFiles || []);
         setUploadedLinks(tempData.uploadedLinks || []);
+
+        // Store scraped response data for report generation when publishing
+        // Save to BOTH React state AND FormSessionManager for persistence
+        if (tempData.scrapedResponseData) {
+          setScrapedResponseData(tempData.scrapedResponseData);
+          console.log("[FORM-CREATION] Stored scraped response data in state (from watcher):", tempData.scrapedResponseData);
+          
+          // CRITICAL: Also save to FormSessionManager so it persists across page refreshes
+          FormSessionManager.saveScrapedResponseData(tempData.scrapedResponseData, tempData.googleFormId);
+        }
+        if (tempData.googleFormId) {
+          setImportedGoogleFormId(tempData.googleFormId);
+        }
 
         // Mark that we've loaded tempFormData to prevent clearing
         tempFormDataLoadedRef.current = true;
@@ -1953,10 +1980,29 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
     // Check if this is from temporary extracted data
     const tempFormData = localStorage.getItem("tempFormData");
     let formData;
+    
+    // Use state variables for scraped response data (set when tempFormData was loaded)
+    // If state is null, try to load from FormSessionManager (persists across page refreshes)
+    let publishScrapedResponseData = scrapedResponseData;
+    let publishGoogleFormId = importedGoogleFormId;
+    
+    // If state variables are null, try loading from FormSessionManager
+    if (!publishScrapedResponseData) {
+      const savedScrapedData = FormSessionManager.loadScrapedResponseData();
+      if (savedScrapedData && savedScrapedData.scrapedResponseData) {
+        publishScrapedResponseData = savedScrapedData.scrapedResponseData;
+        publishGoogleFormId = publishGoogleFormId || savedScrapedData.importedGoogleFormId;
+        console.log("[FORM-PUBLISH] Loaded scraped data from FormSessionManager:", {
+          responseCount: publishScrapedResponseData?.responseCount || 0,
+          googleFormId: publishGoogleFormId
+        });
+      }
+    }
 
     if (tempFormData) {
       // Use temporary data as base
       const tempData = JSON.parse(tempFormData);
+      // Preserve scraped response data for report generation
       formData = {
         title: formTitle,
         description: formDescription,
@@ -1971,6 +2017,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         isCertificateLinked: isCertificateLinked,
         linkedCertificateId: linkedCertificateId,
         certificateCanvasData: certificateCanvasData,
+        googleFormId: tempData.googleFormId || publishGoogleFormId || null,
       };
 
       // If there was a file in the temporary data, we need to upload it now
@@ -2144,7 +2191,16 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
         linkedCertificateType,
         certificateTemplateName,
         certificateCanvasData,
+        // Include scraped response data for report generation (from state)
+        scrapedResponseData: publishScrapedResponseData,
+        googleFormId: publishGoogleFormId || (formData && formData.googleFormId) || null,
       };
+
+      console.log("[FORM-PUBLISH] Publish payload includes:", {
+        hasScrapedResponseData: !!publishScrapedResponseData,
+        scrapedResponseDataCount: publishScrapedResponseData?.responseCount || 0,
+        googleFormId: publishGoogleFormId || (formData && formData.googleFormId) || null,
+      });
 
       const publishResponse = await fetch(
         `/api/forms/${serverFormId}/publish`,
@@ -2172,6 +2228,9 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           },
         });
 
+        // Clear scraped response data from session
+        FormSessionManager.clearScrapedResponseData();
+        
         // Clear persistent storage immediately to prevent restoration on reload
         FormSessionManager.clearAllFormData();
 
@@ -2260,7 +2319,6 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
           setHasUnsavedChanges(false);
           setHasShownRecipientsToast(false);
           setFormWasPublished(false);
-          setShowMenu(false);
           setShowDatePicker(false);
           setShowImportModal(false);
           setShowSuccessScreen(false);
@@ -2295,7 +2353,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
   const content = (
     <>
-      <div className="bg-gray-100 min-h-screen">
+      <div className=" min-h-screen overflow-x-hidden">
         <div className="p-2 sm:p-6">
           <div className="flex flex-row justify-between items-center gap-1 sm:gap-4 mb-6">
             {/* Left Group: Back Button and Dates */}
@@ -2527,7 +2585,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
             ref={formCanvasRef}
             className="flex flex-col md:flex-row justify-center relative"
           >
-            <div className="w-full max-w-4xl relative mt-8">
+            <div className="w-full md:max-w-[calc(100%-5rem)] lg:max-w-4xl relative mt-4 sm:mt-8">
               <div
                 className={`bg-white rounded-lg shadow-sm p-4 sm:p-10 mb-6 relative min-h-[180px] sm:min-h-[220px] ${activeSectionId === "main"
                   ? "ring-2 ring-blue-500/40"
@@ -2543,31 +2601,8 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                   }
                 }}
               >
-                <div className="absolute top-4 right-4">
-                  <button
-                    onClick={() => setShowMenu(!showMenu)}
-                    className="p-2 rounded-full hover:bg-gray-100"
-                  >
-                    <MoreVertical size={20} />
-                  </button>
-                  {showMenu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 border">
-                      <a
-                        href="#"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <Star size={16} className="mr-3" /> Star
-                      </a>
-                      <a
-                        href="#"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <ChevronsDownUp size={16} className="mr-3" /> Move to
-                        folder
-                      </a>
-                    </div>
-                  )}
-                </div>
+
+
 
                 <textarea
                   ref={titleRef}
@@ -2733,7 +2768,7 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
                 className="flex flex-col md:flex-row justify-center"
                 key={s.id}
               >
-                <div className="w-full max-w-4xl relative">
+                <div className="w-full md:max-w-[calc(100%-5rem)] lg:max-w-4xl relative">
                   <div
                     onClick={() => handleSetActiveSection(s.id)}
                     className={`transition ${isActiveSection

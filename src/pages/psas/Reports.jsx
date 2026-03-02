@@ -54,8 +54,8 @@ const ReportCard = ({ report, onSelect }) => {
           </button>
         </div>
       </div>
-      <div className="flex-1 flex flex-col justify-center mt-3">
-        <h3 className="text-gray-800 font-semibold text-center text-sm sm:text-base line-clamp-2 px-1">
+      <div className="flex-1 flex items-center justify-center mt-3 px-1">
+        <h3 className="text-gray-800 font-semibold text-center text-sm sm:text-base line-clamp-2">
           {report.title}
         </h3>
       </div>

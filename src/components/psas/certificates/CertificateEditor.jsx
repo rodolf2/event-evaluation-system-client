@@ -31,6 +31,7 @@ import {
 import { jsPDF } from "jspdf";
 import axios from "axios";
 import { useAuth } from "../../../contexts/useAuth";
+import ConfirmationModal from "../../shared/ConfirmationModal";
 
 const CERTIFICATE_SIZES = {
   // Force all sizes to landscape orientation
@@ -76,6 +77,7 @@ const CertificateEditor = ({
   const [templateDescription, setTemplateDescription] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
 
   useEffect(() => {
     const checkDraft = () => {
@@ -155,26 +157,33 @@ const CertificateEditor = ({
     const draft = localStorage.getItem("certificate_draft");
     if (!draft || !fabricCanvas.current) return;
 
-    if (
-      confirm("Load auto-saved draft? This will replace your current canvas.")
-    ) {
-      fabricCanvas.current.loadFromJSON(draft, () => {
-        fabricCanvas.current.renderAll();
-        centerAndFitCanvas();
-        pushHistory();
-        toast.success("Draft loaded successfully", {
-          duration: 5000,
-          style: {
-            background: "#10B981",
-            color: "#FFFFFF",
-          },
-          iconTheme: {
-            primary: "#FFFFFF",
-            secondary: "#10B981",
-          },
-        });
+    setShowDraftModal(true);
+  }, []);
+
+  const confirmLoadDraft = useCallback(() => {
+    const draft = localStorage.getItem("certificate_draft");
+    if (!draft || !fabricCanvas.current) return;
+
+    setShowDraftModal(false);
+    const toastId = toast.loading("Loading draft...");
+
+    fabricCanvas.current.loadFromJSON(draft, () => {
+      fabricCanvas.current.renderAll();
+      centerAndFitCanvas();
+      pushHistory();
+      toast.success("Draft loaded successfully", {
+        id: toastId,
+        duration: 5000,
+        style: {
+          background: "#10B981",
+          color: "#FFFFFF",
+        },
+        iconTheme: {
+          primary: "#FFFFFF",
+          secondary: "#10B981",
+        },
       });
-    }
+    });
   }, [pushHistory, centerAndFitCanvas]);
 
   // Create refs for functions to prevent unnecessary re-initialization
@@ -2187,6 +2196,18 @@ const CertificateEditor = ({
           </div>
         </div>
       )}
+
+      {/* Load Draft Modal */}
+      <ConfirmationModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onConfirm={confirmLoadDraft}
+        title="Load Draft"
+        message="Load auto-saved draft? This will replace your current canvas."
+        confirmText="Load"
+        cancelText="Cancel"
+        isDestructive={false}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import {
@@ -23,7 +23,7 @@ const Certificates = () => {
   const [showCertificateViewer, setShowCertificateViewer] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   // Debounce search input
   useEffect(() => {
@@ -77,51 +77,9 @@ const Certificates = () => {
 
   // State for certificate thumbnails
   const [certificateThumbnails, setCertificateThumbnails] = useState({});
+  const fetchedCertificateIds = useRef(new Set());
+  const activeBlobUrls = useRef(new Set());
 
-  // Fetch certificate PDFs with authentication and create blob URLs
-  useEffect(() => {
-    const fetchCertificateThumbnails = async () => {
-      for (const cert of certificates) {
-        if (!certificateThumbnails[cert.certificateId]) {
-          try {
-            const response = await fetch(
-              `/api/certificates/download/${cert.certificateId}?inline=true`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              },
-            );
-
-            if (response.ok) {
-              const blob = await response.blob();
-              const blobUrl = URL.createObjectURL(blob);
-              setCertificateThumbnails((prev) => ({
-                ...prev,
-                [cert.certificateId]: blobUrl,
-              }));
-            }
-          } catch (error) {
-            console.error(
-              `Error loading thumbnail for ${cert.certificateId}:`,
-              error,
-            );
-          }
-        }
-      }
-    };
-
-    if (certificates.length > 0 && token) {
-      fetchCertificateThumbnails();
-    }
-
-    // Cleanup blob URLs on unmount
-    return () => {
-      Object.values(certificateThumbnails).forEach((url) => {
-        if (url) URL.revokeObjectURL(url);
-      });
-    };
-  }, [certificates, token, certificateThumbnails]);
 
   const handleDownload = async (certificateId, certificate) => {
     try {
@@ -209,6 +167,72 @@ const Certificates = () => {
     setCurrentPage(pageNumber);
   };
 
+  // Fetch certificate PDFs only for the current page
+  useEffect(() => {
+    let active = true;
+
+    const fetchCertificateThumbnails = async () => {
+      // Create an array of promises for current items that don't have thumbnails yet
+      const fetchPromises = currentItems
+        .filter((cert) => !fetchedCertificateIds.current.has(cert.certificateId))
+        .map(async (cert) => {
+          fetchedCertificateIds.current.add(cert.certificateId);
+
+          try {
+            const response = await fetch(
+              `/api/certificates/download/${cert.certificateId}?inline=true`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            );
+
+            if (response.ok && active) {
+              const blob = await response.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              activeBlobUrls.current.add(blobUrl);
+              setCertificateThumbnails((prev) => ({
+                ...prev,
+                [cert.certificateId]: blobUrl,
+              }));
+            } else if (!response.ok) {
+                fetchedCertificateIds.current.delete(cert.certificateId);
+            }
+          } catch (error) {
+            console.error(
+              `Error loading thumbnail for ${cert.certificateId}:`,
+              error,
+            );
+            fetchedCertificateIds.current.delete(cert.certificateId);
+          }
+        });
+
+      if (fetchPromises.length > 0) {
+        await Promise.all(fetchPromises);
+      }
+    };
+
+    if (currentItems.length > 0 && token) {
+      fetchCertificateThumbnails();
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [currentItems, token]); // Only re-run when current items change
+
+  // Separate cleanup effect on unmount
+  useEffect(() => {
+    const urlsToCleanup = activeBlobUrls.current;
+    return () => {
+      urlsToCleanup.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      urlsToCleanup.clear();
+    };
+  }, []);
+
   // Show certificate viewer if requested
   if (showCertificateViewer && selectedCertificate) {
     return (
@@ -230,7 +254,7 @@ const Certificates = () => {
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="bg-gray-100 min-h-screen pb-8">
+        <div className="bg-gray-100 h-full">
           <div className="max-w-full px-4 md:px-8">
             {/* Search and Filter Skeleton */}
             <div className="flex items-center mb-8 gap-4">
@@ -246,21 +270,21 @@ const Certificates = () => {
             </div>
 
             {/* Certificate Cards Grid Skeleton */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 8 }).map((_, index) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
+              {Array.from({ length: 12 }).map((_, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-lg shadow-md p-4 text-center"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 text-center"
                 >
                   <div
-                    className="relative bg-gray-50 rounded-md mb-4 overflow-hidden"
+                    className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden"
                     style={{ aspectRatio: "1056/816" }}
                   >
                     <SkeletonBase className="w-full h-full" />
                   </div>
                   <div className="flex gap-2 justify-center">
-                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-16 animate-pulse"></div>
-                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-8 w-20 animate-pulse"></div>
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-7 w-16 animate-pulse"></div>
+                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-7 w-20 animate-pulse"></div>
                   </div>
                 </div>
               ))}
@@ -273,7 +297,7 @@ const Certificates = () => {
 
   return (
     <ClubOfficerLayout>
-      <div className="bg-gray-100 min-h-screen pb-8">
+      <div className="h-full">
         <div className="max-w-full px-4 md:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center mb-8 gap-4">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
@@ -284,14 +308,14 @@ const Certificates = () => {
                   placeholder="Search"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
                 />
               </div>
 
               <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
                 {/* Filter/Sort Dropdown */}
                 <div className="relative min-w-[160px]">
-                  <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
+                  <div className="flex items-center bg-white border border-gray-100 rounded-lg px-3 shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
                     <span className="w-3 h-3 bg-[#2662D9] rounded-sm mr-2 shrink-0"></span>
                     <select
                       value={sortOrder}
@@ -321,7 +345,7 @@ const Certificates = () => {
 
                 {/* Compact Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
+                  <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
                     <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
                       Page {currentPage} of {totalPages}
                     </span>
@@ -367,14 +391,14 @@ const Certificates = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
               {currentItems.map((cert) => (
                 <div
                   key={cert._id}
-                  className="bg-white rounded-lg shadow-md p-4 text-center hover:shadow-lg transition-shadow duration-300"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center hover:shadow-md transition-all duration-300 group"
                 >
                   <div
-                    className="relative bg-gray-50 rounded-md mb-4 overflow-hidden flex items-center justify-center"
+                    className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden flex items-center justify-center border border-gray-50 group-hover:border-blue-100 transition-colors"
                     style={{ aspectRatio: "1056/816" }}
                   >
                     {certificateThumbnails[cert.certificateId] ? (
@@ -396,16 +420,16 @@ const Certificates = () => {
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => handleViewCertificate(cert)}
-                      className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                      className="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold hover:bg-green-700 transition-colors shadow-xs"
                     >
-                      <Eye size={14} />
+                      <Eye size={13} />
                       View
                     </button>
                     <button
                       onClick={() => handleDownload(cert.certificateId, cert)}
-                      className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+                      className="flex items-center gap-1 bg-[#2662D9] text-white px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold hover:bg-blue-700 transition-colors shadow-xs"
                     >
-                      <Download size={14} />
+                      <Download size={13} />
                       Download
                     </button>
                   </div>

@@ -44,7 +44,7 @@ function ParticipantCertificatesContent() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-md p-6">
+      <div className="rounded-xl shadow-md p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">My Certificates</h2>
 
         {certificates.length === 0 ? (
@@ -59,7 +59,7 @@ function ParticipantCertificatesContent() {
                 key={certificate._id}
                 className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
               >
-                <div className="aspect-[4/3] bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                <div className="aspect-4/3 bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
                   <span className="text-gray-400">Certificate Preview</span>
                 </div>
                 <h3 className="font-semibold text-gray-800 mb-2">

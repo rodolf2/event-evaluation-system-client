@@ -37,7 +37,7 @@ const NotificationItem = ({
   return (
     <div
       onClick={handleContentClick}
-      className={`relative flex items-start sm:items-center p-3 sm:p-4 border-t border-gray-200 cursor-pointer transition-all duration-200 ${
+      className={`relative flex items-start sm:items-center p-3 sm:p-4 border-t border-gray-200 cursor-pointer transition-all duration-200 overflow-hidden ${
         isAllSelected
           ? "bg-blue-100/50 border-l-4 border-blue-600"
           : notification.read
@@ -54,7 +54,7 @@ const NotificationItem = ({
       />
       
       <div className="flex-1 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 overflow-hidden">
           <div className="flex items-center gap-2 overflow-hidden">
             <span
               className={`h-2 w-2 rounded-full shrink-0 ${
@@ -62,7 +62,7 @@ const NotificationItem = ({
               }`}
               title={notification.read ? "" : "Unread"}
             ></span>
-            <span className={`text-sm sm:text-base truncate ${
+            <span className={`text-sm sm:text-base truncate min-w-0 ${
               notification.read ? "font-medium text-gray-600" : "font-bold text-gray-900"
             }`}>
               {notification.from}
@@ -70,7 +70,7 @@ const NotificationItem = ({
           </div>
           <span className="hidden sm:inline text-gray-400 font-light"> | </span>
           <span
-            className={`text-sm sm:text-base truncate ${
+            className={`text-sm sm:text-base truncate min-w-0 block ${
               notification.read
                 ? "text-gray-600 font-normal"
                 : "text-gray-900 font-semibold"
@@ -80,7 +80,7 @@ const NotificationItem = ({
           </span>
         </div>
         <p
-          className={`text-xs sm:text-sm mt-1 line-clamp-1 ${
+          className={`text-xs sm:text-sm mt-1 line-clamp-1 break-all ${
             notification.read ? "text-gray-400 font-normal" : "text-gray-600 font-medium"
           }`}
         >
