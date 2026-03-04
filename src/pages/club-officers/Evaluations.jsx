@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
-import {
-  SkeletonCard,
-  SkeletonText,
-  SkeletonBase,
-} from "../../components/shared/SkeletonLoader";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { Search, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -56,18 +52,28 @@ const Evaluations = () => {
     );
 
     // Apply status filters if a status option is selected
-    if (["available", "upcoming", "closed", "completed"].includes(filterOption)) {
+    if (
+      ["available", "upcoming", "closed", "completed"].includes(filterOption)
+    ) {
       processEvaluations = processEvaluations.filter((evaluation) => {
         const isCompleted = evaluation.completed || false;
         const now = new Date();
-        const startDate = evaluation.eventStartDate ? new Date(evaluation.eventStartDate) : null;
-        const endDate = evaluation.eventEndDate ? new Date(evaluation.eventEndDate) : null;
-        const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
-        
-        const isUpcoming = startDate && now < startDate && !isSameDay(now, startDate);
+        const startDate = evaluation.eventStartDate
+          ? new Date(evaluation.eventStartDate)
+          : null;
+        const endDate = evaluation.eventEndDate
+          ? new Date(evaluation.eventEndDate)
+          : null;
+        const isSameDay = (d1, d2) =>
+          d1.getFullYear() === d2.getFullYear() &&
+          d1.getMonth() === d2.getMonth() &&
+          d1.getDate() === d2.getDate();
+
+        const isUpcoming =
+          startDate && now < startDate && !isSameDay(now, startDate);
         const isExpired = endDate && now > endDate && !isSameDay(now, endDate);
         const isAvailable = !isUpcoming && !isExpired && !isCompleted;
-        
+
         if (filterOption === "available") return isAvailable;
         if (filterOption === "upcoming") return isUpcoming && !isCompleted;
         if (filterOption === "closed") return isExpired && !isCompleted;
@@ -114,42 +120,51 @@ const Evaluations = () => {
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="bg-gray-100 h-full">
-          <div className="max-w-full">
-            {/* Search and Filter Skeleton */}
-            <div className="flex items-center mb-8 gap-4">
-              <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <div className="w-5 h-5 bg-gray-300 rounded animate-pulse"></div>
-                </div>
-                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
+        <div>
+          {/* Search and Filter Skeleton */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+              <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                <SkeletonBase className="w-full h-10 rounded-lg" />
               </div>
-              <div className="relative">
-                <div className="bg-gray-300 p-3 rounded-lg w-24 h-12 animate-pulse"></div>
+              <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+                <SkeletonBase className="w-36 h-10 rounded-lg" />
+                <SkeletonBase className="w-40 h-10 rounded-lg" />
               </div>
             </div>
+          </div>
 
-            {/* Evaluation Cards Skeleton */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
-              {Array.from({ length: 15 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4 h-full flex flex-col"
-                >
-                  <div className="grow space-y-3">
-                    <SkeletonText lines={1} height="h-4" className="bg-gray-200 w-3/4" />
-                    <div className="space-y-1.5">
-                      <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-1/2" />
-                      <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-2/3" />
-                    </div>
+          {/* Evaluation Cards Skeleton */}
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+            {Array.from({ length: 15 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[170px] flex flex-col overflow-hidden"
+              >
+                {/* Top bar indicator match */}
+                <div className="w-full h-1 bg-gray-100 shrink-0" />
+
+                <div className="p-3 sm:p-4 grow flex flex-col justify-between">
+                  <div className="mb-2">
+                    {/* Title skeleton */}
+                    <SkeletonBase className="w-3/4 h-4 rounded mb-2" />
+                    {/* Badge skeleton */}
+                    <SkeletonBase className="w-16 h-4 rounded" />
                   </div>
-                  <div className="mt-4 flex justify-between items-center">
-                    <SkeletonBase className="w-4 h-4 rounded-full bg-gray-100" />
-                    <SkeletonBase className="w-8 h-8 rounded-lg bg-gray-50" />
+
+                  {/* Bottom section match */}
+                  <div className="flex justify-between items-end mt-2">
+                    <div className="space-y-1.5">
+                      {/* Date skeletons */}
+                      <SkeletonBase className="w-24 h-2 rounded" />
+                      <SkeletonBase className="w-28 h-2 rounded" />
+                    </div>
+                    {/* Icon skeleton */}
+                    <SkeletonBase className="w-4 h-4 rounded" />
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </ClubOfficerLayout>
@@ -159,7 +174,7 @@ const Evaluations = () => {
   if (error) {
     return (
       <ClubOfficerLayout>
-        <div className="bg-gray-100 h-full flex items-center justify-center">
+        <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-red-600 text-center">
             <p className="text-lg font-semibold">Error loading evaluations</p>
             <p>{error}</p>
@@ -177,8 +192,8 @@ const Evaluations = () => {
 
   return (
     <ClubOfficerLayout>
-      <div className="bg-gray-100 h-full">
-        <div className="max-w-full">
+      <div>
+        <div>
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
               <div className="relative w-full lg:max-w-md xl:max-w-xl">
@@ -219,7 +234,12 @@ const Evaluations = () => {
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -234,10 +254,11 @@ const Evaluations = () => {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`p-1.5 rounded-md transition-colors ${currentPage === 1
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "hover:bg-gray-100 text-gray-700"
-                          }`}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          currentPage === 1
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
                         aria-label="Previous page"
                       >
                         <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -245,10 +266,11 @@ const Evaluations = () => {
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`p-1.5 rounded-md transition-colors ${currentPage === totalPages
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "hover:bg-gray-100 text-gray-700"
-                          }`}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          currentPage === totalPages
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
                         aria-label="Next page"
                       >
                         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -297,27 +319,31 @@ const Evaluations = () => {
                   return (
                     <div
                       key={evaluation._id || index}
-                      className={`rounded-xl shadow-sm border border-gray-100 transition-all duration-300 flex flex-col overflow-hidden group ${isCompleted
+                      className={`rounded-xl shadow-sm border border-gray-100 transition-all duration-300 flex flex-col overflow-hidden group min-h-[170px] ${
+                        isCompleted
                           ? "opacity-75"
                           : isExpired || isUpcoming
                             ? "opacity-75"
                             : "hover:shadow-md cursor-pointer"
-                        }`}
+                      }`}
                       onClick={
                         isAvailable
                           ? () =>
-                            navigate(`/evaluations/start/${evaluation._id}`)
+                              navigate(`/evaluations/start/${evaluation._id}`)
                           : undefined
                       }
                     >
-                      <div className={`w-full h-1 shrink-0 transition-all duration-300 ${isCompleted
-                          ? "bg-green-500"
-                          : isExpired
-                            ? "bg-gray-400"
-                            : isUpcoming
-                              ? "bg-blue-400"
-                              : "bg-blue-600 group-hover:h-1.5"
-                        }`}></div>
+                      <div
+                        className={`w-full h-1 shrink-0 transition-all duration-300 ${
+                          isCompleted
+                            ? "bg-green-500"
+                            : isExpired
+                              ? "bg-gray-400"
+                              : isUpcoming
+                                ? "bg-blue-400"
+                                : "bg-blue-600 group-hover:h-1.5"
+                        }`}
+                      ></div>
                       <div className="p-3 sm:p-4 grow flex flex-col justify-between bg-white h-full">
                         <div className="mb-2">
                           <h3 className="font-bold text-sm sm:text-base text-gray-800 line-clamp-2 leading-tight group-hover:text-blue-700 transition-colors">
@@ -343,7 +369,9 @@ const Evaluations = () => {
                         <div className="flex justify-between items-end mt-2">
                           <div className="text-[10px] sm:text-[11px] text-gray-500 space-y-0.5">
                             <p className="flex items-center gap-1.5">
-                              <span className={`w-1 h-1 rounded-full ${isCompleted ? "bg-green-400" : "bg-blue-400"}`}></span>
+                              <span
+                                className={`w-1 h-1 rounded-full ${isCompleted ? "bg-green-400" : "bg-blue-400"}`}
+                              ></span>
                               Open: {formatDate(evaluation.eventStartDate)}
                             </p>
                             <p className="flex items-center gap-1.5 text-gray-400">

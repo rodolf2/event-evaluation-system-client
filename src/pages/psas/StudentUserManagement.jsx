@@ -90,7 +90,7 @@ function StudentUserManagement() {
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // Build query string
       const params = new URLSearchParams({
         page: currentPage,
@@ -99,7 +99,7 @@ function StudentUserManagement() {
       });
 
       if (searchQuery) params.set("search", searchQuery);
-      
+
       if (selectedFilter === "active") params.set("isActive", "true");
       if (selectedFilter === "inactive") params.set("isActive", "false");
       if (selectedFilter === "club-officer") params.set("role", "club-officer");
@@ -188,7 +188,7 @@ function StudentUserManagement() {
         toast.success(successMessage);
         fetchUsers(); // Refresh the list
         fetchStats(); // Refresh stats
-        
+
         // If we updated our own account (unlikely for PSAS Head elevating students, but good practice)
         if (selectedUser._id === currentUser?._id) {
           await refreshUserData();
@@ -240,7 +240,9 @@ function StudentUserManagement() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Changed ${selectedUser.name}'s role to ${STUDENT_ROLE_OPTIONS.find(r => r.value === selectedNewRole)?.label || selectedNewRole}`);
+        toast.success(
+          `Changed ${selectedUser.name}'s role to ${STUDENT_ROLE_OPTIONS.find((r) => r.value === selectedNewRole)?.label || selectedNewRole}`,
+        );
         fetchUsers();
         fetchStats();
 
@@ -262,7 +264,7 @@ function StudentUserManagement() {
   const handleAddStudent = async () => {
     try {
       if (!newStudentEmail) return;
-      
+
       const response = await fetch("/api/users/provision", {
         method: "POST",
         headers: {
@@ -295,7 +297,10 @@ function StudentUserManagement() {
   const SkeletonText = ({ lines = 1, width = "full", height = "h-4" }) => (
     <div className="space-y-2">
       {[...Array(lines)].map((_, i) => (
-        <div key={i} className={`bg-gray-200 rounded animate-pulse ${width} ${height}`} />
+        <div
+          key={i}
+          className={`bg-gray-200 rounded animate-pulse ${width} ${height}`}
+        />
       ))}
     </div>
   );
@@ -319,21 +324,21 @@ function StudentUserManagement() {
       {currentUser?.position === "ITSS" && (
         <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-200 mb-6">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5 bg-gray-50 p-1 rounded-xl border border-gray-100 w-full max-w-sm">
-              <div className="p-2 bg-blue-50 rounded-lg border border-blue-100 shadow-xs">
+            <div className="flex items-center gap-2.5 bg-blue-50 p-1.5 rounded-xl border-2 border-blue-200 w-full max-w-sm shadow-sm transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200">
+              <div className="p-2 bg-white rounded-lg border border-blue-100 shadow-sm">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
-              
-              <div className="relative flex-1 pl-1">
+
+              <div className="relative flex-1 pl-1 pr-2">
                 <input
                   type="email"
                   value={newStudentEmail}
                   onChange={(e) => setNewStudentEmail(e.target.value)}
                   placeholder="Enter student email..."
-                  className="w-full py-1.5 bg-transparent border-none text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 font-medium text-sm"
+                  className="w-full py-2 bg-transparent border-none text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-0 font-semibold text-sm md:text-base"
                 />
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pr-2.5">
-                  <Mail className="w-4 h-4 text-gray-300" />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <Mail className="w-4 h-4 text-blue-400" />
                 </div>
               </div>
             </div>
@@ -361,7 +366,9 @@ function StudentUserManagement() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-xs sm:text-sm">Total Students</span>
+            <span className="text-gray-600 text-xs sm:text-sm">
+              Total Students
+            </span>
             <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           </div>
           <div className="mt-2">
@@ -373,7 +380,9 @@ function StudentUserManagement() {
 
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-xs sm:text-sm">Active Students</span>
+            <span className="text-gray-600 text-xs sm:text-sm">
+              Active Students
+            </span>
             <div className="w-2 h-2 rounded-full bg-green-500"></div>
           </div>
           <div className="mt-2">
@@ -385,7 +394,9 @@ function StudentUserManagement() {
 
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-xs sm:text-sm">Active PBOOs</span>
+            <span className="text-gray-600 text-xs sm:text-sm">
+              Active PBOOs
+            </span>
             <div className="w-2 h-2 rounded-full bg-orange-500"></div>
           </div>
           <div className="mt-2">
@@ -397,7 +408,9 @@ function StudentUserManagement() {
 
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <span className="text-gray-600 text-xs sm:text-sm">New This Week</span>
+            <span className="text-gray-600 text-xs sm:text-sm">
+              New This Week
+            </span>
             <div className="w-2 h-2 rounded-full bg-blue-500"></div>
           </div>
           <div className="mt-2">
@@ -443,7 +456,9 @@ function StudentUserManagement() {
 
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto -mx-px"> {/* Fixed horizontal scrolling */}
+        <div className="overflow-x-auto -mx-px">
+          {" "}
+          {/* Fixed horizontal scrolling */}
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -456,7 +471,7 @@ function StudentUserManagement() {
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Department
                 </th>
-                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Program
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -483,8 +498,8 @@ function StudentUserManagement() {
                           src={user.profilePicture || user.avatar}
                           alt={user.name}
                           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200"
-                           onError={(e) => {
-                            e.target.style.display = 'none';
+                          onError={(e) => {
+                            e.target.style.display = "none";
                             e.target.parentNode.innerHTML =
                               '<svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 border border-gray-200 rounded-full bg-gray-50 p-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>';
                           }}
@@ -496,21 +511,26 @@ function StudentUserManagement() {
                         <div className="font-bold text-gray-900 text-sm">
                           {user.name}
                         </div>
-                        <div className="text-xs text-gray-500 truncate max-w-[140px] sm:max-w-[200px]" title={user.email}>
+                        <div
+                          className="text-xs text-gray-500 truncate max-w-[140px] sm:max-w-[200px]"
+                          title={user.email}
+                        >
                           {user.email}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${user.role === "club-officer" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${user.role === "club-officer" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}
+                    >
                       {user.role === "club-officer" ? "PBOO" : "Student"}
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600">
                     {user.department || "-"}
                   </td>
-                   <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600">
+                  <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600">
                     {user.program || "-"}
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600 whitespace-nowrap">
@@ -518,10 +538,12 @@ function StudentUserManagement() {
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                       <span
+                      <span
                         className={`w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"}`}
                       />
-                      <span className={`text-xs sm:text-sm ${user.isActive ? "text-green-600" : "text-red-600"}`}>
+                      <span
+                        className={`text-xs sm:text-sm ${user.isActive ? "text-green-600" : "text-red-600"}`}
+                      >
                         {user.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
@@ -531,7 +553,6 @@ function StudentUserManagement() {
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
-
                       {/* ITSS can Edit Role */}
                       {currentUser?.position === "ITSS" && user.isActive && (
                         <button
@@ -544,23 +565,29 @@ function StudentUserManagement() {
                       )}
 
                       {/* ITSS can Disable/Enable Student and PBOO Accounts */}
-                      {currentUser?.position === "ITSS" && (user.role === "student" || user.role === "club-officer") && (
-                         <button
-                           onClick={() => handleToggleStatusClick(user)}
-                           className={`p-2 rounded-lg transition ${
-                             user.isActive
-                               ? "text-red-500 hover:text-red-700 hover:bg-red-50"
-                               : "text-green-500 hover:text-green-700 hover:bg-green-50"
-                           }`}
-                           title={user.isActive ? "Disable Account" : "Enable Account"}
-                         >
-                           {user.isActive ? (
-                             <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
-                           ) : (
-                             <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-                           )}
-                         </button>
-                      )}
+                      {currentUser?.position === "ITSS" &&
+                        (user.role === "student" ||
+                          user.role === "club-officer") && (
+                          <button
+                            onClick={() => handleToggleStatusClick(user)}
+                            className={`p-2 rounded-lg transition ${
+                              user.isActive
+                                ? "text-red-500 hover:text-red-700 hover:bg-red-50"
+                                : "text-green-500 hover:text-green-700 hover:bg-green-50"
+                            }`}
+                            title={
+                              user.isActive
+                                ? "Disable Account"
+                                : "Enable Account"
+                            }
+                          >
+                            {user.isActive ? (
+                              <Ban className="w-4 h-4 sm:w-5 sm:h-5" />
+                            ) : (
+                              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+                            )}
+                          </button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -589,7 +616,7 @@ function StudentUserManagement() {
         )}
 
         {/* Pagination Controls */}
-         <div className="flex flex-col md:flex-row justify-between items-center p-4 border-t border-gray-200">
+        <div className="flex flex-col md:flex-row justify-between items-center p-4 border-t border-gray-200">
           <div className="flex items-center gap-2 mb-4 md:mb-0">
             <span className="text-gray-700 text-sm">Rows:</span>
             <select
@@ -604,9 +631,7 @@ function StudentUserManagement() {
               <option value={20}>20</option>
               <option value={50}>50</option>
             </select>
-             <span className="text-gray-700 text-sm">
-              {totalUsers} total
-            </span>
+            <span className="text-gray-700 text-sm">{totalUsers} total</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -639,27 +664,35 @@ function StudentUserManagement() {
               <div
                 className={`p-3 rounded-full mb-4 ${
                   confirmAction === "TOGGLE_STATUS"
-                    ? (selectedUser?.isActive ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600")
+                    ? selectedUser?.isActive
+                      ? "bg-red-100 text-red-600"
+                      : "bg-green-100 text-green-600"
                     : "bg-blue-100 text-blue-600"
                 }`}
               >
                 {confirmAction === "TOGGLE_STATUS" ? (
-                  selectedUser?.isActive ? <Ban className="w-8 h-8" /> : <UserCheck className="w-8 h-8" />
+                  selectedUser?.isActive ? (
+                    <Ban className="w-8 h-8" />
+                  ) : (
+                    <UserCheck className="w-8 h-8" />
+                  )
                 ) : (
                   <Check className="w-8 h-8" />
                 )}
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {confirmAction === "TOGGLE_STATUS" && (selectedUser?.isActive ? "Disable User Access?" : "Enable User Access?")}
+                {confirmAction === "TOGGLE_STATUS" &&
+                  (selectedUser?.isActive
+                    ? "Disable User Access?"
+                    : "Enable User Access?")}
               </h3>
 
               <p className="text-gray-600 mb-6">
-                {confirmAction === "TOGGLE_STATUS" && (
-                  selectedUser?.isActive 
+                {confirmAction === "TOGGLE_STATUS" &&
+                  (selectedUser?.isActive
                     ? `This will disable access for ${selectedUser?.name}. They won't be able to log in.`
-                    : `This will restore access for ${selectedUser?.name}. They will be able to log in again.`
-                )}
+                    : `This will restore access for ${selectedUser?.name}. They will be able to log in again.`)}
               </p>
 
               <div className="flex gap-3 w-full">
@@ -697,7 +730,8 @@ function StudentUserManagement() {
                 Add New Student?
               </h3>
               <p className="text-gray-600 mb-6">
-                Are you sure you want to add/provision a student account for <strong>{newStudentEmail}</strong>?
+                Are you sure you want to add/provision a student account for{" "}
+                <strong>{newStudentEmail}</strong>?
               </p>
               <div className="flex gap-3 w-full">
                 <button

@@ -209,14 +209,6 @@ function UserManagement() {
     setPermissions(DEFAULT_PERMISSIONS[roleId]);
   };
 
-  // Handle permission toggle
-  const handlePermissionToggle = (permissionId) => {
-    setPermissions((prev) => ({
-      ...prev,
-      [permissionId]: !prev[permissionId],
-    }));
-  };
-
   // Handle form submission
   const handleSubmit = useCallback(async () => {
     if (!email.trim()) {
@@ -252,7 +244,7 @@ function UserManagement() {
 
       if (data.success) {
         toast.success(
-          `User ${email} has been provisioned with the ${selectedRole} role.`
+          `User ${email} has been provisioned with the ${selectedRole} role.`,
         );
         setEmail("");
         setSelectedRole("psas");
@@ -283,7 +275,7 @@ function UserManagement() {
       toast.error("Invalid email. Must be a @laverdad.edu.ph address.");
       return;
     }
-    
+
     setShowConfirmModal(true);
   };
 
@@ -385,7 +377,9 @@ function UserManagement() {
                 disabled={!canProvision}
                 placeholder="e.g. student.name@school.edu"
                 className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 ${
-                  !canProvision ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200" : "border-gray-300"
+                  !canProvision
+                    ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200"
+                    : "border-gray-300"
                 }`}
               />
               <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -423,8 +417,8 @@ function UserManagement() {
                   selectedRole === role.id
                     ? "border-blue-500 bg-blue-50"
                     : !canProvision || (role.id === "mis" && !isMisHead)
-                    ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-60"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      ? "border-gray-100 bg-gray-50 cursor-not-allowed opacity-60"
+                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -507,12 +501,10 @@ function UserManagement() {
                         </div>
                       </div>
                       <button
-                        onClick={() => canProvision && handlePermissionToggle(item.id)}
-                        disabled={!canProvision}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          permissions[item.id]
-                            ? canProvision ? "bg-blue-500" : "bg-blue-300 cursor-not-allowed"
-                            : "bg-gray-200"
+                        type="button"
+                        disabled={true}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out cursor-default opacity-80 ${
+                          permissions[item.id] ? "bg-blue-500" : "bg-gray-300"
                         }`}
                       >
                         <span

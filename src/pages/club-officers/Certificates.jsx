@@ -1,11 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
-import {
-  SkeletonCard,
-  SkeletonText,
-  SkeletonBase,
-} from "../../components/shared/SkeletonLoader";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { Search, Download, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
@@ -79,7 +75,6 @@ const Certificates = () => {
   const [certificateThumbnails, setCertificateThumbnails] = useState({});
   const fetchedCertificateIds = useRef(new Set());
   const activeBlobUrls = useRef(new Set());
-
 
   const handleDownload = async (certificateId, certificate) => {
     try {
@@ -174,7 +169,9 @@ const Certificates = () => {
     const fetchCertificateThumbnails = async () => {
       // Create an array of promises for current items that don't have thumbnails yet
       const fetchPromises = currentItems
-        .filter((cert) => !fetchedCertificateIds.current.has(cert.certificateId))
+        .filter(
+          (cert) => !fetchedCertificateIds.current.has(cert.certificateId),
+        )
         .map(async (cert) => {
           fetchedCertificateIds.current.add(cert.certificateId);
 
@@ -197,7 +194,7 @@ const Certificates = () => {
                 [cert.certificateId]: blobUrl,
               }));
             } else if (!response.ok) {
-                fetchedCertificateIds.current.delete(cert.certificateId);
+              fetchedCertificateIds.current.delete(cert.certificateId);
             }
           } catch (error) {
             console.error(
@@ -254,41 +251,42 @@ const Certificates = () => {
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="bg-gray-100 h-full">
-          <div className="max-w-full px-4 md:px-8">
-            {/* Search and Filter Skeleton */}
-            <div className="flex items-center mb-8 gap-4">
-              <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <div className="w-5 h-5 bg-gray-300 rounded animate-pulse"></div>
-                </div>
-                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
+        <div className="max-w-full">
+          {/* Search and Filters Header Skeleton */}
+          <div className="flex flex-col lg:flex-row lg:items-center mb-8 gap-4">
+            <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+              {/* Search Skeleton */}
+              <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                <SkeletonBase className="w-full h-10 rounded-lg" />
               </div>
-              <div className="relative">
-                <div className="bg-gray-300 p-3 rounded-lg w-32 h-12 animate-pulse"></div>
-              </div>
-            </div>
 
-            {/* Certificate Cards Grid Skeleton */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
-              {Array.from({ length: 12 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 text-center"
-                >
-                  <div
-                    className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden"
-                    style={{ aspectRatio: "1056/816" }}
-                  >
-                    <SkeletonBase className="w-full h-full" />
-                  </div>
-                  <div className="flex gap-2 justify-center">
-                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-7 w-16 animate-pulse"></div>
-                    <div className="bg-gray-300 px-3 py-1 rounded text-sm h-7 w-20 animate-pulse"></div>
-                  </div>
-                </div>
-              ))}
+              {/* Filters and Pagination Skeleton */}
+              <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+                <SkeletonBase className="w-40 h-10 rounded-lg" />
+                <SkeletonBase className="w-44 h-10 rounded-lg" />
+              </div>
             </div>
+          </div>
+
+          {/* Certificate Cards Grid Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 text-center"
+              >
+                <div
+                  className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden"
+                  style={{ aspectRatio: "1056/816" }}
+                >
+                  <SkeletonBase className="w-full h-full" />
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <SkeletonBase className="h-7 w-16 rounded-lg bg-gray-200" />
+                  <SkeletonBase className="h-7 w-20 rounded-lg bg-gray-200" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </ClubOfficerLayout>
@@ -298,7 +296,7 @@ const Certificates = () => {
   return (
     <ClubOfficerLayout>
       <div className="h-full">
-        <div className="max-w-full px-4 md:px-8">
+        <div className="max-w-full">
           <div className="flex flex-col lg:flex-row lg:items-center mb-8 gap-4">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
               <div className="relative w-full lg:max-w-md xl:max-w-xl">

@@ -1,5 +1,4 @@
 import { Camera, ChevronRight } from "lucide-react";
-import toast from "react-hot-toast";
 import ProfilePictureModal from "../components/shared/ProfilePictureModal";
 import { useAuth } from "../contexts/useAuth";
 import PSASLayout from "../components/psas/PSASLayout";
@@ -48,12 +47,14 @@ const ToggleSwitch = ({ label, enabled, setEnabled }) => (
     <span className="text-gray-600">{label}</span>
     <button
       onClick={() => setEnabled(!enabled)}
-      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-300 focus:outline-none ${enabled ? "bg-blue-600" : "bg-gray-300"
-        }`}
+      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-300 focus:outline-none ${
+        enabled ? "bg-blue-600" : "bg-gray-300"
+      }`}
     >
       <span
-        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-300 ${enabled ? "translate-x-6" : "translate-x-1"
-          }`}
+        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-300 ${
+          enabled ? "translate-x-6" : "translate-x-1"
+        }`}
       />
     </button>
   </div>
@@ -67,22 +68,9 @@ function Profile() {
   const [loadingBadges, setLoadingBadges] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // Edit mode states
-  const [isEditingInfo, setIsEditingInfo] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editedInfo, setEditedInfo] = useState({
-    department: "",
-    position: "",
-  });
-
-  // Initialize edited info when user data loads
+  // Load notification preferences when user data loads
   useEffect(() => {
     if (user) {
-      setEditedInfo({
-        department: user.department || "",
-        position: user.position || "",
-      });
-      // Load notification preferences
       setMuteNotifications(user.muteNotifications || false);
       setMuteReminders(user.muteReminders || false);
     }
@@ -210,56 +198,7 @@ function Profile() {
     }
   }, [user, token]);
 
-  // Handle edit mode toggle
-  const handleEditClick = () => {
-    setIsEditingInfo(true);
-  };
-
-  // Handle cancel edit
-  const handleCancelEdit = () => {
-    setIsEditingInfo(false);
-    // Reset to original values
-    setEditedInfo({
-      department: user.department || "",
-      position: user.position || "",
-    });
-  };
-
-  // Handle save edited information
-  const handleSaveInfo = async () => {
-    if (!token) return;
-
-    try {
-      setIsSaving(true);
-      const response = await fetch("/api/auth/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(editedInfo),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update local storage with new user data
-        localStorage.setItem("user", JSON.stringify(data.data.user));
-        // Force an immediate UI update by refreshing user data without reload
-        await refreshUserData();
-        setIsEditingInfo(false); // Close edit mode
-        toast.success("Profile updated successfully!");
-      } else {
-        console.error("Failed to update profile:", data.message);
-        toast.error("Failed to update profile. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Error updating profile. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // No edit methods needed
 
   // Get role-based display text
   const getRoleDisplay = (role) => {
@@ -490,31 +429,6 @@ function Profile() {
                 <h2 className="text-xl font-bold text-gray-800">
                   Personal Information
                 </h2>
-                {!isEditingInfo ? (
-                  <button
-                    onClick={handleEditClick}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-                  >
-                    Edit
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleCancelEdit}
-                      disabled={isSaving}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 transition disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveInfo}
-                      disabled={isSaving}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-                    >
-                      {isSaving ? "Saving..." : "Save"}
-                    </button>
-                  </div>
-                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-sm">
                 <div className="min-w-0">
@@ -532,25 +446,9 @@ function Profile() {
                   <label className="block text-gray-500 font-medium">
                     Position
                   </label>
-                  {isEditingInfo ? (
-                    <input
-                      type="text"
-                      value={editedInfo.position}
-                      onChange={(e) =>
-                        setEditedInfo({
-                          ...editedInfo,
-                          position: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border border-gray-300 rounded-lg mt-1"
-                      placeholder="e.g., Department Head, Student"
-                      maxLength={15}
-                    />
-                  ) : (
-                    <p className="text-gray-800 font-semibold mt-1">
-                      {user.position || getRoleDisplay(user.role)}
-                    </p>
-                  )}
+                  <p className="text-gray-800 font-semibold mt-1">
+                    {user.position || getRoleDisplay(user.role)}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-gray-500 font-medium">
@@ -558,29 +456,9 @@ function Profile() {
                       ? "Club"
                       : "Department"}
                   </label>
-                  {isEditingInfo ? (
-                    <input
-                      type="text"
-                      value={editedInfo.department}
-                      onChange={(e) =>
-                        setEditedInfo({
-                          ...editedInfo,
-                          department: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border border-gray-300 rounded-lg mt-1"
-                      placeholder={
-                        user.role === "student" || user.role === "club-officer"
-                          ? "e.g., Student Council, Drama Club"
-                          : "e.g., Student Affairs"
-                      }
-                      maxLength={15}
-                    />
-                  ) : (
-                    <p className="text-gray-800 font-semibold mt-1">
-                      {user.department || "Not specified"}
-                    </p>
-                  )}
+                  <p className="text-gray-800 font-semibold mt-1">
+                    {user.department || "Not specified"}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-gray-500 font-medium">
@@ -626,7 +504,7 @@ function Profile() {
                           key={index}
                           className={
                             acquiredBadges.length > 5
-                              ? "flex flex-col items-center text-center flex-shrink-0 w-1/2 sm:w-1/3 md:w-1/5"
+                              ? "flex flex-col items-center text-center shrink-0 w-1/2 sm:w-1/3 md:w-1/5"
                               : "flex flex-col items-center text-center"
                           }
                         >

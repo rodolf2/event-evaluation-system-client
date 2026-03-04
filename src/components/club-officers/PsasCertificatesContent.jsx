@@ -146,28 +146,9 @@ function PsasCertificatesContent() {
       <div className="p-4 sm:p-6 md:p-8 min-h-[80vh]">
         {/* Header Section - Match CertificateGallery gradient layout */}
         <div className="shrink-0 mb-6 sm:mb-8">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
-            Create a Certificate
-          </h2>
-          <div className="mb-6 sm:mb-8">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse max-w-xs">
-                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-24" />
-                  <div className="h-3 bg-gray-200 rounded w-32" />
-                </div>
-              </div>
-            </div>
-
           {/* Choose a template section */}
           <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
-              <SkeletonText
-                lines={1}
-                width="large"
-                height="h-8"
-                className="bg-gray-300"
-              />
+            <div className="flex flex-col md:flex-row md:items-center justify-end gap-4 mb-6 md:mb-8">
               <div className="flex flex-wrap items-center gap-2 md:gap-3">
                 <SkeletonBase className="w-48 h-10 rounded-lg bg-gray-300" />
                 <SkeletonBase className="w-32 h-10 rounded-lg bg-gray-300" />
@@ -177,7 +158,12 @@ function PsasCertificatesContent() {
 
             {/* Certificate Template Skeletons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 mb-10">
-              {Array.from({ length: 12 }).map((_, index) => (
+              <div className="rounded-xl shadow-sm border-2 border-dashed border-gray-200 h-full min-h-[180px] flex flex-col items-center justify-center bg-gray-50/50">
+                <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse mb-3" />
+                <div className="h-4 bg-gray-200 rounded w-20 animate-pulse mb-1" />
+                <div className="h-3 bg-gray-200 rounded w-24 animate-pulse" />
+              </div>
+              {Array.from({ length: 11 }).map((_, index) => (
                 <div
                   key={index}
                   className="bg-white rounded-xl shadow-sm border border-gray-100 p-2.5"

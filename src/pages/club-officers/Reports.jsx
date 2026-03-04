@@ -10,10 +10,7 @@ import PositiveComments from "../reports/PositiveComments";
 import NegativeComments from "../reports/NegativeComments";
 import NeutralComments from "../reports/NeutralComments";
 import CompleteReport from "../reports/CompleteReport";
-import {
-  SkeletonBase,
-  SkeletonText,
-} from "../../components/shared/SkeletonLoader";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 
 const ReportCard = ({ report, onSelect, token }) => {
   // Build thumbnail URL with auth token
@@ -197,8 +194,9 @@ const Reports = () => {
           const dynamicReport = {
             id: formId,
             formId: formId,
-            title: `Event Analytics Report - ${result.data.formInfo?.title || result.data.formTitle || "Form"
-              }`,
+            title: `Event Analytics Report - ${
+              result.data.formInfo?.title || result.data.formTitle || "Form"
+            }`,
             eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
             lastUpdated: new Date().toISOString(),
             analyticsData: result.data,
@@ -266,28 +264,31 @@ const Reports = () => {
   if (loading && reports.length === 0) {
     return (
       <ClubOfficerLayout>
-        <div className="p-3 sm:p-6 md:p-8 bg-gray-100 min-h-full">
+        <div className="min-h-full">
           {/* Search and Sort Bar Skeleton */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative max-w-md">
-              <SkeletonText className="w-full h-10 bg-gray-300 rounded-lg" />
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+              <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                <SkeletonBase className="w-full h-10 rounded-lg" />
+              </div>
+              <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+                <SkeletonBase className="w-36 h-10 rounded-lg" />
+                <SkeletonBase className="w-40 h-10 rounded-lg" />
+              </div>
             </div>
-            <SkeletonText className="w-20 h-10 bg-gray-300 rounded-lg" />
           </div>
 
           {/* Reports Grid Skeleton */}
           <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {Array.from({ length: 8 }).map((_, index) => (
                 <div
                   key={index}
-                  className="bg-[#EEEEF0] rounded-lg shadow-sm overflow-hidden p-4"
+                  className="bg-white border-2 border-gray-100 rounded-lg overflow-hidden p-3 sm:p-4 shadow-sm"
                 >
-                  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <SkeletonBase className="w-full h-48 bg-gray-300 rounded" />
-                    <div className="p-3">
-                      <SkeletonText className="h-4 w-3/4 mx-auto bg-gray-300 rounded" />
-                    </div>
+                  <SkeletonBase className="w-full aspect-video rounded-lg" />
+                  <div className="mt-3">
+                    <SkeletonBase className="h-4 w-3/4 mx-auto rounded" />
                   </div>
                 </div>
               ))}
@@ -320,7 +321,7 @@ const Reports = () => {
   return (
     <ClubOfficerLayout>
       {view === "list" && (
-        <div className="p-3 sm:p-6 md:p-8 bg-gray-100 min-h-full">
+        <div className="bg-gray-100 min-h-full">
           {/* Search and Sort Bar */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
             <div className="relative w-full lg:max-w-md xl:max-w-xl">
@@ -373,10 +374,11 @@ const Reports = () => {
                     <button
                       onClick={() => setPage(page - 1)}
                       disabled={page === 1}
-                      className={`p-1.5 rounded-md transition-colors ${page === 1
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-100 text-gray-700"
-                        }`}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        page === 1
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
                       aria-label="Previous page"
                     >
                       <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -384,10 +386,11 @@ const Reports = () => {
                     <button
                       onClick={() => setPage(page + 1)}
                       disabled={page === pagination.pages}
-                      className={`p-1.5 rounded-md transition-colors ${page === pagination.pages
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "hover:bg-gray-100 text-gray-700"
-                        }`}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        page === pagination.pages
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
                       aria-label="Next page"
                     >
                       <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -421,7 +424,7 @@ const Reports = () => {
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
-                        300000
+                          300000
                       } // 5 minutes
                     />
                   ))}

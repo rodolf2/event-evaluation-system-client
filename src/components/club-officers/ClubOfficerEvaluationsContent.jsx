@@ -15,7 +15,7 @@ function ClubOfficerEvaluationsContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { token } = useAuth();
   const [view, setView] = useState(
-    localStorage.getItem("evaluationsView") || "dashboard"
+    localStorage.getItem("evaluationsView") || "dashboard",
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -148,10 +148,8 @@ function ClubOfficerEvaluationsContent() {
         // Update the form locally
         setEvaluationForms((prev) =>
           prev.map((form) =>
-            form.id === formId
-              ? { ...form, status: "published" }
-              : form
-          )
+            form.id === formId ? { ...form, status: "published" } : form,
+          ),
         );
         toast.success("Form reopened successfully");
       } else {
@@ -178,8 +176,8 @@ function ClubOfficerEvaluationsContent() {
         // Update the form locally
         setEvaluationForms((prev) =>
           prev.map((form) =>
-            form.id === formId ? { ...form, status: "closed" } : form
-          )
+            form.id === formId ? { ...form, status: "closed" } : form,
+          ),
         );
         toast.success("Form closed successfully");
       } else {
@@ -258,12 +256,12 @@ function ClubOfficerEvaluationsContent() {
 
         if (response.status === 409) {
           toast.error(
-            "This Google Form has already been imported. You can find it in your recent evaluations."
+            "This Google Form has already been imported. You can find it in your recent evaluations.",
           );
         } else if (response.status === 400) {
           toast.error(
             errorData.message ||
-            "Invalid input. Please check your data and try again."
+              "Invalid input. Please check your data and try again.",
           );
         } else {
           toast.error(`Import failed: ${errorData.message}`);
@@ -280,7 +278,7 @@ function ClubOfficerEvaluationsContent() {
   // Filter and sort forms
   const filteredAndSortedForms = evaluationForms
     .filter((form) =>
-      form.title.toLowerCase().includes(searchTerm.toLowerCase())
+      form.title.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a, b) => {
       if (sortBy === "newest") {
@@ -300,24 +298,6 @@ function ClubOfficerEvaluationsContent() {
       <div className="p-6 md:p-5 flex flex-col">
         {/* Header Section - Match the actual gradient layout */}
         <div className="mb-8">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Start an Evaluation</h2>
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
-                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-24" />
-                  <div className="h-3 bg-gray-200 rounded w-32" />
-                </div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
-                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-28" />
-                  <div className="h-3 bg-gray-200 rounded w-36" />
-                </div>
-              </div>
-            </div>
-
           {/* Recent Evaluations Section */}
           <div className="flex-1 overflow-y-auto">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -337,7 +317,12 @@ function ClubOfficerEvaluationsContent() {
 
             {/* Evaluation Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-              {Array.from({ length: 10 }).map((_, index) => (
+              <div className="rounded-xl shadow-sm border-2 border-dashed border-gray-200 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50">
+                <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse mb-3" />
+                <div className="h-4 bg-gray-200 rounded w-24 animate-pulse mb-1" />
+                <div className="h-3 bg-gray-200 rounded w-20 animate-pulse" />
+              </div>
+              {Array.from({ length: 9 }).map((_, index) => (
                 <div
                   key={index}
                   className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 sm:p-3 h-full flex flex-col"
@@ -361,11 +346,19 @@ function ClubOfficerEvaluationsContent() {
                     <div className="space-y-1">
                       <div className="flex items-center">
                         <SkeletonBase className="h-3 w-3 rounded-full bg-gray-100 mr-2" />
-                        <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-16" />
+                        <SkeletonText
+                          lines={1}
+                          height="h-2"
+                          className="bg-gray-100 w-16"
+                        />
                       </div>
                       <div className="flex items-center">
                         <SkeletonBase className="h-3 w-3 rounded-full bg-gray-100 mr-2" />
-                        <SkeletonText lines={1} height="h-2" className="bg-gray-100 w-16" />
+                        <SkeletonText
+                          lines={1}
+                          height="h-2"
+                          className="bg-gray-100 w-16"
+                        />
                       </div>
                     </div>
                   </div>
@@ -432,8 +425,9 @@ function ClubOfficerEvaluationsContent() {
                 onChange={handleUrlChange}
                 value={googleFormsUrl} // Bind value to state
                 disabled={isExtracting}
-                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
+                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                  isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
               />
               <p className="text-sm text-gray-500 mt-1">
                 Paste the URL of an existing Google Form to import its questions
@@ -447,16 +441,18 @@ function ClubOfficerEvaluationsContent() {
                   setGoogleFormsUrl(""); // Clear the URL input on cancel
                 }}
                 disabled={isExtracting}
-                className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${isExtracting ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${
+                  isExtracting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpload}
                 disabled={isExtracting}
-                className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${isExtracting ? "opacity-75 cursor-not-allowed" : ""
-                  }`}
+                className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${
+                  isExtracting ? "opacity-75 cursor-not-allowed" : ""
+                }`}
               >
                 {isExtracting ? (
                   <>

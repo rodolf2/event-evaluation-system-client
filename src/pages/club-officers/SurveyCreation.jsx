@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
-import {
-  SkeletonCard,
-  SkeletonText,
-  SkeletonBase,
-} from "../../components/shared/SkeletonLoader";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 import {
   Search,
   Filter,
@@ -13,6 +9,10 @@ import {
   Users,
   RotateCcw,
   Lock,
+  Plus,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
@@ -20,7 +20,6 @@ import uploadIcon from "../../assets/icons/upload-icon.svg";
 import blankFormIcon from "../../assets/icons/blankform-icon.svg";
 import EvaluatorShareModal from "../../components/shared/EvaluatorShareModal";
 import ConfirmationModal from "../../components/shared/ConfirmationModal";
-import Pagination from "../../components/shared/Pagination";
 
 const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -47,8 +46,11 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
   };
 
   const now = new Date();
-  const isExpired = evaluation.eventEndDate && now > new Date(evaluation.eventEndDate);
-  const isClosed = evaluation.status === "closed" || (evaluation.status === "published" && isExpired);
+  const isExpired =
+    evaluation.eventEndDate && now > new Date(evaluation.eventEndDate);
+  const isClosed =
+    evaluation.status === "closed" ||
+    (evaluation.status === "published" && isExpired);
 
   const handleConfirmReopen = async () => {
     setIsReopening(true);
@@ -73,146 +75,136 @@ const SurveyEvaluationCard = ({ evaluation, onReopen, onClose }) => {
   return (
     <>
       <div
-        className="rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow duration-300 h-full flex flex-col relative"
+        className="rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all duration-300 h-full flex flex-col relative bg-white overflow-hidden group"
         onClick={handleCardClick}
       >
         {isClosed && (
-          <div className="absolute top-2 left-2 z-10">
-            <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 border border-red-200 shadow-sm">
-              <Lock size={12} />
+          <div className="absolute top-1.5 left-1.5 z-10">
+            <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-red-100 shadow-sm">
+              <Lock size={10} />
               Closed
             </span>
           </div>
         )}
-        <div className="bg-white p-4 rounded-t-lg grow flex flex-col">
+        <div className="p-2 sm:p-3 grow flex flex-col">
           <div className="text-center mb-2 shrink-0 relative">
-            <h2 className="text-lg font-bold text-gray-800 line-clamp-2 h-12 flex items-center justify-center">
-              {evaluation.title}
-            </h2>
-            <p className="text-gray-500 text-xs line-clamp-1 mb-2">
+            <div className="min-h-10 flex items-center justify-center px-4">
+              <h2 className="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 text-center leading-tight">
+                {evaluation.title}
+              </h2>
+            </div>
+            <p className="text-gray-500 text-[10px] sm:text-xs line-clamp-1 mt-0.5 px-2">
               {evaluation.description || "No description provided"}
             </p>
 
-            {/* Menu button */}
-            <div className="absolute top-0 right-0">
-              <button
-                onClick={toggleMenu}
-                className="menu-button p-1 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-                title="Actions"
-              >
-                <MoreVertical size={16} />
-              </button>
+            {/* Menu button - only show if there are menu options */}
+            {((evaluation.status === "published" && !isExpired) ||
+              isClosed) && (
+              <div className="absolute -top-1 -right-1 z-20">
+                <button
+                  onClick={toggleMenu}
+                  className="menu-button p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Actions"
+                >
+                  <MoreVertical size={16} />
+                </button>
 
-              {showMenu && (
-                <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-lg z-10 w-48">
-                  {evaluation.status === "published" && !isExpired && (
-                    <>
+                {showMenu && (
+                  <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-xl z-30 w-44 overflow-hidden">
+                    {evaluation.status === "published" && !isExpired && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowShareModal(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-[11px] sm:text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-2 transition-colors"
+                        >
+                          <Users size={14} />
+                          Share with Evaluators
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowCloseConfirm(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-[11px] sm:text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                        >
+                          <Lock size={14} />
+                          Close Form
+                        </button>
+                      </>
+                    )}
+                    {isClosed && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setShowShareModal(true);
+                          setShowReopenConfirm(true);
                           setShowMenu(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center gap-2 text-sm"
+                        className="w-full px-3 py-2 text-left text-[11px] sm:text-xs text-green-600 hover:bg-green-50 flex items-center gap-2 transition-colors"
                       >
-                        <Users size={14} />
-                        Share with Evaluators
+                        <RotateCcw size={14} />
+                        Reopen Form
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowCloseConfirm(true);
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2 text-sm"
-                      >
-                        <Lock size={14} />
-                        Close Form
-                      </button>
-                    </>
-                  )}
-                  {isClosed && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowReopenConfirm(true);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 flex items-center gap-2 text-sm"
-                    >
-                      <RotateCcw size={14} />
-                      Reopen Form
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Fixed preview section */}
-          <div className="grow">
-            <div className="flex justify-between items-center mb-2">
-              <input
-                type="text"
-                placeholder="Sample question..."
-                className="w-full pr-4 py-2 text-xs border border-gray-300 rounded-lg bg-gray-50"
-                disabled
-                value="Sample question preview"
-              />
+          {/* Compact preview section */}
+          <div className="grow mt-1 scale-[0.9] origin-top">
+            <div className="flex justify-between items-center mb-1.5">
+              <div className="w-full py-1 text-[10px] border border-gray-200 rounded px-2 bg-gray-50 text-gray-400 truncate">
+                Sample question preview
+              </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex items-center">
-                <input
-                  type="radio"
-                  name={`option-${evaluation._id}`}
-                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  disabled
-                />
-                <label className="ml-2 text-gray-700 text-xs">Option 1</label>
+                <div className="h-3 w-3 rounded-full border border-gray-300 mr-2" />
+                <label className="text-gray-500 text-[10px]">Option 1</label>
               </div>
               <div className="flex items-center">
-                <input
-                  type="radio"
-                  name={`option-${evaluation._id}`}
-                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  disabled
-                />
-                <label className="ml-2 text-gray-700 text-xs">Option 2</label>
+                <div className="h-3 w-3 rounded-full border border-gray-300 mr-2" />
+                <label className="text-gray-500 text-[10px]">Option 2</label>
               </div>
               <div className="flex items-center">
-                <input
-                  type="radio"
-                  name={`option-${evaluation._id}`}
-                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  disabled
-                />
-                <label className="ml-2 text-gray-700 text-xs">Option 3</label>
+                <div className="h-3 w-3 rounded-full border border-gray-300 mr-2" />
+                <label className="text-gray-500 text-[10px]">Option 3</label>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Fixed footer */}
+        {/* Compact footer */}
         <div
-          className="p-3 rounded-b-lg shrink-0"
+          className="px-2.5 py-2 shrink-0 border-t border-white/10"
           style={{
             background: isClosed
-              ? "linear-gradient(-0.15deg, #4B5563 38%, #1F2937 100%)"
-              : "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
+              ? "linear-gradient(to bottom right, #4B5563, #374151)"
+              : "linear-gradient(to bottom right, #1e40af, #1e3a8a)",
           }}
         >
-          <h3 className="text-sm font-bold text-white line-clamp-1">
+          <h3 className="text-[11px] sm:text-xs font-bold text-white line-clamp-1">
             {evaluation.title}
           </h3>
-          <div className="mt-1 text-xs text-white/80 flex items-center justify-between">
-            <div>
-              <span>{evaluation.responseCount || 0} responses</span>
-              <span className="mx-1">•</span>
-              <span>
-                {isClosed ? "Closed" : (evaluation.status === "published" ? "Published" : "Draft")}
+          <div className="mt-1 text-[9px] sm:text-[10px] text-white/80 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 truncate">
+              <span>{evaluation.responseCount || 0} resp.</span>
+              <span className="opacity-40">•</span>
+              <span className="capitalize">
+                {isClosed
+                  ? "Closed"
+                  : evaluation.status === "published"
+                    ? "Live"
+                    : "Draft"}
               </span>
             </div>
-            <span className="text-[10px]">
+            <span className="shrink-0">
               {new Date(evaluation.createdAt).toLocaleDateString()}
             </span>
           </div>
@@ -266,8 +258,9 @@ const SurveyCreation = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
+  const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 9;
 
   const fetchEvaluations = useCallback(async () => {
     try {
@@ -403,7 +396,7 @@ const SurveyCreation = () => {
         } else if (response.status === 400) {
           toast.error(
             errorData.message ||
-            "Invalid input. Please check your data and try again.",
+              "Invalid input. Please check your data and try again.",
           );
         } else {
           toast.error(`Import failed: ${errorData.message}`);
@@ -428,17 +421,20 @@ const SurveyCreation = () => {
 
       const result = await response.json();
       if (result.success) {
-        toast.success("Form reopened successfully! It is now published and available for another 7 days.", {
-          duration: 8000,
-          style: {
-            background: "#10B981",
-            color: "#FFFFFF",
+        toast.success(
+          "Form reopened successfully! It is now published and available for another 7 days.",
+          {
+            duration: 8000,
+            style: {
+              background: "#10B981",
+              color: "#FFFFFF",
+            },
+            iconTheme: {
+              primary: "#FFFFFF",
+              secondary: "#10B981",
+            },
           },
-          iconTheme: {
-            primary: "#FFFFFF",
-            secondary: "#10B981",
-          },
-        });
+        );
         fetchEvaluations();
       } else {
         toast.error(result.message || "Failed to reopen form");
@@ -460,17 +456,20 @@ const SurveyCreation = () => {
 
       const result = await response.json();
       if (result.success) {
-        toast.success("Form closed successfully. New responses will no longer be accepted.", {
-          duration: 8000,
-          style: {
-            background: "#10B981",
-            color: "#FFFFFF",
+        toast.success(
+          "Form closed successfully. New responses will no longer be accepted.",
+          {
+            duration: 8000,
+            style: {
+              background: "#10B981",
+              color: "#FFFFFF",
+            },
+            iconTheme: {
+              primary: "#FFFFFF",
+              secondary: "#10B981",
+            },
           },
-          iconTheme: {
-            primary: "#FFFFFF",
-            secondary: "#10B981",
-          },
-        });
+        );
         fetchEvaluations();
       } else {
         toast.error(result.message || "Failed to close form");
@@ -486,16 +485,23 @@ const SurveyCreation = () => {
       evaluation.title.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     .filter((evaluation) => {
-      if (["available", "upcoming", "closed", "published"].includes(filterOption)) {
+      if (
+        ["available", "upcoming", "closed", "published"].includes(filterOption)
+      ) {
         const now = new Date();
-        const endDate = evaluation.eventEndDate ? new Date(evaluation.eventEndDate) : null;
+        const endDate = evaluation.eventEndDate
+          ? new Date(evaluation.eventEndDate)
+          : null;
         const isExpired = endDate && now > endDate;
-        const isClosedStatus = evaluation.status === "closed" || (evaluation.status === "published" && isExpired);
+        const isClosedStatus =
+          evaluation.status === "closed" ||
+          (evaluation.status === "published" && isExpired);
         const isPublished = evaluation.status === "published" && !isExpired;
         // Upcoming might not be easily determinable here without eventStartDate, so assuming published is roughly available/active for now in this context.
         // Assuming "published" state is what available means.
-        
-        if (filterOption === "available" || filterOption === "published") return isPublished;
+
+        if (filterOption === "available" || filterOption === "published")
+          return isPublished;
         if (filterOption === "closed") return isClosedStatus;
         if (filterOption === "upcoming") return false; // Without explicit start date in this view, difficult to ascertain 'upcoming'.
       }
@@ -517,119 +523,77 @@ const SurveyCreation = () => {
   const totalPages = Math.ceil(filteredEvaluations.length / itemsPerPage);
   const paginatedEvaluations = filteredEvaluations.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   if (loading) {
     return (
       <ClubOfficerLayout>
-        <div className="p-6 md:p-5 flex flex-col">
-          {/* Header Section - Match the actual gradient layout */}
-          <div className="mb-8">
-            <h2 className="text-lg text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
-                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-24" />
-                  <div className="h-3 bg-gray-200 rounded w-32" />
-                </div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse w-full max-w-sm">
-                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-28" />
-                  <div className="h-3 bg-gray-200 rounded w-36" />
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Evaluations Section */}
+        <div className="flex flex-col min-h-[calc(100vh-64px)]">
+          <div className="shrink-0 flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <SkeletonText
-                  lines={1}
-                  width="medium"
-                  height="h-8"
-                  className="bg-gray-300"
-                />
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-3">
-                  <div className="flex-1 relative">
-                    <SkeletonBase className="w-full pl-12 pr-6 py-4 text-lg rounded-lg bg-gray-300" />
+              {/* Search and Filter Skeleton */}
+              <div className="flex flex-col gap-4 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full">
+                    <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                      <SkeletonBase className="w-full h-10 rounded-lg" />
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <SkeletonBase className="w-36 h-10 rounded-lg" />
+                      <SkeletonBase className="w-40 h-10 rounded-lg" />
+                    </div>
                   </div>
-                  <SkeletonBase className="w-24 h-14 rounded-lg bg-gray-300" />
                 </div>
               </div>
 
               {/* Evaluation Cards Grid */}
               <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
-                {Array.from({ length: 10 }).map((_, index) => (
+                {/* Dashed "Create" placeholder */}
+                <div className="rounded-xl shadow-sm border-2 border-dashed border-gray-200 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50">
+                  <SkeletonBase className="w-12 h-12 rounded-full mb-3" />
+                  <SkeletonBase className="h-4 w-24 rounded mb-1" />
+                  <SkeletonBase className="h-3 w-20 rounded" />
+                </div>
+                {Array.from({ length: 9 }).map((_, index) => (
                   <div
                     key={index}
-                    className="rounded-lg shadow-md h-full flex flex-col"
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 h-full flex flex-col overflow-hidden"
                   >
-                    <div className="bg-white p-6 rounded-t-lg grow flex flex-col">
-                      <div className="text-center mb-4">
-                        <SkeletonText
-                          lines={2}
-                          height="h-6"
-                          className="bg-gray-300"
-                        />
-                        <SkeletonText
-                          lines={1}
-                          height="h-4"
-                          className="bg-gray-300 mt-2"
-                        />
-                      </div>
-                      <div className="grow">
-                        <div className="flex justify-between items-center mb-4">
-                          <SkeletonBase className="w-full pr-6 py-3 text-sm rounded-lg bg-gray-300" />
+                    {/* Card body - matches actual card structure */}
+                    <div className="p-2 sm:p-3 grow flex flex-col">
+                      {/* Title + description */}
+                      <div className="text-center mb-2 shrink-0">
+                        <div className="min-h-10 flex items-center justify-center px-4">
+                          <SkeletonBase className="w-3/4 h-4 rounded" />
                         </div>
-                        <div className="space-y-3">
+                        <SkeletonBase className="w-1/2 h-2 rounded mx-auto mt-1" />
+                      </div>
+                      {/* Preview section */}
+                      <div className="grow mt-1 scale-[0.9] origin-top">
+                        <SkeletonBase className="w-full h-5 rounded mb-1.5" />
+                        <div className="space-y-1">
                           <div className="flex items-center">
-                            <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText
-                              lines={1}
-                              height="h-4"
-                              className="ml-3 bg-gray-300"
-                            />
+                            <SkeletonBase className="h-3 w-3 rounded-full mr-2" />
+                            <SkeletonBase className="h-2 w-14 rounded" />
                           </div>
                           <div className="flex items-center">
-                            <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText
-                              lines={1}
-                              height="h-4"
-                              className="ml-3 bg-gray-300"
-                            />
+                            <SkeletonBase className="h-3 w-3 rounded-full mr-2" />
+                            <SkeletonBase className="h-2 w-14 rounded" />
                           </div>
                           <div className="flex items-center">
-                            <SkeletonBase className="h-4 w-4 rounded bg-gray-300" />
-                            <SkeletonText
-                              lines={1}
-                              height="h-4"
-                              className="ml-3 bg-gray-300"
-                            />
+                            <SkeletonBase className="h-3 w-3 rounded-full mr-2" />
+                            <SkeletonBase className="h-2 w-14 rounded" />
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 rounded-b-lg bg-linear-to-r from-blue-800 to-blue-900">
-                      <SkeletonText
-                        lines={1}
-                        height="h-6"
-                        className="bg-white/20"
-                      />
-                      <div className="mt-2 flex items-center justify-between">
-                        <SkeletonText
-                          lines={1}
-                          height="h-4"
-                          className="bg-white/20"
-                        />
-                        <SkeletonText
-                          lines={1}
-                          height="h-3"
-                          className="bg-white/20"
-                        />
+                    {/* Blue gradient footer */}
+                    <div className="px-2.5 py-2 shrink-0 bg-gradient-to-br from-blue-800 to-blue-900">
+                      <SkeletonBase className="w-2/3 h-3 rounded bg-white/20 mb-1" />
+                      <div className="flex items-center justify-between">
+                        <SkeletonBase className="w-1/3 h-2 rounded bg-white/20" />
+                        <SkeletonBase className="w-1/4 h-2 rounded bg-white/20" />
                       </div>
                     </div>
                   </div>
@@ -645,7 +609,7 @@ const SurveyCreation = () => {
   if (error) {
     return (
       <ClubOfficerLayout>
-        <div className="p-6 md:p-5 bg-gray-50 flex flex-col items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center justify-center min-h-[50vh]">
           <div className="text-red-600 text-center">
             <p className="text-lg font-semibold">Error loading evaluations</p>
             <p>{error}</p>
@@ -664,58 +628,20 @@ const SurveyCreation = () => {
   return (
     <>
       <ClubOfficerLayout>
-        <div className="p-6 md:p-5 flex flex-col">
-          <div className="shrink-0">
-            <h2 className="text-lg text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <div
-                className="group bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full max-w-sm"
-                onClick={handleCreateNew}
-              >
-                <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
-                  <img
-                    src={blankFormIcon}
-                    alt="Blank Form"
-                    className="w-6 h-6"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-base">Blank Form</h3>
-                  <p className="text-sm text-gray-500">Create from scratch</p>
-                </div>
-              </div>
-
-              <div
-                className="group bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full max-w-sm"
-                onClick={handleShowUploadModal}
-              >
-                <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
-                  <img
-                    src={uploadIcon}
-                    alt="Upload"
-                    className="w-6 h-6"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-base">Upload a Form</h3>
-                  <p className="text-sm text-gray-500">Import a Google Form</p>
-                </div>
-              </div>
-            </div>
-
+        <div className="flex flex-col min-h-[calc(100vh-64px)]">
+          <div className="shrink-0 flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-col gap-4 mb-4">
-                <h3 className="text-lg font-bold text-gray-800">Recent Evaluations</h3>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full">
-                    <div className="relative w-full sm:max-w-md">
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="text"
                         placeholder="Search evaluations..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       />
                     </div>
 
@@ -737,12 +663,57 @@ const SurveyCreation = () => {
                           <option value="closed">Closed</option>
                         </optgroup>
                       </select>
+                      {totalPages > 1 && (
+                        <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm">
+                          <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
+                            Page {currentPage} of {totalPages}
+                          </span>
+                          <div className="flex items-center">
+                            <button
+                              onClick={() => setCurrentPage(currentPage - 1)}
+                              disabled={currentPage === 1}
+                              className={`p-1.5 rounded-md transition-colors ${
+                                currentPage === 1
+                                  ? "text-gray-300 cursor-not-allowed"
+                                  : "hover:bg-gray-100 text-gray-700"
+                              }`}
+                              aria-label="Previous page"
+                            >
+                              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                            <button
+                              onClick={() => setCurrentPage(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                              className={`p-1.5 rounded-md transition-colors ${
+                                currentPage === totalPages
+                                  ? "text-gray-300 cursor-not-allowed"
+                                  : "hover:bg-gray-100 text-gray-700"
+                              }`}
+                              aria-label="Next page"
+                            >
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+                <div
+                  className="rounded-xl shadow-sm border-2 border-dashed border-gray-300 cursor-pointer hover:shadow-md hover:border-[#2662D9] hover:bg-blue-50/50 transition-all duration-300 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50 group"
+                  onClick={() => setShowCreateOptions(true)}
+                >
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <Plus className="w-6 h-6 text-[#2662D9]" />
+                  </div>
+                  <h3 className="text-sm font-bold text-gray-800">
+                    New Evaluation
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Create or upload</p>
+                </div>
                 {paginatedEvaluations.map((evaluation) => (
                   <SurveyEvaluationCard
                     key={evaluation._id}
@@ -752,85 +723,104 @@ const SurveyCreation = () => {
                   />
                 ))}
               </div>
-
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-              />
             </div>
           </div>
         </div>
 
-        {showUploadModal && (
-          <div className="fixed inset-0 bg-[#F4F4F5]/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-4 sm:p-6 md:p-8 w-full max-w-lg z-60">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 sm:mb-6">
-                Import Google Form
-              </h3>
+        {/* Create Options Modal */}
+        {showCreateOptions && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+              <button
+                onClick={() => setShowCreateOptions(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-              {/* Google Forms URL Section */}
-              <div className="mb-6">
-                <input
-                  type="url"
-                  placeholder="https://docs.google.com/forms/d/.../viewform"
-                  onChange={handleUrlChange}
-                  value={googleFormsUrl} // Bind value to state
-                  disabled={isExtracting}
-                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${isExtracting ? "bg-gray-100 cursor-not-allowed" : ""
-                    }`}
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  Paste the URL of an existing Google Form to import its
-                  questions
-                </p>
+              <h2 className="text-xl font-bold text-gray-800 mb-6">
+                Create Evaluation
+              </h2>
+
+              <div className="flex flex-col gap-4">
+                <div
+                  className="group bg-gray-50/50 border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full"
+                  onClick={() => {
+                    setShowCreateOptions(false);
+                    handleCreateNew();
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                    <img
+                      src={blankFormIcon}
+                      alt="Blank Form"
+                      className="w-6 h-6"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-800 text-base">
+                      Blank Form
+                    </h3>
+                    <p className="text-sm text-gray-500">Create from scratch</p>
+                  </div>
+                </div>
+
+                <div
+                  className="group bg-gray-50/50 border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:bg-blue-50/50 hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full"
+                  onClick={() => {
+                    setShowCreateOptions(false);
+                    handleShowUploadModal();
+                  }}
+                >
+                  <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                    <img src={uploadIcon} alt="Upload" className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-800 text-base">
+                      Upload a Form
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Upload a Google Form
+                    </p>
+                  </div>
+                </div>
               </div>
+            </div>
+          </div>
+        )}
 
-              <div className="flex gap-3 justify-end">
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-4 sm:p-6 md:p-8 w-full max-w-lg z-60">
+              <h2 className="text-lg sm:text-xl font-bold mb-4">
+                Upload Google Form
+              </h2>
+              <p className="text-gray-600 text-sm sm:text-sm mb-4">
+                Paste a Google Forms URL below to import the form structure.
+              </p>
+              <input
+                type="text"
+                value={googleFormsUrl}
+                onChange={handleUrlChange}
+                placeholder="Paste Google Forms URL here"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              />
+              <div className="flex justify-end gap-3">
                 <button
                   onClick={() => {
                     setShowUploadModal(false);
-                    setGoogleFormsUrl(""); // Clear the URL input on cancel
+                    setGoogleFormsUrl("");
                   }}
-                  disabled={isExtracting}
-                  className={`px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition ${isExtracting ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
+                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpload}
                   disabled={isExtracting}
-                  className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 ${isExtracting ? "opacity-75 cursor-not-allowed" : ""
-                    }`}
+                  className="px-6 sm:px-8 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                  {isExtracting ? (
-                    <>
-                      <svg
-                        className="animate-spin h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Extracting...
-                    </>
-                  ) : (
-                    "Upload Form"
-                  )}
+                  {isExtracting ? "Uploading..." : "Upload"}
                 </button>
               </div>
             </div>

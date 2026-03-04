@@ -1,4 +1,4 @@
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import plusIcon from "../../../assets/icons/plus.svg";
 import { useState, useMemo, useEffect } from "react";
 import axios from "axios";
@@ -21,6 +21,12 @@ const CertificateGallery = ({
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedEventType, setSelectedEventType] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, selectedEventType]);
 
   const [customTemplates, setCustomTemplates] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -65,7 +71,9 @@ const CertificateGallery = ({
       });
 
       // Remove from state
-      setCustomTemplates((prev) => prev.filter((t) => t.id !== templateToDelete));
+      setCustomTemplates((prev) =>
+        prev.filter((t) => t.id !== templateToDelete),
+      );
 
       // If selected, deselect
       if (selectedTemplate?.id === templateToDelete) {
@@ -141,6 +149,12 @@ const CertificateGallery = ({
     recommendedTemplateIds,
   ]);
 
+  const totalPages = Math.ceil(filteredTemplates.length / itemsPerPage);
+  const paginatedTemplates = filteredTemplates.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
   const categories = useMemo(() => {
     const cats = new Set();
     allTemplates.forEach((t) => {
@@ -180,51 +194,23 @@ const CertificateGallery = ({
   return (
     <div className="w-full flex flex-col min-h-[70vh]">
       <div className="shrink-0 mb-6 sm:mb-8">
-        <h2 className="text-lg font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
-          {isFromEvaluation
-            ? "Link a Certificate Template"
-            : "Create a Certificate"}
-        </h2>
-
         {/* Only show Blank Canvas option when NOT from evaluation (certificate linking context) */}
-        {!isFromEvaluation && (
-          <div className="mb-6 sm:mb-8">
-            <div
-              className="group bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all duration-200 border-l-4 border-l-[#2662D9] w-full max-w-sm"
-              onClick={onBlankCanvas}
-            >
-              <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
-                <img
-                  src={plusIcon}
-                  alt="Plus"
-                  className="w-6 h-6"
-                />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800 text-base">Blank Canvas</h3>
-                <p className="text-sm text-gray-500">Start from scratch</p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Template Selection */}
         <div className="flex-1 overflow-y-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
-            <h2 className="text-lg font-bold text-gray-800">
-              Choose a template
-            </h2>
+            <div className="relative w-full lg:max-w-md xl:max-w-xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search templates..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+            </div>
+
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              <div className="relative flex-1 min-w-[200px] sm:min-w-[240px]">
-                <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search templates..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
               <select
                 value={selectedEventType}
                 onChange={(e) => setSelectedEventType(e.target.value)}
@@ -253,11 +239,66 @@ const CertificateGallery = ({
                   ))}
                 </select>
               )}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm">
+                  <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        currentPage === 1
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`p-1.5 rounded-md transition-colors ${
+                        currentPage === totalPages
+                          ? "text-gray-300 cursor-not-allowed"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4">
-            {filteredTemplates.map((template) => {
+            {!isFromEvaluation && (
+              <div
+                className="rounded-xl shadow-sm border-2 border-dashed border-gray-300 cursor-pointer hover:shadow-md hover:border-[#2662D9] hover:bg-blue-50/50 transition-all duration-300 h-full min-h-[180px] flex flex-col items-center justify-center bg-gray-50/50 group"
+                onClick={onBlankCanvas}
+              >
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <img
+                    src={plusIcon}
+                    alt="Plus"
+                    className="w-5 h-5 opacity-70"
+                    style={{
+                      filter:
+                        "brightness(0) saturate(100%) invert(31%) sepia(90%) saturate(1917%) hue-rotate(208deg) brightness(91%) contrast(92%)",
+                    }}
+                  />
+                </div>
+                <h3 className="text-sm font-bold text-gray-800">
+                  Blank Canvas
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">Start from scratch</p>
+              </div>
+            )}
+            {paginatedTemplates.map((template) => {
               const isRecommended = recommendedTemplateIds.has(template.id);
               const isSelected = selectedTemplate?.id === template.id;
               return (
@@ -376,7 +417,7 @@ const CertificateGallery = ({
           )}
         </div>
       </div>
-      
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteConfirm}

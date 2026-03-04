@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import dayjs from "dayjs";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
 import CalendarIcon from "../../assets/icons/calendar.svg";
@@ -52,7 +53,7 @@ const NotificationItem = ({
         onClick={(e) => e.stopPropagation()}
         className="mr-3 sm:mr-4 mt-1 sm:mt-0 h-4 w-4 sm:h-5 sm:w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 shrink-0"
       />
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 overflow-hidden">
           <div className="flex items-center gap-2 overflow-hidden">
@@ -62,9 +63,13 @@ const NotificationItem = ({
               }`}
               title={notification.read ? "" : "Unread"}
             ></span>
-            <span className={`text-sm sm:text-base truncate min-w-0 ${
-              notification.read ? "font-medium text-gray-600" : "font-bold text-gray-900"
-            }`}>
+            <span
+              className={`text-sm sm:text-base truncate min-w-0 ${
+                notification.read
+                  ? "font-medium text-gray-600"
+                  : "font-bold text-gray-900"
+              }`}
+            >
               {notification.from}
             </span>
           </div>
@@ -79,16 +84,20 @@ const NotificationItem = ({
             {notification.title}
           </span>
         </div>
-        <p className={`text-xs sm:text-sm mt-1 line-clamp-1 break-all ${
-          notification.read ? "text-gray-400 font-normal" : "text-gray-600 font-medium"
-        }`}>
+        <p
+          className={`text-xs sm:text-sm mt-1 line-clamp-1 break-all ${
+            notification.read
+              ? "text-gray-400 font-normal"
+              : "text-gray-600 font-medium"
+          }`}
+        >
           {notification.preview}
         </p>
         <div className="sm:hidden mt-2 text-xs text-gray-400">
           {notification.date}
         </div>
       </div>
-      
+
       {isSelected ? (
         <div
           className="flex items-center gap-3 sm:gap-4 ml-2 sm:ml-4 shrink-0"
@@ -112,9 +121,11 @@ const NotificationItem = ({
           />
         </div>
       ) : (
-        <div className={`hidden sm:block text-right font-medium text-xs w-32 ml-4 shrink-0 ${
-          notification.read ? "text-gray-400" : "text-gray-500"
-        }`}>
+        <div
+          className={`hidden sm:block text-right font-medium text-xs w-32 ml-4 shrink-0 ${
+            notification.read ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
           {notification.date}
         </div>
       )}
@@ -255,7 +266,9 @@ const NotificationDetail = ({ notification, onBack }) => {
         : "Prefect of Student Affairs and Services Department";
 
     // Check if this is a "Form Published" success notification for the publisher
-    const isPublisherView = notification.type === "success" && notification.title?.toLowerCase().includes("published");
+    const isPublisherView =
+      notification.type === "success" &&
+      notification.title?.toLowerCase().includes("published");
 
     return (
       <div className="bg-white rounded-xl shadow-md p-8 min-h-[600px]">
@@ -278,14 +291,14 @@ const NotificationDetail = ({ notification, onBack }) => {
               Form Successfully Published!
             </h1>
             <p className="text-lg text-gray-600 mb-2">
-              The evaluation form <strong>{formTitle}</strong> has been successfully shared with the participants.
+              The evaluation form <strong>{formTitle}</strong> has been
+              successfully shared with the participants.
             </p>
             <p className="text-gray-600 mb-2">
-              You can now monitor the responses and view real-time analytics for this event.
+              You can now monitor the responses and view real-time analytics for
+              this event.
             </p>
-            <p className="text-gray-600 mb-6">
-              Thank you for your hard work!
-            </p>
+            <p className="text-gray-600 mb-6">Thank you for your hard work!</p>
             <p className="text-gray-700 font-medium">To God be the Glory!</p>
           </div>
         ) : (
@@ -366,7 +379,7 @@ const NotificationDetail = ({ notification, onBack }) => {
   const handleDateClick = (clickedDate) => {
     const targetStr = dayjs(clickedDate).format("YYYY-MM-DD");
     const remindersOnDate = allReminders.filter(
-      (r) => dayjs(r.date).format("YYYY-MM-DD") === targetStr
+      (r) => dayjs(r.date).format("YYYY-MM-DD") === targetStr,
     );
     setSelectedDateReminders(remindersOnDate);
     if (remindersOnDate.length > 0) {
@@ -382,8 +395,16 @@ const NotificationDetail = ({ notification, onBack }) => {
     const year = centerpieceDate.getFullYear();
     const centerDay = centerpieceDate.getDate();
 
-    const daysInMonth = new Date(year, centerpieceDate.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(year, centerpieceDate.getMonth(), 1).getDay();
+    const daysInMonth = new Date(
+      year,
+      centerpieceDate.getMonth() + 1,
+      0,
+    ).getDate();
+    const firstDayOfMonth = new Date(
+      year,
+      centerpieceDate.getMonth(),
+      1,
+    ).getDay();
 
     const days = [];
     for (let i = 0; i < firstDayOfMonth; i++) {
@@ -394,7 +415,7 @@ const NotificationDetail = ({ notification, onBack }) => {
       const isSelected = i === centerDay;
       const iterStr = dayjs(currentIterDate).format("YYYY-MM-DD");
       const hasReminders = allReminders.some(
-        (r) => dayjs(r.date).format("YYYY-MM-DD") === iterStr
+        (r) => dayjs(r.date).format("YYYY-MM-DD") === iterStr,
       );
 
       days.push(
@@ -502,7 +523,14 @@ const NotificationDetail = ({ notification, onBack }) => {
           <div className="p-6 h-[400px] overflow-y-auto custom-scrollbar">
             {selectedDateReminders && selectedDateReminders.length > 0 ? (
               selectedDateReminders.map((r, idx) => (
-                <div key={r._id || idx} className={idx > 0 ? "mt-12 pt-12 border-t-2 border-dashed border-gray-100" : ""}>
+                <div
+                  key={r._id || idx}
+                  className={
+                    idx > 0
+                      ? "mt-12 pt-12 border-t-2 border-dashed border-gray-100"
+                      : ""
+                  }
+                >
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider">
                       Reminder Details
@@ -532,7 +560,9 @@ const NotificationDetail = ({ notification, onBack }) => {
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
                 <Bell className="w-8 h-8 mb-2 opacity-20" />
-                <p className="text-sm">Select a date with a dot to view reminders.</p>
+                <p className="text-sm">
+                  Select a date with a dot to view reminders.
+                </p>
               </div>
             )}
           </div>
@@ -903,42 +933,44 @@ function Notifications() {
   if (loading && !viewingNotification) {
     return (
       <ClubOfficerLayout>
-        <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-full">
+        <div className="min-h-full">
           {/* Search bar skeleton */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between sm:items-center mb-4">
-            <div className="h-10 w-full sm:w-1/3 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-32 bg-gray-200 rounded animate-pulse"></div>
-              <div className="flex items-center gap-1">
-                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-                <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-              </div>
+            <div className="relative w-full sm:w-1/3">
+              <SkeletonBase className="h-10 w-full rounded-lg" />
+            </div>
+            <div className="flex items-center gap-3">
+              <SkeletonBase className="h-10 w-40 rounded-lg" />
             </div>
           </div>
 
           {/* Notification list skeleton */}
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            {/* Header skeleton */}
-            <div className="flex items-center p-3 bg-gray-200 border-b border-gray-300">
-              <div className="h-5 w-5 bg-gray-300 rounded mr-4 animate-pulse"></div>
-              <div className="h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
+            {/* Header skeleton style match */}
+            <div className="flex items-center p-3 sm:p-4 bg-gray-50 border-b border-gray-200">
+              <SkeletonBase className="h-5 w-5 rounded mr-4" />
+              <SkeletonBase className="h-5 w-32 rounded" />
             </div>
 
             {/* Notification items skeleton */}
-            {[...Array(8)].map((_, i) => (
+            {[...Array(15)].map((_, i) => (
               <div
                 key={i}
-                className="flex items-center p-4 border-t border-gray-200 animate-pulse"
+                className="flex items-start sm:items-center p-3 sm:p-4 border-t border-gray-200"
               >
-                <div className="h-5 w-5 bg-gray-200 rounded mr-4"></div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                    <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                <SkeletonBase className="h-4 w-4 sm:h-5 sm:w-5 rounded mr-3 sm:mr-4 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1.5 overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <SkeletonBase className="h-4 w-20 sm:w-24 rounded" />
+                    </div>
+                    <SkeletonBase className="h-4 w-32 sm:w-48 rounded" />
                   </div>
-                  <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                  <SkeletonBase className="h-3 w-3/4 rounded" />
                 </div>
-                <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                <div className="hidden sm:block ml-4 shrink-0">
+                  <SkeletonBase className="h-4 w-20 rounded" />
+                </div>
               </div>
             ))}
           </div>

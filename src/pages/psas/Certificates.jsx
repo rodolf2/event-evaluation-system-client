@@ -3,11 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import PSASLayout from "../../components/psas/PSASLayout";
 import ClubOfficerLayout from "../../components/club-officers/ClubOfficerLayout";
 import { useAuth } from "../../contexts/useAuth";
-import {
-  SkeletonCard,
-  SkeletonBase,
-  SkeletonText,
-} from "../../components/shared/SkeletonLoader";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 import CertificateEditor from "../../components/psas/certificates/CertificateEditor";
 import CertificateGallery from "../../components/psas/certificates/CertificateGallery";
 import { FormSessionManager } from "../../utils/formSessionManager";
@@ -163,38 +159,45 @@ const Certificates = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="p-4 sm:p-6 md:p-8 min-h-[80vh]">
-          {/* Header Section - Match CertificateGallery gradient layout */}
-          <div className="shrink-0 mb-6 sm:mb-8">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 sm:mb-6 leading-tight">
-              Create a Certificate
-            </h2>
-            <div className="mb-6 sm:mb-8">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-gray-300 animate-pulse max-w-xs">
-                <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-24" />
-                  <div className="h-3 bg-gray-200 rounded w-32" />
+        <div className="min-h-[80vh]">
+          <div className="max-h-screen flex flex-col">
+            <div className="flex-1 overflow-y-auto">
+              {/* Search and Filters Header Skeleton */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
+                <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                  <SkeletonBase className="w-full h-10 rounded-lg" />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                  <SkeletonBase className="w-36 h-10 rounded-lg" />
+                  <SkeletonBase className="w-40 h-10 rounded-lg" />
                 </div>
               </div>
-            </div>
 
-            {/* Certificate Template Skeletons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 mb-10">
-              {Array.from({ length: 12 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-2.5"
-                >
-                  <div className="aspect-4/3 bg-gray-50 rounded-lg mb-3 overflow-hidden">
-                    <SkeletonBase className="w-full h-full" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4">
+                {/* Dashed "Blank Canvas" placeholder skeleton */}
+                {!isFromEvaluation && (
+                  <div className="rounded-xl shadow-sm border-2 border-dashed border-gray-200 h-full min-h-[180px] flex flex-col items-center justify-center bg-gray-50/50">
+                    <SkeletonBase className="w-12 h-12 rounded-full mb-3 bg-gray-200" />
+                    <SkeletonBase className="h-4 w-24 rounded mb-1 bg-gray-200" />
+                    <SkeletonBase className="h-3 w-32 rounded bg-gray-200" />
                   </div>
-                  <div className="space-y-2">
-                    <SkeletonText className="h-3 w-3/4 mx-auto" height="h-3" />
-                    <SkeletonText className="h-2 w-1/2 mx-auto" height="h-2" />
+                )}
+                
+                {Array.from({ length: 9 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                  >
+                    <div className="aspect-4/3 bg-gray-50 flex items-center justify-center">
+                      <SkeletonBase className="w-full h-full" />
+                    </div>
+                    <div className="p-2.5">
+                      <SkeletonBase className="h-3.5 w-3/4 rounded mb-2" />
+                      <SkeletonBase className="h-2.5 w-1/2 rounded" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -222,7 +225,7 @@ const Certificates = () => {
   // Gallery view
   return (
     <Layout>
-      <div className="p-4 sm:p-6 md:p-8 min-h-[80vh]">
+      <div className="min-h-[80vh]">
         <CertificateGallery
           onTemplateSelect={handleTemplatePreview}
           onBlankCanvas={handleBlankCanvas}

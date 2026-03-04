@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Search,
-  Filter,
-  ChevronRight,
-  ChevronLeft
-} from "lucide-react";
-import uploadIcon from "../../../assets/icons/upload-icon.svg";
-import blankFormIcon from "../../../assets/icons/blankform-icon.svg";
+import { Search, Filter, ChevronRight, ChevronLeft } from "lucide-react";
 
 const EvaluationContent = ({
   searchTerm,
@@ -14,8 +7,6 @@ const EvaluationContent = ({
   sortBy,
   setSortBy,
   evaluationForms,
-  onCreateNew,
-  onShowUploadModal
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -28,63 +19,11 @@ const EvaluationContent = ({
   const totalPages = Math.ceil(evaluationForms.length / itemsPerPage);
   const paginatedForms = evaluationForms.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   return (
-    <div className="p-4 md:p-8  min-h-screen">
-      {/* Start an evaluation section - preserved */}
-      <div className="shrink-0">
-        <h2 className="text-lg text-gray-800 mb-4 font-bold">Start an Evaluation</h2>
-        <div className="mb-7">
-          <div
-            className="mb-8 text-white p-6 rounded-xl shadow-lg relative"
-            style={{
-              background:
-                "linear-gradient(-0.15deg, #324BA3 38%, #002474 100%)",
-            }}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-              <div className="flex flex-col items-center gap-3">
-                <div
-                  className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
-                  onClick={onCreateNew}
-                >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
-                    <img
-                      src={blankFormIcon}
-                      alt="Blank Form"
-                      className="w-8 h-8 sm:w-12 sm:h-12"
-                    />
-                  </div>
-                </div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-                  Blank Form
-                </h3>
-              </div>
-
-              <div className="flex flex-col items-center gap-3">
-                <div
-                  className="bg-white rounded-xl shadow-lg p-4 sm:p-8 text-center cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 relative z-10 w-full"
-                  onClick={onShowUploadModal}
-                >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mx-auto">
-                    <img
-                      src={uploadIcon}
-                      alt="Upload"
-                      className="w-8 h-8 sm:w-12 sm:h-12"
-                    />
-                  </div>
-                </div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-                  Upload Form
-                </h3>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen">
       {/* Recent Evaluations Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-3 w-full">
@@ -109,7 +48,7 @@ const EvaluationContent = ({
               <option value="oldest">Oldest</option>
               <option value="title">Title A-Z</option>
             </select>
-            
+
             {/* Compact Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
@@ -120,10 +59,11 @@ const EvaluationContent = ({
                   <button
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`p-1.5 rounded-md transition-colors ${currentPage === 1
-                      ? "text-gray-300 cursor-not-allowed"
-                      : "hover:bg-gray-100 text-gray-700"
-                      }`}
+                    className={`p-1.5 rounded-md transition-colors ${
+                      currentPage === 1
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-100 text-gray-700"
+                    }`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -131,10 +71,11 @@ const EvaluationContent = ({
                   <button
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`p-1.5 rounded-md transition-colors ${currentPage === totalPages
-                      ? "text-gray-300 cursor-not-allowed"
-                      : "hover:bg-gray-100 text-gray-700"
-                      }`}
+                    className={`p-1.5 rounded-md transition-colors ${
+                      currentPage === totalPages
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "hover:bg-gray-100 text-gray-700"
+                    }`}
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
