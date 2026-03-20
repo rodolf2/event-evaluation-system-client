@@ -148,7 +148,7 @@ function GuestLogin() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left Panel */}
-      <div className="flex flex-col justify-center items-center w-full lg:w-1/2 p-6 sm:p-8 bg-white">
+      <div className="flex-1 flex flex-col justify-center items-center w-full lg:w-1/2 p-6 sm:p-8 bg-white min-h-[50vh] lg:min-h-0">
         <div className="flex flex-col items-center w-full max-w-xs sm:max-w-sm md:max-w-md h-full justify-center">
           {/* Logo */}
           <img
@@ -281,7 +281,7 @@ function GuestLogin() {
       </div>
 
       {/* Right Panel */}
-      <div className="w-full lg:w-1/2 bg-white p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 w-full lg:w-1/2 bg-white p-4 sm:p-6 lg:p-8">
         <div className="relative w-full h-full min-h-[50vh] lg:min-h-0 rounded-2xl overflow-hidden flex items-center justify-center">
           {/* Background Image */}
           <img

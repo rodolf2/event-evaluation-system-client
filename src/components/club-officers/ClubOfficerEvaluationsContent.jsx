@@ -35,7 +35,7 @@ function ClubOfficerEvaluationsContent() {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await fetch("/api/forms?limit=1000", {
+        const response = await fetch("/api/forms?limit=1000&summaryOnly=true", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

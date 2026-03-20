@@ -25,13 +25,13 @@ const ReportCard = ({ report, onSelect }) => {
             onLoad={() => {
               console.log(
                 `✅ Thumbnail loaded for: ${report.title}`,
-                report.thumbnail
+                report.thumbnail,
               );
             }}
             onError={(e) => {
               console.error(
                 `❌ Thumbnail failed for: ${report.title}`,
-                report.thumbnail
+                report.thumbnail,
               );
               e.target.onerror = null;
               // Fallback to placeholder with report title
@@ -104,6 +104,7 @@ const ReportsContent = () => {
           ...(filters.startDate && { startDate: filters.startDate }),
           ...(filters.endDate && { endDate: filters.endDate }),
           ...(filters.department && { department: filters.department }),
+          summaryOnly: "true",
         });
 
         const response = await fetch(`/api/analytics/reports?${queryParams}`, {
@@ -133,7 +134,7 @@ const ReportsContent = () => {
         setLoading(false);
       }
     },
-    [token, searchQuery, filters, limit, page]
+    [token, searchQuery, filters, limit, page],
   );
 
   // Setup real-time listeners for reports
@@ -146,7 +147,11 @@ const ReportsContent = () => {
           fetchReports();
         }
         // If we are viewing the report for this specific form, refresh it
-        else if (selectedReport && (selectedReport.id === data.formId || selectedReport.formId === data.formId)) {
+        else if (
+          selectedReport &&
+          (selectedReport.id === data.formId ||
+            selectedReport.formId === data.formId)
+        ) {
           fetchReportById(data.formId);
         }
       });
@@ -179,8 +184,9 @@ const ReportsContent = () => {
         const dynamicReport = {
           id: formId,
           formId: formId,
-          title: `Event Analytics Report - ${result.data.formInfo?.title || result.data.formTitle || "Form"
-            }`,
+          title: `Event Analytics Report - ${
+            result.data.formInfo?.title || result.data.formTitle || "Form"
+          }`,
           eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
           lastUpdated: new Date().toISOString(),
           analyticsData: result.data,
@@ -346,7 +352,7 @@ const ReportsContent = () => {
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
-                        300000
+                          300000
                       } // 5 minutes
                     />
                   ))}
@@ -359,7 +365,7 @@ const ReportsContent = () => {
                       Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
                       {Math.min(
                         pagination.page * pagination.limit,
-                        pagination.total
+                        pagination.total,
                       )}{" "}
                       of {pagination.total} reports
                     </div>

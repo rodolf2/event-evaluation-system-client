@@ -356,23 +356,6 @@ function AuditLogs() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">
-          </h1>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleExportPDF}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-            >
-              <FileText className="w-4 h-4" />
-              Export PDF
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -416,7 +399,7 @@ function AuditLogs() {
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           {/* Search */}
-          <div className="relative flex-1 w-full lg:max-w-md">
+          <div className="relative w-full sm:w-80 lg:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
@@ -429,6 +412,14 @@ function AuditLogs() {
 
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition min-w-[130px]"
+            >
+              <FileText className="w-4 h-4" />
+              Export PDF
+            </button>
+
             {/* Event Type Dropdown */}
             <div className="relative">
               <select

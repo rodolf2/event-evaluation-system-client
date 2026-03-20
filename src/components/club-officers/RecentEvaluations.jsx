@@ -20,7 +20,7 @@ const RecentEvaluations = () => {
   const fetchRecentEvaluations = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/forms?limit=100", {
+      const response = await fetch("/api/forms?limit=100&summaryOnly=true", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -54,7 +54,7 @@ const RecentEvaluations = () => {
   const totalPages = Math.ceil(evaluations.length / itemsPerPage);
   const paginatedEvaluations = evaluations.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   if (loading) {

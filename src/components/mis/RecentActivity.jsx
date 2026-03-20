@@ -107,13 +107,8 @@ const RecentActivity = () => {
                   <span className="font-bold text-gray-900 text-sm tracking-wide uppercase truncate" title={activity.action}>
                     {activity.action}
                   </span>
-                  <span className="text-xs text-gray-400 mt-1">
-                    {new Date(activity.createdAt).toLocaleString(undefined, {
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}
-                  </span>
               </div>
-              <span className="text-gray-600 text-sm leading-relaxed break-all min-w-0">
+              <span className="text-gray-600 text-sm leading-relaxed truncate min-w-0" title={activity.description}>
                 {activity.description}
               </span>
             </div>

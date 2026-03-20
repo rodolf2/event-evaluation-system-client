@@ -77,7 +77,7 @@ const RecentActivity = () => {
               <span className="font-bold text-gray-900 text-sm tracking-wide uppercase min-w-0 break-all sm:break-normal">
                 {activity.action}
               </span>
-              <span className="text-gray-600 text-sm leading-relaxed break-all min-w-0">
+              <span className="text-gray-600 text-sm leading-relaxed truncate min-w-0" title={activity.description}>
                 {activity.description}
               </span>
             </div>

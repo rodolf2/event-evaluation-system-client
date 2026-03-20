@@ -53,7 +53,7 @@ export const sidebarConfig = {
 
 export const layoutConfig = {
   showProfileSection: false,
-  profileSectionPaths: ["/club-officer/home"],
+  profileSectionPaths: [],
   headerConfig,
   sidebarConfig,
 };

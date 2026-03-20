@@ -43,7 +43,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
   }, [isModalOpen]);
 
   return (
-    <div className={`flex min-h-screen ${backgroundColor} relative`}>
+    <div className={`flex h-screen overflow-hidden ${backgroundColor} relative`}>
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={toggleSidebar}
@@ -67,27 +67,35 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
       )}
 
       <main
-        className={`flex-1 min-w-0 overflow-hidden p-4 sm:p-6 lg:p-8 space-y-6 transition-all duration-300 relative ${isSidebarOpen ? "lg:ml-[276px]" : "lg:ml-[116px]"
-          }`}
+        className={`flex-1 min-w-0 overflow-y-auto h-full transition-all duration-300 relative ${
+          isSidebarOpen ? "lg:ml-[276px]" : "lg:ml-[116px]"
+        }`}
       >
-        <Header
-          sidebarOpen={isSidebarOpen}
-          onMenuClick={toggleSidebar}
-          onProfileClick={handleProfileClick}
-          config={headerConfig}
-          className="print:hidden"
-          isProfileModalOpen={isProfileModalOpen}
-        />
-        {user &&
-          showProfileSection &&
-          showProfileSectionOnPath &&
-          !pageLoading && <ProfileSection />}
         <div
-          className={
-            showProfileSection && showProfileSectionOnPath ? "mt-6" : ""
-          }
+          className={`sticky top-0 z-40 p-4 sm:p-6 lg:p-8 pb-4 ${backgroundColor}`}
         >
-          {children}
+          <Header
+            sidebarOpen={isSidebarOpen}
+            onMenuClick={toggleSidebar}
+            onProfileClick={handleProfileClick}
+            config={headerConfig}
+            className="print:hidden w-full"
+            isProfileModalOpen={isProfileModalOpen}
+          />
+        </div>
+        
+        <div className="px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
+          {user &&
+            showProfileSection &&
+            showProfileSectionOnPath &&
+            !pageLoading && <ProfileSection />}
+          <div
+            className={
+              showProfileSection && showProfileSectionOnPath ? "mt-6" : ""
+            }
+          >
+            {children}
+          </div>
         </div>
       </main>
 

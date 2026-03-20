@@ -35,7 +35,7 @@ function PsasEvaluationsContent() {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await fetch("/api/forms", {
+        const response = await fetch("/api/forms?summaryOnly=true", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

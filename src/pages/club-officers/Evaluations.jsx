@@ -12,7 +12,7 @@ const Evaluations = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOption, setFilterOption] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
@@ -135,11 +135,11 @@ const Evaluations = () => {
           </div>
 
           {/* Evaluation Cards Skeleton */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
-            {Array.from({ length: 15 }).map((_, index) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+            {Array.from({ length: 10 }).map((_, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[170px] flex flex-col overflow-hidden"
+                className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[200px] flex flex-col overflow-hidden"
               >
                 {/* Top bar indicator match */}
                 <div className="w-full h-1 bg-gray-100 shrink-0" />
@@ -203,7 +203,7 @@ const Evaluations = () => {
                   placeholder="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
                 />
               </div>
 
@@ -291,7 +291,7 @@ const Evaluations = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
                 {currentItems.map((evaluation, index) => {
                   const isCompleted = evaluation.completed || false;
                   const now = new Date();
@@ -319,7 +319,7 @@ const Evaluations = () => {
                   return (
                     <div
                       key={evaluation._id || index}
-                      className={`rounded-xl shadow-sm border border-gray-100 transition-all duration-300 flex flex-col overflow-hidden group min-h-[170px] ${
+                      className={`bg-white rounded-xl shadow-sm border border-gray-100 transition-all duration-300 flex flex-col overflow-hidden group min-h-[200px] h-full ${
                         isCompleted
                           ? "opacity-75"
                           : isExpired || isUpcoming
@@ -344,7 +344,7 @@ const Evaluations = () => {
                                 : "bg-blue-600 group-hover:h-1.5"
                         }`}
                       ></div>
-                      <div className="p-3 sm:p-4 grow flex flex-col justify-between bg-white h-full">
+                      <div className="p-3 sm:p-4 flex-1 flex flex-col">
                         <div className="mb-2">
                           <h3 className="font-bold text-sm sm:text-base text-gray-800 line-clamp-2 leading-tight group-hover:text-blue-700 transition-colors">
                             {evaluation.title}
@@ -366,7 +366,7 @@ const Evaluations = () => {
                             </div>
                           )}
                         </div>
-                        <div className="flex justify-between items-end mt-2">
+                        <div className="flex justify-between items-end mt-auto pt-2">
                           <div className="text-[10px] sm:text-[11px] text-gray-500 space-y-0.5">
                             <p className="flex items-center gap-1.5">
                               <span

@@ -22,7 +22,7 @@ const CertificateGallery = ({
   const [selectedEventType, setSelectedEventType] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 12;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -206,7 +206,7 @@ const CertificateGallery = ({
                 placeholder="Search templates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
               />
             </div>
 
@@ -214,7 +214,7 @@ const CertificateGallery = ({
               <select
                 value={selectedEventType}
                 onChange={(e) => setSelectedEventType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-w-[140px]"
+                className="px-3 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-w-[140px] shadow-sm"
               >
                 <option value="all">All Events</option>
                 {eventTypes.map((eventType) => (
@@ -229,7 +229,7 @@ const CertificateGallery = ({
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-w-[140px]"
+                  className="px-3 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-w-[140px] shadow-sm"
                 >
                   <option value="all">All Categories</option>
                   {categories.map((cat) => (
@@ -240,7 +240,7 @@ const CertificateGallery = ({
                 </select>
               )}
               {totalPages > 1 && (
-                <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm">
+                <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-2 py-1 shadow-sm">
                   <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
                     Page {currentPage} of {totalPages}
                   </span>
@@ -275,7 +275,7 @@ const CertificateGallery = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
             {!isFromEvaluation && (
               <div
                 className="rounded-xl shadow-sm border-2 border-dashed border-gray-300 cursor-pointer hover:shadow-md hover:border-[#2662D9] hover:bg-blue-50/50 transition-all duration-300 h-full min-h-[180px] flex flex-col items-center justify-center bg-gray-50/50 group"

@@ -120,7 +120,7 @@ const EvaluationStart = () => {
       <div className="flex justify-center items-center h-full bg-gray-100">
         <div className="max-w-6xl w-full mx-auto p-4 md:p-8">
           <div className="bg-white rounded-lg shadow-lg py-8 md:py-12 text-center mb-6">
-            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 px-4">
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 px-4 wrap-break-word">
               {form?.title || "Event Evaluation Form"}
             </h1>
           </div>
@@ -156,10 +156,11 @@ const EvaluationStart = () => {
               </button>
               <button
                 onClick={handleContinue}
-                className={`${isCompleted
+                className={`${
+                  isCompleted
                     ? "bg-green-600 hover:bg-green-700"
                     : "bg-blue-600 hover:bg-blue-700"
-                  } text-white font-bold py-3 px-6 rounded-lg w-full sm:w-auto`}
+                } text-white font-bold py-3 px-6 rounded-lg w-full sm:w-auto`}
               >
                 {isCompleted ? "View Certificate" : "Continue"}
               </button>

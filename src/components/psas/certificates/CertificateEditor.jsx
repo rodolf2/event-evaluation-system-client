@@ -70,7 +70,6 @@ const CertificateEditor = ({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
 
-
   // Save as Template modal state
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -88,8 +87,6 @@ const CertificateEditor = ({
     window.addEventListener("storage", checkDraft);
     return () => window.removeEventListener("storage", checkDraft);
   }, []);
-
-
 
   const {
     pushHistory: rawPushHistory,
@@ -266,23 +263,9 @@ const CertificateEditor = ({
 
         const handleTextAutoShrink = (obj) => {
           if (!obj || obj.type !== "textbox") return;
-          const minFontSize = 10;
-          const text = obj.text || "";
-          const isPlaceholder = text.includes("[") && text.includes("]");
-          let maxLines = 4;
-          if (isPlaceholder) maxLines = 1;
-          else if (obj.fontSize >= 40) maxLines = 2;
-
-          let shrinked = false;
-          let iterations = 0;
-          // In Fabric Textbox, _textLines is populated after wrap
-          while (obj._textLines && obj._textLines.length > maxLines && obj.fontSize > minFontSize && iterations < 50) {
-            obj.set("fontSize", obj.fontSize - 1);
-            obj.initDimensions(); // Re-calculate wrap
-            shrinked = true;
-            iterations++;
-          }
-          if (shrinked && canvas) canvas.requestRenderAll();
+          // We no longer automatically shrink text as it interferes with custom placeholders
+          // and causes the PDF to have too small font sizes when the placeholder text wraps
+          // because the placeholder text length doesn't match the actual recipient/event names length.
         };
 
         const handleModification = (e) => {
@@ -812,7 +795,9 @@ const CertificateEditor = ({
           setIsUploadingImage(false);
 
           if (!img) {
-            toast.error("Failed to load image. Please try a different image file.");
+            toast.error(
+              "Failed to load image. Please try a different image file.",
+            );
             console.error(
               "Failed to create image from URL - img is null/undefined",
             );
@@ -842,7 +827,9 @@ const CertificateEditor = ({
           };
           nativeImg.onerror = () => {
             setIsUploadingImage(false);
-            toast.error("Failed to load image. Please try a different image file.");
+            toast.error(
+              "Failed to load image. Please try a different image file.",
+            );
             console.error("Both Fabric.js and native image loading failed");
           };
           nativeImg.src = dataUrl;
@@ -962,7 +949,9 @@ const CertificateEditor = ({
     }
 
     console.log("Loading image from URL:", url);
-    toast.loading("Loading image from URL... This may take a few seconds.", { id: "url-image-load" });
+    toast.loading("Loading image from URL... This may take a few seconds.", {
+      id: "url-image-load",
+    });
 
     // Try the standard Fabric.js approach first
     let urlImageLoaded = false;
@@ -975,7 +964,8 @@ const CertificateEditor = ({
 
         if (!img) {
           toast.error(
-            "Failed to load image from URL. Make sure the URL allows cross-origin access and the image exists.", { id: "url-image-load" }
+            "Failed to load image from URL. Make sure the URL allows cross-origin access and the image exists.",
+            { id: "url-image-load" },
           );
           console.error("Failed to load image from URL:", url);
           return;
@@ -1009,7 +999,8 @@ const CertificateEditor = ({
         nativeImg.onerror = (error) => {
           console.error("URL image loading error:", error);
           toast.error(
-            "Failed to load image from URL. This is usually due to CORS policy or invalid URL.", { id: "url-image-load" }
+            "Failed to load image from URL. This is usually due to CORS policy or invalid URL.",
+            { id: "url-image-load" },
           );
         };
         nativeImg.src = url;
@@ -1703,8 +1694,9 @@ const CertificateEditor = ({
 
         <div>
           <h4
-            className={`font-semibold mb-2 ${!isText && isObjectSelected ? "text-gray-400" : "text-gray-700"
-              }`}
+            className={`font-semibold mb-2 ${
+              !isText && isObjectSelected ? "text-gray-400" : "text-gray-700"
+            }`}
           >
             Text
           </h4>
@@ -1736,10 +1728,11 @@ const CertificateEditor = ({
                     : "bold",
                 )
               }
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${getProp("fontWeight", "normal") === "bold"
-                ? "bg-blue-100 border-blue-500"
-                : ""
-                }`}
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("fontWeight", "normal") === "bold"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
+              }`}
               title="Bold"
             >
               <Bold className="w-4 h-4" />
@@ -1754,10 +1747,11 @@ const CertificateEditor = ({
                     : "italic",
                 )
               }
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${getProp("fontStyle", "normal") === "italic"
-                ? "bg-blue-100 border-blue-500"
-                : ""
-                }`}
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("fontStyle", "normal") === "italic"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
+              }`}
               title="Italic"
             >
               <Italic className="w-4 h-4" />
@@ -1767,8 +1761,9 @@ const CertificateEditor = ({
               onClick={() =>
                 updateProperty("underline", !getProp("underline", false))
               }
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${getProp("underline", false) ? "bg-blue-100 border-blue-500" : ""
-                }`}
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("underline", false) ? "bg-blue-100 border-blue-500" : ""
+              }`}
               title="Underline"
             >
               <Underline className="w-4 h-4" />
@@ -1786,10 +1781,11 @@ const CertificateEditor = ({
             <button
               disabled={!isText}
               onClick={() => updateProperty("textAlign", "left")}
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${getProp("textAlign", "left") === "left"
-                ? "bg-blue-100 border-blue-500"
-                : ""
-                }`}
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("textAlign", "left") === "left"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
+              }`}
               title="Align Text Left"
             >
               <AlignLeft className="w-4 h-4" />
@@ -1797,10 +1793,11 @@ const CertificateEditor = ({
             <button
               disabled={!isText}
               onClick={() => updateProperty("textAlign", "center")}
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${getProp("textAlign", "center") === "center"
-                ? "bg-blue-100 border-blue-500"
-                : ""
-                }`}
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("textAlign", "center") === "center"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
+              }`}
               title="Align Text Center"
             >
               <AlignCenter className="w-4 h-4" />
@@ -1808,10 +1805,11 @@ const CertificateEditor = ({
             <button
               disabled={!isText}
               onClick={() => updateProperty("textAlign", "right")}
-              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${getProp("textAlign", "right") === "right"
-                ? "bg-blue-100 border-blue-500"
-                : ""
-                }`}
+              className={`p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors hover:bg-gray-50 ${
+                getProp("textAlign", "right") === "right"
+                  ? "bg-blue-100 border-blue-500"
+                  : ""
+              }`}
               title="Align Text Right"
             >
               <AlignRight className="w-4 h-4" />
@@ -1821,10 +1819,11 @@ const CertificateEditor = ({
 
         <div>
           <h4
-            className={`font-semibold mb-2 ${!isShape && !isImage && isObjectSelected
-              ? "text-gray-400"
-              : "text-gray-700"
-              }`}
+            className={`font-semibold mb-2 ${
+              !isShape && !isImage && isObjectSelected
+                ? "text-gray-400"
+                : "text-gray-700"
+            }`}
           >
             Color
           </h4>
@@ -1915,8 +1914,9 @@ const CertificateEditor = ({
 
         {/* Main Canvas Area */}
         <div
-          className={`flex-1 flex flex-col min-w-0 max-w-full overflow-hidden overflow-x-hidden ${isMobile ? "pb-16" : ""
-            }`}
+          className={`flex-1 flex flex-col min-w-0 max-w-full overflow-hidden overflow-x-hidden ${
+            isMobile ? "pb-16" : ""
+          }`}
         >
           {/* Top Toolbar */}
           <div className="relative shrink-0 bg-white border-b z-10">
@@ -1930,8 +1930,9 @@ const CertificateEditor = ({
           {/* Canvas Container */}
           <div
             ref={wrapperRef}
-            className={`flex-1 flex items-start justify-center bg-gray-100 overflow-hidden overflow-x-hidden ${isMobile ? "p-2 pt-2" : "p-2 pt-2"
-              }`}
+            className={`flex-1 flex items-start justify-center bg-gray-100 overflow-hidden overflow-x-hidden ${
+              isMobile ? "p-2 pt-2" : "p-2 pt-2"
+            }`}
           >
             <div
               ref={canvasContainerRef}
@@ -1967,10 +1968,11 @@ const CertificateEditor = ({
                       return (
                         <div
                           key={`${line.type}-${line.position}-${index}`}
-                          className={`absolute bg-red-500 ${line.type === "vertical"
-                            ? "w-px h-full"
-                            : "h-px w-full"
-                            }`}
+                          className={`absolute bg-red-500 ${
+                            line.type === "vertical"
+                              ? "w-px h-full"
+                              : "h-px w-full"
+                          }`}
                           style={{
                             ...(line.type === "vertical"
                               ? { left: `${adjustedPosition}px` }
@@ -2010,19 +2012,19 @@ const CertificateEditor = ({
                 {(isPreviewMode ||
                   (isFromEvaluation && (onDone || onSave)) ||
                   !isFromEvaluation) && (
-                    <button
-                      onClick={
-                        isFromEvaluation
-                          ? isPreviewMode
-                            ? handleSaveAndReturn
-                            : onSave || onDone
-                          : () => setShowSaveTemplateModal(true)
-                      }
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-sm transition-colors"
-                    >
-                      {isFromEvaluation ? "Done" : "Save as Template"}
-                    </button>
-                  )}
+                  <button
+                    onClick={
+                      isFromEvaluation
+                        ? isPreviewMode
+                          ? handleSaveAndReturn
+                          : onSave || onDone
+                        : () => setShowSaveTemplateModal(true)
+                    }
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 shadow-sm transition-colors"
+                  >
+                    {isFromEvaluation ? "Done" : "Save as Template"}
+                  </button>
+                )}
               </div>
               <PropertiesPanel />
             </div>
@@ -2056,8 +2058,9 @@ const CertificateEditor = ({
                 activeMobileTab === "elements" ? null : "elements",
               )
             }
-            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${activeMobileTab === "elements" ? "text-blue-600" : "text-gray-600"
-              }`}
+            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+              activeMobileTab === "elements" ? "text-blue-600" : "text-gray-600"
+            }`}
           >
             <Plus className="w-6 h-6 mb-1" />
             <span className="text-xs font-medium">Add Elements</span>
@@ -2069,10 +2072,11 @@ const CertificateEditor = ({
                 activeMobileTab === "properties" ? null : "properties",
               )
             }
-            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${activeMobileTab === "properties"
-              ? "text-blue-600"
-              : "text-gray-600"
-              }`}
+            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+              activeMobileTab === "properties"
+                ? "text-blue-600"
+                : "text-gray-600"
+            }`}
           >
             <Sliders className="w-6 h-6 mb-1" />
             <span className="text-xs font-medium">Properties</span>

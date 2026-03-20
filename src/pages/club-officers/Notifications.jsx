@@ -290,7 +290,7 @@ const NotificationDetail = ({ notification, onBack }) => {
             <h1 className="text-3xl font-bold text-gray-800 mb-4">
               Form Successfully Published!
             </h1>
-            <p className="text-lg text-gray-600 mb-2">
+            <p className="text-lg text-gray-600 mb-2 wrap-break-word">
               The evaluation form <strong>{formTitle}</strong> has been
               successfully shared with the participants.
             </p>
@@ -306,7 +306,7 @@ const NotificationDetail = ({ notification, onBack }) => {
             <h1 className="text-3xl font-bold text-gray-800 mb-4">
               Hi {user?.name || "User"}, answer this evaluation now!
             </h1>
-            <p className="text-lg text-gray-600 mb-2">
+            <p className="text-lg text-gray-600 mb-2 wrap-break-word">
               The Event Evaluation Form for the <strong>{formTitle}</strong> is
               now open.
             </p>
@@ -981,7 +981,7 @@ function Notifications() {
 
   return (
     <ClubOfficerLayout>
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-full">
+      <div>
         {viewingNotification ? (
           <NotificationDetail
             notification={viewingNotification}

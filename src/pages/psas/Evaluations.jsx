@@ -36,7 +36,7 @@ const Evaluations = () => {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await fetch("/api/forms", {
+        const response = await fetch("/api/forms?summaryOnly=true", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -314,82 +314,72 @@ const Evaluations = () => {
 
   if (loading) {
     return (
-      <PSASLayout backgroundColor="bg-white">
-        <div className="bg-white flex flex-col">
-          {/* Header Section - Match the actual gradient layout */}
-          <div className="mb-8">
-            {/* Recent Evaluations Section */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-3 w-full">
-                  <div className="flex-1 relative">
-                    <SkeletonBase className="w-full pl-12 pr-6 py-4 text-lg rounded-lg bg-gray-300" />
+      <PSASLayout backgroundColor="bg-gray-100">
+        <div className="flex flex-col min-h-screen">
+          <div className="flex-1">
+            {/* Header Skeleton - Matches EvaluationContent layout */}
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+                  <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                    <SkeletonBase className="w-full h-10 rounded-xl shadow-sm" />
                   </div>
-                  <SkeletonBase className="w-24 h-14 rounded-lg bg-gray-300" />
+                  <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+                    <SkeletonBase className="w-36 h-10 rounded-xl shadow-sm" />
+                    <div className="hidden sm:block">
+                      <SkeletonBase className="w-40 h-10 rounded-xl shadow-sm" />
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-                <div className="rounded-xl shadow-sm border-2 border-dashed border-gray-200 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50">
-                  <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse mb-3" />
-                  <div className="h-4 bg-gray-200 rounded w-24 animate-pulse mb-1" />
-                  <div className="h-3 bg-gray-200 rounded w-20 animate-pulse" />
-                </div>
-                {Array.from({ length: 9 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="bg-white rounded-xl shadow-sm border border-gray-100 p-2 sm:p-3 h-full flex flex-col"
-                  >
-                    <div className="text-center mb-2">
-                      <SkeletonText
-                        lines={1}
-                        height="h-4"
-                        className="bg-gray-200 w-3/4 mx-auto"
-                      />
-                      <SkeletonText
-                        lines={1}
-                        height="h-3"
-                        className="bg-gray-100 w-1/2 mx-auto mt-1"
-                      />
-                    </div>
-                    <div className="grow mt-1 scale-[0.9] origin-top">
-                      <div className="mb-1.5">
-                        <SkeletonBase className="w-full h-6 rounded bg-gray-50" />
+            {/* Grid Skeleton */}
+              <div className="grid grid-cols-[repeat(auto-fill,240px)] justify-center gap-4 sm:gap-6 md:gap-5">
+              {/* New Evaluation Placeholder Skeleton */}
+              <div className="rounded-xl shadow-sm border-2 border-dashed border-gray-200 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50">
+                <SkeletonBase className="w-12 h-12 rounded-full mb-3" />
+                <SkeletonBase className="h-4 w-24 rounded mb-1" />
+                <SkeletonBase className="h-3 w-20 rounded" />
+              </div>
+              {/* Form Card Skeletons */}
+              {Array.from({ length: 9 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 h-full flex flex-col overflow-hidden"
+                >
+                  <div className="p-2 sm:p-3 grow flex flex-col">
+                    <div className="text-center mb-2 shrink-0">
+                      <div className="min-h-10 flex items-center justify-center px-4">
+                        <SkeletonBase className="w-3/4 h-4 rounded" />
                       </div>
+                      <SkeletonBase className="w-1/2 h-2 rounded mx-auto mt-1" />
+                    </div>
+                    {/* Preview Section Skeleton */}
+                    <div className="grow mt-1 scale-[0.9] origin-top">
+                      <SkeletonBase className="w-full h-5 rounded mb-1.5" />
                       <div className="space-y-1">
                         <div className="flex items-center">
-                          <SkeletonBase className="h-3 w-3 rounded-full bg-gray-100 mr-2" />
-                          <SkeletonText
-                            lines={1}
-                            height="h-2"
-                            className="bg-gray-100 w-16"
-                          />
+                          <SkeletonBase className="h-3 w-3 rounded-full mr-2" />
+                          <SkeletonBase className="h-2 w-14 rounded" />
                         </div>
                         <div className="flex items-center">
-                          <SkeletonBase className="h-3 w-3 rounded-full bg-gray-100 mr-2" />
-                          <SkeletonText
-                            lines={1}
-                            height="h-2"
-                            className="bg-gray-100 w-16"
-                          />
+                          <SkeletonBase className="h-3 w-3 rounded-full mr-2" />
+                          <SkeletonBase className="h-2 w-14 rounded" />
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-gray-50 flex items-center justify-between">
-                      <SkeletonText
-                        lines={1}
-                        height="h-3"
-                        className="bg-gray-200 w-1/3"
-                      />
-                      <SkeletonText
-                        lines={1}
-                        height="h-2"
-                        className="bg-gray-100 w-1/4"
-                      />
+                  </div>
+                  {/* Footer Skeleton */}
+                  <div className="px-2.5 py-2 shrink-0 bg-gray-100">
+                    <SkeletonBase className="w-2/3 h-3 rounded bg-gray-200 mb-1" />
+                    <div className="flex items-center justify-between">
+                      <SkeletonBase className="w-1/3 h-2 rounded bg-gray-200" />
+                      <SkeletonBase className="w-1/4 h-2 rounded bg-gray-200" />
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -400,7 +390,7 @@ const Evaluations = () => {
   return (
     <>
       {/* Always keep PSAS shell (sidebar + header) via PSASLayout */}
-      <PSASLayout backgroundColor="bg-white">
+      <PSASLayout backgroundColor="bg-gray-100">
         {view === "create" ? (
           <FormCreationInterface
             currentFormId={currentFormId}
@@ -427,10 +417,10 @@ const Evaluations = () => {
         )}
 
         {showUploadModal && view === "dashboard" && (
-          <div className="fixed inset-0 bg-[#F4F4F5]/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-8 w-full max-w-lg z-60">
               <h3 className="text-xl font-bold text-gray-800 mb-6">
-                Import Google Form
+                Upload Google Form
               </h3>
 
               {/* Google Forms URL Section */}
@@ -493,10 +483,10 @@ const Evaluations = () => {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      Extracting...
+                      Uploading...
                     </>
                   ) : (
-                    "Import Form"
+                    "Upload Form"
                   )}
                 </button>
               </div>

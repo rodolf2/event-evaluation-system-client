@@ -334,16 +334,30 @@ const CompleteReport = ({
     if (isChildComponent) {
       onBack();
     } else {
-      // Navigate to appropriate reports page based on user role
-      const reportsPath =
-        user?.role === "club-officer"
-          ? "/club-officer/reports"
-          : user?.role === "club-adviser"
-            ? "/club-adviser/reports"
-            : user?.role === "mis"
-              ? "/mis/reports"
-              : "/psas/reports";
-      navigate(reportsPath);
+      // Navigate to appropriate page based on user role and where they came from
+      if (location.state?.fromEventAnalytics) {
+        const analyticsPath =
+          user?.role === "club-officer"
+            ? "/club-officer/analytics"
+            : user?.role === "club-adviser"
+              ? "/club-adviser/analytics"
+              : user?.role === "mis"
+                ? "/mis/analytics"
+                : "/psas/analytics";
+        
+        // Preserve the selected form via URL parameter so they return to the same event
+        navigate(`${analyticsPath}?formId=${reportId}`);
+      } else {
+        const reportsPath =
+          user?.role === "club-officer"
+            ? "/club-officer/reports"
+            : user?.role === "club-adviser"
+              ? "/club-adviser/reports"
+              : user?.role === "mis"
+                ? "/mis/reports"
+                : "/psas/reports";
+        navigate(reportsPath);
+      }
     }
   };
 

@@ -64,7 +64,8 @@ const POSITION_OPTIONS = {
   psas: [
     { value: "PSAS Staff", label: "PSAS Staff" },
     { value: "PSAS Head", label: "PSAS Head" },
-    { value: "ITSS", label: "ITSS" },
+    { value: "Assistant Department Head", label: "Assistant Department Head" },
+    { value: "ITSS Coordinator", label: "ITSS Coordinator" },
   ],
   mis: [
     { value: "MIS Staff", label: "MIS Staff" },
@@ -238,13 +239,13 @@ function UserRoles() {
       payload.position = selectedNewPosition || (selectedNewRole === "psas" ? "PSAS Staff" : "MIS Staff");
       
       // Set permissions based on position
-      if (selectedNewPosition === "PSAS Head" || selectedNewPosition === "MIS Head") {
+      if (selectedNewPosition === "PSAS Head" || selectedNewPosition === "Assistant Department Head" || selectedNewPosition === "MIS Head") {
         payload.permissions = {
           canViewReports: true,
-          canViewAnalytics: selectedNewPosition === "PSAS Head",
+          canViewAnalytics: selectedNewPosition === "PSAS Head" || selectedNewPosition === "Assistant Department Head",
         };
         payload.elevationDate = new Date().toISOString();
-      } else if (selectedNewPosition === "ITSS") {
+      } else if (selectedNewPosition === "ITSS Coordinator") {
         payload.permissions = {
           canViewReports: false,
           canViewAnalytics: false,
@@ -370,11 +371,12 @@ function UserRoles() {
     const roleConfig = ROLE_COLORS[user.role] || ROLE_COLORS.student;
     let label = roleConfig.label;
 
-    // Show "Head" or "ITSS" in badge if applicable
+    // Show "Head" or "ITSS Coordinator" in badge if applicable
     if (
       user.position === "MIS Head" ||
       user.position === "PSAS Head" ||
-      user.position === "ITSS"
+      user.position === "Assistant Department Head" ||
+      user.position === "ITSS Coordinator"
     ) {
       label = user.position;
     }
@@ -562,9 +564,10 @@ function UserRoles() {
                   </div>
                   <div className="flex items-center gap-1 ml-2">
                     {/* Disable/Enable Actions - Available to MIS Staff for ALL users (except Head/Self) */}
-                    {/* Also available to PSAS Head/ITSS for Students/PBOOs only */}
+                    {/* Also available to PSAS Head/ITSS Coordinator for Students/PBOOs only */}
                     {((currentUser?.role === "mis") || 
-                      ((user.role === "student" || user.role === "club-officer") && currentUser?.role === "psas")) && 
+                      ((user.role === "student" || user.role === "club-officer") && 
+                       (currentUser?.position === "PSAS Head" || currentUser?.position === "Assistant Department Head" || currentUser?.position === "ITSS Coordinator"))) && 
                       user._id !== currentUser?._id && 
                       user.position !== "MIS Head" && (
                       <>

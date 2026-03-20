@@ -165,15 +165,15 @@ const Certificates = () => {
               {/* Search and Filters Header Skeleton */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8">
                 <div className="relative w-full lg:max-w-md xl:max-w-xl">
-                  <SkeletonBase className="w-full h-10 rounded-lg" />
+                  <SkeletonBase className="w-full h-10 rounded-xl shadow-sm" />
                 </div>
                 <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                  <SkeletonBase className="w-36 h-10 rounded-lg" />
-                  <SkeletonBase className="w-40 h-10 rounded-lg" />
+                  <SkeletonBase className="w-36 h-10 rounded-xl shadow-sm" />
+                  <SkeletonBase className="w-40 h-10 rounded-xl shadow-sm" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
                 {/* Dashed "Blank Canvas" placeholder skeleton */}
                 {!isFromEvaluation && (
                   <div className="rounded-xl shadow-sm border-2 border-dashed border-gray-200 h-full min-h-[180px] flex flex-col items-center justify-center bg-gray-50/50">
@@ -182,8 +182,8 @@ const Certificates = () => {
                     <SkeletonBase className="h-3 w-32 rounded bg-gray-200" />
                   </div>
                 )}
-                
-                {Array.from({ length: 9 }).map((_, index) => (
+
+                {Array.from({ length: 12 }).map((_, index) => (
                   <div
                     key={index}
                     className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"

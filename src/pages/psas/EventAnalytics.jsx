@@ -5,7 +5,7 @@ import { BarChart3 } from "lucide-react";
 
 const EventAnalytics = () => {
   const { user } = useAuth();
-  const hasPermission = user?.role === "psas" && user?.position === "PSAS Head";
+  const hasPermission = user?.role === "psas" && (user?.position === "PSAS Head" || user?.position === "Assistant Department Head");
 
   if (!hasPermission) {
     return (

@@ -60,13 +60,16 @@ function PsasEventAnalyticsContent() {
       if (!token) return;
 
       try {
-        const response = await fetch("/api/forms", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+        const response = await fetch(
+          `/api/forms?limit=10&status=published&summaryOnly=true&search=${encodeURIComponent(searchQuery)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch forms");
@@ -94,9 +97,13 @@ function PsasEventAnalyticsContent() {
       }
     };
 
-    fetchAvailableForms();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]); // Run when token changes
+    // Debounce search fetching
+    const timeoutId = setTimeout(() => {
+      fetchAvailableForms();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [token, searchQuery, formId]); // Run when token, searchQuery or formId changes
 
   // Get form ID from URL params only (no localStorage to avoid custom IDs)
   useEffect(() => {
@@ -561,7 +568,9 @@ function PsasEventAnalyticsContent() {
   };
 
   const handleViewReport = () => {
-    navigate(`/club-officer/reports/${formId}`);
+    navigate(`/club-officer/reports/${formId}`, {
+      state: { fromEventAnalytics: true }
+    });
   };
 
   // Filter and sort forms

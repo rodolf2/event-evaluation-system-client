@@ -275,7 +275,7 @@ function Home() {
               </div>
               {/* Cards - spans 2 columns, positioned in second row */}
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {user?.position === "ITSS" ? (
+                {user?.position === "ITSS Coordinator" ? (
                   // [ITSS VIEW] Single Card
                   <div className="sm:col-span-2">
                     <DashboardCard

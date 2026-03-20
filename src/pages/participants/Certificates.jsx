@@ -38,7 +38,7 @@ const Certificates = () => {
       try {
         if (!user || !user._id) return;
 
-        const response = await fetch(`/api/certificates/my`, {
+        const response = await fetch(`/api/certificates/my?limit=100`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -79,7 +79,6 @@ const Certificates = () => {
   const [certificateThumbnails, setCertificateThumbnails] = useState({});
   const fetchedCertificateIds = useRef(new Set());
   const activeBlobUrls = useRef(new Set());
-
 
   const handleDownload = async (certificateId, certificate) => {
     try {
@@ -174,7 +173,9 @@ const Certificates = () => {
     const fetchCertificateThumbnails = async () => {
       // Create an array of promises for current items that don't have thumbnails yet
       const fetchPromises = currentItems
-        .filter((cert) => !fetchedCertificateIds.current.has(cert.certificateId))
+        .filter(
+          (cert) => !fetchedCertificateIds.current.has(cert.certificateId),
+        )
         .map(async (cert) => {
           fetchedCertificateIds.current.add(cert.certificateId);
 
@@ -197,7 +198,7 @@ const Certificates = () => {
                 [cert.certificateId]: blobUrl,
               }));
             } else if (!response.ok) {
-                fetchedCertificateIds.current.delete(cert.certificateId);
+              fetchedCertificateIds.current.delete(cert.certificateId);
             }
           } catch (error) {
             console.error(
@@ -255,7 +256,7 @@ const Certificates = () => {
     return (
       <ParticipantLayout>
         <div className="bg-gray-100 h-full">
-          <div className="max-w-full px-4 md:px-8">
+          <div className="max-w-full">
             {/* Search and Filter Skeleton */}
             <div className="flex items-center mb-8 gap-4">
               <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
@@ -298,7 +299,7 @@ const Certificates = () => {
   return (
     <ParticipantLayout>
       <div className="h-full">
-        <div className="max-w-full px-4 md:px-8">
+        <div className="max-w-full">
           <div className="flex flex-col lg:flex-row lg:items-center mb-8 gap-4">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
               <div className="relative w-full lg:max-w-md xl:max-w-xl">
@@ -308,7 +309,7 @@ const Certificates = () => {
                   placeholder="Search"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
                 />
               </div>
 
@@ -344,7 +345,7 @@ const Certificates = () => {
                 </div>
 
                 {/* Compact Pagination */}
-                {totalPages > 1 && (
+                {totalPages > 0 && (
                   <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
                     <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
                       Page {currentPage} of {totalPages}
@@ -397,6 +398,9 @@ const Certificates = () => {
                   key={cert._id}
                   className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center hover:shadow-md transition-all duration-300 group"
                 >
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 mb-2 leading-tight">
+                    {cert.eventId?.name || "Certificate"}
+                  </h3>
                   <div
                     className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden flex items-center justify-center border border-gray-50 group-hover:border-blue-100 transition-colors"
                     style={{ aspectRatio: "1056/816" }}

@@ -30,7 +30,7 @@ const EvaluationContent = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateOptions, setShowCreateOptions] = useState(false);
-  const itemsPerPage = 10;
+  const itemsPerPage = 9;
 
   // Reset to first page when search or sort changes
   useEffect(() => {
@@ -44,26 +44,26 @@ const EvaluationContent = ({
   );
 
   return (
-    <div className="bg-white flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen">
       <div className="flex-1">
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
               <div className="relative w-full lg:max-w-md xl:max-w-xl">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 shrink-0 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
                 />
               </div>
 
               <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
                 {/* Filter/Sort Dropdown */}
                 <div className="relative min-w-[160px]">
-                  <div className="flex items-center bg-white border border-gray-300 rounded-lg px-3 focus-within:ring-2 focus-within:ring-blue-500">
+                  <div className="flex items-center bg-white border border-gray-100 rounded-xl px-3 shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
                     <Filter className="w-4 h-4 text-gray-400 mr-2 shrink-0" />
                     <select
                       value={filterOption}
@@ -138,21 +138,17 @@ const EvaluationContent = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-          {currentPage === 1 && (
-            <div
-              className="rounded-xl shadow-sm border-2 border-dashed border-gray-300 cursor-pointer hover:shadow-md hover:border-[#2662D9] hover:bg-blue-50/50 transition-all duration-300 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50 group"
-              onClick={() => setShowCreateOptions(true)}
-            >
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Plus className="w-6 h-6 text-[#2662D9]" />
-              </div>
-              <h3 className="text-sm font-bold text-gray-800">
-                New Evaluation
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">Create or upload</p>
+        <div className="grid grid-cols-[repeat(auto-fill,240px)] justify-center gap-4 sm:gap-6">
+          <div
+            className="rounded-xl shadow-sm border-2 border-dashed border-gray-300 cursor-pointer hover:shadow-md hover:border-[#2662D9] hover:bg-blue-50/50 transition-all duration-300 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50 group"
+            onClick={() => setShowCreateOptions(true)}
+          >
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <Plus className="w-6 h-6 text-[#2662D9]" />
             </div>
-          )}
+            <h3 className="text-sm font-bold text-gray-800">New Evaluation</h3>
+            <p className="text-xs text-gray-500 mt-1">Create or upload</p>
+          </div>
           {paginatedForms.map((form) => (
             <RecentEvaluationCard
               key={form.id}
@@ -216,7 +212,7 @@ const EvaluationContent = ({
                   <h3 className="font-semibold text-gray-800 text-base">
                     Upload a Form
                   </h3>
-                  <p className="text-sm text-gray-500">Import a Google Form</p>
+                  <p className="text-sm text-gray-500">Upload a Google Form</p>
                 </div>
               </div>
             </div>

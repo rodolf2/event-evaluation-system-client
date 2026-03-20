@@ -17,6 +17,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { useAuth } from "../../contexts/useAuth";
 
 const FILTER_OPTIONS = [
@@ -307,12 +308,70 @@ function StudentUserManagement() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <SkeletonText lines={2} width="w-1/3" height="h-8" />
+      <div className="space-y-6">
+        {/* Header Skeleton - Matches StudentUserManagement layout */}
+        {currentUser?.position === "ITSS Coordinator" && (
+          <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-100">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+              <div className="w-full max-w-sm">
+                <SkeletonBase className="h-12 w-full rounded-xl" />
+              </div>
+              <SkeletonBase className="h-10 w-32 rounded-lg" />
+            </div>
+          </div>
+        )}
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-2">
+                <SkeletonBase className="h-3 w-24 rounded" />
+                <SkeletonBase className="w-5 h-5 rounded" />
+              </div>
+              <SkeletonBase className="h-8 w-16 rounded mt-2" />
+            </div>
+          ))}
         </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <SkeletonText lines={10} />
+
+        {/* Search and Tabs Skeleton */}
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            <SkeletonBase className="h-10 w-full lg:w-80 rounded-xl" />
+            <SkeletonBase className="h-10 w-full lg:w-40 rounded-lg" />
+          </div>
+        </div>
+
+        {/* Users Table Skeleton */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              {[...Array(6)].map((_, i) => (
+                <SkeletonBase key={i} className="h-3 w-20 rounded" />
+              ))}
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {[...Array(rowsPerPage)].map((_, i) => (
+              <div
+                key={i}
+                className="px-6 py-4 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <SkeletonBase className="w-10 h-10 rounded-full" />
+                  <div className="space-y-2">
+                    <SkeletonBase className="h-4 w-32 rounded" />
+                    <SkeletonBase className="h-3 w-48 rounded" />
+                  </div>
+                </div>
+                <div className="flex gap-12">
+                  <SkeletonBase className="h-4 w-16 rounded" />
+                  <SkeletonBase className="h-4 w-24 rounded" />
+                  <SkeletonBase className="h-4 w-12 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -321,7 +380,7 @@ function StudentUserManagement() {
   return (
     <div className="space-y-6">
       {/* Header - Only visible to ITSS */}
-      {currentUser?.position === "ITSS" && (
+      {currentUser?.position === "ITSS Coordinator" && (
         <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-200 mb-6">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5 bg-blue-50 p-1.5 rounded-xl border-2 border-blue-200 w-full max-w-sm shadow-sm transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200">
@@ -432,7 +491,7 @@ function StudentUserManagement() {
               placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm text-sm"
             />
           </div>
 
@@ -554,7 +613,7 @@ function StudentUserManagement() {
                   <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
                       {/* ITSS can Edit Role */}
-                      {currentUser?.position === "ITSS" && user.isActive && (
+                      {currentUser?.position === "ITSS Coordinator" && user.isActive && (
                         <button
                           onClick={() => handleRoleChangeClick(user)}
                           className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition"
@@ -565,7 +624,7 @@ function StudentUserManagement() {
                       )}
 
                       {/* ITSS can Disable/Enable Student and PBOO Accounts */}
-                      {currentUser?.position === "ITSS" &&
+                      {currentUser?.position === "ITSS Coordinator" &&
                         (user.role === "student" ||
                           user.role === "club-officer") && (
                           <button

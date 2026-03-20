@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ParticipantLayout from "../../components/participants/ParticipantLayout";
-import {
-  SkeletonCard,
-  SkeletonText,
-} from "../../components/shared/SkeletonLoader";
+import { SkeletonBase } from "../../components/shared/SkeletonLoader";
 import { Search, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 
@@ -15,7 +12,7 @@ const Evaluations = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOption, setFilterOption] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
@@ -55,18 +52,28 @@ const Evaluations = () => {
     );
 
     // Apply status filters if a status option is selected
-    if (["available", "upcoming", "closed", "completed"].includes(filterOption)) {
+    if (
+      ["available", "upcoming", "closed", "completed"].includes(filterOption)
+    ) {
       processEvaluations = processEvaluations.filter((evaluation) => {
         const isCompleted = evaluation.completed || false;
         const now = new Date();
-        const startDate = evaluation.eventStartDate ? new Date(evaluation.eventStartDate) : null;
-        const endDate = evaluation.eventEndDate ? new Date(evaluation.eventEndDate) : null;
-        const isSameDay = (d1, d2) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
-        
-        const isUpcoming = startDate && now < startDate && !isSameDay(now, startDate);
+        const startDate = evaluation.eventStartDate
+          ? new Date(evaluation.eventStartDate)
+          : null;
+        const endDate = evaluation.eventEndDate
+          ? new Date(evaluation.eventEndDate)
+          : null;
+        const isSameDay = (d1, d2) =>
+          d1.getFullYear() === d2.getFullYear() &&
+          d1.getMonth() === d2.getMonth() &&
+          d1.getDate() === d2.getDate();
+
+        const isUpcoming =
+          startDate && now < startDate && !isSameDay(now, startDate);
         const isExpired = endDate && now > endDate && !isSameDay(now, endDate);
         const isAvailable = !isUpcoming && !isExpired && !isCompleted;
-        
+
         if (filterOption === "available") return isAvailable;
         if (filterOption === "upcoming") return isUpcoming && !isCompleted;
         if (filterOption === "closed") return isExpired && !isCompleted;
@@ -113,43 +120,51 @@ const Evaluations = () => {
   if (loading) {
     return (
       <ParticipantLayout>
-        <div className="bg-gray-100 h-full">
-          <div className="max-w-full">
-            {/* Search and Filter Skeleton */}
-            <div className="flex items-center mb-8 gap-4">
-              <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <div className="w-5 h-5 bg-gray-300 rounded animate-pulse"></div>
-                </div>
-                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
+        <div>
+          {/* Search and Filter Skeleton */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
+              <div className="relative w-full lg:max-w-md xl:max-w-xl">
+                <SkeletonBase className="w-full h-10 rounded-lg" />
               </div>
-              <div className="relative">
-                <div className="bg-gray-300 p-3 rounded-lg w-24 h-12 animate-pulse"></div>
+              <div className="flex flex-wrap items-center justify-between lg:justify-start gap-4 w-full lg:w-auto lg:ml-auto">
+                <SkeletonBase className="w-36 h-10 rounded-lg" />
+                <SkeletonBase className="w-40 h-10 rounded-lg" />
               </div>
             </div>
+          </div>
 
-            {/* Evaluation Cards Skeleton */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
-              {Array.from({ length: 15 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="rounded-lg shadow-md overflow-hidden"
-                >
-                  <div className="p-8 flex items-center h-full">
-                    <div className="grow space-y-4">
-                      <SkeletonText lines={1} width="large" height="h-8" />
-                      <div className="space-y-2">
-                        <SkeletonText lines={1} width="small" height="h-4" />
-                        <SkeletonText lines={1} width="medium" height="h-4" />
-                      </div>
+          {/* Evaluation Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[200px] flex flex-col overflow-hidden"
+              >
+                {/* Top bar indicator match */}
+                <div className="w-full h-1 bg-gray-100 shrink-0" />
+
+                <div className="p-3 sm:p-4 grow flex flex-col justify-between">
+                  <div className="mb-2">
+                    {/* Title skeleton */}
+                    <SkeletonBase className="w-3/4 h-4 rounded mb-2" />
+                    {/* Badge skeleton */}
+                    <SkeletonBase className="w-16 h-4 rounded" />
+                  </div>
+
+                  {/* Bottom section match */}
+                  <div className="flex justify-between items-end mt-2">
+                    <div className="space-y-1.5">
+                      {/* Date skeletons */}
+                      <SkeletonBase className="w-24 h-2 rounded" />
+                      <SkeletonBase className="w-28 h-2 rounded" />
                     </div>
-                    <div className="ml-4">
-                      <div className="w-6 h-6 bg-gray-300 rounded-full animate-pulse"></div>
-                    </div>
+                    {/* Icon skeleton */}
+                    <SkeletonBase className="w-4 h-4 rounded" />
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </ParticipantLayout>
@@ -159,7 +174,7 @@ const Evaluations = () => {
   if (error) {
     return (
       <ParticipantLayout>
-        <div className="bg-gray-100 h-full flex items-center justify-center">
+        <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-red-600 text-center">
             <p className="text-lg font-semibold">Error loading evaluations</p>
             <p>{error}</p>
@@ -177,8 +192,8 @@ const Evaluations = () => {
 
   return (
     <ParticipantLayout>
-      <div className="bg-gray-100 h-full">
-        <div className="max-w-full">
+      <div>
+        <div>
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
             <div className="flex flex-col sm:flex-row lg:flex-row lg:items-center gap-4 w-full">
               <div className="relative w-full lg:max-w-md xl:max-w-xl">
@@ -188,7 +203,7 @@ const Evaluations = () => {
                   placeholder="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
                 />
               </div>
 
@@ -219,7 +234,12 @@ const Evaluations = () => {
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -234,10 +254,11 @@ const Evaluations = () => {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`p-1.5 rounded-md transition-colors ${currentPage === 1
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "hover:bg-gray-100 text-gray-700"
-                          }`}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          currentPage === 1
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
                         aria-label="Previous page"
                       >
                         <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -245,10 +266,11 @@ const Evaluations = () => {
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`p-1.5 rounded-md transition-colors ${currentPage === totalPages
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "hover:bg-gray-100 text-gray-700"
-                          }`}
+                        className={`p-1.5 rounded-md transition-colors ${
+                          currentPage === totalPages
+                            ? "text-gray-300 cursor-not-allowed"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
                         aria-label="Next page"
                       >
                         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -269,7 +291,7 @@ const Evaluations = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
                 {currentItems.map((evaluation, index) => {
                   const isCompleted = evaluation.completed || false;
                   const now = new Date();
@@ -297,58 +319,68 @@ const Evaluations = () => {
                   return (
                     <div
                       key={evaluation._id || index}
-                      className={`rounded-lg shadow-md transition-all duration-300 ${isCompleted
-                          ? "bg-linear-to-r from-green-500 to-green-600 opacity-75 cursor-not-allowed"
-                          : isExpired
-                            ? "bg-gray-400 opacity-75 cursor-not-allowed"
-                            : isUpcoming
-                              ? "bg-blue-400 opacity-75 cursor-not-allowed"
-                              : "bg-[linear-gradient(-0.15deg,#324BA3_38%,#002474_100%)] hover:shadow-lg cursor-pointer"
-                        }`}
+                      className={`bg-white rounded-xl shadow-sm border border-gray-100 transition-all duration-300 flex flex-col overflow-hidden group min-h-[200px] h-full ${
+                        isCompleted
+                          ? "opacity-75"
+                          : isExpired || isUpcoming
+                            ? "opacity-75"
+                            : "hover:shadow-md cursor-pointer"
+                      }`}
                       onClick={
                         isAvailable
                           ? () =>
-                            navigate(`/evaluations/start/${evaluation._id}`)
+                              navigate(`/evaluations/start/${evaluation._id}`)
                           : undefined
                       }
                     >
                       <div
-                      className={`rounded-r-lg ml-3 p-5 sm:p-6 flex flex-col justify-between ${isCompleted ? "bg-green-50" : "bg-white"
+                        className={`w-full h-1 shrink-0 transition-all duration-300 ${
+                          isCompleted
+                            ? "bg-green-500"
+                            : isExpired
+                              ? "bg-gray-400"
+                              : isUpcoming
+                                ? "bg-blue-400"
+                                : "bg-blue-600 group-hover:h-1.5"
                         }`}
-                      >
-                        <div className="grow">
-                          <h3 className="font-bold text-lg mb-3 text-gray-800 line-clamp-2">
+                      ></div>
+                      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                        <div className="mb-2">
+                          <h3 className="font-bold text-sm sm:text-base text-gray-800 line-clamp-2 leading-tight group-hover:text-blue-700 transition-colors">
                             {evaluation.title}
                           </h3>
                           {isCompleted && (
-                            <div className="bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full text-sm font-medium mb-3 inline-flex items-center gap-1">
-                              <Check className="h-4 w-4" />
+                            <div className="mt-1.5 bg-green-50 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-green-100 w-fit">
+                              <Check size={10} />
                               Completed
                             </div>
                           )}
                           {isExpired && !isCompleted && (
-                            <div className="bg-gray-100 text-gray-800 px-2.5 py-0.5 rounded-full text-sm font-medium mb-3 inline-flex items-center gap-1">
+                            <div className="mt-1.5 bg-gray-50 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-gray-100 w-fit">
                               Closed
                             </div>
                           )}
                           {isUpcoming && !isCompleted && (
-                            <div className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-sm font-medium mb-3 inline-flex items-center gap-1">
+                            <div className="mt-1.5 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-blue-100 w-fit">
                               Upcoming
                             </div>
                           )}
-                          <div className="text-sm text-gray-500 space-y-1">
-                            <p>Open: {formatDate(evaluation.eventStartDate)}</p>
-                            <p>Closes: {formatDate(evaluation.eventEndDate)}</p>
-                          </div>
                         </div>
-                        <div
-                          className={`mt-4 flex justify-end w-full ${isCompleted ? "text-green-500" : "text-gray-400"
-                            }`}
-                        >
-                          {isCompleted ? (
-                            <Check className="h-6 w-6" />
-                          ) : (
-                            <ChevronRight className="h-6 w-6" />
+                        <div className="flex justify-between items-end mt-auto pt-2">
+                          <div className="text-[10px] sm:text-[11px] text-gray-500 space-y-0.5">
+                            <p className="flex items-center gap-1.5">
+                              <span
+                                className={`w-1 h-1 rounded-full ${isCompleted ? "bg-green-400" : "bg-blue-400"}`}
+                              ></span>
+                              Open: {formatDate(evaluation.eventStartDate)}
+                            </p>
+                            <p className="flex items-center gap-1.5 text-gray-400">
+                              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                              Closes: {formatDate(evaluation.eventEndDate)}
+                            </p>
+                          </div>
+                          {!isCompleted && !isExpired && !isUpcoming && (
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" />
                           )}
                         </div>
                       </div>

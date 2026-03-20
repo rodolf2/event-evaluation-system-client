@@ -589,7 +589,7 @@ const SurveyCreation = () => {
                       </div>
                     </div>
                     {/* Blue gradient footer */}
-                    <div className="px-2.5 py-2 shrink-0 bg-gradient-to-br from-blue-800 to-blue-900">
+                    <div className="px-2.5 py-2 shrink-0 bg-linear-to-br from-blue-800 to-blue-900">
                       <SkeletonBase className="w-2/3 h-3 rounded bg-white/20 mb-1" />
                       <div className="flex items-center justify-between">
                         <SkeletonBase className="w-1/3 h-2 rounded bg-white/20" />
@@ -641,7 +641,7 @@ const SurveyCreation = () => {
                         placeholder="Search evaluations..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
                       />
                     </div>
 
@@ -650,7 +650,7 @@ const SurveyCreation = () => {
                       <select
                         value={filterOption}
                         onChange={(e) => setFilterOption(e.target.value)}
-                        className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                        className="px-3 py-2 text-sm border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm"
                       >
                         <optgroup label="Sort By Date">
                           <option value="newest">Newest First</option>

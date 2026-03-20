@@ -46,7 +46,8 @@ const ROLES = [
   {
     id: "mis",
     name: "MIS Staff",
-    description: "Full system access including user management and settings.",
+    description:
+      "System access including Employee user management and settings.",
     icon: Shield,
     color: "bg-red-100 text-red-700",
   },

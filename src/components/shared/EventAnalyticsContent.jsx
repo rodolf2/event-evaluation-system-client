@@ -65,13 +65,16 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
       }
 
       try {
-        const response = await fetch("/api/forms?limit=1000", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+        const response = await fetch(
+          `/api/forms?limit=10&status=published&summaryOnly=true&search=${encodeURIComponent(searchQuery)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch forms");
@@ -104,9 +107,13 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
       }
     };
 
-    fetchAvailableForms();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]); // Run when token changes
+    // Debounce search fetching
+    const timeoutId = setTimeout(() => {
+      fetchAvailableForms();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [token, searchQuery]); // Remove formId to avoid re-fetching list when selection changes
 
   // Get form ID from URL params only (no localStorage to avoid custom IDs)
   useEffect(() => {
@@ -272,45 +279,79 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
         </div>
 
         {/* Stats Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-md p-6">
-              <div className="space-y-4">
-                <SkeletonBase className="w-24 h-4 rounded opacity-60" />
-                <SkeletonBase className="w-32 h-8 rounded" />
-                <SkeletonBase className="w-28 h-3 rounded opacity-40" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-lg shadow-md p-4 relative h-28"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <SkeletonBase className="w-6 h-6 rounded-md opacity-40" />
+                <SkeletonBase className="w-32 h-4 rounded opacity-60" />
               </div>
+              <SkeletonBase className="w-20 h-10 rounded mt-1" />
             </div>
           ))}
         </div>
 
         {/* Charts Section Skeleton */}
-        <div className="grid gap-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-md p-6 sm:p-8">
-              <SkeletonBase className="w-48 h-6 rounded mb-8" />
-              <div className="flex justify-center p-4">
-                <SkeletonBase className="w-48 h-48 sm:w-64 sm:h-64 rounded-full opacity-60" />
-              </div>
+        <div className="grow grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Response Rate Skeleton */}
+          <div className="bg-white p-6 rounded-lg shadow-md flex flex-col min-h-[350px]">
+            <SkeletonBase className="w-32 h-6 rounded mb-8" />
+            <div className="flex-1 flex flex-col justify-center items-center">
+              <SkeletonBase className="w-48 h-48 rounded-full border-20 border-gray-100 opacity-60" />
+              <SkeletonBase className="w-40 h-3 rounded mt-8 opacity-40" />
             </div>
-            <div className="bg-white rounded-xl shadow-md p-6 sm:p-8">
-              <SkeletonBase className="w-48 h-6 rounded mb-8" />
-              <div className="flex items-end justify-between h-48 sm:h-64 gap-3 sm:gap-4 px-4 pb-4">
-                <SkeletonBase className="flex-1 h-32 rounded-t" />
-                <SkeletonBase className="flex-1 h-48 rounded-t" />
-                <SkeletonBase className="flex-1 h-24 rounded-t" />
-                <SkeletonBase className="flex-1 h-40 rounded-t" />
-                <SkeletonBase className="flex-1 h-56 rounded-t" />
+          </div>
+
+          {/* Response Breakdown Skeleton */}
+          <div className="bg-white p-6 rounded-lg shadow-md flex flex-col min-h-[350px]">
+            <SkeletonBase className="w-44 h-6 rounded mb-8" />
+            <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8">
+              <SkeletonBase className="w-40 h-40 rounded-full border-20 border-gray-100 opacity-60" />
+              <div className="w-full sm:flex-1 space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <SkeletonBase className="w-3 h-3 rounded-full" />
+                      <SkeletonBase className="w-16 h-4 rounded" />
+                    </div>
+                    <SkeletonBase className="w-20 h-4 rounded" />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-md p-6">
-                <SkeletonBase className="w-32 h-5 rounded mb-6" />
-                <div className="flex justify-center py-4">
-                  <SkeletonBase className="w-32 h-32 rounded-full opacity-50" />
+
+          {/* Response Overview Skeleton */}
+          <div className="bg-white p-4 rounded-lg shadow-md flex flex-col min-h-[350px]">
+            <SkeletonBase className="w-40 h-6 rounded mb-2" />
+            <SkeletonBase className="w-32 h-3 rounded mb-6 opacity-40" />
+            <div className="grow flex items-end justify-between gap-2 px-2 pb-2">
+              {[...Array(12)].map((_, i) => (
+                <SkeletonBase
+                  key={i}
+                  className="flex-1 rounded-t opacity-40"
+                  style={{ height: `${Math.random() * 60 + 20}%` }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Report Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-white p-6 rounded-lg shadow-md flex flex-col justify-between items-center text-center py-8"
+              >
+                <SkeletonBase className="w-32 h-6 rounded mb-4" />
+                <div className="space-y-2 mb-6">
+                  <SkeletonBase className="w-full h-3 rounded opacity-60" />
+                  <SkeletonBase className="w-4/5 h-3 rounded mx-auto opacity-60" />
                 </div>
+                <SkeletonBase className="w-full h-10 rounded-xl" />
               </div>
             ))}
           </div>
@@ -376,68 +417,81 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
         </div>
 
         {/* Stats Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md p-6">
-              <div className="space-y-4">
-                <SkeletonText lines={1} width="small" height="h-4" />
-                <SkeletonText lines={1} width="large" height="h-8" />
-                <SkeletonText lines={1} width="small" height="h-3" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-lg shadow-md p-4 relative h-28"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <SkeletonBase className="w-6 h-6 rounded-md opacity-40" />
+                <SkeletonBase className="w-32 h-4 rounded opacity-60" />
               </div>
+              <SkeletonBase className="w-20 h-10 rounded mt-1" />
             </div>
           ))}
         </div>
 
         {/* Charts Section Skeleton */}
-        <div className="grid gap-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText
-                lines={1}
-                width="medium"
-                height="h-6"
-                className="mb-4"
-              />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText
-                lines={1}
-                width="medium"
-                height="h-6"
-                className="mb-4"
-              />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
+        <div className="grow grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Response Rate Skeleton */}
+          <div className="bg-white p-6 rounded-lg shadow-md flex flex-col min-h-[350px]">
+            <SkeletonBase className="w-32 h-6 rounded mb-8" />
+            <div className="flex-1 flex flex-col justify-center items-center">
+              <SkeletonBase className="w-48 h-48 rounded-full border-20 border-gray-100 opacity-60" />
+              <SkeletonBase className="w-40 h-3 rounded mt-8 opacity-40" />
             </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText
-                lines={1}
-                width="medium"
-                height="h-6"
-                className="mb-4"
-              />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
+
+          {/* Response Breakdown Skeleton */}
+          <div className="bg-white p-6 rounded-lg shadow-md flex flex-col min-h-[350px]">
+            <SkeletonBase className="w-44 h-6 rounded mb-8" />
+            <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8">
+              <SkeletonBase className="w-40 h-40 rounded-full border-20 border-gray-100 opacity-60" />
+              <div className="w-full sm:flex-1 space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <SkeletonBase className="w-3 h-3 rounded-full" />
+                      <SkeletonBase className="w-16 h-4 rounded" />
+                    </div>
+                    <SkeletonBase className="w-20 h-4 rounded" />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText
-                lines={1}
-                width="medium"
-                height="h-6"
-                className="mb-4"
-              />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
+          </div>
+
+          {/* Response Overview Skeleton */}
+          <div className="bg-white p-4 rounded-lg shadow-md flex flex-col min-h-[350px]">
+            <SkeletonBase className="w-40 h-6 rounded mb-2" />
+            <SkeletonBase className="w-32 h-3 rounded mb-6 opacity-40" />
+            <div className="grow flex items-end justify-between gap-2 px-2 pb-2">
+              {[...Array(12)].map((_, i) => (
+                <SkeletonBase
+                  key={i}
+                  className="flex-1 rounded-t opacity-40"
+                  style={{ height: `${Math.random() * 60 + 20}%` }}
+                />
+              ))}
             </div>
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <SkeletonText
-                lines={1}
-                width="medium"
-                height="h-6"
-                className="mb-4"
-              />
-              <SkeletonBase className="w-full h-64 rounded-lg" />
-            </div>
+          </div>
+
+          {/* Report Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-white p-6 rounded-lg shadow-md flex flex-col justify-between items-center text-center py-8"
+              >
+                <SkeletonBase className="w-32 h-6 rounded mb-4" />
+                <div className="space-y-2 mb-6">
+                  <SkeletonBase className="w-full h-3 rounded opacity-60" />
+                  <SkeletonBase className="w-4/5 h-3 rounded mx-auto opacity-60" />
+                </div>
+                <SkeletonBase className="w-full h-10 rounded-xl" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -545,7 +599,9 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
   };
 
   const handleViewReport = () => {
-    navigate(`${basePath}/reports/${formId}?dynamic=true`);
+    navigate(`${basePath}/reports/${formId}?dynamic=true`, {
+      state: { fromEventAnalytics: true }
+    });
   };
 
   // Filter and sort forms
@@ -582,7 +638,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
                   onBlur={() =>
                     setTimeout(() => setIsSearchFocused(false), 200)
                   }
-                  className="w-full pl-10 pr-9 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-9 py-2 bg-white border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                 />
                 {searchQuery && (
                   <button

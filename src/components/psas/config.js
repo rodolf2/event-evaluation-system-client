@@ -28,7 +28,7 @@ export const getSidebarConfig = (user) => {
   ];
 
   // [ITSS RESTRICTION] ITSS only sees Home and Student Management
-  if (user?.position === "ITSS") {
+  if (user?.position === "ITSS Coordinator") {
     menuItems.push({
       iconComponent: Users,
       label: "Student Management",
@@ -47,7 +47,7 @@ export const getSidebarConfig = (user) => {
   );
 
   // Add Students Management for PSAS Head (for PBOO elevation)
-  if (user?.position === "PSAS Head") {
+  if (user?.position === "PSAS Head" || user?.position === "Assistant Department Head") {
     menuItems.push({
       iconComponent: Users,
       label: "Student Management",
@@ -56,7 +56,7 @@ export const getSidebarConfig = (user) => {
   }
 
   // Add Analytics if permission is granted (explicitly true for PSAS Head)
-  if (user?.role === "psas" && user?.position === "PSAS Head") {
+  if (user?.role === "psas" && (user?.position === "PSAS Head" || user?.position === "Assistant Department Head")) {
     menuItems.push({
       icon: AnalyticsIcon,
       label: "Event Analytics",
@@ -65,7 +65,7 @@ export const getSidebarConfig = (user) => {
   }
 
   // Add Reports if permission is granted (explicitly true for PSAS Head)
-  if (user?.role === "psas" && user?.position === "PSAS Head") {
+  if (user?.role === "psas" && (user?.position === "PSAS Head" || user?.position === "Assistant Department Head")) {
     menuItems.push({
       icon: ReportsIcon,
       label: "Report",

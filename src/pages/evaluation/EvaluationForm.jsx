@@ -238,7 +238,8 @@ const EvaluationForm = () => {
       console.log("🔍 DEBUG: Processing sections for submission:");
       allSections.forEach((section, sectionIndex) => {
         console.log(
-          `🔍 DEBUG: Processing ${section.title} (${section.questions?.length || 0
+          `🔍 DEBUG: Processing ${section.title} (${
+            section.questions?.length || 0
           } questions)`,
         );
 
@@ -761,7 +762,7 @@ const EvaluationForm = () => {
         {currentSectionIndex === 0 && (
           <div className="bg-white p-4 md:p-8 rounded-lg shadow-md mb-6">
             <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-800">
+              <h1 className="text-4xl font-bold text-gray-800 wrap-break-word">
                 {title || "Loading..."}
               </h1>
               <p className="text-gray-600 text-sm sm:text-base mt-2 mb-4">
@@ -788,12 +789,14 @@ const EvaluationForm = () => {
         <div className="space-y-6">
           {/* Section Header */}
           <div className="bg-[#1F3463] p-4 md:p-8 rounded-lg shadow-md text-white">
-            <h2 className="text-2xl font-bold mb-2">
+            <h2 className="text-2xl font-bold mb-2 wrap-break-word">
               Section {currentSectionIndex + 1}:{" "}
               {currentSection?.title || "Untitled Section"}
             </h2>
             {getSectionDescription() && (
-              <p className="text-gray-100 text-sm sm:text-base opacity-90">{getSectionDescription()}</p>
+              <p className="text-gray-100 text-sm sm:text-base opacity-90">
+                {getSectionDescription()}
+              </p>
             )}
           </div>
 

@@ -112,7 +112,7 @@ const ReminderModal = ({
       >
         <div className="relative bg-white rounded-lg shadow-lg flex flex-col">
           {/* Header */}
-          <div className="bg-[#1F3463] text-white p-4 flex justify-between items-center relative shrink-0">
+          <div className="bg-[#1F3463] text-white p-4 flex justify-between items-center relative shrink-0 rounded-t-lg">
             <h2 className="text-xl font-semibold">Reminders</h2>
             <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
               <X className="w-5 h-5" />
@@ -120,9 +120,9 @@ const ReminderModal = ({
             
             {/* Arrow for Desktop */}
             <div className="absolute top-1/2 -translate-y-1/2 right-[-16px] w-0 h-0
-              border-t-[12px] border-t-transparent
-              border-b-[12px] border-b-transparent
-              border-l-[16px] border-l-[#1F3463] hidden md:block">
+              border-t-12 border-t-transparent
+              border-b-12 border-b-transparent
+              border-l-16 border-l-[#1F3463] hidden md:block">
             </div>
           </div>
 

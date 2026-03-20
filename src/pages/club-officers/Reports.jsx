@@ -126,6 +126,7 @@ const Reports = () => {
           ...(filters.startDate && { startDate: filters.startDate }),
           ...(filters.endDate && { endDate: filters.endDate }),
           ...(filters.department && { department: filters.department }),
+          summaryOnly: "true",
         });
 
         const response = await fetch(`/api/analytics/reports?${queryParams}`, {
@@ -331,7 +332,7 @@ const Reports = () => {
                 placeholder="Search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
               />
             </div>
 

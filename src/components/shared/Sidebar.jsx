@@ -3,7 +3,17 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef } from "react";
 import LvccName from "../../assets/fonts/lvcc-name.svg";
 
-const getIsActive = (item, currentPath, homePath) => {
+const getIsActive = (item, currentPath, homePath, locationState = null) => {
+  // Special case: if navigating from Event Analytics to a Report view, keep Event Analytics active
+  if (locationState?.fromEventAnalytics) {
+    if (item.path.includes("/reports") || item.label === "Reports") {
+      return false;
+    }
+    if (item.path.includes("/analytics") || item.label === "Event Analytics") {
+      return true;
+    }
+  }
+
   // Special case for home path
   if (item.path === homePath) {
     return currentPath === item.path;
@@ -36,6 +46,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
+  const locationState = location.state;
 
   // Load expanded state from localStorage
   const [expandedItems, setExpandedItems] = useState(() => {
@@ -160,7 +171,7 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
                 icon={item.iconComponent}
                 label={item.label}
                 isOpen={isOpen}
-                isActive={getIsActive(item, currentPath, config.homePath)}
+                isActive={getIsActive(item, currentPath, config.homePath, locationState)}
                 hasSubItems={!!item.subItems}
                 isExpanded={expandedItems[item.path]}
                 onClick={() => {

@@ -254,7 +254,7 @@ const Reports = () => {
   if (loading && reports.length === 0) {
     return (
       <SchoolAdminLayout>
-        <div className="p-3 sm:p-6 md:p-8 bg-gray-100 min-h-full">
+        <div className="bg-gray-100 min-h-full">
           {/* Search and Sort Bar Skeleton */}
           <div className="flex items-center gap-4 mb-6">
             <div className="relative max-w-md">
@@ -265,7 +265,7 @@ const Reports = () => {
 
           {/* Reports Grid Skeleton */}
           <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {Array.from({ length: 8 }).map((_, index) => (
                 <div
                   key={index}
@@ -308,7 +308,7 @@ const Reports = () => {
   return (
     <SchoolAdminLayout>
       {view === "list" && (
-        <div className="p-3 sm:p-6 md:p-8 bg-gray-100 min-h-full">
+        <div className="bg-gray-100 min-h-full">
           {/* Search and Sort Bar */}
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">
             <div className="relative w-full lg:max-w-md xl:max-w-xl">
@@ -318,7 +318,7 @@ const Reports = () => {
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
               />
             </div>
 

@@ -46,7 +46,7 @@ const NotFound = () => {
         {/* Error Message */}
         <div className="bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl border border-white/20">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-3 md:mb-4">
-            Page Not Found
+            Page Not Found!
           </h1>
           <p className="text-blue-100 text-sm sm:text-base md:text-lg mb-4 sm:mb-6 md:mb-8 px-2">
             Oops! The page you're looking for doesn't exist or has been moved.
@@ -65,7 +65,7 @@ const NotFound = () => {
               onClick={() => navigate(getHomeRoute())}
               className="flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-white text-[#1F3463] text-sm sm:text-base rounded-lg hover:bg-blue-50 transition-all duration-300 font-medium shadow-lg"
             >
-              <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Home className="W-4 h-4 sm:w-5 sm:h-5" />
               Return Home
             </button>
           </div>
@@ -73,7 +73,7 @@ const NotFound = () => {
 
         {/* Footer Text */}
         <p className="mt-4 sm:mt-6 md:mt-8 text-blue-200/60 text-xs sm:text-sm px-4">
-          If you believe this is an error, please contact the administrator.
+          If you believ this is an error, please contact the administrator.
         </p>
       </div>
     </div>

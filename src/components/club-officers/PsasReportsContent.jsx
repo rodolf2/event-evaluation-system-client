@@ -29,13 +29,13 @@ const ReportCard = ({ report, onSelect }) => {
             onLoad={() => {
               console.log(
                 `✅ Thumbnail loaded for: ${report.title}`,
-                report.thumbnail
+                report.thumbnail,
               );
             }}
             onError={(e) => {
               console.error(
                 `❌ Thumbnail failed for: ${report.title}`,
-                report.thumbnail
+                report.thumbnail,
               );
               e.target.onerror = null;
               // Fallback to placeholder with report title
@@ -108,6 +108,7 @@ function PsasReportsContent() {
           ...(filters.startDate && { startDate: filters.startDate }),
           ...(filters.endDate && { endDate: filters.endDate }),
           ...(filters.department && { department: filters.department }),
+          summaryOnly: "true",
         });
 
         const response = await fetch(`/api/analytics/reports?${queryParams}`, {
@@ -137,7 +138,7 @@ function PsasReportsContent() {
         setLoading(false);
       }
     },
-    [token, searchQuery, filters, limit, page]
+    [token, searchQuery, filters, limit, page],
   );
 
   // Real-time updates via socket (replaces polling)
@@ -175,8 +176,9 @@ function PsasReportsContent() {
         const dynamicReport = {
           id: formId,
           formId: formId,
-          title: `Event Analytics Report - ${result.data.formInfo?.title || result.data.formTitle || "Form"
-            }`,
+          title: `Event Analytics Report - ${
+            result.data.formInfo?.title || result.data.formTitle || "Form"
+          }`,
           eventDate: new Date().toISOString().split("T")[0], // Use current date as fallback
           lastUpdated: new Date().toISOString(),
           analyticsData: result.data,
@@ -342,7 +344,7 @@ function PsasReportsContent() {
                       isLive={
                         report.lastUpdated &&
                         Date.now() - new Date(report.lastUpdated).getTime() <
-                        300000
+                          300000
                       } // 5 minutes
                     />
                   ))}
@@ -355,7 +357,7 @@ function PsasReportsContent() {
                       Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
                       {Math.min(
                         pagination.page * pagination.limit,
-                        pagination.total
+                        pagination.total,
                       )}{" "}
                       of {pagination.total} reports
                     </div>

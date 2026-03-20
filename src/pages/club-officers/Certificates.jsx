@@ -34,7 +34,7 @@ const Certificates = () => {
       try {
         if (!user || !user._id) return;
 
-        const response = await fetch(`/api/certificates/my`, {
+        const response = await fetch(`/api/certificates/my?limit=100`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -270,7 +270,7 @@ const Certificates = () => {
 
           {/* Certificate Cards Grid Skeleton */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
-            {Array.from({ length: 10 }).map((_, index) => (
+            {Array.from({ length: 12 }).map((_, index) => (
               <div
                 key={index}
                 className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 text-center"
@@ -306,7 +306,7 @@ const Certificates = () => {
                   placeholder="Search"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 bg-white shadow-sm"
                 />
               </div>
 
@@ -342,7 +342,7 @@ const Certificates = () => {
                 </div>
 
                 {/* Compact Pagination */}
-                {totalPages > 1 && (
+                {totalPages > 0 && (
                   <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-2 py-1 shadow-sm ml-auto lg:ml-0">
                     <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
                       Page {currentPage} of {totalPages}
@@ -389,12 +389,15 @@ const Certificates = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
               {currentItems.map((cert) => (
                 <div
                   key={cert._id}
                   className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center hover:shadow-md transition-all duration-300 group"
                 >
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 mb-2 leading-tight">
+                    {cert.eventId?.name || "Certificate"}
+                  </h3>
                   <div
                     className="relative bg-gray-50 rounded-lg mb-4 overflow-hidden flex items-center justify-center border border-gray-50 group-hover:border-blue-100 transition-colors"
                     style={{ aspectRatio: "1056/816" }}
