@@ -566,6 +566,7 @@ const Notifications = () => {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -628,6 +629,7 @@ const Notifications = () => {
       console.error("Error fetching notifications:", err);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [token, currentPage]);
 
@@ -886,7 +888,7 @@ const Notifications = () => {
   const isAllSelected =
     selected.length > 0 && selected.length === filteredNotifications.length;
 
-  if (loading && !viewingNotification) {
+  if (isInitialLoad && !viewingNotification) {
     return (
       <PSASLayout>
         <div className="min-h-full">
@@ -952,7 +954,7 @@ const Notifications = () => {
                   placeholder="Search notifications..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 text-sm sm:text-base shadow-sm bg-white"
                 />
               </div>
               <div className="flex items-center justify-between sm:justify-end gap-2">
@@ -990,7 +992,7 @@ const Notifications = () => {
             </div>
 
             {/* Notifications Card */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className={`bg-white rounded-xl shadow-md overflow-hidden transition-opacity duration-200 ${loading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
               {/* Header */}
               <div className="flex items-center p-3 bg-gray-200 border-b border-gray-300">
                 <input
