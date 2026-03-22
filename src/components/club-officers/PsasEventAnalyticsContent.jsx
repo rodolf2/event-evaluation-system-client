@@ -638,7 +638,7 @@ function PsasEventAnalyticsContent() {
 
                 {/* Search Results Dropdown */}
                 {isSearchFocused && (
-                  <div className="absolute z-50 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200 p-1">
+                  <div className="absolute z-30 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200 p-1">
                     <div className="max-height-[250px] overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
                       {filteredAndSortedForms.length > 0 ? (
                         filteredAndSortedForms.map((form) => (

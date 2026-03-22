@@ -54,14 +54,14 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-xs transition-opacity duration-300"
+          className="fixed inset-0 bg-black/50 z-[55] lg:hidden backdrop-blur-xs transition-opacity duration-300"
           onClick={toggleSidebar}
         />
       )}
 
       {isProfileModalOpen && (
         <div
-          className="fixed inset-0 bg-[#F4F4F5]/60 z-60"
+          className="fixed inset-0 bg-[#F4F4F5]/60 z-[70]"
           onClick={() => setProfileModalOpen(false)}
         />
       )}
@@ -72,7 +72,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
         }`}
       >
         <div
-          className={`sticky top-0 z-40 p-4 sm:p-6 lg:p-8 pb-4 ${backgroundColor}`}
+          className={`sticky top-0 z-50 p-4 sm:p-6 lg:p-8 pb-4 ${backgroundColor}`}
         >
           <Header
             sidebarOpen={isSidebarOpen}

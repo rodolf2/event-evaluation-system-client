@@ -107,10 +107,11 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
   return (
     <aside
       data-tour="sidebar"
-      className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-50
-        ${isOpen
-          ? "top-0 left-0 w-72 max-w-[85vw] h-full lg:w-64 lg:h-[95vh]"
-          : "top-0 -left-full lg:left-5 w-72 lg:w-24 h-full lg:h-[95vh]"
+      className={`fixed lg:top-5 lg:left-5 transition-all duration-400 ease-in-out z-60
+        ${
+          isOpen
+            ? "top-0 left-0 w-72 max-w-[85vw] h-full lg:w-64 lg:h-[95vh]"
+            : "top-0 -left-full lg:left-5 w-72 lg:w-24 h-full lg:h-[95vh]"
         }
         bg-[#1F3463] text-white flex flex-col items-center py-4 sm:py-6 ${isOpen ? "overflow-y-auto" : "overflow-visible"} scrollbar-hide lg:rounded-[15px] ${className}`}
     >
@@ -128,8 +129,9 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
         <img
           src={logoConfig.src}
           alt={logoConfig.alt}
-          className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${isOpen ? "w-12 h-12 lg:w-16 lg:h-16" : "w-12 h-12"
-            }`}
+          className={`rounded-full shrink-0 transition-all duration-300 ease-in-out ${
+            isOpen ? "w-12 h-12 lg:w-16 lg:h-16" : "w-12 h-12"
+          }`}
         />
         {isOpen && (
           <div className="flex flex-col justify-center overflow-hidden whitespace-nowrap">
@@ -171,7 +173,12 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
                 icon={item.iconComponent}
                 label={item.label}
                 isOpen={isOpen}
-                isActive={getIsActive(item, currentPath, config.homePath, locationState)}
+                isActive={getIsActive(
+                  item,
+                  currentPath,
+                  config.homePath,
+                  locationState,
+                )}
                 hasSubItems={!!item.subItems}
                 isExpanded={expandedItems[item.path]}
                 onClick={() => {
@@ -180,7 +187,9 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
                       toggleExpanded(item.path);
                     } else {
                       // Lock/Unlock floating sub-menu when collapsed
-                      setLockedItem(lockedItem === item.path ? null : item.path);
+                      setLockedItem(
+                        lockedItem === item.path ? null : item.path,
+                      );
                       setHoveredItem(item.path);
                     }
                   } else {
@@ -212,37 +221,41 @@ const Sidebar = ({ isOpen, onClose, config = {}, className = "" }) => {
               )}
 
               {/* Sub-items (Floating Style - When Closed) */}
-              {item.subItems && !isOpen && (hoveredItem === item.path || lockedItem === item.path) && (
-                <div 
-                  className="absolute left-full top-0 ml-2 w-48 bg-[#1F3463] rounded-lg shadow-xl py-2 z-50 border border-gray-700
+              {item.subItems &&
+                !isOpen &&
+                (hoveredItem === item.path || lockedItem === item.path) && (
+                  <div
+                    className="absolute left-full top-0 ml-2 w-48 bg-[#1F3463] rounded-lg shadow-xl py-2 z-50 border border-gray-700
                     before:content-[''] before:absolute before:right-full before:top-0 before:h-full before:w-2"
-                  onMouseEnter={() => {
-                    if (timeoutRef.current) {
-                      clearTimeout(timeoutRef.current);
-                      timeoutRef.current = null;
-                    }
-                    setHoveredItem(item.path);
-                  }}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <div className="px-4 py-2 mb-2 border-b border-gray-700">
-                    <span className="text-white font-bold text-sm uppercase tracking-wider">{item.label}</span>
+                    onMouseEnter={() => {
+                      if (timeoutRef.current) {
+                        clearTimeout(timeoutRef.current);
+                        timeoutRef.current = null;
+                      }
+                      setHoveredItem(item.path);
+                    }}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <div className="px-4 py-2 mb-2 border-b border-gray-700">
+                      <span className="text-white font-bold text-sm uppercase tracking-wider">
+                        {item.label}
+                      </span>
+                    </div>
+                    {item.subItems.map((subItem) => (
+                      <SubMenuItem
+                        key={subItem.path}
+                        label={subItem.label}
+                        isActive={currentPath === subItem.path}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(subItem.path);
+                          setHoveredItem(null);
+                          setLockedItem(null);
+                        }}
+                      />
+                    ))}
                   </div>
-                  {item.subItems.map((subItem) => (
-                    <SubMenuItem
-                      key={subItem.path}
-                      label={subItem.label}
-                      isActive={currentPath === subItem.path}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(subItem.path);
-                        setHoveredItem(null);
-                        setLockedItem(null);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
+                )}
             </div>
           );
         })}
@@ -271,26 +284,29 @@ const SidebarItem = ({
     )}
 
     <div
-      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all ${isActive
+      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all ${
+        isActive
           ? "bg-white text-[#1F3463] rounded-lg mx-4"
           : "text-white hover:bg-white/5 rounded-lg mx-4"
-        }`}
+      }`}
     >
       {/* Icon */}
       <div className={`relative ${isOpen ? "" : "mx-auto"}`}>
         {IconComponent ? (
           <IconComponent
-            className={`w-6 h-6 transition-all ${isActive ? "text-[#1F3463]" : "text-white"
-              }`}
+            className={`w-6 h-6 transition-all ${
+              isActive ? "text-[#1F3463]" : "text-white"
+            }`}
           />
         ) : (
           <img
             src={src}
             alt={label}
-            className={`w-6 h-6 transition-all ${isActive
+            className={`w-6 h-6 transition-all ${
+              isActive
                 ? "brightness-0" // This will make the icon #1F3463 when parent has white background
                 : "brightness-0 invert" // This will make the icon white when inactive
-              }`}
+            }`}
           />
         )}
       </div>
@@ -299,15 +315,17 @@ const SidebarItem = ({
       {isOpen && (
         <div className="flex items-center justify-between flex-1">
           <span
-            className={`text-sm font-medium ${isActive ? "text-[#1F3463]" : "text-white"
-              }`}
+            className={`text-sm font-medium ${
+              isActive ? "text-[#1F3463]" : "text-white"
+            }`}
           >
             {label}
           </span>
           {hasSubItems && (
             <ChevronDown
-              className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""
-                } ${isActive ? "text-[#1F3463]" : "text-white"}`}
+              className={`w-4 h-4 transition-transform ${
+                isExpanded ? "rotate-180" : ""
+              } ${isActive ? "text-[#1F3463]" : "text-white"}`}
             />
           )}
         </div>
@@ -318,10 +336,11 @@ const SidebarItem = ({
 
 const SubMenuItem = ({ label, isActive, onClick }) => (
   <div
-    className={`flex items-center px-4 py-2 cursor-pointer transition-all rounded-lg mx-4 ${isActive
+    className={`flex items-center px-4 py-2 cursor-pointer transition-all rounded-lg mx-4 ${
+      isActive
         ? "bg-white/20 text-white"
         : "text-white/80 hover:bg-white/10 hover:text-white"
-      }`}
+    }`}
     onClick={onClick}
   >
     <span className="text-sm">{label}</span>
