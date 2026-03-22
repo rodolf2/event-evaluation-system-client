@@ -14,6 +14,7 @@ const Evaluations = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
 
@@ -39,6 +40,7 @@ const Evaluations = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [token]);
 
@@ -117,7 +119,7 @@ const Evaluations = () => {
     });
   };
 
-  if (loading) {
+  if (isInitialLoad) {
     return (
       <ClubOfficerLayout>
         <div>
@@ -283,15 +285,12 @@ const Evaluations = () => {
           </div>
 
           {filteredEvaluations.length === 0 ? (
-            <div className="text-center text-gray-500">
-              <p className="text-lg">No evaluations available at this time.</p>
-              <p className="text-sm">
-                Evaluations will appear here when assigned to you.
-              </p>
+            <div className={`text-center py-12 transition-opacity duration-200 ${loading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+              <p className="text-gray-500">No evaluations found</p>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6 transition-opacity duration-200 ${loading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
                 {currentItems.map((evaluation, index) => {
                   const isCompleted = evaluation.completed || false;
                   const now = new Date();

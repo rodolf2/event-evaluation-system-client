@@ -75,10 +75,25 @@ const ImportCSVModal = ({
 
   const handleAddLink = () => {
     if (linkValue.trim()) {
+      const url = linkValue.trim();
+      let displayFilename = url.split("/").pop() || "CSV File";
+
+      // Improved filename extraction for Google Sheets and general URLs
+      if (url.includes("docs.google.com/spreadsheets/d/")) {
+        const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (match && match[1]) {
+          displayFilename = `Google Sheet (${match[1].substring(0, 8)}...)`;
+        } else {
+          displayFilename = "Google Sheet";
+        }
+      } else if (displayFilename.includes("?")) {
+        displayFilename = displayFilename.split("?")[0];
+      }
+
       const linkItem = {
         id: Date.now() + Math.random(),
-        url: linkValue.trim(),
-        filename: linkValue.trim().split("/").pop() || "CSV File",
+        url: url,
+        filename: displayFilename,
         selected: false,
       };
 
@@ -99,17 +114,77 @@ const ImportCSVModal = ({
     setLinkQueue((prev) => prev.filter((item) => item.id !== linkId));
   };
 
+  const showCustomError = (errorMessage) => {
+    let formattedMessage = errorMessage;
+    
+    if (typeof errorMessage === "string" && errorMessage.includes("Missing required column(s):")) {
+      const [titlePart, rest] = errorMessage.split("Missing required column(s):");
+      if (rest) {
+        const colsPart = rest.split(". Expected columns:");
+        const missingCols = colsPart[0].trim();
+        const expectedCols = colsPart[1] ? colsPart[1].trim() : "name, email";
+        
+        formattedMessage = (
+          <div className="flex flex-col gap-2 pb-1">
+            <span className="font-bold text-[15px] tracking-wide">
+              {titlePart.replace(/:\s*$/, "")}
+            </span>
+            <ul className="list-disc pl-5 opacity-95 space-y-1">
+              <li>
+                <span className="font-semibold">Missing required:</span>{" "}
+                <span className="bg-white/25 px-1.5 py-0.5 rounded font-mono text-sm font-bold shadow-sm">
+                  {missingCols}
+                </span>
+              </li>
+              <li>
+                <span className="font-semibold">Expected columns:</span> {expectedCols.replace(".", "")}
+              </li>
+            </ul>
+          </div>
+        );
+      }
+    }
+
+    toast.error(
+      (t) => (
+        <div className="relative w-full">
+          <div className="whitespace-pre-line text-white pr-6">
+            {formattedMessage}
+          </div>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="absolute -top-3 -right-3 text-white border-2 border-white rounded-full bg-red-500 hover:bg-white hover:text-red-500 transition-colors p-1 flex items-center justify-center h-6 w-6 shadow-md"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ),
+      {
+        duration: Infinity,
+        style: {
+          alignItems: "flex-start",
+          maxWidth: "500px",
+          padding: "16px",
+          background: "#EF4444",
+          color: "#FFFFFF",
+        },
+        icon: null
+      }
+    );
+  };
+
   const handleImport = async () => {
     const selectedFiles = fileQueue.filter((item) => item.selected);
     const selectedLinks = linkQueue.filter((item) => item.selected);
 
     if (selectedFiles.length === 0 && selectedLinks.length === 0) {
-      toast.error("Please select at least one file or link to import");
+      showCustomError("Please select at least one file or link to import");
       return;
     }
 
     setUploading(true);
     let successCount = 0;
+    let specificErrorShown = false;
     const importedFileIds = [];
     const importedLinkIds = [];
 
@@ -157,10 +232,18 @@ const ImportCSVModal = ({
                   }
                 );
               }
+            } else {
+              showCustomError(uploadData.message || `Failed to process file: ${fileItem.name}`);
+              specificErrorShown = true;
             }
+          } else {
+             showCustomError(`Error uploading file: ${fileItem.name} (Server Error)`);
+             specificErrorShown = true;
           }
         } catch (error) {
           console.error("Error uploading file:", fileItem.name, error);
+          showCustomError(`Error uploading file: ${fileItem.name}`);
+          specificErrorShown = true;
         }
       }
 
@@ -189,9 +272,10 @@ const ImportCSVModal = ({
           const warnings = proxyData.warnings || [];
 
           if (students.length === 0) {
-            toast.error(
+            showCustomError(
               "No valid students found in the CSV. Ensure it has 'name' and 'email' columns."
             );
+            specificErrorShown = true;
             continue;
           }
 
@@ -219,10 +303,10 @@ const ImportCSVModal = ({
            }
         } catch (error) {
           console.error("Error importing link:", linkItem.url, error);
-          toast.error(
-            `Error importing CSV from URL: ${linkItem.url}. Details: ${error?.message || "Unknown error"
-            }`
+          showCustomError(
+            `Import failed for ${linkItem.filename}: ${error?.message || "Unknown error"}`
           );
+          specificErrorShown = true;
         }
       }
 
@@ -233,14 +317,14 @@ const ImportCSVModal = ({
         setLinkQueue((prev) =>
           prev.filter((item) => !importedLinkIds.includes(item.id))
         );
-      } else {
-        toast.error(
+      } else if (!specificErrorShown) {
+        showCustomError(
           "Failed to import any files. Please check your CSV format (required columns: name, email, unique valid emails)."
         );
       }
     } catch (error) {
       console.error("Import error:", error);
-      toast.error("Error importing files");
+      showCustomError("Error importing files");
     } finally {
       setUploading(false);
     }
@@ -353,23 +437,25 @@ const ImportCSVModal = ({
             key={fileItem.id}
             className="bg-gray-100 rounded-lg p-4 flex items-center mb-4"
           >
-            <input
-              type="checkbox"
-              checked={fileItem.selected}
-              onChange={(e) =>
-                handleFileCheckboxChange(fileItem.id, e.target.checked)
-              }
-              className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mr-4"
-            />
-            <div className="grow">
-              <p className="font-semibold text-gray-800">{fileItem.name}</p>
-              <p className="text-sm text-gray-600">
-                {Math.round(fileItem.size / 1024)} KB
-              </p>
-            </div>
+            <label className="flex items-center grow cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={fileItem.selected}
+                onChange={(e) =>
+                  handleFileCheckboxChange(fileItem.id, e.target.checked)
+                }
+                className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mr-4 cursor-pointer"
+              />
+              <div className="grow">
+                <p className="font-semibold text-gray-800">{fileItem.name}</p>
+                <p className="text-sm text-gray-600">
+                  {Math.round(fileItem.size / 1024)} KB
+                </p>
+              </div>
+            </label>
             <button
               onClick={() => removeFileFromQueue(fileItem.id)}
-              className="p-1 text-red-500 hover:bg-red-100 rounded"
+              className="p-1 text-red-500 hover:bg-red-100 rounded ml-2 shrink-0"
             >
               <X size={16} />
             </button>
@@ -382,25 +468,27 @@ const ImportCSVModal = ({
             key={linkItem.id}
             className="bg-gray-100 rounded-lg p-4 flex items-center mb-4"
           >
-            <input
-              type="checkbox"
-              checked={linkItem.selected}
-              onChange={(e) =>
-                handleLinkCheckboxChange(linkItem.id, e.target.checked)
-              }
-              className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mr-4"
-            />
-            <div className="grow min-w-0 overflow-hidden">
-              <p className="font-semibold text-gray-800 truncate">
-                {linkItem.filename}
-              </p>
-              <p className="text-sm text-gray-600 truncate overflow-hidden text-ellipsis max-w-full">
-                {linkItem.url}
-              </p>
-            </div>
+            <label className="flex items-center grow cursor-pointer select-none min-w-0 pr-4">
+              <input
+                type="checkbox"
+                checked={linkItem.selected}
+                onChange={(e) =>
+                  handleLinkCheckboxChange(linkItem.id, e.target.checked)
+                }
+                className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mr-4 cursor-pointer shrink-0"
+              />
+              <div className="grow min-w-0 overflow-hidden">
+                <p className="font-semibold text-gray-800 truncate">
+                  {linkItem.filename}
+                </p>
+                <p className="text-sm text-gray-600 truncate overflow-hidden text-ellipsis max-w-full">
+                  {linkItem.url}
+                </p>
+              </div>
+            </label>
             <button
               onClick={() => removeLinkFromQueue(linkItem.id)}
-              className="p-1 text-red-500 hover:bg-red-100 rounded"
+              className="p-1 text-red-500 hover:bg-red-100 rounded shrink-0"
             >
               <X size={16} />
             </button>
@@ -449,6 +537,16 @@ const ImportCSVModal = ({
               className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold ml-4 hover:bg-blue-200 transition"
             >
               View
+            </button>
+            <button
+              onClick={() => {
+                setUploadedData(null);
+                onFileUpload(null);
+              }}
+              className="p-1 text-red-500 hover:bg-red-100 rounded ml-2 transition"
+              title="Remove"
+            >
+              <X size={20} />
             </button>
           </div>
         )}

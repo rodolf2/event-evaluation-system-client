@@ -44,6 +44,7 @@ function StudentUserManagement() {
   const { token, user: currentUser, refreshUserData } = useAuth();
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [stats, setStats] = useState({
@@ -124,6 +125,7 @@ function StudentUserManagement() {
       toast.error("Error loading students");
     } finally {
       setIsLoading(false);
+      setIsInitialLoad(false);
     }
   }, [token, currentPage, rowsPerPage, searchQuery, selectedFilter]);
 
@@ -306,7 +308,7 @@ function StudentUserManagement() {
     </div>
   );
 
-  if (isLoading) {
+  if (isInitialLoad) {
     return (
       <div className="space-y-6">
         {/* Header Skeleton - Matches StudentUserManagement layout */}
@@ -514,7 +516,7 @@ function StudentUserManagement() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className={`bg-white rounded-lg shadow-md overflow-hidden transition-opacity duration-200 ${isLoading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
         <div className="overflow-x-auto -mx-px">
           {" "}
           {/* Fixed horizontal scrolling */}
@@ -612,8 +614,8 @@ function StudentUserManagement() {
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
-                      {/* ITSS can Edit Role */}
-                      {currentUser?.position === "ITSS Coordinator" && user.isActive && (
+                      {/* PSAS Head/Asst Head can Edit Role */}
+                      {(currentUser?.position === "PSAS Head" || currentUser?.position === "Assistant Department Head") && user.isActive && (
                         <button
                           onClick={() => handleRoleChangeClick(user)}
                           className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition"

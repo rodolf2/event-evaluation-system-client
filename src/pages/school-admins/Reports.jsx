@@ -78,6 +78,7 @@ const Reports = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
   const socket = useSocket();
@@ -144,6 +145,7 @@ const Reports = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [token, searchQuery, limit, page]);
 
@@ -251,7 +253,7 @@ const Reports = () => {
     return new Date(b.eventDate) - new Date(a.eventDate);
   });
 
-  if (loading && reports.length === 0) {
+  if (isInitialLoad) {
     return (
       <SchoolAdminLayout>
         <div className="bg-gray-100 min-h-full">
@@ -387,7 +389,7 @@ const Reports = () => {
           </div>
 
           {/* Reports Grid */}
-          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+          <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-md transition-opacity duration-200 ${loading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
             {sortedReports.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">No reports found</p>

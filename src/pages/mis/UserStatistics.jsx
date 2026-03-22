@@ -31,6 +31,7 @@ import {
   SkeletonGrid,
   SkeletonTable,
 } from "../../components/shared/SkeletonLoader";
+import userDefault from "../../assets/icons/user-default.jpg";
 
 const ROLE_COLORS = {
   student: "#3B82F6",
@@ -448,14 +449,16 @@ function UserStatistics() {
                     <div className="flex items-center">
                       <img
                         src={
-                          user.profilePicture ||
-                          user.avatar ||
-                          "/assets/users/user1.jpg"
+                          user.profilePicture === "default"
+                            ? userDefault
+                            : user.profilePicture ||
+                              user.avatar ||
+                              userDefault
                         }
                         alt={user.name}
                         className="w-10 h-10 rounded-full object-cover border border-gray-100"
                         onError={(e) => {
-                          e.target.src = "/assets/users/user1.jpg";
+                          e.target.src = userDefault;
                         }}
                       />
                       <div className="ml-4">

@@ -241,7 +241,7 @@ const ReportSharingPage = () => {
 
   return (
     <Layout>
-      <div className="p-4 sm:p-6 md:p-8 bg-gray-100 min-h-full">
+      <div className="bg-gray-100 min-h-full">
         {/* Top Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <button

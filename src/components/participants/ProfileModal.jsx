@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/useAuth";
 import ProfileIcon from "../../assets/icons/profile-icon.svg?react";
 import LogoutIcon from "../../assets/icons/logout-icon.svg?react";
 import { LuLogOut } from "react-icons/lu";
+import userDefault from "../../assets/icons/user-default.jpg";
 
 const ProfileModal = ({ isOpen, onClose, position }) => {
   const { user, removeToken } = useAuth();
@@ -20,7 +21,9 @@ const ProfileModal = ({ isOpen, onClose, position }) => {
       <div className="flex items-center gap-3 px-4 pb-4 border-b border-gray-200">
         <img
           src={
-            user?.profilePicture || "https://via.placeholder.com/48x48?text=U"
+            user?.profilePicture === "default" || !user?.profilePicture
+              ? userDefault
+              : user.profilePicture
           }
           alt="User"
           className="w-12 h-12 rounded-full object-cover"

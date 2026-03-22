@@ -360,8 +360,8 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
     );
   }
 
-  // Show no forms available state
-  if (availableForms.length === 0) {
+  // Show no forms available state (only if no search query and no form selected)
+  if (availableForms.length === 0 && !searchQuery && !formId) {
     return (
       <div className="p-4 md:p-8 min-h-screen flex flex-col items-center justify-center">
         <div className="text-center">
@@ -618,7 +618,7 @@ const EventAnalyticsContent = ({ basePath = "/psas" }) => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         {/* Form Selector + Refresh Button */}
-        {availableForms.length > 0 && (
+        {(availableForms.length > 0 || searchQuery !== "") && (
           <div className="w-full lg:max-w-md xl:max-w-xl">
             <div className="relative group w-full">
               <div className="relative">

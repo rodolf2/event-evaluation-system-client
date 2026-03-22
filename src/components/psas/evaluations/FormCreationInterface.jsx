@@ -1542,6 +1542,13 @@ const FormCreationInterface = ({ onBack, currentFormId: propFormId }) => {
 
   // Enhanced CSV upload with comprehensive validation
   const handleCSVUpload = async (csvDataOrUrl) => {
+    if (csvDataOrUrl === null) {
+      setUploadedCSVData(null);
+      FormSessionManager.saveTransientCSVData(null);
+      setHasUnsavedChanges(true);
+      return;
+    }
+
     try {
       let csvData = null;
 

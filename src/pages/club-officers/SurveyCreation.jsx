@@ -13,6 +13,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/useAuth";
 import toast from "react-hot-toast";
@@ -254,6 +255,7 @@ const SurveyCreation = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOption, setFilterOption] = useState("newest");
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [googleFormsUrl, setGoogleFormsUrl] = useState("");
@@ -292,6 +294,7 @@ const SurveyCreation = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [token]);
 
@@ -526,7 +529,7 @@ const SurveyCreation = () => {
     currentPage * itemsPerPage,
   );
 
-  if (loading) {
+  if (isInitialLoad) {
     return (
       <ClubOfficerLayout>
         <div className="flex flex-col min-h-[calc(100vh-64px)]">
@@ -646,23 +649,26 @@ const SurveyCreation = () => {
                     </div>
 
                     <div className="flex items-center gap-2 ml-auto">
-                      <Filter className="w-4 h-4 text-gray-400" />
-                      <select
-                        value={filterOption}
-                        onChange={(e) => setFilterOption(e.target.value)}
-                        className="px-3 py-2 text-sm border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm"
-                      >
-                        <optgroup label="Sort By Date">
-                          <option value="newest">Newest First</option>
-                          <option value="oldest">Oldest First</option>
-                          <option value="title">Title A-Z</option>
-                          <option value="responses">Most Responses</option>
-                        </optgroup>
-                        <optgroup label="Filter By Status">
-                          <option value="available">Available</option>
-                          <option value="closed">Closed</option>
-                        </optgroup>
-                      </select>
+                      <div className="relative">
+                        <Filter className="absolute left-1.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <select
+                          value={filterOption}
+                          onChange={(e) => setFilterOption(e.target.value)}
+                          className="w-[160px] pl-7 pr-6 py-2 text-sm border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm bg-white appearance-none"
+                        >
+                          <optgroup label="Sort By Date">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="title">Title A-Z</option>
+                            <option value="responses">Most Responses</option>
+                          </optgroup>
+                          <optgroup label="Filter By Status">
+                            <option value="available">Available</option>
+                            <option value="closed">Closed</option>
+                          </optgroup>
+                        </select>
+                        <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      </div>
                       {totalPages > 1 && (
                         <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-2 py-1 shadow-sm">
                           <span className="text-xs sm:text-sm text-gray-600 px-2 font-medium whitespace-nowrap border-r border-gray-200 mr-1">
@@ -701,7 +707,7 @@ const SurveyCreation = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
+              <div className={`grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6 transition-opacity duration-200 ${loading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
                 <div
                   className="rounded-xl shadow-sm border-2 border-dashed border-gray-300 cursor-pointer hover:shadow-md hover:border-[#2662D9] hover:bg-blue-50/50 transition-all duration-300 h-full min-h-[160px] flex flex-col items-center justify-center bg-gray-50/50 group"
                   onClick={() => setShowCreateOptions(true)}

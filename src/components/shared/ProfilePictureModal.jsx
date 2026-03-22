@@ -9,6 +9,7 @@ import {
   Minus,
   Plus,
 } from "lucide-react";
+import userDefault from "../../assets/icons/user-default.jpg";
 
 const ProfilePictureModal = ({
   isOpen,

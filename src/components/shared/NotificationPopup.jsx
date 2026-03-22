@@ -11,6 +11,7 @@ const NotificationPopup = () => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
   const [reminderDetails, setReminderDetails] = useState(null);
+  const [sessionShownIds, setSessionShownIds] = useState(new Set());
   const initialLoadDone = useRef(false);
   const lastToastedId = useRef(null); // Track the last ID we actually called toast.custom for in this session
 
@@ -61,11 +62,12 @@ const NotificationPopup = () => {
     return notifications
       .filter((n) => {
         if (n.read) return false;
+        if (sessionShownIds.has(n.id)) return false;
         const shown = getShownNotifications();
         return !shown.has(n.id);
       })
       .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-  }, [notifications]);
+  }, [notifications, sessionShownIds]);
 
   // Fetch reminder details when notification is a reminder
   useEffect(() => {
@@ -106,6 +108,7 @@ const NotificationPopup = () => {
     if (notification) {
       markAsRead(notification.id);
       saveShownNotification(notification.id);
+      setSessionShownIds((prev) => new Set([...prev, notification.id]));
       toast.dismiss(notification.id);
 
       // Navigate to notifications page based on role
@@ -125,6 +128,7 @@ const NotificationPopup = () => {
   const handleCloseNotification = (e, notificationId) => {
     e.stopPropagation(); // Prevent triggering other clicks if any
     saveShownNotification(notificationId);
+    setSessionShownIds((prev) => new Set([...prev, notificationId]));
     toast.dismiss(notificationId);
     setIsVisible(false);
   };
@@ -239,6 +243,7 @@ const NotificationPopup = () => {
 
         const autoCloseTimer = setTimeout(() => {
           saveShownNotification(latestUnreadNotification.id);
+          setSessionShownIds((prev) => new Set([...prev, latestUnreadNotification.id]));
           setIsVisible(false);
         }, 4000);
 

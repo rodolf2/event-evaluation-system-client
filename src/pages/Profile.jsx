@@ -9,7 +9,7 @@ import ClubAdviserLayout from "../components/club-advisers/ClubAdviserLayout";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-// Import badge images (only for participants and club officers)
+import userDefault from "../assets/icons/user-default.jpg";
 import BronzeBadge from "../assets/badges/BRONZE.png";
 import SilverBadge from "../assets/badges/SILVER.png";
 import GoldBadge from "../assets/badges/GOLD.png";
@@ -336,7 +336,11 @@ function Profile() {
             <div className="bg-white rounded-xl shadow-md p-6 text-center">
               <div className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto mb-4">
                 <img
-                  src={user.profilePicture || "/assets/users/user1.jpg"}
+                  src={
+                    user.profilePicture === "default" || !user.profilePicture
+                      ? userDefault
+                      : user.profilePicture
+                  }
                   alt="Profile"
                   className="w-full h-full rounded-lg object-cover border-4 border-white shadow-sm"
                 />
@@ -553,7 +557,11 @@ function Profile() {
             refreshUserData();
           }
         }}
-        currentImage={user.profilePicture || "/assets/users/user1.jpg"}
+        currentImage={
+          user.profilePicture === "default" || !user.profilePicture
+            ? userDefault
+            : user.profilePicture
+        }
         onSave={handleSaveProfilePicture}
         onRemove={handleRemoveProfilePicture}
       />

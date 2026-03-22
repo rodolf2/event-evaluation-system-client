@@ -4,6 +4,7 @@ import { useSocket } from "../../contexts/SocketContext";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "../../api";
+import userDefault from "../../assets/icons/user-default.jpg";
 
 const Header = ({ onMenuClick, onProfileClick }) => {
   const { user, token, refreshUserData } = useAuth();
@@ -110,8 +111,9 @@ const Header = ({ onMenuClick, onProfileClick }) => {
           >
             <img
               src={
-                user?.profilePicture ||
-                "https://via.placeholder.com/32x32?text=U"
+                user?.profilePicture === "default" || !user?.profilePicture
+                  ? userDefault
+                  : user.profilePicture
               }
               alt="User"
               className="w-8 h-8 rounded-full object-cover"

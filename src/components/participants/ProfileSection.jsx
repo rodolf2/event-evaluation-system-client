@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useAuth } from "../../contexts/useAuth";
+import userDefault from "../../assets/icons/user-default.jpg";
 
 function ProfileSection() {
   const { user } = useAuth();
@@ -16,10 +17,10 @@ function ProfileSection() {
     return Math.abs(hash).toString(16);
   }, []);
 
-  const emailHash = getEmailHash(user?.email);
-  const gravatarUrl = `https://www.gravatar.com/avatar/${emailHash}?d=identicon&s=200`;
-
-  const avatarUrl = user?.profilePicture || gravatarUrl;
+  const avatarUrl =
+    user?.profilePicture === "default" || !user?.profilePicture
+      ? userDefault
+      : user.profilePicture || user.avatar || userDefault;
 
   return (
     <div

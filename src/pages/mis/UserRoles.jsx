@@ -98,6 +98,7 @@ function UserRoles() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activePBOOs: 0,
@@ -176,6 +177,7 @@ function UserRoles() {
       toast.error("Failed to fetch users");
     } finally {
       setIsLoading(false);
+      setIsInitialLoad(false);
     }
   }, [token, currentPage, rowsPerPage, searchQuery, selectedFilter]);
 
@@ -402,7 +404,7 @@ function UserRoles() {
     return <span className="text-gray-400">-</span>;
   };
 
-  if (isLoading) {
+  if (isInitialLoad) {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -528,7 +530,7 @@ function UserRoles() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className={`bg-white rounded-lg shadow-md overflow-hidden transition-opacity duration-200 ${isLoading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
         {/* Mobile Card Layout */}
         <div className="block lg:hidden">
           <div className="divide-y divide-gray-200">

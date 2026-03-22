@@ -54,6 +54,7 @@ const Reports = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { token } = useAuth();
 
   const [view, setView] = useState("list");
@@ -103,6 +104,7 @@ const Reports = () => {
       console.error("Error fetching reports:", err);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [token, searchQuery, limit, page]);
 
@@ -133,7 +135,7 @@ const Reports = () => {
     return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
   });
 
-  if (loading && reports.length === 0) {
+  if (isInitialLoad) {
     return (
       <ClubAdviserLayout>
         <div className="p-3 sm:p-6 md:p-8 bg-gray-100 min-h-full">
@@ -226,7 +228,7 @@ const Reports = () => {
             </div>
           </div>
 
-          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+          <div className={`bg-white p-4 sm:p-6 rounded-xl shadow-md transition-opacity duration-200 ${loading && !isInitialLoad ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
             {sortedReports.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">No reports found</p>
