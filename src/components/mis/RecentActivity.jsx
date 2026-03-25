@@ -73,7 +73,7 @@ const RecentActivity = () => {
   if (loading) {
     return (
       <div>
-        <h3 className="text-lg font-semibold text-gray-700 mb-3">
+        <h3 className="text-lg font-bold text-gray-700 mb-3">
           Recent Activity
         </h3>
         <div className="space-y-2">
@@ -93,7 +93,7 @@ const RecentActivity = () => {
 
   return (
     <div data-tour="recent-activity">
-      <h3 className="text-lg font-semibold text-gray-700 mb-3">
+      <h3 className="text-lg font-bold text-gray-700 mb-3">
         Recent Activity
       </h3>
       <div className="space-y-2">

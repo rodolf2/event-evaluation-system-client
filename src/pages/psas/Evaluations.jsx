@@ -315,7 +315,7 @@ const Evaluations = () => {
   if (loading) {
     return (
       <PSASLayout backgroundColor="bg-gray-100">
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col">
           <div className="flex-1">
             {/* Header Skeleton - Matches EvaluationContent layout */}
             <div className="flex flex-col gap-4 mb-6">

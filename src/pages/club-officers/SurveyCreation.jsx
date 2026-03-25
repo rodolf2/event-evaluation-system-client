@@ -532,7 +532,7 @@ const SurveyCreation = () => {
   if (isInitialLoad) {
     return (
       <ClubOfficerLayout>
-        <div className="flex flex-col min-h-[calc(100vh-64px)]">
+        <div className="flex flex-col">
           <div className="shrink-0 flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto">
               {/* Search and Filter Skeleton */}
@@ -631,7 +631,7 @@ const SurveyCreation = () => {
   return (
     <>
       <ClubOfficerLayout>
-        <div className="flex flex-col min-h-[calc(100vh-64px)]">
+        <div className="flex flex-col">
           <div className="shrink-0 flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto">
               <div className="flex flex-col gap-4 mb-4">

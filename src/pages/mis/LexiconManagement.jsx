@@ -220,19 +220,19 @@ const LexiconManagement = () => {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-lg font-bold text-gray-900 leading-tight">
                 Sentiment Lexicon
               </h1>
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-xs">
                 Manage Keywords & Dictionary for Feedback Analysis
               </p>
             </div>
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition shadow-sm"
+            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Add New Word
           </button>
         </div>
@@ -426,9 +426,14 @@ const LexiconManagement = () => {
                   <select
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     value={formData.sentiment}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sentiment: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const newSentiment = e.target.value;
+                      setFormData({
+                        ...formData,
+                        sentiment: newSentiment,
+                        weight: newSentiment === "neutral" ? 1.0 : formData.weight,
+                      });
+                    }}
                   >
                     <option value="positive">Positive</option>
                     <option value="negative">Negative</option>
@@ -437,16 +442,20 @@ const LexiconManagement = () => {
                 </div>
               </div>
 
-              <div>
+              <div className={formData.sentiment === "neutral" ? "opacity-50" : ""}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Weight ({formData.weight.toFixed(1)})
+                  {formData.sentiment === "neutral" && (
+                    <span className="text-xs text-gray-400 ml-1">(not applicable for neutral)</span>
+                  )}
                 </label>
                 <input
                   type="range"
                   min="0.1"
-                  max="5.0"
+                  max="2.0"
                   step="0.1"
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  disabled={formData.sentiment === "neutral"}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 disabled:cursor-not-allowed"
                   value={formData.weight}
                   onChange={(e) =>
                     setFormData({
@@ -457,7 +466,7 @@ const LexiconManagement = () => {
                 />
                 <div className="flex justify-between text-[10px] text-gray-400 mt-1">
                   <span>Subtle (0.1)</span>
-                  <span>Strong (5.0)</span>
+                  <span>Strong (2.0)</span>
                 </div>
               </div>
 

@@ -43,7 +43,9 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
   }, [isModalOpen]);
 
   return (
-    <div className={`flex h-screen overflow-hidden ${backgroundColor} relative`}>
+    <div
+      className={`flex h-screen overflow-hidden ${backgroundColor} relative`}
+    >
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={toggleSidebar}
@@ -54,14 +56,14 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[55] lg:hidden backdrop-blur-xs transition-opacity duration-300"
+          className="fixed inset-0 bg-black/50 z-55 lg:hidden backdrop-blur-xs transition-opacity duration-300"
           onClick={toggleSidebar}
         />
       )}
 
       {isProfileModalOpen && (
         <div
-          className="fixed inset-0 bg-[#F4F4F5]/60 z-[70]"
+          className="fixed inset-0 bg-[#F4F4F5]/60 z-70"
           onClick={() => setProfileModalOpen(false)}
         />
       )}
@@ -83,7 +85,7 @@ function Layout({ children, isModalOpen, pageLoading = false, config = {} }) {
             isProfileModalOpen={isProfileModalOpen}
           />
         </div>
-        
+
         <div className="px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
           {user &&
             showProfileSection &&
