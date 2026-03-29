@@ -434,6 +434,7 @@ const MISSharedReports = () => {
           report={selectedReport}
           onBack={handleBackToList}
           isGeneratedReport={!selectedReport.isDynamic}
+          hideShareButton={true}
         />
       )}
     </MisLayout>

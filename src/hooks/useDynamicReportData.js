@@ -15,7 +15,7 @@ export const useDynamicReportData = (
   const [commentsData, setCommentsData] = useState(null);
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(
-    isGeneratedReport && !reportSnapshot ? true : false,
+    isGeneratedReport && reportSnapshot ? false : !!reportId,
   );
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);

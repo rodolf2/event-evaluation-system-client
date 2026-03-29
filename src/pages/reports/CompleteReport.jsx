@@ -288,6 +288,7 @@ const CompleteReport = ({
   onBack,
   isGeneratedReport = false,
   isGuestView = false,
+  hideShareButton = false,
   onShareGuest,
   onViewQuantitative,
   onViewQualitative,
@@ -305,12 +306,14 @@ const CompleteReport = ({
   const isDynamicQuery = queryParams.get("dynamic") === "true";
 
   // A report should behave as a frozen snapshot if:
-  // 1. the isGeneratedReport prop is true (saved/generated report) OR
-  // 2. it is opened from the live analytics page with ?dynamic=true
+  // 1. the isGeneratedReport prop is true (saved/generated report) AND it is NOT opened with ?dynamic=true
+  // 2. it is NOT opened from the live analytics page with ?dynamic=true
   // In both cases, we disable live auto-refresh and treat data as a snapshot.
-  const effectivelyGenerated = isGeneratedReport || isDynamicQuery;
+  const effectivelyGenerated = isGeneratedReport && !isDynamicQuery;
 
-  const reportId = report?.formId || eventId;
+  // For generated reports, we must use the Report ID itself (report._id) to fetch the correct version
+  // For dynamic/live views, we use the formId/eventId
+  const reportId = effectivelyGenerated ? (report?._id || eventId) : (report?.formId || eventId);
 
   // Use dynamic data hook
   const {
@@ -644,6 +647,7 @@ const CompleteReport = ({
           isGeneratedReport={isGeneratedReport}
           onShareGuest={onShareGuest}
           loading={loading}
+          hideShareButton={hideShareButton}
         />
       )}
       <div className="bg-gray-100 min-h-screen report-print-content print:block p-4 md:p-8">

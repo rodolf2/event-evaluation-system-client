@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { UploadCloud, FileCheck2, Link as LinkIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FormSessionManager } from "../../../utils/formSessionManager";
+import ConfirmationModal from "../../shared/ConfirmationModal";
 
 /**
  * ImportCSVModal - CSV import system with secure in-memory handling
@@ -26,6 +27,14 @@ const ImportCSVModal = ({
 
   const [linkValue, setLinkValue] = useState("");
   const [uploadedData, setUploadedData] = useState(null);
+
+  // Confirmation state
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: "",
+    message: "",
+    onConfirm: () => { },
+  });
 
   // Initialize uploadedData from props when modal opens
   useEffect(() => {
@@ -70,7 +79,16 @@ const ImportCSVModal = ({
   };
 
   const removeFileFromQueue = (fileId) => {
-    setFileQueue((prev) => prev.filter((item) => item.id !== fileId));
+    const fileItem = fileQueue.find(item => item.id === fileId);
+    setConfirmConfig({
+      title: "Remove File",
+      message: `Are you sure you want to remove "${fileItem?.name || 'this file'}" from the import queue?`,
+      onConfirm: () => {
+        setFileQueue((prev) => prev.filter((item) => item.id !== fileId));
+        setShowConfirm(false);
+      }
+    });
+    setShowConfirm(true);
   };
 
   const handleAddLink = () => {
@@ -111,7 +129,16 @@ const ImportCSVModal = ({
   };
 
   const removeLinkFromQueue = (linkId) => {
-    setLinkQueue((prev) => prev.filter((item) => item.id !== linkId));
+    const linkItem = linkQueue.find(item => item.id === linkId);
+    setConfirmConfig({
+      title: "Remove Link",
+      message: `Are you sure you want to remove this link for "${linkItem?.filename || 'the file'}" from the import queue?`,
+      onConfirm: () => {
+        setLinkQueue((prev) => prev.filter((item) => item.id !== linkId));
+        setShowConfirm(false);
+      }
+    });
+    setShowConfirm(true);
   };
 
   const showCustomError = (errorMessage) => {
@@ -540,8 +567,16 @@ const ImportCSVModal = ({
             </button>
             <button
               onClick={() => {
-                setUploadedData(null);
-                onFileUpload(null);
+                setConfirmConfig({
+                  title: "Remove Uploaded Data",
+                  message: `Are you sure you want to remove the imported data from "${uploadedData.filename}"? This will clear all student assignments for this form.`,
+                  onConfirm: () => {
+                    setUploadedData(null);
+                    onFileUpload(null);
+                    setShowConfirm(false);
+                  }
+                });
+                setShowConfirm(true);
               }}
               className="p-1 text-red-500 hover:bg-red-100 rounded ml-2 transition"
               title="Remove"
@@ -568,6 +603,15 @@ const ImportCSVModal = ({
           </button>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText="Remove"
+      />
     </div>
   );
 };

@@ -10,6 +10,7 @@ const ReportActions = ({
   isGeneratedReport = false,
   onShareGuest,
   loading = false,
+  hideShareButton = false,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -1303,7 +1304,7 @@ const ReportActions = ({
                 <Send size={20} className="text-gray-600" />
               </button>
             )}
-          {["psas", "club-officer", "mis"].includes(user?.role) && (
+          {!hideShareButton && ["psas", "club-officer", "mis"].includes(user?.role) && (
             <button
               onClick={handleShowPreparedBy}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -1354,6 +1355,7 @@ ReportActions.propTypes = {
   isGeneratedReport: PropTypes.bool,
   onShareGuest: PropTypes.func,
   loading: PropTypes.bool,
+  hideShareButton: PropTypes.bool,
 };
 
 export default ReportActions;
