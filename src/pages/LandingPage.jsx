@@ -43,50 +43,75 @@ const LandingPage = () => {
     },
   ];
 
-  const sharedAnswer =
-    "Attendees can submit their feedback through the survey accessible in their account specifically when they are part of the uploaded attendance list in which they are the only ones eligible to evaluate.";
+  // const sharedAnswer =
+  //   "Attendees can submit their feedback through the survey accessible in their account specifically when they are part of the uploaded attendance list in which they are the only ones eligible to evaluate.";
 
   const faqs = [
     {
       question: "How do attendees submit their feedback?",
-      answer: sharedAnswer,
+      answer:
+        "Attendees can submit their feedback through the survey accessible in their account specifically when they are part of the uploaded attendance list in which they are the only ones eligible to evaluate.",
     },
     {
       question: "How does the feedback collection process work?",
-      answer: sharedAnswer,
+      answer:
+        "The system uses a simple, user-friendly method. Designated users can create digital surveys that actual event attendees can fill-up on a designated time frame.",
     },
     {
       question: "What kind of analytics does the system provide?",
-      answer: sharedAnswer,
+      answer:
+        "The system’s event analytics page provides a look at the event's performance. It tracks  metrics like attendee respones, overall satisfaction scores, and feedback trends.",
     },
     {
       question: "Can I create custom surveys for different events?",
-      answer: sharedAnswer,
+      answer: (
+        <>
+          <strong>Yes</strong>. The platform's customizable survey feature allows you to build unique questionnaires tailored to the specific goals and audience of each of your events.
+        </>
+      ),
     },
     {
       question: "Can I share reports with other organizers or administrators?",
-      answer: sharedAnswer,
+      answer: (
+        <>
+          <strong>Yes</strong>. EventStream's report sharing feature allows you to securely share read-only versions of your reports with other users or export them as a PDF for presentations.
+        </>
+      ),
     },
     {
       question: "How are the performance reports created?",
-      answer: sharedAnswer,
+      answer:
+        "The performance reports are generated after an event evaluation reaches the accepted percentage of responses as the system compiles the collected data into a report with charts, graphs, and insights.",
     },
     {
       question: "Does the system support multiple users?",
-      answer: sharedAnswer,
+      answer: (
+        <>
+          <strong>Yes</strong>. EventStream supports multiple users with different permission levels through an RBAC functionality. This allows the system to control who can create surveys, answer forms, and view reports.
+        </>
+      ),
     },
     {
       question:
         "Is the system scalable for a large number of events and users?",
-      answer: sharedAnswer,
+      answer: (
+        <>
+          <strong>Yes</strong>. The platform is built to be scalable, capable of handling a high volume of concurrent events, a large number of users, and extensive data without compromising performance.
+        </>
+      ),
     },
     {
       question: "How secure is the data collected by EventStream?",
-      answer: sharedAnswer,
+      answer:
+        "All data is securely stored and managed to ensure the privacy and confidentiality of all attendee information and event records.",
     },
     {
       question: "Is the platform accessible on mobile devices?",
-      answer: sharedAnswer,
+      answer: (
+        <>
+          <strong>Yes</strong>. The entire system is built to be responsive (mobile and tablet responsiveness), allowing easy access and management from any device.
+        </>
+      ),
     },
   ];
 
@@ -134,7 +159,11 @@ const LandingPage = () => {
       <header className="fixed top-0 left-0 w-full z-50 bg-white shadow">
         <div className="flex justify-between items-center px-4 md:px-6">
           {/* Logo */}
-          <a href="#" onClick={scrollToTop} className="flex items-center cursor-pointer">
+          <a
+            href="#"
+            onClick={scrollToTop}
+            className="flex items-center cursor-pointer"
+          >
             <img
               src="/assets/logo/LOGO.png"
               alt="LVCC Logo"
@@ -151,28 +180,31 @@ const LandingPage = () => {
             <a
               href="#"
               onClick={scrollToTop}
-              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 cursor-pointer ${activeSection === "home"
-                ? "after:w-[60px] lg:after:w-[80px]"
-                : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
-                }`}
+              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 cursor-pointer ${
+                activeSection === "home"
+                  ? "after:w-[60px] lg:after:w-[80px]"
+                  : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
+              }`}
             >
               Home
             </a>
             <a
               href="#features"
-              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${activeSection === "features"
-                ? "after:w-[60px] lg:after:w-[80px]"
-                : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
-                }`}
+              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${
+                activeSection === "features"
+                  ? "after:w-[60px] lg:after:w-[80px]"
+                  : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
+              }`}
             >
               About
             </a>
             <a
               href="#faqs"
-              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${activeSection === "faqs"
-                ? "after:w-[60px] lg:after:w-[80px]"
-                : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
-                }`}
+              className={`relative inline-block pb-1 text-[#09090B] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:bg-blue-500 after:transition-all after:-translate-x-1/2 ${
+                activeSection === "faqs"
+                  ? "after:w-[60px] lg:after:w-[80px]"
+                  : "after:w-0 hover:after:w-[60px] lg:hover:after:w-[80px]"
+              }`}
             >
               FAQs
             </a>
@@ -205,26 +237,29 @@ const LandingPage = () => {
               <a
                 href="#"
                 onClick={scrollToTop}
-                className={`text-[17px] font-semibold ${activeSection === "home" ? "text-blue-600" : "text-[#09090B]"
-                  }`}
+                className={`text-[17px] font-semibold ${
+                  activeSection === "home" ? "text-blue-600" : "text-[#09090B]"
+                }`}
               >
                 Home
               </a>
               <a
                 href="#features"
                 onClick={handleNavClick}
-                className={`text-[17px] font-semibold ${activeSection === "features"
-                  ? "text-blue-600"
-                  : "text-[#09090B]"
-                  }`}
+                className={`text-[17px] font-semibold ${
+                  activeSection === "features"
+                    ? "text-blue-600"
+                    : "text-[#09090B]"
+                }`}
               >
                 About
               </a>
               <a
                 href="#faqs"
                 onClick={handleNavClick}
-                className={`text-[17px] font-semibold ${activeSection === "faqs" ? "text-blue-600" : "text-[#09090B]"
-                  }`}
+                className={`text-[17px] font-semibold ${
+                  activeSection === "faqs" ? "text-blue-600" : "text-[#09090B]"
+                }`}
               >
                 FAQs
               </a>
@@ -284,7 +319,9 @@ const LandingPage = () => {
               className="bg-[#344773] rounded-[20px] md:rounded-[25px] p-4 md:p-6 shadow-lg hover:bg-[#3C4F8C] transition duration-300 flex flex-col gap-3 md:gap-4 min-h-[200px] md:min-h-[275px]"
             >
               <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] bg-white rounded-full mb-6 md:mb-12 flex items-center justify-center text-[#1F3463]">
-                <i className={`${feature.icon} text-lg md:text-2xl leading-none`}></i>
+                <i
+                  className={`${feature.icon} text-lg md:text-2xl leading-none`}
+                ></i>
               </div>
               <h3 className="text-white text-base md:text-[18px] font-bold leading-tight">
                 {feature.title}
@@ -322,13 +359,14 @@ const LandingPage = () => {
               .map(({ faq, originalIndex }) => (
                 <div
                   key={originalIndex}
-                  className={`break-inside-avoid mb-4 md:mb-6 rounded-[15px] md:rounded-[20px] shadow transition-colors duration-300 overflow-hidden ${openIndex === originalIndex
-                    ? "bg-[#1F3463] text-white"
-                    : "bg-[#1F3463] text-white hover:bg-blue-800 cursor-pointer"
-                    }`}
+                  className={`break-inside-avoid mb-4 md:mb-6 rounded-[15px] md:rounded-[20px] shadow transition-colors duration-300 overflow-hidden ${
+                    openIndex === originalIndex
+                      ? "bg-[#1F3463] text-white"
+                      : "bg-[#1F3463] text-white hover:bg-blue-800 cursor-pointer"
+                  }`}
                   onClick={() =>
                     setOpenIndex(
-                      openIndex === originalIndex ? null : originalIndex
+                      openIndex === originalIndex ? null : originalIndex,
                     )
                   }
                 >
@@ -343,8 +381,9 @@ const LandingPage = () => {
                       </p>
                     </div>
                     <ChevronDown
-                      className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${openIndex === originalIndex ? "rotate-180" : ""
-                        }`}
+                      className={`w-5 h-5 md:w-6 md:h-6 shrink-0 transition-transform duration-300 ${
+                        openIndex === originalIndex ? "rotate-180" : ""
+                      }`}
                     />
                   </div>
 

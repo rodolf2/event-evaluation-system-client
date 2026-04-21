@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 function LoginPage() {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
+  const apiUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
   const [searchParams] = useSearchParams();
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState(null);
 

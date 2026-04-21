@@ -80,8 +80,9 @@
     line-height: 1.5 !important;
     /* Improved line spacing for readability */
     color: #000 !important;
-    font-family: "Times New Roman", Times, serif !important;
+    /* font-family: "Times New Roman", Times, serif !important; */
     /* More professional font */
+    font-family: "Poppins", sans-serif !important;
   }
 
   /* Report Container - Better padding and spacing */
@@ -268,12 +269,12 @@
     display: block !important;
     visibility: visible !important;
   }
-  
+
   /* HIDE TOOLTIPS IN PRINT */
   .recharts-tooltip-wrapper {
     display: none !important;
   }
-  
+
   /* Pie Chart specific SVG scaling */
   .print-chart-container .recharts-surface {
     overflow: visible !important;
@@ -288,7 +289,7 @@
     gap: 0.25rem 0.5rem !important;
     font-size: 9pt !important;
   }
-  
+
   /* Ensure legend items don't have extra margins ruining the grid */
   .print-chart-container .space-y-2 > div {
     margin-bottom: 0 !important;
@@ -594,7 +595,7 @@
     margin-bottom: 0 !important;
     row-gap: 0.5rem !important;
   }
-  
+
   /* Compact Question Block */
   .questions-grid-container .question-block {
     margin-bottom: 0.25rem !important;
@@ -622,13 +623,25 @@
 
 /* Toast Animations */
 @keyframes enter {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes leave {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(0.9); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
 }
 
 .animate-enter {

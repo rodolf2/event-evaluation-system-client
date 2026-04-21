@@ -1,7 +1,8 @@
-const API_BASE_URL =
+const rawApiBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:5000";
+const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, "");
 
 console.log("API_BASE_URL:", API_BASE_URL); // Debug log
 
@@ -9,7 +10,8 @@ export const api = {
   baseURL: API_BASE_URL,
 
   async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const url = `${API_BASE_URL}${normalizedEndpoint}`;
     const { headers: customHeaders, ...restOptions } = options;
     const config = {
       ...restOptions,
